@@ -16,6 +16,9 @@ const { initReviewReminderCron } = require('./cron/reviewReminderCron');
 // Initialize express app
 const app = express();
 
+// Trust proxy for Railway deployment
+app.set('trust proxy', true);
+
 // Connect to database
 connectDB();
 
