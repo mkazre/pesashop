@@ -1,0 +1,82 @@
+import { Routes, Route } from 'react-router-dom';
+import Layout from './components/layout/Layout';
+
+// Pages
+import HomePage from './pages/HomePage';
+import ShopPage from './pages/ShopPage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import GiftCardPurchasePage from './pages/GiftCardPurchasePage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
+import AccountPage from './pages/AccountPage';
+import DashboardPage from './pages/account/DashboardPage';
+import OrdersPage from './pages/account/OrdersPage';
+import OrderDetailPage from './pages/account/OrderDetailPage';
+import LaybyesPage from './pages/account/LaybyesPage';
+import PaymentsPage from './pages/account/PaymentsPage';
+import TransactionsPage from './pages/account/TransactionsPage';
+import LoyaltyPointsPage from './pages/account/LoyaltyPointsPage';
+import MyCouponsPage from './pages/account/MyCouponsPage';
+import MyGiftCardsPage from './pages/account/MyGiftCardsPage';
+import AccountSettingsPage from './pages/account/AccountSettingsPage';
+import WishlistPage from './pages/WishlistPage';
+import ComparePage from './pages/ComparePage';
+import AddressesPage from './pages/account/AddressesPage';
+import DynamicPage from './pages/DynamicPage';
+import ProtectedRoute from './components/common/ProtectedRoute';
+
+// Modals
+import QuickViewModal from './components/modals/QuickViewModal';
+import AuthModal from './components/modals/AuthModal';
+import CartSidebar from './components/cart/CartSidebar';
+
+// Store
+import { useUIStore } from './store';
+
+function App() {
+  const { quickViewProduct, authModalOpen, cartSidebarOpen } = useUIStore();
+
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<HomePage />} />
+          <Route path="shop" element={<ShopPage />} />
+          <Route path="shop/:category" element={<ShopPage />} />
+          <Route path="product/:slug" element={<ProductDetailPage />} />
+          <Route path="cart" element={<CartPage />} />
+          <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="gift-cards" element={<GiftCardPurchasePage />} />
+          <Route path="order-success/:orderId" element={<OrderSuccessPage />} />
+          <Route path="account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>}>
+            <Route index element={<DashboardPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="orders/:id" element={<OrderDetailPage />} />
+            <Route path="laybyes" element={<LaybyesPage />} />
+            <Route path="payments" element={<PaymentsPage />} />
+            <Route path="transactions" element={<TransactionsPage />} />
+            <Route path="loyalty-points" element={<LoyaltyPointsPage />} />
+            <Route path="coupons" element={<MyCouponsPage />} />
+            <Route path="gift-cards" element={<MyGiftCardsPage />} />
+            <Route path="wishlist" element={<WishlistPage />} />
+            <Route path="addresses" element={<AddressesPage />} />
+            <Route path="settings" element={<AccountSettingsPage />} />
+          </Route>
+          <Route path="wishlist" element={<WishlistPage />} />
+          <Route path="compare" element={<ComparePage />} />
+          <Route path="page/:slug" element={<DynamicPage />} />
+          {/* Catch-all: try to render as a dynamic page by slug */}
+          <Route path=":slug" element={<DynamicPage />} />
+        </Route>
+      </Routes>
+
+      {/* Global Modals */}
+      {quickViewProduct && <QuickViewModal />}
+      {authModalOpen && <AuthModal />}
+      {cartSidebarOpen && <CartSidebar />}
+    </>
+  );
+}
+
+export default App;

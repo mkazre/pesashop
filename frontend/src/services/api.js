@@ -1,0 +1,184 @@
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Clear Zustand persisted auth state so useAuthStore reflects logged-out
+      try {
+        const stored = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+        if (stored?.state) {
+          stored.state.user = null;
+          stored.state.token = null;
+          stored.state.isAuthenticated = false;
+          localStorage.setItem('auth-storage', JSON.stringify(stored));
+        }
+      } catch { /* ignore */ }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth API
+export const authAPI = {
+  login: (credentials) => api.post('/api/auth/login', credentials),
+  register: (userData) => api.post('/api/auth/register', userData),
+  getMe: () => api.get('/api/auth/me'),
+  updateProfile: (data) => api.put('/api/auth/update', data),
+  forgotPassword: (email) => api.post('/api/auth/forgot-password', { email }),
+  resetPassword: (token, password) => api.post('/api/auth/reset-password', { token, password }),
+  // Social Login
+  getSocialLoginConfig: () => api.get('/api/settings/social-login'),
+  googleLogin: (credential) => api.post('/api/auth/google', { credential }),
+  facebookLogin: (accessToken) => api.post('/api/auth/facebook', { accessToken }),
+  // Addresses
+  getAddresses: () => api.get('/api/auth/addresses'),
+  addAddress: (data) => api.post('/api/auth/addresses', data),
+  updateAddress: (id, data) => api.put(`/api/auth/addresses/${id}`, data),
+  deleteAddress: (id) => api.delete(`/api/auth/addresses/${id}`),
+};
+
+// Products API
+export const productsAPI = {
+  getAll: (params) => api.get('/api/products', { params }),
+  getOne: (slugOrId) => api.get(`/api/products/${slugOrId}`), // Now accepts slug or ID
+  getFeatured: () => api.get('/api/products?featured=true&limit=8'),
+  getNew: () => api.get('/api/products?sort=-createdAt&limit=8'),
+  search: (query) => api.get(`/api/products?search=${query}`),
+  getFilters: () => api.get('/api/products/filters'),
+  bulkEdit: (data) => api.post('/api/products/bulk-edit', data),
+  bulkTrash: (productIds) => api.post('/api/products/bulk-trash', { productIds }),
+  restore: (id) => api.post(`/api/products/${id}/restore`),
+  permanentDelete: (id) => api.delete(`/api/products/${id}/permanent`),
+  getNextSKU: () => api.get('/api/products/next-sku'),
+  // AI Generator
+  generateDescription: (id) => api.post(`/api/products-ai/generate-description/${id}`),
+  applyDescription: (id, data) => api.post(`/api/products-ai/apply-description/${id}`, data),
+  bulkGenerateAI: (data) => api.post('/api/products-ai/bulk-generate', data),
+  // WooCommerce Import
+  importWooCommerce: (formData) => api.post('/api/woocommerce-import/products', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  downloadSampleCSV: () => api.get('/api/woocommerce-import/sample', { responseType: 'blob' })
+};
+
+// Categories API
+export const categoriesAPI = {
+  getAll: () => api.get('/api/categories'),
+  getOne: (id) => api.get(`/api/categories/${id}`),
+};
+
+// Orders API
+export const ordersAPI = {
+  create: (orderData) => api.post('/api/orders', orderData),
+  getAll: (params) => api.get('/api/orders', { params }),
+  getOne: (id) => api.get(`/api/orders/${id}`),
+  track: (orderNumber, email) => api.post('/api/orders/track', { orderNumber, email }),
+};
+
+// User API
+export const userAPI = {
+  getProfile: () => api.get('/api/auth/me'),
+  updateProfile: (data) => api.put('/api/auth/update', data),
+  getAddresses: () => api.get('/api/auth/addresses'),
+  addAddress: (address) => api.post('/api/auth/addresses', address),
+  getWishlist: () => api.get('/api/auth/wishlist'),
+  addToWishlist: (productId) => api.post('/api/auth/wishlist', { productId }),
+  removeFromWishlist: (productId) => api.delete(`/api/auth/wishlist/${productId}`),
+};
+
+// Coupons API
+export const couponsAPI = {
+  validate: (code, cartTotal, cartItems) => api.post('/api/coupons/validate', { code, cartTotal, cartItems }),
+  publicValidate: (code, cartTotal, cartItems) => api.post('/api/coupons/public/validate', { code, cartTotal, cartItems }),
+  autoApply: (code) => api.get('/api/coupons/public/auto-apply', { params: { code } }),
+  getMyCoupons: () => api.get('/api/coupons/my-coupons'),
+};
+
+// Gift Cards API
+export const giftCardsAPI = {
+  getPresets: () => api.get('/api/gift-cards/presets/list'),
+  purchase: (data) => api.post('/api/gift-cards/purchase', data),
+  validate: (code) => api.get(`/api/gift-cards/validate/${code}`),
+  checkBalance: (code) => api.get(`/api/gift-cards/public/check-balance/${code}`),
+  getMyGiftCards: () => api.get('/api/gift-cards/my-gift-cards'),
+  sendToFriend: (data) => api.post('/api/gift-cards/send-to-friend', data),
+  getHistory: (id) => api.get(`/api/gift-cards/my-gift-cards/${id}/history`),
+};
+
+// Menus API (public endpoints for frontend)
+export const menusAPI = {
+  getByLocation: (location, pageId) => api.get(`/api/menus/location/${location}`, { params: pageId ? { pageId } : {} }),
+};
+
+// Page Builder API (legacy - PageBuilder model)
+export const pageBuilderAPI = {
+  getBySlug: (slug) => api.get(`/api/page-builder/${slug}`),
+};
+
+// Page Templates API (admin page builder - used for frontend pages)
+export const pageTemplatesAPI = {
+  getHomepage: () => api.get('/api/page-templates/homepage'),
+  getBySlug: (slug) => api.get(`/api/page-templates/slug/${slug}`),
+  getByType: (type) => api.get(`/api/page-templates/type/${type}`),
+  getPublished: () => api.get('/api/page-templates/published'),
+};
+
+// Loyalty API (customer-facing)
+export const loyaltyAPI = {
+  getPublicSettings: () => api.get('/api/loyalty/public/settings'),
+  calculateProductPoints: (productId, quantity = 1) => api.post('/api/loyalty/public/calculate-product-points', { productId, quantity }),
+  calculateCartPoints: (items) => api.post('/api/loyalty/public/calculate-cart-points', { items }),
+  getCurrencies: () => api.get('/api/loyalty/public/currencies'),
+  getMyOverview: () => api.get('/api/loyalty/my-overview'),
+  getHistory: (params) => api.get('/api/loyalty/history', { params }),
+  getBalance: () => api.get('/api/loyalty/balance'),
+  sharePoints: (data) => api.post('/api/loyalty/share', data),
+  convertPoints: (points) => api.post('/api/loyalty/convert', { points }),
+  calculateRedemption: (points, orderTotal) => api.post('/api/loyalty/redemption/calculate', { points, orderTotal }),
+  redeemPoints: (data) => api.post('/api/loyalty/redemption/redeem', data),
+};
+
+// Public Settings API
+export const settingsAPI = {
+  getBankDetails: () => api.get('/api/settings/bank-details'),
+};
+
+// Layby API (customer-facing)
+export const laybyAPI = {
+  getSettings: () => api.get('/api/layby-applications/settings'),
+  submitApplication: (formData) => api.post('/api/layby-applications/apply', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getMyApplications: () => api.get('/api/layby-applications/my-applications'),
+  getMyLaybyes: () => api.get('/api/laybyes/my-laybyes'),
+  getMyLaybye: (id) => api.get(`/api/laybyes/my-laybyes/${id}`),
+  makePayment: (id, data) => api.post(`/api/laybyes/my-laybyes/${id}/pay`, data),
+  getMyTransactions: (params) => api.get('/api/layby-transactions/my-transactions', { params }),
+};
+
+export default api;

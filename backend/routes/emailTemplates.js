@@ -1,0 +1,233 @@
+const express = require('express');
+const router = express.Router();
+const { protect, authorize } = require('../middleware/auth');
+const EmailTemplate = require('../models/EmailTemplate');
+
+router.get('/', protect, authorize('admin', 'manager'), async (req, res) => {
+  try {
+    const { type, isActive } = req.query;
+    let query = {};
+
+    if (type) query.type = type;
+    if (isActive !== undefined) query.isActive = isActive === 'true';
+
+    const templates = await EmailTemplate.find(query)
+      .select('-htmlContent -textContent')
+      .sort('-createdAt');
+
+    res.json({
+      success: true,
+      count: templates.length,
+      data: templates
+    });
+  } catch (error) {
+    console.error('Error fetching email templates:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching email templates',
+      error: error.message
+    });
+  }
+});
+
+router.get('/:id', protect, authorize('admin', 'manager'), async (req, res) => {
+  try {
+    const template = await EmailTemplate.findById(req.params.id);
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email template not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: template
+    });
+  } catch (error) {
+    console.error('Error fetching email template:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching email template',
+      error: error.message
+    });
+  }
+});
+
+router.post('/', protect, authorize('admin'), async (req, res) => {
+  try {
+    if (!req.body.slug && req.body.name) {
+      req.body.slug = req.body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+
+    const template = await EmailTemplate.create(req.body);
+
+    res.status(201).json({
+      success: true,
+      data: template
+    });
+  } catch (error) {
+    console.error('Error creating email template:', error);
+    
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Template with this name or slug already exists'
+      });
+    }
+
+    res.status(400).json({
+      success: false,
+      message: 'Error creating email template',
+      error: error.message
+    });
+  }
+});
+
+router.put('/:id', protect, authorize('admin'), async (req, res) => {
+  try {
+    let template = await EmailTemplate.findById(req.params.id);
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email template not found'
+      });
+    }
+
+    template = await EmailTemplate.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    res.json({
+      success: true,
+      data: template
+    });
+  } catch (error) {
+    console.error('Error updating email template:', error);
+    res.status(400).json({
+      success: false,
+      message: 'Error updating email template',
+      error: error.message
+    });
+  }
+});
+
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
+  try {
+    const template = await EmailTemplate.findById(req.params.id);
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email template not found'
+      });
+    }
+
+    if (template.isDefault) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete default template'
+      });
+    }
+
+    await template.deleteOne();
+
+    res.json({
+      success: true,
+      message: 'Email template deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting email template:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting email template',
+      error: error.message
+    });
+  }
+});
+
+router.post('/:id/preview', protect, authorize('admin', 'manager'), async (req, res) => {
+  try {
+    const template = await EmailTemplate.findById(req.params.id);
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email template not found'
+      });
+    }
+
+    let previewHtml = template.htmlContent;
+    const sampleData = req.body.sampleData || {};
+
+    template.variables.forEach(variable => {
+      const value = sampleData[variable.name] || variable.example || `{{${variable.name}}}`;
+      const regex = new RegExp(`{{${variable.name}}}`, 'g');
+      previewHtml = previewHtml.replace(regex, value);
+    });
+
+    res.json({
+      success: true,
+      data: {
+        subject: template.subject,
+        html: previewHtml,
+        text: template.textContent
+      }
+    });
+  } catch (error) {
+    console.error('Error previewing email template:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error previewing email template',
+      error: error.message
+    });
+  }
+});
+
+router.post('/:id/test', protect, authorize('admin'), async (req, res) => {
+  try {
+    const template = await EmailTemplate.findById(req.params.id);
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email template not found'
+      });
+    }
+
+    const { testEmail } = req.body;
+
+    if (!testEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide test email address'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Test email would be sent to ${testEmail}`,
+      data: {
+        to: testEmail,
+        subject: template.subject,
+        template: template.name
+      }
+    });
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error sending test email',
+      error: error.message
+    });
+  }
+});
+
+module.exports = router;

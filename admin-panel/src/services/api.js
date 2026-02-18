@@ -1,0 +1,454 @@
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const api = axios.create({
+  baseURL: `${API_URL}/api`,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth API
+export const authAPI = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (data) => api.post('/auth/register', data),
+  getMe: () => api.get('/auth/me'),
+  updateProfile: (data) => api.put('/auth/update', data),
+};
+
+// Products API
+export const productsAPI = {
+  getAll: (params) => api.get('/products', { params }),
+  getOne: (slugOrId) => api.get(`/products/${slugOrId}`), // Now accepts slug or ID
+  uploadImage: (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post('/products/upload-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  create: (data) => api.post('/products', data),
+  update: (id, data) => api.put(`/products/${id}`, data),
+  delete: (id) => api.delete(`/products/${id}`), // Moves to trash
+  permanentDelete: (id) => api.delete(`/products/${id}/permanent`), // Permanently deletes
+  restore: (id) => api.post(`/products/${id}/restore`), // Restore from trash
+  bulkEdit: (data) => api.post('/products/bulk-edit', data),
+  bulkTrash: (productIds) => api.post('/products/bulk-trash', { productIds }),
+  getNextSKU: () => api.get('/products/next-sku'),
+  // AI Generator
+  generateDescription: (id, data = {}) => api.post(`/products-ai/generate-description/${id}`, data),
+  applyDescription: (id, data) => api.post(`/products-ai/apply-description/${id}`, data),
+  bulkGenerateAI: (data) => api.post('/products-ai/bulk-generate', data),
+  // WooCommerce Import
+  importWooCommerce: (formData) => api.post('/woocommerce-import/products', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  downloadSampleCSV: () => api.get('/woocommerce-import/sample', { responseType: 'blob' })
+};
+
+// Categories API
+export const categoriesAPI = {
+  getAll: (params) => api.get('/categories', { params }),
+  getOne: (id) => api.get(`/categories/${id}`),
+  create: (data) => api.post('/categories', data),
+  update: (id, data) => api.put(`/categories/${id}`, data),
+  delete: (id) => api.delete(`/categories/${id}`),
+  getTree: () => api.get('/categories', { params: { tree: 'true' } }),
+  getProducts: (id) => api.get(`/categories/${id}/products`),
+};
+
+// Orders API
+export const ordersAPI = {
+  getAll: (params) => api.get('/orders', { params }),
+  getOne: (id) => api.get(`/orders/${id}`),
+  create: (data) => api.post('/orders', data),
+  updateStatus: (id, data) => api.put(`/orders/${id}/status`, data),
+  updateAdminNote: (id, adminNote) => api.put(`/orders/${id}/admin-note`, { adminNote }),
+  // Notes CRUD
+  addNote: (id, data) => api.post(`/orders/${id}/notes`, data),
+  updateNote: (id, noteId, data) => api.put(`/orders/${id}/notes/${noteId}`, data),
+  deleteNote: (id, noteId) => api.delete(`/orders/${id}/notes/${noteId}`),
+};
+
+// Customers API
+export const customersAPI = {
+  getAll: (params) => api.get('/customers', { params }),
+  getOne: (id) => api.get(`/customers/${id}`),
+  create: (data) => api.post('/customers', data),
+  update: (id, data) => api.put(`/customers/${id}`, data),
+  delete: (id, force = false) => api.delete(`/customers/${id}${force ? '?force=true' : ''}`),
+};
+
+// Laybyes API
+export const laybyesAPI = {
+  getAll: (params) => api.get('/laybyes', { params }),
+  getOne: (id) => api.get(`/laybyes/${id}`),
+  create: (data) => api.post('/laybyes', data),
+  update: (id, data) => api.put(`/laybyes/${id}`, data),
+  recordPayment: (id, data) => api.post(`/laybyes/${id}/payments`, data),
+  updatePaymentStatus: (id, paymentId, data) => api.put(`/laybyes/${id}/payments/${paymentId}`, data),
+  cancel: (id, data) => api.put(`/laybyes/${id}/cancel`, data),
+  delete: (id) => api.delete(`/laybyes/${id}`),
+};
+
+// Layby Plans API
+export const laybyPlansAPI = {
+  getAll: (params) => api.get('/layby-plans', { params }),
+  getOne: (id) => api.get(`/layby-plans/${id}`),
+  create: (data) => api.post('/layby-plans', data),
+  update: (id, data) => api.put(`/layby-plans/${id}`, data),
+  delete: (id) => api.delete(`/layby-plans/${id}`),
+};
+
+// Layby Applications API
+export const laybyApplicationsAPI = {
+  getAll: (params) => api.get('/layby-applications', { params }),
+  getOne: (id) => api.get(`/layby-applications/${id}`),
+  approve: (id, data) => api.put(`/layby-applications/${id}/approve`, data),
+  reject: (id, data) => api.put(`/layby-applications/${id}/reject`, data),
+  delete: (id) => api.delete(`/layby-applications/${id}`),
+  downloadDocument: (id) => api.get(`/layby-applications/${id}/document`, { responseType: 'blob' }),
+  getByCustomer: (customerId) => api.get(`/layby-applications/customer/${customerId}`),
+};
+
+// Layby Transactions API
+export const laybyTransactionsAPI = {
+  getAll: (params) => api.get('/layby-transactions', { params }),
+  getByLaybye: (laybyeId) => api.get(`/layby-transactions/laybye/${laybyeId}`),
+};
+
+// Loyalty API
+export const loyaltyAPI = {
+  // Settings
+  getSettings: () => api.get('/loyalty/settings'),
+  updateSettings: (data) => api.put('/loyalty/settings', data),
+  
+  // Points
+  getBalance: () => api.get('/loyalty/balance'),
+  getHistory: (params) => api.get('/loyalty/history', { params }),
+  manualAssign: (data) => api.post('/loyalty/points/manual', data),
+  bulkAssign: (data) => api.post('/loyalty/points/bulk', data),
+  
+  // Rules
+  getRules: (params) => api.get('/loyalty/rules', { params }),
+  getRule: (id) => api.get(`/loyalty/rules/${id}`),
+  createRule: (data) => api.post('/loyalty/rules', data),
+  updateRule: (id, data) => api.put(`/loyalty/rules/${id}`, data),
+  deleteRule: (id) => api.delete(`/loyalty/rules/${id}`),
+  
+  // Levels
+  getLevels: (params) => api.get('/loyalty/levels', { params }),
+  getLevel: (id) => api.get(`/loyalty/levels/${id}`),
+  createLevel: (data) => api.post('/loyalty/levels', data),
+  updateLevel: (id, data) => api.put(`/loyalty/levels/${id}`, data),
+  deleteLevel: (id) => api.delete(`/loyalty/levels/${id}`),
+  
+  // Banners
+  getBanners: (params) => api.get('/loyalty/banners', { params }),
+  getBanner: (id) => api.get(`/loyalty/banners/${id}`),
+  createBanner: (data) => api.post('/loyalty/banners', data),
+  updateBanner: (id, data) => api.put(`/loyalty/banners/${id}`, data),
+  deleteBanner: (id) => api.delete(`/loyalty/banners/${id}`),
+  
+  // Ranking
+  getRanking: (params) => api.get('/loyalty/ranking', { params }),
+  awardTopCustomerBonus: () => api.post('/loyalty/ranking/top-customer-bonus'),
+  
+  // Redemption
+  calculateRedemption: (data) => api.post('/loyalty/redemption/calculate', data),
+  redeem: (data) => api.post('/loyalty/redemption/redeem', data),
+  
+  // User Management
+  banUser: (id, data) => api.put(`/loyalty/users/${id}/ban`, data),
+  getUserLevel: (id) => api.get(`/loyalty/users/${id}/level`),
+};
+
+// Currencies API
+export const currenciesAPI = {
+  getAll: (params) => api.get('/currencies', { params }),
+  getOne: (id) => api.get(`/currencies/${id}`),
+  getBase: () => api.get('/currencies/base/get'),
+  create: (data) => api.post('/currencies', data),
+  update: (id, data) => api.put(`/currencies/${id}`, data),
+  delete: (id) => api.delete(`/currencies/${id}`),
+  bulkDelete: (ids) => api.post('/currencies/bulk-delete', { ids }),
+  bulkUpdate: (ids, updates) => api.post('/currencies/bulk-update', { ids, updates }),
+  setBase: (id) => api.post(`/currencies/set-base/${id}`),
+  updateRates: () => api.post('/currencies/update-rates'),
+  getUpdaterStatus: () => api.get('/currencies/updater/status'),
+};
+
+// Coupons API
+export const couponsAPI = {
+  getAll: (params) => api.get('/coupons', { params }),
+  getOne: (id) => api.get(`/coupons/${id}`),
+  create: (data) => api.post('/coupons', data),
+  update: (id, data) => api.put(`/coupons/${id}`, data),
+  delete: (id) => api.delete(`/coupons/${id}`),
+  validate: (data) => api.post('/coupons/validate', data),
+  // Email Settings
+  getEmailSettings: () => api.get('/coupons/email/settings'),
+  updateEmailSettings: (data) => api.put('/coupons/email/settings', data),
+  sendTestEmail: (data) => api.post('/coupons/email/test', data),
+};
+
+// Gift Cards API
+export const giftCardsAPI = {
+  getAll: (params) => api.get('/gift-cards', { params }),
+  getOne: (id) => api.get(`/gift-cards/${id}`),
+  create: (data) => api.post('/gift-cards', data),
+  update: (id, data) => api.put(`/gift-cards/${id}`, data),
+  delete: (id) => api.delete(`/gift-cards/${id}`),
+  validate: (code) => api.get(`/gift-cards/validate/${code}`),
+};
+
+// Reviews API
+export const reviewsAPI = {
+  getAll: (params) => api.get('/reviews', { params }),
+  getOne: (id) => api.get(`/reviews/${id}`),
+  create: (data) => api.post('/reviews', data),
+  update: (id, data) => api.put(`/reviews/${id}`, data),
+  approve: (id) => api.post(`/reviews/${id}/approve`),
+  reject: (id) => api.post(`/reviews/${id}/reject`),
+  delete: (id) => api.delete(`/reviews/${id}`),
+  canReview: (productId) => api.get(`/reviews/can-review/${productId}`),
+  getSettings: () => api.get('/reviews/settings/get'),
+  updateSettings: (data) => api.put('/reviews/settings/update', data),
+};
+
+// Code Snippets API
+export const codeSnippetsAPI = {
+  getAll: (params) => api.get('/code-snippets', { params }),
+  getOne: (id) => api.get(`/code-snippets/${id}`),
+  create: (data) => api.post('/code-snippets', data),
+  update: (id, data) => api.put(`/code-snippets/${id}`, data),
+  delete: (id) => api.delete(`/code-snippets/${id}`),
+  toggle: (id) => api.put(`/code-snippets/${id}/toggle`),
+  validate: (code, type) => api.post('/code-snippets/validate', { code, type }),
+  emergencyDisable: (id, token) => api.put(`/code-snippets/${id}/emergency-disable`, { emergencyToken: token }),
+  bulk: (action, ids) => api.post('/code-snippets/bulk', { action, ids }),
+  getActive: (environment, location, params) => api.get(`/code-snippets/active/${environment}/${location}`, { params }),
+  duplicate: (id) => api.post(`/code-snippets/${id}/duplicate`),
+  export: (ids) => api.post('/code-snippets/export', { ids }),
+  import: (snippets, overwrite) => api.post('/code-snippets/import', { snippets, overwrite }),
+  getVersions: (id) => api.get(`/code-snippets/${id}/versions`),
+};
+
+// Email Templates API
+export const emailsAPI = {
+  getAll: () => api.get('/emails/templates'),
+  getOne: (id) => api.get(`/emails/templates/${id}`),
+  create: (data) => api.post('/emails/templates', data),
+  update: (id, data) => api.put(`/emails/templates/${id}`, data),
+  test: (id) => api.post(`/emails/templates/${id}/test`),
+};
+
+// Page Builder API
+export const pageBuilderAPI = {
+  getAll: (type) => api.get('/page-builder', { params: { type } }),
+  getOne: (id) => api.get(`/page-builder/${id}`),
+  create: (data) => api.post('/page-builder', data),
+  update: (id, data) => api.put(`/page-builder/${id}`, data),
+  publish: (id) => api.post(`/page-builder/${id}/publish`),
+  delete: (id) => api.delete(`/page-builder/${id}`),
+};
+
+// Import/Export API
+export const importAPI = {
+  validate: (type, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type);
+    return api.post('/import/validate', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 300000,
+    });
+  },
+  import: (type, file, options = {}) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('processImages', options.processImages !== false ? 'true' : 'false');
+    if (options.imageProcessingType) {
+      formData.append('imageProcessingType', options.imageProcessingType);
+    }
+    formData.append('duplicateResolution', JSON.stringify(options.duplicateResolution || {}));
+    formData.append('stripHtml', options.stripHtml !== false ? 'true' : 'false');
+    
+    const endpoint = `/import/${type}`;
+    
+    return api.post(endpoint, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 1800000,
+    });
+  },
+  export: (type, filters = {}) => 
+    api.get(`/import/export/${type}`, { 
+      params: { ...filters },
+      responseType: 'blob' 
+    }),
+};
+
+// Images API
+export const imagesAPI = {
+  upload: (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post('/images/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  process: (file, options = {}) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    // Add processing options
+    if (options.trimWhitespace !== undefined) formData.append('trimWhitespace', options.trimWhitespace);
+    if (options.backgroundColor) formData.append('backgroundColor', options.backgroundColor);
+    if (options.targetWidth) formData.append('targetWidth', options.targetWidth);
+    if (options.targetHeight) formData.append('targetHeight', options.targetHeight);
+    if (options.targetRatio) formData.append('targetRatio', options.targetRatio);
+    if (options.outputFormat) formData.append('outputFormat', options.outputFormat);
+    if (options.imageQuality) formData.append('imageQuality', options.imageQuality);
+    return api.post('/images/process', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  configureWatermark: (file, config) => {
+    const formData = new FormData();
+    if (file) {
+      formData.append('file', file);
+    }
+    Object.keys(config).forEach(key => {
+      if (config[key] !== undefined && config[key] !== null) {
+        formData.append(key, config[key]);
+      }
+    });
+    return api.post('/images/configure-watermark', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  getWatermarkConfig: () => api.get('/images/watermark-config'),
+  getConfig: () => api.get('/images/config'),
+  updateConfig: (config) => api.post('/images/config', config),
+  getProductImages: (params) => api.get('/images/products', { params }),
+  processProductImage: (data) => api.post('/images/process-product-image', data),
+  regenerateImages: (data) => api.post('/images/regenerate', data),
+};
+
+// Media Library API
+export const mediaAPI = {
+  getAll: (params) => api.get('/media', { params }),
+  getOne: (id) => api.get("/media/" + id),
+  upload: (file, meta = {}) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    Object.entries(meta).forEach(([k,v]) => { if(v!=null) fd.append(k, typeof v==='object'?JSON.stringify(v):v); });
+    return api.post('/media/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  uploadMultiple: (files, folder) => {
+    const fd = new FormData();
+    files.forEach(f => fd.append('files', f));
+    if (folder) fd.append('folder', folder);
+    return api.post('/media/upload-multiple', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  update: (id, data) => api.put("/media/" + id, data),
+  delete: (id) => api.delete("/media/" + id),
+  bulkDelete: (ids) => api.post('/media/bulk-delete', { ids }),
+  getFolders: () => api.get('/media/folders/list'),
+};
+
+// Settings API
+export const settingsAPI = {
+  getAll: () => api.get('/settings'),
+  update: (data) => api.put('/settings', data),
+};
+
+// Dashboard API
+export const dashboardAPI = {
+  getStats: () => api.get('/dashboard/stats'),
+};
+
+// Page Templates API
+export const pageTemplatesAPI = {
+  getAll: (params) => api.get('/page-templates', { params }),
+  getPublished: () => api.get('/page-templates/published'),
+  getOne: (id) => api.get(`/page-templates/${id}`),
+  getBySlug: (slug) => api.get(`/page-templates/slug/${slug}`),
+  create: (data) => api.post('/page-templates', data),
+  update: (id, data) => api.put(`/page-templates/${id}`, data),
+  delete: (id) => api.delete(`/page-templates/${id}`),
+  duplicate: (id) => api.post(`/page-templates/${id}/duplicate`),
+  getVersions: (id) => api.get(`/page-templates/${id}/versions`),
+  restoreVersion: (id, versionId) => api.post(`/page-templates/${id}/versions/${versionId}/restore`),
+};
+
+// Menus API
+export const menusAPI = {
+  getAll: (params) => api.get('/menus', { params }),
+  getByLocation: (location) => api.get(`/menus/location/${location}`),
+  getOne: (id) => api.get(`/menus/${id}`),
+  create: (data) => api.post('/menus', data),
+  update: (id, data) => api.put(`/menus/${id}`, data),
+  delete: (id) => api.delete(`/menus/${id}`),
+  duplicate: (id) => api.post(`/menus/${id}/duplicate`),
+};
+
+// B2Bking API
+export const b2bkingAPI = {
+  // Customer Groups
+  getCustomerGroups: (params) => api.get('/b2bking/customer-groups', { params }),
+  getCustomerGroup: (id) => api.get(`/b2bking/customer-groups/${id}`),
+  createCustomerGroup: (data) => api.post('/b2bking/customer-groups', data),
+  updateCustomerGroup: (id, data) => api.put(`/b2bking/customer-groups/${id}`, data),
+  deleteCustomerGroup: (id) => api.delete(`/b2bking/customer-groups/${id}`),
+  
+  // Price Lists
+  getPriceLists: (params) => api.get('/b2bking/price-lists', { params }),
+  getPriceList: (id) => api.get(`/b2bking/price-lists/${id}`),
+  createPriceList: (data) => api.post('/b2bking/price-lists', data),
+  updatePriceList: (id, data) => api.put(`/b2bking/price-lists/${id}`, data),
+  deletePriceList: (id) => api.delete(`/b2bking/price-lists/${id}`),
+  addPriceListItem: (id, data) => api.post(`/b2bking/price-lists/${id}/items`, data),
+  updatePriceListItem: (id, itemId, data) => api.put(`/b2bking/price-lists/${id}/items/${itemId}`, data),
+  deletePriceListItem: (id, itemId) => api.delete(`/b2bking/price-lists/${id}/items/${itemId}`),
+  
+  // Pricing Rules
+  getPricingRules: (params) => api.get('/b2bking/pricing-rules', { params }),
+  getPricingRule: (id) => api.get(`/b2bking/pricing-rules/${id}`),
+  createPricingRule: (data) => api.post('/b2bking/pricing-rules', data),
+  updatePricingRule: (id, data) => api.put(`/b2bking/pricing-rules/${id}`, data),
+  deletePricingRule: (id) => api.delete(`/b2bking/pricing-rules/${id}`),
+  
+  // Price Calculation
+  calculatePrice: (data) => api.post('/b2bking/calculate-price', data),
+  calculateBatchPrices: (data) => api.post('/b2bking/calculate-batch-prices', data),
+  
+  // Price Recalculation
+  recalculatePrices: (data = {}) => api.post('/b2bking/recalculate-prices', data),
+};
+
+export default api;
