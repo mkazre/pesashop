@@ -3,7 +3,7 @@ import { IoHeartOutline, IoHeart, IoEyeOutline, IoCartOutline } from 'react-icon
 import StarRating from './StarRating';
 import Badge from './Badge';
 import Button from './Button';
-import { useCartStore, useWishlistStore, useUIStore } from '@/store';
+import { useCartStore, useWishlistStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
 import toast from 'react-hot-toast';
@@ -13,6 +13,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
   const { items: wishlistItems, addItem: addToWishlist, removeItem: removeFromWishlist } = useWishlistStore();
   const { openQuickView, openCartSidebar } = useUIStore();
   const { displayPrice } = useB2BPricing(product);
+  const { formatPrice } = useCurrencyStore();
   const { titleLines, descriptionLines } = useProductDisplay('other');
 
   const isInWishlist = wishlistItems.some(item => item._id === product._id);
@@ -82,11 +83,11 @@ export default function ProductCard({ product, layout = 'grid' }) {
           
           <div className="flex items-center gap-3 my-3">
             <span className="price-sale">
-              R{displayPrice.displayPrice?.toFixed(2) || product.regularPrice}
+              {formatPrice(displayPrice.displayPrice || product.regularPrice)}
             </span>
             {displayPrice.originalPrice > displayPrice.displayPrice && (
               <>
-                <span className="price-original">R{displayPrice.originalPrice?.toFixed(2)}</span>
+                <span className="price-original">{formatPrice(displayPrice.originalPrice)}</span>
                 {discount > 0 && (
                   <span className="price-discount">{discount}% OFF</span>
                 )}
@@ -204,11 +205,11 @@ export default function ProductCard({ product, layout = 'grid' }) {
 
           <div className="flex items-center gap-2 mt-2">
             <span className="price-sale">
-              R{displayPrice.displayPrice?.toFixed(2) || product.regularPrice}
+              {formatPrice(displayPrice.displayPrice || product.regularPrice)}
             </span>
             {displayPrice.originalPrice > displayPrice.displayPrice && (
               <>
-                <span className="price-original">R{displayPrice.originalPrice?.toFixed(2)}</span>
+                <span className="price-original">{formatPrice(displayPrice.originalPrice)}</span>
                 {discount > 0 && (
                   <span className="price-discount">{discount}% OFF</span>
                 )}

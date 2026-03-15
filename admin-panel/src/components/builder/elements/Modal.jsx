@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Modal = ({
+export const Modal = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   triggerText = 'Open Modal',
   title = 'Modal Title',
   content = 'Modal content goes here.',
@@ -10,7 +13,8 @@ export const Modal = ({
   maxWidth = '500px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

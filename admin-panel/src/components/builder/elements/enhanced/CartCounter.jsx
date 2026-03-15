@@ -2,8 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { ShoppingCart, Plus, Minus } from 'lucide-react';
 import { TextControl, NumberControl, ColorControl, SelectControl, Checkbox } from '@/components/builder/controls/PropertyControls';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const CartCounter = ({ className = '', style = {} }) => {
+export const CartCounter = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { className = '', style = {} } = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

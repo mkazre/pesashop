@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const AdjacentPosts = ({
+export const AdjacentPosts = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   prevLabel = '← Previous Post',
   nextLabel = 'Next Post →',
   prevTitle = 'How to Get Started with Web Design',
@@ -9,7 +12,8 @@ export const AdjacentPosts = ({
   showThumbnails = false,
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
 
   return (

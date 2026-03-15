@@ -1,8 +1,11 @@
 import React from 'react';
 import { useNode } from '@craftjs/core';
 import { ShoppingCart } from 'lucide-react';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductCard = ({ 
+export const ProductCard = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { 
   productId = null,
   product = null, // For preview/static mode
   layout = 'default',
@@ -12,7 +15,8 @@ export const ProductCard = ({
   showButton = true,
   className = '',
   style = {}
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

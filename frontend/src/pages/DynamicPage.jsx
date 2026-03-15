@@ -1,11 +1,13 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import { pageTemplatesAPI } from '@/services/api';
+import { pageTemplatesAPI, productsAPI } from '@/services/api';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
 import Loading from '@/components/common/Loading';
 
 /**
  * Renders a published page from the page builder by slug (e.g. /page/about-us).
+ * For product-type pages (single-product / product), also fetches the product
+ * from the URL and passes it as context so dynamic bindings resolve.
  */
 export default function DynamicPage() {
   const { slug: rawSlug } = useParams();
@@ -19,7 +21,17 @@ export default function DynamicPage() {
 
   const page = data?.data?.data;
 
-  if (isLoading) {
+  // For product-type pages accessed via slug, try to fetch product data by slug
+  const isProductPage = page?.templateType === 'single-product' || page?.templateType === 'product';
+  const { data: productData, isLoading: productLoading } = useQuery(
+    ['product-for-page', slug],
+    () => productsAPI.getOne(slug),
+    { enabled: isProductPage && !!slug, retry: false }
+  );
+
+  const product = productData?.data;
+
+  if (isLoading || (isProductPage && productLoading)) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Loading />
@@ -49,7 +61,7 @@ export default function DynamicPage() {
 
   return (
     <div className="bg-white">
-      <PageRenderer components={page.components} />
+      <PageRenderer components={page.components} product={isProductPage ? product : null} />
     </div>
   );
 }

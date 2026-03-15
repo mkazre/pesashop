@@ -41,6 +41,17 @@ import PricingRulesPage from './pages/PricingRulesPage';
 import MediaLibraryPage from './pages/MediaLibraryPage';
 import LaybyApplicationsPage from './pages/LaybyApplicationsPage';
 import LaybyTransactionsPage from './pages/LaybyTransactionsPage';
+import BadgeManagerPage from './pages/BadgeManagerPage';
+import ProductPageSettingsPage from './pages/ProductPageSettingsPage';
+import ProductArchiveSettingsPage from './pages/ProductArchiveSettingsPage';
+import EmailTemplatesPage from './pages/EmailTemplatesPage';
+import NotificationsPage from './pages/NotificationsPage';
+import HomePageBuilderPage from './pages/HomePageBuilderPage';
+import StatsPage from './pages/StatsPage';
+import QuestionsPage from './pages/QuestionsPage';
+import UsersPage from './pages/UsersPage';
+import RolesPage from './pages/RolesPage';
+import ProfilePage from './pages/ProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -97,7 +108,8 @@ function App() {
             <Route path="page-manager" element={<PageManager />} />
             <Route path="menu-builder" element={<MenuBuilder />} />
             <Route path="menu-assignment" element={<MenuAssignment />} />
-            <Route path="emails" element={<div className="text-2xl font-bold">Email Templates Page (Coming Soon)</div>} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="emails" element={<EmailTemplatesPage />} />
             <Route path="snippets" element={<CodeSnippetsPage />} />
             <Route path="import-export" element={<ImportExportPage />} />
             <Route path="media-library" element={<MediaLibraryPage />} />
@@ -107,6 +119,15 @@ function App() {
             <Route path="b2bking/customer-groups" element={<CustomerGroupsPage />} />
             <Route path="b2bking/price-lists" element={<PriceListsPage />} />
             <Route path="b2bking/pricing-rules" element={<PricingRulesPage />} />
+            <Route path="badges" element={<BadgeManagerPage />} />
+            <Route path="product-page-settings" element={<ProductPageSettingsPage />} />
+            <Route path="product-archive-settings" element={<ProductArchiveSettingsPage />} />
+            <Route path="home-page-builder" element={<HomePageBuilderPage />} />
+            <Route path="stats" element={<StatsPage />} />
+            <Route path="questions" element={<QuestionsPage />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="roles" element={<RolesPage />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
         </Routes>
       </BrowserRouter>

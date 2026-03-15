@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const PostTerms = ({
+export const PostTerms = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   terms = ['Technology', 'Design', 'Development'],
   taxonomy = 'Categories',
   separator = ', ',
@@ -11,7 +14,8 @@ export const PostTerms = ({
   fontSize = '14px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
 
   return (

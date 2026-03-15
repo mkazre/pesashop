@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Superbox = ({
+export const Superbox = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   imageSrc = 'https://placehold.co/600x400/e2e8f0/64748b?text=Superbox+Image',
   title = 'Superbox Title',
   description = 'Hover to see the overlay effect',
@@ -11,7 +14,8 @@ export const Superbox = ({
   overlayEffect = 'fade',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

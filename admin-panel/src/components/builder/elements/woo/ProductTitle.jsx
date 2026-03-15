@@ -1,8 +1,11 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { useRepeaterItem } from '@/components/builder/utils/RepeaterContext';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductTitle = ({
+export const ProductTitle = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   title = 'Product Name',
   tag = 'h1',
   fontSize = '28px',
@@ -11,7 +14,8 @@ export const ProductTitle = ({
   textAlign = 'left',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const repeaterItem = useRepeaterItem();
   const Tag = tag;

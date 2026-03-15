@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
-import { useAuthStore } from '@/store';
+import { useAuthStore, useCartStore, useWishlistStore } from '@/store';
 
 const NAV_ITEMS = [
   { path: '/account', label: 'Dashboard', icon: (
@@ -40,9 +40,13 @@ const NAV_ITEMS = [
 
 export default function AccountPage() {
   const { user, clearAuth } = useAuthStore();
+  const { clearCart } = useCartStore();
+  const { clearWishlist } = useWishlistStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    clearCart();
+    clearWishlist();
     clearAuth();
     localStorage.removeItem('token');
     localStorage.removeItem('user');

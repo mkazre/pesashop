@@ -63,10 +63,10 @@ router.get('/settings', async (req, res) => {
   }
 });
 
-// ─── PUBLIC: Submit a layby application ───
-router.post('/apply', optionalAuth, uploadIdDoc.single('idDocument'), async (req, res) => {
+// ─── PROTECTED: Submit a layby application (customer must be signed in) ───
+router.post('/apply', protect, uploadIdDoc.single('idDocument'), async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, productId, notes } = req.body;
+    const { firstName, lastName, email, phone, productId, notes, laybyPlanId, depositAmount, installmentAmount, numberOfPayments, frequency, planName } = req.body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !phone || !productId) {
@@ -97,6 +97,13 @@ router.post('/apply', optionalAuth, uploadIdDoc.single('idDocument'), async (req
       return res.status(400).json({ success: false, message: 'Layby is currently not available' });
     }
 
+    // Validate layby plan if provided
+    let planDoc = null;
+    if (laybyPlanId) {
+      const LaybyPlan = require('../models/LaybyPlan');
+      planDoc = await LaybyPlan.findById(laybyPlanId);
+    }
+
     // Create application
     const application = await LaybyApplication.create({
       firstName,
@@ -113,7 +120,13 @@ router.post('/apply', optionalAuth, uploadIdDoc.single('idDocument'), async (req
       product: productId,
       productName: product.name,
       productPrice,
-      customer: req.user?._id || null,
+      laybyPlan: laybyPlanId || undefined,
+      planName: planName || planDoc?.name || '',
+      depositAmount: parseFloat(depositAmount) || 0,
+      installmentAmount: parseFloat(installmentAmount) || 0,
+      numberOfPayments: parseInt(numberOfPayments) || 0,
+      frequency: frequency || planDoc?.frequency || 'monthly',
+      customer: req.user._id,
       notes: notes || '',
       status: 'pending'
     });
@@ -138,10 +151,13 @@ router.post('/apply', optionalAuth, uploadIdDoc.single('idDocument'), async (req
             </div>
 
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0; color: #333;">Product Details</h3>
+              <h3 style="margin-top: 0; color: #333;">Product & Plan Details</h3>
               <table style="width: 100%; border-collapse: collapse;">
                 <tr><td style="padding: 8px 0; color: #666; width: 140px;">Product:</td><td style="padding: 8px 0; font-weight: bold;">${product.name}</td></tr>
                 <tr><td style="padding: 8px 0; color: #666;">Price:</td><td style="padding: 8px 0; font-weight: bold; color: #e94560;">R ${productPrice.toFixed(2)}</td></tr>
+                ${application.planName ? `<tr><td style="padding: 8px 0; color: #666;">Plan:</td><td style="padding: 8px 0; font-weight: bold;">${application.planName}</td></tr>` : ''}
+                ${application.depositAmount ? `<tr><td style="padding: 8px 0; color: #666;">Deposit:</td><td style="padding: 8px 0; font-weight: bold;">R ${application.depositAmount.toFixed(2)}</td></tr>` : ''}
+                ${application.numberOfPayments ? `<tr><td style="padding: 8px 0; color: #666;">Installments:</td><td style="padding: 8px 0; font-weight: bold;">${application.numberOfPayments}× R ${(application.installmentAmount || 0).toFixed(2)} (${application.frequency})</td></tr>` : ''}
               </table>
             </div>
 
@@ -176,6 +192,22 @@ router.post('/apply', optionalAuth, uploadIdDoc.single('idDocument'), async (req
       // Don't fail the application if email fails
     }
 
+    // Send confirmation email to the customer
+    try {
+      const installmentDetails = application.numberOfPayments > 0
+        ? `${application.numberOfPayments}× R ${(application.installmentAmount || 0).toFixed(2)} (${application.frequency})`
+        : 'To be confirmed';
+      await emailService.sendTemplatedEmail(application.email, 'laybye_application_received', {
+        customer_name: firstName,
+        product_name: product.name,
+        plan_name: application.planName || 'Standard',
+        deposit_amount: `R ${(application.depositAmount || 0).toFixed(2)}`,
+        installment_details: installmentDetails,
+      });
+    } catch (emailError) {
+      console.error('Failed to send customer confirmation email:', emailError);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Your layby application has been submitted successfully. Our team will review it and get back to you.',
@@ -187,6 +219,70 @@ router.post('/apply', optionalAuth, uploadIdDoc.single('idDocument'), async (req
   } catch (error) {
     console.error('Layby application error:', error);
     res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+});
+
+// ─── PROTECTED: Check laybye eligibility (auto-approve if recent approved app exists) ───
+router.get('/check-eligibility', protect, async (req, res) => {
+  try {
+    // Use admin-configured validity period (defaultExpiryDays), fallback to 90 days
+    const settings = await Settings.getSettings();
+    const validityDays = settings?.layby?.defaultExpiryDays || 90;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - validityDays);
+
+    // Find the most recent approved application within the configured validity period
+    const recentApproval = await LaybyApplication.findOne({
+      customer: req.user._id,
+      status: 'approved',
+      reviewedAt: { $gte: cutoffDate }
+    })
+      .sort({ reviewedAt: -1 })
+      .populate('product', 'name slug images');
+
+    if (recentApproval) {
+      return res.json({
+        success: true,
+        eligible: true,
+        validityDays,
+        application: {
+          _id: recentApproval._id,
+          firstName: recentApproval.firstName,
+          lastName: recentApproval.lastName,
+          email: recentApproval.email,
+          phone: recentApproval.phone,
+          approvedAt: recentApproval.reviewedAt,
+          productName: recentApproval.productName,
+          planName: recentApproval.planName,
+        },
+        message: `You have a recently approved laybye application (valid for ${validityDays} days). No need to reapply.`
+      });
+    }
+
+    // Also check if there's a pending application (still awaiting review)
+    const pendingApp = await LaybyApplication.findOne({
+      customer: req.user._id,
+      status: 'pending'
+    }).sort({ createdAt: -1 });
+
+    if (pendingApp) {
+      return res.json({
+        success: true,
+        eligible: false,
+        pending: true,
+        message: 'You have a pending laybye application still under review.'
+      });
+    }
+
+    res.json({
+      success: true,
+      eligible: false,
+      pending: false,
+      message: 'No recent approved application found. A new application is required.'
+    });
+  } catch (error) {
+    console.error('Check eligibility error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
@@ -276,29 +372,30 @@ router.put('/:id/approve', protect, authorize('admin', 'shop_manager'), async (r
     application.reviewNotes = req.body.notes || '';
     await application.save();
 
-    // Send approval email to applicant
+    // Send approval email to applicant (try templated first, fallback to direct)
     try {
-      await emailService.sendEmail({
-        to: application.email,
-        subject: 'Your Layby Application Has Been Approved!',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #28a745;">Your Layby Application Has Been Approved!</h2>
-            <p>Dear ${application.firstName},</p>
-            <p>Great news! Your layby application for <strong>${application.productName}</strong> has been approved.</p>
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Product:</strong> ${application.productName}</p>
-              <p><strong>Price:</strong> R ${application.productPrice.toFixed(2)}</p>
-            </div>
-            <p>Our team will be in touch with you shortly to set up your payment plan.</p>
-            <p>Thank you for choosing PesaShop!</p>
-          </div>
-        `
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      await emailService.sendTemplatedEmail(application.email, 'laybye_application_approved', {
+        customer_name: application.firstName,
+        product_name: application.productName,
+        plan_name: application.planName || 'Standard',
+        product_price: `R ${application.productPrice.toFixed(2)}`,
+        account_url: `${frontendUrl}/account/laybyes`,
       });
       application.approvalEmailSent = true;
       await application.save();
     } catch (emailError) {
       console.error('Failed to send approval email:', emailError);
+      // Fallback to direct email
+      try {
+        await emailService.sendEmail({
+          to: application.email,
+          subject: 'Your Layby Application Has Been Approved!',
+          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><h2 style="color:#28a745;">Approved!</h2><p>Dear ${application.firstName},</p><p>Your layby application for <strong>${application.productName}</strong> (R ${application.productPrice.toFixed(2)}) has been approved.</p><p>Our team will be in touch shortly.</p></div>`
+        });
+        application.approvalEmailSent = true;
+        await application.save();
+      } catch (e) { console.error('Fallback approval email also failed:', e); }
     }
 
     res.json({ success: true, data: application, message: 'Application approved' });
@@ -327,24 +424,23 @@ router.put('/:id/reject', protect, authorize('admin', 'shop_manager'), async (re
     application.reviewNotes = req.body.notes || '';
     await application.save();
 
-    // Send rejection email to applicant
+    // Send rejection email to applicant (try templated first, fallback to direct)
     try {
-      await emailService.sendEmail({
-        to: application.email,
-        subject: 'Update on Your Layby Application',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #dc3545;">Layby Application Update</h2>
-            <p>Dear ${application.firstName},</p>
-            <p>Thank you for your interest in our layby program. Unfortunately, we are unable to approve your application for <strong>${application.productName}</strong> at this time.</p>
-            ${application.rejectionReason ? `<p><strong>Reason:</strong> ${application.rejectionReason}</p>` : ''}
-            <p>If you have any questions, please don't hesitate to contact us.</p>
-            <p>Thank you for your understanding.</p>
-          </div>
-        `
+      await emailService.sendTemplatedEmail(application.email, 'laybye_application_rejected', {
+        customer_name: application.firstName,
+        product_name: application.productName,
+        rejection_reason: application.rejectionReason || '',
       });
     } catch (emailError) {
       console.error('Failed to send rejection email:', emailError);
+      // Fallback to direct email
+      try {
+        await emailService.sendEmail({
+          to: application.email,
+          subject: 'Update on Your Layby Application',
+          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><h2 style="color:#dc3545;">Application Update</h2><p>Dear ${application.firstName},</p><p>Unfortunately, we are unable to approve your application for <strong>${application.productName}</strong> at this time.</p>${application.rejectionReason ? `<p><strong>Reason:</strong> ${application.rejectionReason}</p>` : ''}<p>If you have questions, please contact us.</p></div>`
+        });
+      } catch (e) { console.error('Fallback rejection email also failed:', e); }
     }
 
     res.json({ success: true, data: application, message: 'Application rejected' });

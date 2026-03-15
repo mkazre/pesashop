@@ -1,14 +1,18 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const CopyrightYear = ({
+export const CopyrightYear = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   text = '© {year} Your Company. All rights reserved.',
   fontSize = '14px',
   textColor = '#6b7280',
   textAlign = 'center',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const displayText = text.replace('{year}', new Date().getFullYear());
 

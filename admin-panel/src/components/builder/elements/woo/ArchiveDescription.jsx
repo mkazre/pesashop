@@ -1,13 +1,17 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ArchiveDescription = ({
+export const ArchiveDescription = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   description = 'Browse our collection of premium products. Find exactly what you need with our curated selection.',
   fontSize = '15px',
   textColor = '#6b7280',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   return (
     <p ref={(ref) => connect(drag(ref))} className={className}

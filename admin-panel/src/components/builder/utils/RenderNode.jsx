@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useNode, useEditor, ROOT_NODE } from '@craftjs/core';
 import { ContextMenu } from '@/components/builder/utils/ContextMenu';
@@ -10,10 +10,132 @@ const BADGE_POSITION_STYLES = {
   'top-center':   { top: 0, left: '50%', transform: 'translateX(-50%)' },
   'top-right':    { top: 0, right: 0 },
   'middle-left':  { top: '50%', left: 0, transform: 'translateY(-50%)' },
+  'middle-center':{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
   'middle-right': { top: '50%', right: 0, transform: 'translateY(-50%)' },
   'bottom-left':  { bottom: 0, left: 0 },
   'bottom-center':{ bottom: 0, left: '50%', transform: 'translateX(-50%)' },
   'bottom-right': { bottom: 0, right: 0 },
+};
+
+// ── Global cache for module badges fetched from the API ──────────────────────
+let _moduleBadgesCache = [];
+let _moduleBadgesFetchedAt = 0;
+const MODULE_CACHE_TTL = 30000; // 30 seconds
+
+const fetchModuleBadges = async () => {
+  const now = Date.now();
+  if (_moduleBadgesCache.length > 0 && now - _moduleBadgesFetchedAt < MODULE_CACHE_TTL) {
+    return _moduleBadgesCache;
+  }
+  try {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const API = `${import.meta.env?.VITE_API_URL || 'http://localhost:5000'}/api`;
+    const res = await fetch(`${API}/badges/active/list`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const data = await res.json();
+    if (data.success) {
+      _moduleBadgesCache = data.data || [];
+      _moduleBadgesFetchedAt = now;
+    }
+  } catch (err) {
+    console.error('RenderNode: failed to fetch module badges', err);
+  }
+  return _moduleBadgesCache;
+};
+
+// Hook to get module badges with caching
+const useModuleBadges = (badgeIds) => {
+  const [badges, setBadges] = useState([]);
+  const idsKey = (badgeIds || []).join(',');
+  useEffect(() => {
+    if (!badgeIds || badgeIds.length === 0) { setBadges([]); return; }
+    let cancelled = false;
+    fetchModuleBadges().then((all) => {
+      if (cancelled) return;
+      const map = new Map(all.map((b) => [b._id, b]));
+      setBadges(badgeIds.map((id) => map.get(id)).filter(Boolean));
+    });
+    return () => { cancelled = true; };
+  }, [idsKey]);
+  return badges;
+};
+
+// Render a single module badge overlay
+const ModuleBadgeOverlay = ({ badge, positionOverride }) => {
+  const s = badge.style || {};
+  const pos = positionOverride || s.position || 'top-right';
+  const posStyle = pos === 'custom'
+    ? { top: s.customTop || 'auto', right: s.customRight || 'auto', bottom: s.customBottom || 'auto', left: s.customLeft || 'auto' }
+    : (BADGE_POSITION_STYLES[pos] || BADGE_POSITION_STYLES['top-right']);
+
+  const transforms = [];
+  if (posStyle.transform) transforms.push(posStyle.transform);
+  if (s.rotate && s.rotate !== '0deg') transforms.push(`rotate(${s.rotate})`);
+  if (s.scale && s.scale !== '1') transforms.push(`scale(${s.scale})`);
+
+  const baseStyle = {
+    position: 'absolute',
+    zIndex: s.zIndex || 10,
+    pointerEvents: 'none',
+    ...posStyle,
+    marginTop: s.marginTop || '8px',
+    marginRight: s.marginRight || '8px',
+    marginBottom: s.marginBottom || '0px',
+    marginLeft: s.marginLeft || '0px',
+  };
+  if (transforms.length) baseStyle.transform = transforms.join(' ');
+
+  if (s.badgeType === 'image' && s.imageUrl) {
+    return (
+      <img
+        src={s.imageUrl}
+        alt={badge.name}
+        className="craft-module-badge"
+        style={{
+          ...baseStyle,
+          width: s.imageWidth || '60px',
+          height: s.imageHeight || 'auto',
+          objectFit: s.imageObjectFit || 'contain',
+        }}
+      />
+    );
+  }
+
+  // Text badge
+  const bg = s.useGradient
+    ? `linear-gradient(${s.gradientDirection || '135deg'}, ${s.gradientFrom || '#ef4444'}, ${s.gradientTo || '#f97316'})`
+    : (s.backgroundColor || '#ef4444');
+
+  return (
+    <span
+      className="craft-module-badge"
+      style={{
+        ...baseStyle,
+        color: s.textColor || '#ffffff',
+        ...(s.useGradient ? { backgroundImage: bg, backgroundColor: 'transparent' } : { backgroundColor: bg }),
+        fontSize: s.fontSize || '12px',
+        fontWeight: s.fontWeight || '700',
+        fontStyle: s.fontStyle || 'normal',
+        textTransform: s.textTransform || 'uppercase',
+        letterSpacing: s.letterSpacing || '0.5px',
+        lineHeight: s.lineHeight || '1',
+        paddingTop: s.paddingTop || '4px',
+        paddingRight: s.paddingRight || '10px',
+        paddingBottom: s.paddingBottom || '4px',
+        paddingLeft: s.paddingLeft || '10px',
+        borderRadius: s.borderRadius || '4px',
+        borderWidth: s.borderWidth || '0px',
+        borderStyle: s.borderStyle || 'solid',
+        borderColor: s.borderColor || 'transparent',
+        whiteSpace: 'nowrap',
+        opacity: s.opacity || '1',
+        boxShadow: s.boxShadow || '',
+      }}
+    >
+      {s.text || badge.name || 'Badge'}
+    </span>
+  );
 };
 
 // Convert a JS style object to CSS string (camelCase → kebab-case)
@@ -33,14 +155,20 @@ const styleToCss = (styleObj) => {
  * Also provides right-click context menu for all canvas elements.
  */
 export const RenderNode = ({ render }) => {
-  const { id, badge, displayName, hoverStyles, focusStyles, customCSS, elementId } = useNode((state) => ({
+  const { id, badge, badgeMode, badgeModuleIds, badgeOverrides, displayName, hoverStyles, focusStyles, customCSS, elementId } = useNode((state) => ({
     badge: state.data?.props?.style?.badge || null,
+    badgeMode: state.data?.props?.style?.badgeMode || 'module',
+    badgeModuleIds: state.data?.props?.style?.badgeModuleIds || [],
+    badgeOverrides: state.data?.props?.style?.badgeOverrides || {},
     displayName: state.data?.displayName || state.data?.name || state.data?.type?.resolvedName || 'Component',
     hoverStyles: state.data?.props?.hoverStyles || null,
     focusStyles: state.data?.props?.focusStyles || null,
     customCSS: state.data?.props?.customCSS || '',
     elementId: state.data?.props?.elementId || '',
   }));
+
+  // Fetch module badges when in module mode
+  const moduleBadges = useModuleBadges(badgeMode === 'module' ? badgeModuleIds : []);
   const { actions } = useEditor();
   const clipboard = useClipboard();
   const [ctxMenu, setCtxMenu] = useState(null);
@@ -62,7 +190,9 @@ export const RenderNode = ({ render }) => {
     }
   };
 
-  const hasBadge = badge && badge.enabled && badge.text;
+  const hasManualBadge = badgeMode === 'manual' && badge && badge.enabled && badge.text;
+  const hasModuleBadges = badgeMode === 'module' && moduleBadges.length > 0;
+  const hasAnyBadge = hasManualBadge || hasModuleBadges;
 
   // Build hover/focus CSS rules scoped to this element's data-craft-id
   const hoverCss = hoverStyles && Object.keys(hoverStyles).length > 0 ? styleToCss(hoverStyles) : '';
@@ -100,8 +230,8 @@ export const RenderNode = ({ render }) => {
     document.body
   );
 
-  // No badge → render element with just the context menu handler
-  if (!hasBadge) {
+  // No badges → render element with just the context menu handler
+  if (!hasAnyBadge) {
     return (
       <div onContextMenu={handleContextMenu} style={{ display: 'contents' }}>
         {render}
@@ -112,10 +242,21 @@ export const RenderNode = ({ render }) => {
   }
 
   return (
-    <div className="craft-badge-wrapper" onContextMenu={handleContextMenu} style={{ position: 'relative', display: 'contents' }}>
-      <div style={{ position: 'relative' }}>
-        {render}
-        {interactiveStyleTag}
+    <div className="craft-badge-wrapper" onContextMenu={handleContextMenu} style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+      {render}
+      {interactiveStyleTag}
+
+      {/* Module badges from Badge Manager */}
+      {hasModuleBadges && moduleBadges.map((mb) => (
+        <ModuleBadgeOverlay
+          key={mb._id}
+          badge={mb}
+          positionOverride={badgeOverrides[mb._id]?.position || ''}
+        />
+      ))}
+
+      {/* Legacy manual badge */}
+      {hasManualBadge && (
         <span
           className="craft-badge"
           style={{
@@ -145,7 +286,8 @@ export const RenderNode = ({ render }) => {
         >
           {badge.text}
         </span>
-      </div>
+      )}
+
       {contextMenuPortal}
     </div>
   );

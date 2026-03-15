@@ -2,8 +2,11 @@ import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { useResponsiveGridProps } from '@/components/builder/utils/useResponsiveGridProps';
 import { useBreakpoint } from '@/components/builder/context/BreakpointContext';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ArchiveProducts = ({
+export const ArchiveProducts = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   title = 'All Products',
   columns = 3,
   gap = '20px',
@@ -19,7 +22,8 @@ export const ArchiveProducts = ({
   responsiveProps = {},
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { effectiveColumns, effectiveGap } = useResponsiveGridProps(columns, gap, responsiveProps);
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   return (

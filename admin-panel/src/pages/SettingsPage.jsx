@@ -6,15 +6,18 @@ import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import toast from 'react-hot-toast';
-import { IoSave, IoSparkles, IoEye, IoEyeOff, IoAdd, IoTrash } from 'react-icons/io5';
+import { IoSave, IoSparkles, IoEye, IoEyeOff, IoAdd, IoTrash, IoMail, IoSend } from 'react-icons/io5';
 
 const EMPTY_BANK = { bankName: '', accountName: '', accountNumber: '', branchCode: '', accountType: '', reference: '' };
 
 const SettingsPage = () => {
   const [showApiKey, setShowApiKey] = useState(false);
+  const [showSmtpPassword, setShowSmtpPassword] = useState(false);
   const [showGoogleSecret, setShowGoogleSecret] = useState(false);
   const [showFacebookSecret, setShowFacebookSecret] = useState(false);
   const [bankDetails, setBankDetails] = useState([]);
+  const [testEmailAddress, setTestEmailAddress] = useState('');
+  const [testingEmail, setTestingEmail] = useState(false);
   
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm({
     defaultValues: {
@@ -26,8 +29,52 @@ const SettingsPage = () => {
       currency: 'ZAR',
       dateFormat: 'dd/MM/yyyy',
       timeZone: 'Africa/Johannesburg',
+      // SMTP
+      smtpHost: '',
+      smtpPort: '587',
+      smtpUser: '',
+      smtpPassword: '',
+      smtpSecure: false,
+      fromEmail: '',
+      fromName: '',
+      replyToEmail: '',
+      // Email Notification Toggles
+      'emailNotifications.orderConfirmation': true,
+      'emailNotifications.orderShipped': true,
+      'emailNotifications.orderDelivered': true,
+      'emailNotifications.orderCancelled': true,
+      'emailNotifications.orderRefunded': true,
+      'emailNotifications.orderNote': true,
+      'emailNotifications.laybyeApplicationReceived': true,
+      'emailNotifications.laybyeApplicationApproved': true,
+      'emailNotifications.laybyeApplicationRejected': true,
+      'emailNotifications.laybyeCreated': true,
+      'emailNotifications.laybyePaymentReceived': true,
+      'emailNotifications.laybyeCompleted': true,
+      'emailNotifications.laybyeReminder': true,
+      'emailNotifications.laybyeOverdueReminder': true,
+      'emailNotifications.laybyeExpiryReminder': true,
+      'emailNotifications.newAccount': true,
+      'emailNotifications.passwordReset': true,
+      'emailNotifications.loyaltyPointsEarned': true,
+      'emailNotifications.loyaltyPointsRedeemed': true,
+      'emailNotifications.giftCardIssued': true,
+      'emailNotifications.couponFirstPurchase': true,
+      'emailNotifications.couponNewUser': true,
+      'emailNotifications.couponSpendingMilestone': true,
+      'emailNotifications.couponBirthday': true,
+      'emailNotifications.reviewReminder': true,
+      'emailNotifications.adminNewOrder': true,
+      'emailNotifications.adminLowStock': true,
+      'emailNotifications.adminNewLaybyeApplication': true,
+      // AI
       openaiApiKey: '',
+      deepseekApiKey: '',
+      anthropicApiKey: '',
       aiEnabled: false,
+      aiFallbackProvider: 'openai',
+      aiWebSearchEnabled: false,
+      aiWebSearchApiKey: '',
       enableGuestCheckout: true,
       enableProductReviews: true,
       showStockQuantities: true,
@@ -66,6 +113,7 @@ const SettingsPage = () => {
     {
       onSuccess: (response) => {
         const settings = response.data.data || response.data;
+        const n = settings.emailNotifications || {};
         reset({
           storeName: settings.storeName || '',
           storeEmail: settings.storeEmail || '',
@@ -75,8 +123,52 @@ const SettingsPage = () => {
           currency: settings.currency || 'ZAR',
           dateFormat: settings.dateFormat || 'dd/MM/yyyy',
           timeZone: settings.timeZone || 'Africa/Johannesburg',
+          // SMTP
+          smtpHost: settings.smtpHost || '',
+          smtpPort: String(settings.smtpPort || 587),
+          smtpUser: settings.smtpUser || '',
+          smtpPassword: settings.smtpPassword === '***configured***' ? '' : (settings.smtpPassword || ''),
+          smtpSecure: settings.smtpSecure || false,
+          fromEmail: settings.fromEmail || '',
+          fromName: settings.fromName || '',
+          replyToEmail: settings.replyToEmail || '',
+          // Email Notification Toggles
+          'emailNotifications.orderConfirmation': n.orderConfirmation !== false,
+          'emailNotifications.orderShipped': n.orderShipped !== false,
+          'emailNotifications.orderDelivered': n.orderDelivered !== false,
+          'emailNotifications.orderCancelled': n.orderCancelled !== false,
+          'emailNotifications.orderRefunded': n.orderRefunded !== false,
+          'emailNotifications.orderNote': n.orderNote !== false,
+          'emailNotifications.laybyeApplicationReceived': n.laybyeApplicationReceived !== false,
+          'emailNotifications.laybyeApplicationApproved': n.laybyeApplicationApproved !== false,
+          'emailNotifications.laybyeApplicationRejected': n.laybyeApplicationRejected !== false,
+          'emailNotifications.laybyeCreated': n.laybyeCreated !== false,
+          'emailNotifications.laybyePaymentReceived': n.laybyePaymentReceived !== false,
+          'emailNotifications.laybyeCompleted': n.laybyeCompleted !== false,
+          'emailNotifications.laybyeReminder': n.laybyeReminder !== false,
+          'emailNotifications.laybyeOverdueReminder': n.laybyeOverdueReminder !== false,
+          'emailNotifications.laybyeExpiryReminder': n.laybyeExpiryReminder !== false,
+          'emailNotifications.newAccount': n.newAccount !== false,
+          'emailNotifications.passwordReset': n.passwordReset !== false,
+          'emailNotifications.loyaltyPointsEarned': n.loyaltyPointsEarned !== false,
+          'emailNotifications.loyaltyPointsRedeemed': n.loyaltyPointsRedeemed !== false,
+          'emailNotifications.giftCardIssued': n.giftCardIssued !== false,
+          'emailNotifications.couponFirstPurchase': n.couponFirstPurchase !== false,
+          'emailNotifications.couponNewUser': n.couponNewUser !== false,
+          'emailNotifications.couponSpendingMilestone': n.couponSpendingMilestone !== false,
+          'emailNotifications.couponBirthday': n.couponBirthday !== false,
+          'emailNotifications.reviewReminder': n.reviewReminder !== false,
+          'emailNotifications.adminNewOrder': n.adminNewOrder !== false,
+          'emailNotifications.adminLowStock': n.adminLowStock !== false,
+          'emailNotifications.adminNewLaybyeApplication': n.adminNewLaybyeApplication !== false,
+          // AI
           openaiApiKey: settings.openaiApiKey === '***configured***' ? '' : (settings.openaiApiKey || ''),
+          deepseekApiKey: settings.deepseekApiKey === '***configured***' ? '' : (settings.deepseekApiKey || ''),
+          anthropicApiKey: settings.anthropicApiKey === '***configured***' ? '' : (settings.anthropicApiKey || ''),
           aiEnabled: settings.aiEnabled || false,
+          aiFallbackProvider: settings.aiFallbackProvider || 'openai',
+          aiWebSearchEnabled: settings.aiWebSearchEnabled || false,
+          aiWebSearchApiKey: settings.aiWebSearchApiKey === '***configured***' ? '' : (settings.aiWebSearchApiKey || ''),
           enableGuestCheckout: settings.enableGuestCheckout !== undefined ? settings.enableGuestCheckout : true,
           enableProductReviews: settings.enableProductReviews !== undefined ? settings.enableProductReviews : true,
           showStockQuantities: settings.showStockQuantities !== undefined ? settings.showStockQuantities : true,
@@ -115,17 +207,68 @@ const SettingsPage = () => {
     }
   );
 
+  const handleTestEmail = async () => {
+    if (!testEmailAddress) { toast.error('Enter an email address'); return; }
+    setTestingEmail(true);
+    try {
+      const res = await settingsAPI.testEmail(testEmailAddress);
+      toast.success(res.data?.message || 'Test email sent!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send test email');
+    } finally { setTestingEmail(false); }
+  };
+
   const onSubmit = (data) => {
     // Remove flat dot-notation keys that react-hook-form creates for nested fields
     const cleanData = { ...data };
     Object.keys(cleanData).forEach(key => {
-      if (key.startsWith('productDisplay.') || key.startsWith('layby') || key.startsWith('socialLogin')) {
+      if (key.startsWith('productDisplay.') || key.startsWith('layby') || key.startsWith('socialLogin') || key.startsWith('emailNotifications.')) {
         delete cleanData[key];
       }
     });
     saveMutation.mutate({
       ...cleanData,
       taxRate: parseFloat(data.taxRate),
+      // SMTP
+      smtpHost: data.smtpHost || '',
+      smtpPort: parseInt(data.smtpPort) || 587,
+      smtpUser: data.smtpUser || '',
+      smtpPassword: data.smtpPassword || '',
+      smtpSecure: data.smtpSecure || false,
+      fromEmail: data.fromEmail || '',
+      fromName: data.fromName || '',
+      replyToEmail: data.replyToEmail || '',
+      // Email Notification Toggles
+      emailNotifications: {
+        orderConfirmation: data['emailNotifications.orderConfirmation'] !== false,
+        orderShipped: data['emailNotifications.orderShipped'] !== false,
+        orderDelivered: data['emailNotifications.orderDelivered'] !== false,
+        orderCancelled: data['emailNotifications.orderCancelled'] !== false,
+        orderRefunded: data['emailNotifications.orderRefunded'] !== false,
+        orderNote: data['emailNotifications.orderNote'] !== false,
+        laybyeApplicationReceived: data['emailNotifications.laybyeApplicationReceived'] !== false,
+        laybyeApplicationApproved: data['emailNotifications.laybyeApplicationApproved'] !== false,
+        laybyeApplicationRejected: data['emailNotifications.laybyeApplicationRejected'] !== false,
+        laybyeCreated: data['emailNotifications.laybyeCreated'] !== false,
+        laybyePaymentReceived: data['emailNotifications.laybyePaymentReceived'] !== false,
+        laybyeCompleted: data['emailNotifications.laybyeCompleted'] !== false,
+        laybyeReminder: data['emailNotifications.laybyeReminder'] !== false,
+        laybyeOverdueReminder: data['emailNotifications.laybyeOverdueReminder'] !== false,
+        laybyeExpiryReminder: data['emailNotifications.laybyeExpiryReminder'] !== false,
+        newAccount: data['emailNotifications.newAccount'] !== false,
+        passwordReset: data['emailNotifications.passwordReset'] !== false,
+        loyaltyPointsEarned: data['emailNotifications.loyaltyPointsEarned'] !== false,
+        loyaltyPointsRedeemed: data['emailNotifications.loyaltyPointsRedeemed'] !== false,
+        giftCardIssued: data['emailNotifications.giftCardIssued'] !== false,
+        couponFirstPurchase: data['emailNotifications.couponFirstPurchase'] !== false,
+        couponNewUser: data['emailNotifications.couponNewUser'] !== false,
+        couponSpendingMilestone: data['emailNotifications.couponSpendingMilestone'] !== false,
+        couponBirthday: data['emailNotifications.couponBirthday'] !== false,
+        reviewReminder: data['emailNotifications.reviewReminder'] !== false,
+        adminNewOrder: data['emailNotifications.adminNewOrder'] !== false,
+        adminLowStock: data['emailNotifications.adminLowStock'] !== false,
+        adminNewLaybyeApplication: data['emailNotifications.adminNewLaybyeApplication'] !== false,
+      },
       aiEnabled: data.aiEnabled || false,
       enableGuestCheckout: data.enableGuestCheckout || false,
       enableProductReviews: data.enableProductReviews || false,
@@ -252,74 +395,198 @@ const SettingsPage = () => {
           </div>
         </Card>
 
-        {/* Email Settings */}
-        <Card title="Email Settings">
+        {/* Email Settings — SMTP */}
+        <Card title="Email Settings — SMTP Configuration">
           <div className="space-y-4">
-            <div className="p-4 bg-blue-50 border-2 border-blue-200">
-              <p className="text-sm text-gray-700">
-                Email configuration is managed in your backend .env file. Update SMTP settings there.
-              </p>
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+              <IoMail className="inline mr-1" size={16} />
+              Configure your SMTP server here. If left blank, the system falls back to environment variables.
             </div>
-            <div>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="w-4 h-4" />
-                <span className="text-sm font-medium">Send order confirmation emails</span>
-              </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input label="SMTP Host" {...register('smtpHost')} placeholder="smtp.gmail.com" fullWidth />
+              <Input label="SMTP Port" type="number" {...register('smtpPort')} placeholder="587" fullWidth />
+              <div className="flex items-end pb-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4" {...register('smtpSecure')} />
+                  <span className="text-sm font-medium">Use SSL/TLS</span>
+                </label>
+              </div>
             </div>
-            <div>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="w-4 h-4" />
-                <span className="text-sm font-medium">Send shipping notification emails</span>
-              </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input label="SMTP Username" {...register('smtpUser')} placeholder="your@email.com" fullWidth />
+              <div>
+                <label className="block text-sm font-medium mb-1">SMTP Password</label>
+                <div className="relative">
+                  <Input type={showSmtpPassword ? 'text' : 'password'} {...register('smtpPassword')} placeholder="App password or SMTP password" fullWidth className="pr-10" />
+                  <button type="button" onClick={() => setShowSmtpPassword(!showSmtpPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                    {showSmtpPassword ? <IoEyeOff size={18} /> : <IoEye size={18} />}
+                  </button>
+                </div>
+              </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input label="From Name" {...register('fromName')} placeholder="PesaShop" fullWidth />
+              <Input label="From Email" type="email" {...register('fromEmail')} placeholder="noreply@pesashop.com" fullWidth />
+              <Input label="Reply-To Email" type="email" {...register('replyToEmail')} placeholder="support@pesashop.com" fullWidth />
+            </div>
+
+            <div className="border-t pt-4 mt-4">
+              <h4 className="text-sm font-semibold mb-3">Test Email Configuration</h4>
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <Input
+                    label="Send test email to"
+                    type="email"
+                    value={testEmailAddress}
+                    onChange={(e) => setTestEmailAddress(e.target.value)}
+                    placeholder="your@email.com"
+                    fullWidth
+                  />
+                </div>
+                <Button type="button" variant="secondary" onClick={handleTestEmail} loading={testingEmail}>
+                  <IoSend size={16} className="mr-1" />
+                  Send Test
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Save your settings first, then send a test email to verify the SMTP configuration works.</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Email Notification Toggles */}
+        <Card title="Email Notifications">
+          <div className="space-y-6">
+            <p className="text-sm text-gray-500">Choose which emails are sent automatically. Disabling a notification here will prevent it from being sent even if a template exists.</p>
+
+            {/* Order Notifications */}
             <div>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="w-4 h-4" />
-                <span className="text-sm font-medium">Send laybye payment reminders</span>
-              </label>
+              <h3 className="text-sm font-semibold text-gray-800 mb-3 pb-2 border-b">Order Notifications</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  ['emailNotifications.orderConfirmation', 'Order Confirmation', 'Sent when a new order is placed'],
+                  ['emailNotifications.orderShipped', 'Order Shipped', 'Sent when order is marked as shipped'],
+                  ['emailNotifications.orderDelivered', 'Order Delivered', 'Sent when order is marked as delivered'],
+                  ['emailNotifications.orderCancelled', 'Order Cancelled', 'Sent when order is cancelled'],
+                  ['emailNotifications.orderRefunded', 'Order Refunded', 'Sent when a refund is processed'],
+                  ['emailNotifications.orderNote', 'Order Note', 'Sent when a note is added to an order'],
+                ].map(([key, label, desc]) => (
+                  <label key={key} className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
+                    <input type="checkbox" className="w-4 h-4 mt-0.5" {...register(key)} />
+                    <div>
+                      <span className="text-sm font-medium">{label}</span>
+                      <p className="text-xs text-gray-400">{desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Laybye Notifications */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-3 pb-2 border-b">Laybye Notifications</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  ['emailNotifications.laybyeApplicationReceived', 'Application Received', 'Confirmation sent to customer on new application'],
+                  ['emailNotifications.laybyeApplicationApproved', 'Application Approved', 'Sent when application is approved'],
+                  ['emailNotifications.laybyeApplicationRejected', 'Application Rejected', 'Sent when application is rejected'],
+                  ['emailNotifications.laybyeCreated', 'Laybye Created', 'Sent when a laybye plan is set up'],
+                  ['emailNotifications.laybyePaymentReceived', 'Payment Received', 'Sent when a laybye payment is recorded'],
+                  ['emailNotifications.laybyeCompleted', 'Laybye Completed', 'Sent when all payments are complete'],
+                  ['emailNotifications.laybyeReminder', 'Payment Reminder', 'Upcoming payment reminder'],
+                  ['emailNotifications.laybyeOverdueReminder', 'Overdue Reminder', 'Sent when payment is overdue'],
+                  ['emailNotifications.laybyeExpiryReminder', 'Expiry Reminder', 'Sent when laybye is about to expire'],
+                ].map(([key, label, desc]) => (
+                  <label key={key} className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
+                    <input type="checkbox" className="w-4 h-4 mt-0.5" {...register(key)} />
+                    <div>
+                      <span className="text-sm font-medium">{label}</span>
+                      <p className="text-xs text-gray-400">{desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Account & Auth Notifications */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-3 pb-2 border-b">Account & Auth</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  ['emailNotifications.newAccount', 'Welcome Email', 'Sent to new customers on registration'],
+                  ['emailNotifications.passwordReset', 'Password Reset', 'Sent when password reset is requested'],
+                ].map(([key, label, desc]) => (
+                  <label key={key} className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
+                    <input type="checkbox" className="w-4 h-4 mt-0.5" {...register(key)} />
+                    <div>
+                      <span className="text-sm font-medium">{label}</span>
+                      <p className="text-xs text-gray-400">{desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Loyalty, Coupons & Gift Cards */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-3 pb-2 border-b">Loyalty, Coupons & Gift Cards</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  ['emailNotifications.loyaltyPointsEarned', 'Points Earned', 'Sent when loyalty points are awarded'],
+                  ['emailNotifications.loyaltyPointsRedeemed', 'Points Redeemed', 'Sent when loyalty points are used'],
+                  ['emailNotifications.giftCardIssued', 'Gift Card Issued', 'Sent to gift card recipient'],
+                  ['emailNotifications.couponFirstPurchase', 'Coupon — First Purchase', 'Sent after first purchase'],
+                  ['emailNotifications.couponNewUser', 'Coupon — New User', 'Sent to new registrations'],
+                  ['emailNotifications.couponSpendingMilestone', 'Coupon — Spending Milestone', 'Sent on spending milestones'],
+                  ['emailNotifications.couponBirthday', 'Coupon — Birthday', 'Sent on customer birthday'],
+                ].map(([key, label, desc]) => (
+                  <label key={key} className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
+                    <input type="checkbox" className="w-4 h-4 mt-0.5" {...register(key)} />
+                    <div>
+                      <span className="text-sm font-medium">{label}</span>
+                      <p className="text-xs text-gray-400">{desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Reviews & Admin */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-3 pb-2 border-b">Reviews & Admin</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  ['emailNotifications.reviewReminder', 'Review Reminder', 'Prompt customers to review purchases'],
+                  ['emailNotifications.adminNewOrder', 'Admin — New Order', 'Notify admin of new orders'],
+                  ['emailNotifications.adminLowStock', 'Admin — Low Stock', 'Notify admin of low stock items'],
+                  ['emailNotifications.adminNewLaybyeApplication', 'Admin — New Laybye Application', 'Notify admin of new laybye applications'],
+                ].map(([key, label, desc]) => (
+                  <label key={key} className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
+                    <input type="checkbox" className="w-4 h-4 mt-0.5" {...register(key)} />
+                    <div>
+                      <span className="text-sm font-medium">{label}</span>
+                      <p className="text-xs text-gray-400">{desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
         </Card>
 
         {/* AI Configuration */}
         <Card title="AI Configuration">
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded">
               <div className="flex items-start gap-2">
                 <IoSparkles className="text-blue-600 mt-0.5" size={20} />
                 <div>
-                  <p className="text-sm font-medium text-blue-900 mb-1">OpenAI API Key</p>
+                  <p className="text-sm font-medium text-blue-900 mb-1">AI Assistant Configuration</p>
                   <p className="text-xs text-blue-700">
-                    Enter your OpenAI API key to enable AI-powered product description generation. 
-                    Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline">OpenAI Platform</a>.
+                    Configure multiple AI providers for the product Q&A assistant. 
+                    The system will use providers in order if one fails.
                   </p>
                 </div>
               </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                OpenAI API Key
-              </label>
-              <div className="relative">
-                <Input
-                  type={showApiKey ? 'text' : 'password'}
-                  {...register('openaiApiKey')}
-                  placeholder="sk-..."
-                  fullWidth
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showApiKey ? <IoEyeOff size={20} /> : <IoEye size={20} />}
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {watch('openaiApiKey') ? 'API key is configured' : 'API key is required for AI features'}
-              </p>
             </div>
 
             <div>
@@ -329,11 +596,126 @@ const SettingsPage = () => {
                   className="w-4 h-4" 
                   {...register('aiEnabled')}
                 />
-                <span className="text-sm font-medium">Enable AI Description Generation</span>
+                <span className="text-sm font-medium">Enable AI Assistant</span>
               </label>
               <p className="text-xs text-gray-500 ml-6 mt-1">
-                When enabled, you can use AI to generate product descriptions automatically
+                Enable the AI product assistant for customer questions
               </p>
+            </div>
+
+            {/* OpenAI */}
+            <div className="border rounded-lg p-4">
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                OpenAI (GPT-3.5)
+              </h4>
+              <div>
+                <label className="block text-sm font-medium mb-1">API Key</label>
+                <div className="relative">
+                  <Input
+                    type={showApiKey ? 'text' : 'password'}
+                    {...register('openaiApiKey')}
+                    placeholder="sk-..."
+                    fullWidth
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showApiKey ? <IoEyeOff size={20} /> : <IoEye size={20} />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline">OpenAI Platform</a>
+                </p>
+              </div>
+            </div>
+
+            {/* DeepSeek */}
+            <div className="border rounded-lg p-4">
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                DeepSeek (Cost-Effective Alternative)
+              </h4>
+              <div>
+                <label className="block text-sm font-medium mb-1">API Key</label>
+                <Input
+                  type="password"
+                  {...register('deepseekApiKey')}
+                  placeholder="Your DeepSeek API key"
+                  fullWidth
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Get your API key from <a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer" className="underline">DeepSeek Platform</a>
+                </p>
+              </div>
+            </div>
+
+            {/* Anthropic */}
+            <div className="border rounded-lg p-4">
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                Anthropic Claude
+              </h4>
+              <div>
+                <label className="block text-sm font-medium mb-1">API Key</label>
+                <Input
+                  type="password"
+                  {...register('anthropicApiKey')}
+                  placeholder="sk-ant-..."
+                  fullWidth
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Get your API key from <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="underline">Anthropic Console</a>
+                </p>
+              </div>
+            </div>
+
+            {/* Fallback Provider */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Fallback Provider</label>
+              <select {...register('aiFallbackProvider')} className="input w-full">
+                <option value="openai">OpenAI (Default)</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="anthropic">Anthropic Claude</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Which provider to use as the primary option
+              </p>
+            </div>
+
+            {/* Web Search */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-3">Web Search Integration</h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4" 
+                      {...register('aiWebSearchEnabled')}
+                    />
+                    <span className="text-sm font-medium">Enable Web Search</span>
+                  </label>
+                  <p className="text-xs text-gray-500 ml-6 mt-1">
+                    Allow AI to search the web for up-to-date product information
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Web Search API Key</label>
+                  <Input
+                    type="password"
+                    {...register('aiWebSearchApiKey')}
+                    placeholder="Search API key (SerpApi, Google, etc.)"
+                    fullWidth
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Optional: For enhanced web search capabilities
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </Card>

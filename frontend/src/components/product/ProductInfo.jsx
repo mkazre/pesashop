@@ -1,7 +1,7 @@
 import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
 import { IoHeart, IoHeartOutline, IoShareSocialOutline } from 'react-icons/io5';
-import { useWishlistStore } from '@/store';
+import { useWishlistStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
 import toast from 'react-hot-toast';
@@ -10,6 +10,7 @@ export default function ProductInfo({ product, selectedVariation = null, quantit
   const { items: wishlistItems, addItem, removeItem } = useWishlistStore();
   const isInWishlist = wishlistItems.some(item => item._id === product._id);
   const { displayPrice } = useB2BPricing(product, selectedVariation?._id, quantity);
+  const { formatPrice } = useCurrencyStore();
   const { titleLines, shortDescriptionLines } = useProductDisplay('detail');
 
   const discount = displayPrice.discount || 0;
@@ -67,12 +68,12 @@ export default function ProductInfo({ product, selectedVariation = null, quantit
       {/* Price */}
       <div className="flex items-center gap-4 py-4 border-y border-gray-200">
         <div className="text-3xl font-bold text-gray-900">
-          R{displayPrice.displayPrice?.toFixed(2) || product.regularPrice}
+          {formatPrice(displayPrice.displayPrice || product.regularPrice)}
         </div>
         {displayPrice.originalPrice > displayPrice.displayPrice && (
           <>
             <div className="text-xl text-gray-400 line-through">
-              R{displayPrice.originalPrice?.toFixed(2)}
+              {formatPrice(displayPrice.originalPrice)}
             </div>
             {discount > 0 && (
               <Badge variant="sale" className="text-base">

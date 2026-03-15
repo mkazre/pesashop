@@ -4,6 +4,8 @@ import { pageTemplatesAPI, productsAPI, categoriesAPI } from '@/services/api';
 import Loading from '@/components/common/Loading';
 import ProductCard from '@/components/common/ProductCard';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
+import HomePageRenderer from '@/components/homeblocks/HomePageRenderer';
+import { useHomePageConfig } from '@/hooks/useHomePageConfig';
 import { Link } from 'react-router-dom';
 import { IoChevronForward } from 'react-icons/io5';
 
@@ -33,16 +35,21 @@ function HomePageBuilderContent({ components }) {
 }
 
 export default function HomePage() {
-  // Fetch homepage from page builder (page with isHomepage or slug home/homepage)
+  // 1. Check Home Page Builder config (block-based builder)
+  const { data: homeConfig, isLoading: configLoading } = useHomePageConfig();
+  const hasBlockConfig = homeConfig?.blocks?.length > 0 && homeConfig?.isPublished;
+
+  // 2. Fetch homepage from page builder (page with isHomepage or slug home/homepage)
   const { data: homepageResponse, isLoading: pageLoading, isError: homepageError } = useQuery(
     'homepage',
     () => pageTemplatesAPI.getHomepage(),
     {
       retry: false,
-      staleTime: 10 * 60 * 1000, // 10 min - avoid refetch
+      staleTime: 10 * 60 * 1000,
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
+      enabled: !hasBlockConfig, // skip if block builder is active
     }
   );
 
@@ -66,15 +73,13 @@ export default function HomePage() {
     typeof parsedComponents === 'object' &&
     Object.keys(parsedComponents).length > 0;
 
-  // Stable reference for page builder so Craft.js doesn't re-mount every render
   const builderComponents = useMemo(
     () => (hasBuilderContent ? parsedComponents : null),
     [hasBuilderContent, parsedComponents]
   );
 
-  // If a published homepage from the page builder exists, render it
-  // Only show loading when we're actually fetching and don't have error (avoid blocking on 404)
-  if (pageLoading && !homepageError) {
+  // Loading state
+  if (configLoading || (pageLoading && !homepageError && !hasBlockConfig)) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Loading />
@@ -82,6 +87,16 @@ export default function HomePage() {
     );
   }
 
+  // Priority 1: Home Page Builder blocks
+  if (hasBlockConfig) {
+    return (
+      <div className="bg-white">
+        <HomePageRenderer />
+      </div>
+    );
+  }
+
+  // Priority 2: Page Builder (Craft.js) content
   if (hasBuilderContent && builderComponents) {
     return (
       <div className="bg-white">
@@ -90,7 +105,7 @@ export default function HomePage() {
     );
   }
 
-  // No page builder content: show fallback homepage with featured products, new arrivals, categories
+  // Priority 3: Fallback
   return (
     <HomePageFallback />
   );

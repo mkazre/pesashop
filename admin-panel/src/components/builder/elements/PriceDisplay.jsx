@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const PriceDisplay = ({ 
+export const PriceDisplay = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { 
   productId = null,
   product = null, // For preview/static mode
   showSalePrice = true,
@@ -9,7 +12,8 @@ export const PriceDisplay = ({
   format = 'R {price}',
   className = '',
   style = {}
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

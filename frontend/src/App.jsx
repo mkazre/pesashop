@@ -22,6 +22,7 @@ import MyGiftCardsPage from './pages/account/MyGiftCardsPage';
 import AccountSettingsPage from './pages/account/AccountSettingsPage';
 import WishlistPage from './pages/WishlistPage';
 import ComparePage from './pages/ComparePage';
+import CategoriesPage from './pages/CategoriesPage';
 import AddressesPage from './pages/account/AddressesPage';
 import DynamicPage from './pages/DynamicPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -30,12 +31,15 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import QuickViewModal from './components/modals/QuickViewModal';
 import AuthModal from './components/modals/AuthModal';
 import CartSidebar from './components/cart/CartSidebar';
+import CheckoutDrawer from './components/product/CheckoutDrawer';
 
-// Store
+// Store & Hooks
 import { useUIStore } from './store';
+import { useProductPageSettings } from './hooks/useProductPageSettings';
 
 function App() {
-  const { quickViewProduct, authModalOpen, cartSidebarOpen } = useUIStore();
+  const { quickViewProduct, authModalOpen, cartSidebarOpen, checkoutDrawerOpen, closeCheckoutDrawer } = useUIStore();
+  const { settings: pageSettings } = useProductPageSettings();
 
   return (
     <>
@@ -64,6 +68,7 @@ function App() {
             <Route path="settings" element={<AccountSettingsPage />} />
           </Route>
           <Route path="wishlist" element={<WishlistPage />} />
+          <Route path="categories" element={<CategoriesPage />} />
           <Route path="compare" element={<ComparePage />} />
           <Route path="page/:slug" element={<DynamicPage />} />
           {/* Catch-all: try to render as a dynamic page by slug */}
@@ -75,6 +80,17 @@ function App() {
       {quickViewProduct && <QuickViewModal />}
       {authModalOpen && <AuthModal />}
       {cartSidebarOpen && <CartSidebar />}
+      {checkoutDrawerOpen && (
+        <CheckoutDrawer
+          open={checkoutDrawerOpen}
+          onClose={closeCheckoutDrawer}
+          product={null}
+          quantity={1}
+          selectedVariant={null}
+          laybyeSelection={null}
+          settings={pageSettings}
+        />
+      )}
     </>
   );
 }

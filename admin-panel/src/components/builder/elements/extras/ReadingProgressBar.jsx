@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ReadingProgressBar = ({
+export const ReadingProgressBar = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   color = '#3b82f6',
   height = '4px',
   position = 'top',
@@ -9,7 +12,8 @@ export const ReadingProgressBar = ({
   progress = 45,
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   return (

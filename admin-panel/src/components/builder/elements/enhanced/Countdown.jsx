@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Countdown = ({
+export const Countdown = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   targetDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
   expiredText = 'Event has ended!',
   showDays = true,
@@ -19,7 +22,8 @@ export const Countdown = ({
   labelSize = '12px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProgressBar = ({
+export const ProgressBar = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   label = 'Progress',
   value = 75,
   max = 100,
@@ -12,7 +15,8 @@ export const ProgressBar = ({
   borderRadius = '9999px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

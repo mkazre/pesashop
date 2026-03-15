@@ -1,14 +1,18 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductDescription = ({
+export const ProductDescription = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   description = 'This premium product features high-quality materials and exceptional craftsmanship. Perfect for everyday use, it combines style with functionality to deliver an outstanding experience.',
   fontSize = '14px',
   textColor = '#374151',
   lineHeight = '1.7',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   return (

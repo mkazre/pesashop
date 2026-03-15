@@ -1,8 +1,11 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { useRepeaterItem } from '@/components/builder/utils/RepeaterContext';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductPrice = ({
+export const ProductPrice = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   price = '$49.99',
   salePrice = '$39.99',
   showSale = true,
@@ -12,7 +15,8 @@ export const ProductPrice = ({
   fontSize = '24px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const repeaterItem = useRepeaterItem();
 

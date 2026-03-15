@@ -242,6 +242,118 @@ const ReviewSettingsPage = () => {
             </div>
           </Card>
 
+          {/* Purchase Verification */}
+          <Card title="Purchase Verification">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Require Purchase</label>
+                  <p className="text-xs text-gray-500">Customer must have purchased the product to leave a review</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.requirePurchase ?? true}
+                  onChange={(e) => setSettings({ ...settings, requirePurchase: e.target.checked })}
+                  className="checkbox checkbox-primary"
+                />
+              </div>
+              
+              {settings.requirePurchase !== false && (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Require Delivered</label>
+                    <p className="text-xs text-gray-500">Order must be delivered before customer can review</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.requireDelivered ?? true}
+                    onChange={(e) => setSettings({ ...settings, requireDelivered: e.target.checked })}
+                    className="checkbox checkbox-primary"
+                  />
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Image Upload Settings */}
+          <Card title="Image Upload Settings">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Allow Image Uploads</label>
+                  <p className="text-xs text-gray-500">Allow customers to upload images with their reviews</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.allowImages ?? true}
+                  onChange={(e) => setSettings({ ...settings, allowImages: e.target.checked })}
+                  className="checkbox checkbox-primary"
+                />
+              </div>
+              
+              {settings.allowImages !== false && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Max Images Per Review</label>
+                    <p className="text-xs text-gray-500 mb-2">Maximum number of images a customer can upload per review</p>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={settings.maxImages ?? 5}
+                      onChange={(e) => setSettings({ ...settings, maxImages: parseInt(e.target.value) })}
+                      fullWidth
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Max File Size (MB)</label>
+                    <p className="text-xs text-gray-500 mb-2">Maximum file size per image in megabytes</p>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={settings.maxFileSizeMB ?? 5}
+                      onChange={(e) => setSettings({ ...settings, maxFileSizeMB: parseInt(e.target.value) })}
+                      fullWidth
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
+
+          {/* Content & Moderation */}
+          <Card title="Content & Moderation">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Minimum Review Length</label>
+                <p className="text-xs text-gray-500 mb-2">Minimum number of characters required for a review (0 = no minimum)</p>
+                <Input
+                  type="number"
+                  min="0"
+                  max="500"
+                  value={settings.minimumContentLength ?? 10}
+                  onChange={(e) => setSettings({ ...settings, minimumContentLength: parseInt(e.target.value) })}
+                  fullWidth
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Show Category Ratings</label>
+                  <p className="text-xs text-gray-500">Allow customers to rate specific categories (quality, value, etc.)</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.showCategoryRatings ?? true}
+                  onChange={(e) => setSettings({ ...settings, showCategoryRatings: e.target.checked })}
+                  className="checkbox checkbox-primary"
+                />
+              </div>
+            </div>
+          </Card>
+
           {/* Display Settings */}
           <Card title="Display Settings">
             <div className="space-y-4">

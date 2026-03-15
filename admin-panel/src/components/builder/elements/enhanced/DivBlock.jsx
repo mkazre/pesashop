@@ -5,8 +5,12 @@ import { DivBlockSettings } from './DivBlockSettings';
 import { canElementContainChildren } from '@/components/builder/utils/NestingRules';
 import { useBreakpoint } from '@/components/builder/context/BreakpointContext';
 import { useResponsiveStyles } from '@/components/builder/utils/ResponsiveControls';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const DivBlock = ({ children, className = '', style = {} }) => {
+export const DivBlock = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { children, className = '', style = {} } = resolved;
+
   const { breakpoint } = useBreakpoint();
   const { getCurrentStyles } = useResponsiveStyles(style, breakpoint);
   const {

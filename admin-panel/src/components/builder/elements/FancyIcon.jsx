@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const FancyIcon = ({
+export const FancyIcon = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   icon = '★',
   size = '48px',
   color = '#3b82f6',
@@ -12,7 +15,8 @@ export const FancyIcon = ({
   padding = '12px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

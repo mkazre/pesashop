@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { categoriesAPI } from '@/services/api';
+import { categoriesAPI, imagesAPI } from '@/services/api';
 import { useForm } from 'react-hook-form';
 import { extractData } from '@/utils/apiResponse';
 import Card from '@/components/common/Card';
@@ -9,7 +9,7 @@ import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import Table from '@/components/common/Table';
 import toast from 'react-hot-toast';
-import { IoAdd, IoTrash, IoCreate, IoChevronDown, IoChevronForward } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoCreate, IoChevronDown, IoChevronForward, IoCubeOutline, IoSwapHorizontal, IoRemoveCircleOutline, IoCheckbox, IoSquareOutline, IoClose } from 'react-icons/io5';
 
 const CategoriesPage = () => {
   const queryClient = useQueryClient();
@@ -17,6 +17,29 @@ const CategoriesPage = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
   const [expandedCategories, setExpandedCategories] = useState(new Set());
+  const [iconImageUrl, setIconImageUrl] = useState('');
+  const [bannerImageUrl, setBannerImageUrl] = useState('');
+  const [productsModal, setProductsModal] = useState(null);
+  const [selectedProducts, setSelectedProducts] = useState(new Set());
+  const [reassignTarget, setReassignTarget] = useState('');
+
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const getImageSrc = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `${API_BASE}${url}`;
+  };
+
+  const handleImageUpload = async (file, setter) => {
+    try {
+      const res = await imagesAPI.upload(file);
+      const url = res.data?.url || res.data?.data?.url || '';
+      setter(url);
+      toast.success('Image uploaded');
+    } catch {
+      toast.error('Image upload failed');
+    }
+  };
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: {
@@ -69,6 +92,59 @@ const CategoriesPage = () => {
     }
   );
 
+  // Products for a category
+  const { data: categoryProductsData, isLoading: productsLoading } = useQuery(
+    ['category-products', productsModal?._id],
+    () => categoriesAPI.getProducts(productsModal._id),
+    { enabled: !!productsModal?._id }
+  );
+  const categoryProducts = useMemo(() => {
+    const d = categoryProductsData?.data?.data;
+    return Array.isArray(d) ? d : [];
+  }, [categoryProductsData]);
+
+  const removeProductsMutation = useMutation(
+    ({ categoryId, productIds }) => categoriesAPI.removeProducts(categoryId, productIds),
+    {
+      onSuccess: (res) => {
+        queryClient.invalidateQueries(['category-products', productsModal?._id]);
+        queryClient.invalidateQueries('categories');
+        toast.success(res.data?.message || 'Products removed');
+        setSelectedProducts(new Set());
+      },
+      onError: (err) => toast.error(err.response?.data?.message || 'Failed to remove products'),
+    }
+  );
+
+  const reassignProductsMutation = useMutation(
+    ({ categoryId, productIds, targetCategoryId }) => categoriesAPI.reassignProducts(categoryId, productIds, targetCategoryId),
+    {
+      onSuccess: (res) => {
+        queryClient.invalidateQueries(['category-products', productsModal?._id]);
+        queryClient.invalidateQueries('categories');
+        toast.success(res.data?.message || 'Products reassigned');
+        setSelectedProducts(new Set());
+        setReassignTarget('');
+      },
+      onError: (err) => toast.error(err.response?.data?.message || 'Failed to reassign products'),
+    }
+  );
+
+  const toggleProductSelect = (id) => {
+    setSelectedProducts(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = () => {
+    if (selectedProducts.size === categoryProducts.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(categoryProducts.map(p => p._id)));
+    }
+  };
+
   const handleEdit = (category) => {
     setEditingCategory(category);
     reset({
@@ -81,6 +157,8 @@ const CategoriesPage = () => {
       metaDescription: category.metaDescription || '',
       metaKeywords: category.metaKeywords?.join(', ') || '',
     });
+    setIconImageUrl(category.iconImage?.url || '');
+    setBannerImageUrl(category.bannerImage?.url || '');
     setShowForm(true);
   };
 
@@ -96,6 +174,8 @@ const CategoriesPage = () => {
       metaDescription: '',
       metaKeywords: '',
     });
+    setIconImageUrl('');
+    setBannerImageUrl('');
     setShowForm(true);
   };
 
@@ -148,6 +228,13 @@ const CategoriesPage = () => {
                   className="p-2 hover:bg-gray-100 transition-colors"
                 >
                   <IoCreate size={18} className="text-primary" />
+                </button>
+                <button
+                  onClick={() => { setProductsModal(category); setSelectedProducts(new Set()); setReassignTarget(''); }}
+                  className="p-2 hover:bg-gray-100 transition-colors"
+                  title="Manage Products"
+                >
+                  <IoCubeOutline size={18} className="text-blue-600" />
                 </button>
                 <button
                   onClick={() => setDeleteModal(category)}
@@ -245,6 +332,8 @@ const CategoriesPage = () => {
       displayOrder: parseInt(data.displayOrder) || 0,
       isActive: data.isActive !== undefined ? data.isActive : true,
       metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
+      iconImage: { url: iconImageUrl, alt: data.name },
+      bannerImage: { url: bannerImageUrl, alt: data.name },
     };
 
     saveMutation.mutate(categoryData);
@@ -353,6 +442,43 @@ const CategoriesPage = () => {
             </div>
           </div>
 
+          {/* Category Images */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-medium mb-3">Category Images</h3>
+            <div className="space-y-4">
+              {/* Icon Image (1:1 favicon) */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Category Icon (1:1 square)</label>
+                <p className="text-xs text-gray-500 mb-2">Small square image used in category carousels, grids, and navigation. Recommended: 128×128px.</p>
+                <div className="flex items-center gap-3">
+                  {iconImageUrl && (
+                    <img src={getImageSrc(iconImageUrl)} alt="" className="w-16 h-16 object-cover border border-gray-200 rounded" />
+                  )}
+                  <label className="px-3 py-1.5 text-sm font-medium text-green-700 border border-green-300 hover:bg-green-50 cursor-pointer transition-colors">
+                    {iconImageUrl ? 'Change' : 'Upload Icon'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0], setIconImageUrl); }} />
+                  </label>
+                  {iconImageUrl && <button type="button" onClick={() => setIconImageUrl('')} className="text-xs text-red-500 hover:text-red-700">Remove</button>}
+                </div>
+              </div>
+              {/* Banner Image (landscape) */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Category Banner (landscape)</label>
+                <p className="text-xs text-gray-500 mb-2">Wide banner shown at top of category archive page. Recommended: 1400×300px.</p>
+                <div className="flex items-center gap-3">
+                  {bannerImageUrl && (
+                    <img src={getImageSrc(bannerImageUrl)} alt="" className="w-32 h-16 object-cover border border-gray-200 rounded" />
+                  )}
+                  <label className="px-3 py-1.5 text-sm font-medium text-green-700 border border-green-300 hover:bg-green-50 cursor-pointer transition-colors">
+                    {bannerImageUrl ? 'Change' : 'Upload Banner'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0], setBannerImageUrl); }} />
+                  </label>
+                  {bannerImageUrl && <button type="button" onClick={() => setBannerImageUrl('')} className="text-xs text-red-500 hover:text-red-700">Remove</button>}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="border-t pt-4 mt-4">
             <h3 className="font-medium mb-3">SEO Settings</h3>
             <div className="space-y-3">
@@ -397,6 +523,132 @@ const CategoriesPage = () => {
           </p>
         )}
       </Modal>
+
+      {/* ── Products Management Modal ── */}
+      {productsModal && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 bg-black/50" onClick={() => setProductsModal(null)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <div>
+                <h2 className="text-lg font-bold">Products in "{productsModal.name}"</h2>
+                <p className="text-sm text-gray-500">{categoryProducts.length} product(s) linked</p>
+              </div>
+              <button onClick={() => setProductsModal(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><IoClose size={22} /></button>
+            </div>
+
+            {/* Action Bar */}
+            {selectedProducts.size > 0 && (
+              <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-3 flex-wrap">
+                <span className="text-sm font-medium text-blue-700">{selectedProducts.size} selected</span>
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Remove ${selectedProducts.size} product(s) from "${productsModal.name}"?`)) {
+                      removeProductsMutation.mutate({ categoryId: productsModal._id, productIds: [...selectedProducts] });
+                    }
+                  }}
+                  disabled={removeProductsMutation.isLoading}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-700 bg-red-100 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
+                >
+                  <IoRemoveCircleOutline size={16} />
+                  Remove from category
+                </button>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={reassignTarget}
+                    onChange={e => setReassignTarget(e.target.value)}
+                    className="text-sm border border-gray-300 rounded-lg px-2 py-1.5"
+                  >
+                    <option value="">Move to...</option>
+                    {flatCategories
+                      .filter(c => c._id !== productsModal._id)
+                      .map(c => <option key={c._id} value={c._id}>{c.name}</option>)
+                    }
+                  </select>
+                  {reassignTarget && (
+                    <button
+                      onClick={() => {
+                        const targetName = flatCategories.find(c => c._id === reassignTarget)?.name;
+                        if (window.confirm(`Move ${selectedProducts.size} product(s) from "${productsModal.name}" to "${targetName}"?`)) {
+                          reassignProductsMutation.mutate({ categoryId: productsModal._id, productIds: [...selectedProducts], targetCategoryId: reassignTarget });
+                        }
+                      }}
+                      disabled={reassignProductsMutation.isLoading}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50"
+                    >
+                      <IoSwapHorizontal size={16} />
+                      Reassign
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Products List */}
+            <div className="flex-1 overflow-y-auto">
+              {productsLoading ? (
+                <div className="p-8 text-center text-gray-500">Loading products...</div>
+              ) : categoryProducts.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">No products linked to this category.</div>
+              ) : (
+                <table className="w-full">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="text-left py-3 px-4 w-10">
+                        <button onClick={toggleSelectAll} className="p-0.5">
+                          {selectedProducts.size === categoryProducts.length ? <IoCheckbox size={20} className="text-primary" /> : <IoSquareOutline size={20} className="text-gray-400" />}
+                        </button>
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-sm">Product</th>
+                      <th className="text-left py-3 px-4 font-medium text-sm">SKU</th>
+                      <th className="text-right py-3 px-4 font-medium text-sm">Price</th>
+                      <th className="text-left py-3 px-4 font-medium text-sm">Categories</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categoryProducts.map(product => (
+                      <tr key={product._id} className={`border-t border-gray-100 hover:bg-gray-50 ${selectedProducts.has(product._id) ? 'bg-blue-50/50' : ''}`}>
+                        <td className="py-3 px-4">
+                          <button onClick={() => toggleProductSelect(product._id)} className="p-0.5">
+                            {selectedProducts.has(product._id) ? <IoCheckbox size={20} className="text-primary" /> : <IoSquareOutline size={20} className="text-gray-400" />}
+                          </button>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            {product.featuredImage ? (
+                              <img src={getImageSrc(product.featuredImage)} alt="" className="w-10 h-10 object-cover rounded border border-gray-200" />
+                            ) : (
+                              <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">No img</div>
+                            )}
+                            <span className="font-medium text-sm">{product.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-500">{product.sku || '—'}</td>
+                        <td className="py-3 px-4 text-sm text-right font-medium">
+                          {product.salePrice ? (
+                            <><span className="text-red-600">${product.salePrice.toFixed(2)}</span> <span className="text-gray-400 line-through text-xs">${product.regularPrice?.toFixed(2)}</span></>
+                          ) : (
+                            <span>${product.regularPrice?.toFixed(2) || '—'}</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-wrap gap-1">
+                            {(product.categories || []).map(c => (
+                              <span key={c._id} className={`text-xs px-2 py-0.5 rounded-full ${c._id === productsModal._id ? 'bg-primary/10 text-primary font-medium' : 'bg-gray-100 text-gray-600'}`}>
+                                {c.name}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

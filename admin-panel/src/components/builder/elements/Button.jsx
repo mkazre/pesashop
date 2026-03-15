@@ -5,7 +5,8 @@ import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
 export const Button = (rawProps) => {
   const resolved = useDynamicProps(rawProps);
-  const { text = 'Button', link = '#', className = '', style = {}, size = 'md', variant = 'primary' } = resolved;
+  const { text = 'Button', link, href, className = '', style = {}, size = 'md', variant = 'primary' } = resolved;
+  const resolvedLink = link || href || '#';
   const {
     connectors: { connect, drag },
     selected,
@@ -30,7 +31,7 @@ export const Button = (rawProps) => {
   return (
     <a
       ref={(ref) => connect(drag(ref))}
-      href={link}
+      href={resolvedLink}
       className={`button inline-block ${sizeClasses[size]} ${variantClasses[variant]} rounded transition-colors ${className} ${
         selected ? 'ring-2 ring-blue-500' : ''
       } ${hovered ? 'ring-2 ring-blue-300' : ''}`}

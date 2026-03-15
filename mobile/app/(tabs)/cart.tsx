@@ -1,0 +1,124 @@
+import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import EmptyState from "@/components/EmptyState";
+import PulsingArrows from "@/components/PulsingArrows";
+import { useCartStore, useCurrencyStore, useUIStore } from "@/store";
+import { colors, resolveImageUrl } from "@/theme";
+
+export default function CartScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const items = useCartStore((s) => s.items);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const getCheckoutTotal = useCartStore((s) => s.getCheckoutTotal);
+  const getLaybyeItems = useCartStore((s) => s.getLaybyeItems);
+  const getItemCount = useCartStore((s) => s.getItemCount);
+  const formatPrice = useCurrencyStore((s) => s.formatPrice);
+  const { openCheckoutDrawer } = useUIStore();
+
+  if (items.length === 0) {
+    return (
+      <View style={[cs.screenWhite, { paddingTop: insets.top }]}>
+        <EmptyState icon="cart-outline" title="Your cart is empty" message="Add some products to get started" actionLabel="Start Shopping" onAction={() => router.push("/shop" as any)} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={[cs.screen, { paddingTop: insets.top }]}>
+      <View style={cs.header}>
+        <Text style={cs.title}>Cart ({getItemCount()})</Text>
+      </View>
+
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        {items.map((item, index) => {
+          const imageUrl = resolveImageUrl(item.product.images?.[0]) || resolveImageUrl(item.product.image);
+          const price = item.product.salePrice || item.product.regularPrice;
+          return (
+            <View key={`${item.product._id}-${index}`} style={cs.cartItem}>
+              <Image source={{ uri: imageUrl }} style={cs.cartImg} contentFit="cover" />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={cs.itemName} numberOfLines={2}>{item.product.name}</Text>
+                {item.variant && <Text style={cs.variant}>{Object.values(item.variant).join(" / ")}</Text>}
+                {item.laybye ? (
+                  <>
+                    <Text style={cs.itemPrice}>{formatPrice(item.laybye.deposit || 0)}</Text>
+                    <View style={cs.laybyeRow}>
+                      <Ionicons name="calendar-outline" size={10} color={colors.amber500} />
+                      <Text style={cs.laybyeText}>Laybye deposit</Text>
+                      <Text style={cs.laybyeFullPrice}>(Full: {formatPrice(price)})</Text>
+                    </View>
+                  </>
+                ) : (
+                  <Text style={cs.itemPrice}>{formatPrice(price)}</Text>
+                )}
+                <View style={cs.qtyRow}>
+                  <Pressable onPress={() => updateQuantity(index, item.quantity - 1)} style={cs.qtyBtn}>
+                    <Ionicons name="remove" size={14} color={colors.gray700} />
+                  </Pressable>
+                  <Text style={cs.qtyText}>{item.quantity}</Text>
+                  <Pressable onPress={() => updateQuantity(index, item.quantity + 1)} style={cs.qtyBtn}>
+                    <Ionicons name="add" size={14} color={colors.gray700} />
+                  </Pressable>
+                  <View style={{ flex: 1 }} />
+                  <Pressable onPress={() => removeItem(index)} style={cs.deleteBtn}>
+                    <Ionicons name="trash-outline" size={14} color={colors.red500} />
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          );
+        })}
+        <View style={{ height: 160 }} />
+      </ScrollView>
+
+      <View style={[cs.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+        {getLaybyeItems().length > 0 && (
+          <View style={cs.laybyeNoteRow}>
+            <Ionicons name="information-circle-outline" size={14} color={colors.amber500} />
+            <Text style={cs.laybyeNote}>Total includes laybye deposits only</Text>
+          </View>
+        )}
+        <View style={cs.totalRow}>
+          <Text style={cs.totalLabel}>Total Due Now</Text>
+          <Text style={cs.totalValue}>{formatPrice(getCheckoutTotal())}</Text>
+        </View>
+        <Pressable onPress={() => openCheckoutDrawer()} style={cs.checkoutBtn}>
+          <Text style={cs.checkoutText}>Proceed to Checkout</Text>
+          <PulsingArrows color="#fff" size={18} count={3} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const cs = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.gray50 },
+  screenWhite: { flex: 1, backgroundColor: colors.white },
+  header: { backgroundColor: colors.white, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  title: { fontSize: 20, fontWeight: "700", color: colors.gray900 },
+  cartItem: { backgroundColor: colors.white, marginHorizontal: 16, marginTop: 12, borderRadius: 0, padding: 12, flexDirection: "row", borderWidth: 1, borderColor: colors.gray100 },
+  cartImg: { width: 80, height: 80, borderRadius: 0 },
+  itemName: { fontSize: 14, fontWeight: "600", color: colors.gray800 },
+  variant: { fontSize: 12, color: colors.gray500, marginTop: 2 },
+  itemPrice: { fontSize: 14, fontWeight: "700", color: colors.primary, marginTop: 4 },
+  laybyeRow: { flexDirection: "row", alignItems: "center", marginTop: 2 },
+  laybyeText: { fontSize: 10, color: colors.amber500, marginLeft: 4, fontWeight: "600" },
+  laybyeFullPrice: { fontSize: 10, color: colors.gray400, marginLeft: 4 },
+  laybyeNoteRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8, backgroundColor: "#fffbeb", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4 },
+  laybyeNote: { fontSize: 11, color: colors.amber500, fontWeight: "500" },
+  qtyRow: { flexDirection: "row", alignItems: "center", marginTop: 8 },
+  qtyBtn: { width: 28, height: 28, borderRadius: 0, backgroundColor: colors.gray100, alignItems: "center", justifyContent: "center" },
+  qtyText: { marginHorizontal: 12, fontSize: 14, fontWeight: "600", color: colors.gray800 },
+  deleteBtn: { width: 28, height: 28, borderRadius: 0, backgroundColor: colors.red50, alignItems: "center", justifyContent: "center" },
+  bottomBar: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.gray200, paddingHorizontal: 16, paddingTop: 12 },
+  totalRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  totalLabel: { fontSize: 14, color: colors.gray500 },
+  totalValue: { fontSize: 20, fontWeight: "700", color: colors.gray900 },
+  checkoutBtn: { backgroundColor: colors.primary, paddingVertical: 16, borderRadius: 0, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8 },
+  checkoutText: { color: colors.white, fontWeight: "700", fontSize: 16 },
+});

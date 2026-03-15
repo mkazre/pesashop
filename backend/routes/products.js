@@ -105,8 +105,13 @@ router.get('/', async (req, res) => {
   try {
     let query = {};
     
-    if (req.query.search && req.query.search.length >= 3) {
-      query.$text = { $search: req.query.search };
+    if (req.query.search) {
+      if (req.query.search.length >= 3) {
+        query.$text = { $search: req.query.search };
+      } else {
+        // Fallback to regex for short queries (1-2 chars)
+        query.name = { $regex: req.query.search, $options: 'i' };
+      }
     }
     
     // Status filter - show all non-trash products by default
@@ -124,6 +129,18 @@ router.get('/', async (req, res) => {
     
     if (req.query.category) {
       query.categories = req.query.category;
+    }
+
+    // Support plural categories param (array or comma-separated)
+    if (req.query.categories) {
+      const cats = Array.isArray(req.query.categories)
+        ? req.query.categories
+        : req.query.categories.split(',').map(c => c.trim());
+      if (cats.length === 1) {
+        query.categories = cats[0];
+      } else if (cats.length > 1) {
+        query.categories = { $in: cats };
+      }
     }
     
     if (req.query.featured === 'true') {

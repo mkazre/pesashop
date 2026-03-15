@@ -51,6 +51,12 @@ const userSchema = new mongoose.Schema({
     default: USER_ROLES.CUSTOMER
   },
   
+  // Custom role reference (for granular permissions beyond built-in roles)
+  customRole: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role',
+  },
+
   // Customer specific fields
   customerGroup: {
     type: String,

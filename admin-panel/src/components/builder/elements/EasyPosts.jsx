@@ -2,8 +2,11 @@ import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { useResponsiveGridProps } from '@/components/builder/utils/useResponsiveGridProps';
 import { useBreakpoint } from '@/components/builder/context/BreakpointContext';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const EasyPosts = ({
+export const EasyPosts = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   layout = 'grid',
   columns = 3,
   gap = '20px',
@@ -21,7 +24,8 @@ export const EasyPosts = ({
   responsiveProps = {},
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { effectiveColumns, effectiveGap } = useResponsiveGridProps(columns, gap, responsiveProps);
   const {
     connectors: { connect, drag },

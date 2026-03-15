@@ -1,10 +1,11 @@
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '@/store';
+import { useAuthStore, useCurrencyStore } from '@/store';
 import { ordersAPI, laybyAPI } from '@/services/api';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const { formatPrice } = useCurrencyStore();
 
   const { data: ordersData } = useQuery('myOrders', () => ordersAPI.getAll(), { retry: 1 });
   const { data: laybyesData } = useQuery('myLaybyes', () => laybyAPI.getMyLaybyes(), { retry: 1 });
@@ -61,7 +62,7 @@ export default function DashboardPage() {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            R {activeLaybyes.reduce((sum, l) => sum + (l.remainingAmount || 0), 0).toFixed(2)}
+            {formatPrice(activeLaybyes.reduce((sum, l) => sum + (l.remainingAmount || 0), 0))}
           </p>
           <p className="text-sm text-gray-500">Outstanding Balance</p>
         </Link>
@@ -115,7 +116,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-gray-900">R {(laybye.installmentPlan?.installmentAmount || 0).toFixed(2)}</p>
+                    <p className="font-bold text-gray-900">{formatPrice(laybye.installmentPlan?.installmentAmount || 0)}</p>
                     {isOverdue && (
                       <span className="inline-block text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full mt-1">Overdue</span>
                     )}

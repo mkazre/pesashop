@@ -4,8 +4,12 @@ import { ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
 import { TextControl, NumberControl, ColorControl, SelectControl, Checkbox } from '@/components/builder/controls/PropertyControls';
 import { SliderSettings } from './SliderSettings';
 import { canElementContainChildren } from '@/components/builder/utils/NestingRules';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Slider = ({ slides = [], className = '', style = {} }) => {
+export const Slider = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { slides = [], className = '', style = {} } = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
 const DEFAULT_ICONS = [
   { platform: 'facebook', url: '#', label: 'Facebook' },
@@ -19,7 +20,9 @@ const PLATFORM_SVGS = {
   pinterest: <><path d="M8 12a4 4 0 1 0 8 0c0-2.2-1.8-4-4-4s-4 1.8-4 4z"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M10 16l-1 4"/></>,
 };
 
-export const SocialIcons = ({
+export const SocialIcons = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   icons = DEFAULT_ICONS,
   iconSize = '24px',
   iconColor = '#6b7280',
@@ -28,7 +31,8 @@ export const SocialIcons = ({
   iconStyle = 'plain',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

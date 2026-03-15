@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { IoTrashOutline, IoHeartOutline, IoGift, IoClose } from 'react-icons/io5';
 import { useState } from 'react';
-import { useCartStore } from '@/store';
+import { useCartStore, useCurrencyStore } from '@/store';
 import { giftCardsAPI } from '@/services/api';
 import Button from '../common/Button';
 import toast from 'react-hot-toast';
 
 // CartItem Component
 export function CartItem({ item, index, onUpdateQuantity, onRemove, onMoveToWishlist }) {
+  const { formatPrice } = useCurrencyStore();
   const price = item.product.salePrice || item.product.regularPrice;
   const itemTotal = price * item.quantity;
 
@@ -46,7 +47,7 @@ export function CartItem({ item, index, onUpdateQuantity, onRemove, onMoveToWish
 
         {/* Price */}
         <div className="text-xl font-bold text-gray-900 mb-3">
-          R{price.toFixed(2)}
+          {formatPrice(price)}
         </div>
 
         {/* Actions */}
@@ -97,7 +98,7 @@ export function CartItem({ item, index, onUpdateQuantity, onRemove, onMoveToWish
 
         {/* Item Total */}
         <div className="text-xl font-bold text-gray-900">
-          R{itemTotal.toFixed(2)}
+          {formatPrice(itemTotal)}
         </div>
       </div>
     </div>
@@ -110,6 +111,7 @@ export function CartSummary({ subtotal, onCheckout, couponCode, onApplyCoupon })
   const [giftCardCode, setGiftCardCode] = useState('');
   const [validatingGiftCard, setValidatingGiftCard] = useState(false);
   const { giftCardCode: appliedGiftCard, giftCardAmount, giftCardBalance, setGiftCard, clearGiftCard } = useCartStore();
+  const { formatPrice } = useCurrencyStore();
   
   const shipping = 0; // Free shipping
   const tax = subtotal * 0.15; // 15% VAT
@@ -144,7 +146,7 @@ export function CartSummary({ subtotal, onCheckout, couponCode, onApplyCoupon })
 
       const discountAmount = Math.min(balance, totalBeforeGiftCard);
       setGiftCard(giftCard.code, discountAmount, balance);
-      toast.success(`Gift card applied! R${discountAmount.toFixed(2)} discount applied.`);
+      toast.success(`Gift card applied! ${formatPrice(discountAmount)} discount applied.`);
       setGiftCardCode('');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Invalid or expired gift card');
@@ -204,7 +206,7 @@ export function CartSummary({ subtotal, onCheckout, couponCode, onApplyCoupon })
                     Gift Card: {appliedGiftCard}
                   </div>
                   <div className="text-xs text-green-600">
-                    R{giftCardAmount.toFixed(2)} applied | R{giftCardBalance.toFixed(2)} remaining
+                    {formatPrice(giftCardAmount)} applied | {formatPrice(giftCardBalance)} remaining
                   </div>
                 </div>
               </div>
@@ -244,40 +246,40 @@ export function CartSummary({ subtotal, onCheckout, couponCode, onApplyCoupon })
       <div className="space-y-3 mb-6">
         <div className="flex items-center justify-between text-gray-700">
           <span>Sub-Total</span>
-          <span className="font-medium">R{subtotal.toFixed(2)}</span>
+          <span className="font-medium">{formatPrice(subtotal)}</span>
         </div>
         <div className="flex items-center justify-between text-gray-700">
           <span>VAT (15%)</span>
-          <span className="font-medium">R{tax.toFixed(2)}</span>
+          <span className="font-medium">{formatPrice(tax)}</span>
         </div>
         {discount > 0 && (
           <div className="flex items-center justify-between text-green-600">
             <span>Discount</span>
-            <span className="font-medium">-R{discount.toFixed(2)}</span>
+            <span className="font-medium">-{formatPrice(discount)}</span>
           </div>
         )}
         {giftCardDiscount > 0 && (
           <div className="flex items-center justify-between text-green-600">
             <span>Gift Card</span>
-            <span className="font-medium">-R{giftCardDiscount.toFixed(2)}</span>
+            <span className="font-medium">-{formatPrice(giftCardDiscount)}</span>
           </div>
         )}
         <div className="flex items-center justify-between text-gray-700">
           <span>Shipment</span>
           <span className="font-medium text-green-600">
-            {shipping === 0 ? 'Free' : `R${shipping.toFixed(2)}`}
+            {shipping === 0 ? 'Free' : formatPrice(shipping)}
           </span>
         </div>
         <div className="flex items-center justify-between text-gray-700">
           <span>Tax</span>
-          <span className="font-medium">R{tax.toFixed(2)}</span>
+          <span className="font-medium">{formatPrice(tax)}</span>
         </div>
       </div>
 
       {/* Total */}
       <div className="flex items-center justify-between text-xl font-bold border-t-2 border-gray-200 pt-4 mb-6">
         <span>Total</span>
-        <span>R{total.toFixed(2)}</span>
+        <span>{formatPrice(total)}</span>
       </div>
 
       {/* Checkout Button */}

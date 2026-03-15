@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ordersAPI } from '@/services/api';
+import { useCurrencyStore } from '@/store';
 
 const STATUS_CONFIG = {
   pending:     { label: 'Pending',     color: '#f59e0b', bg: '#fef3c7', icon: '⏳' },
@@ -31,9 +32,6 @@ function resolveImageUrl(path) {
   return `${API_URL}${path.startsWith('/') ? path : '/' + path}`;
 }
 
-function formatCurrency(amount) {
-  return `R ${(amount || 0).toFixed(2)}`;
-}
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -41,6 +39,7 @@ function formatDate(dateStr) {
 }
 
 function OrderResult({ order }) {
+  const { formatPrice } = useCurrencyStore();
   const status = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   const payment = PAYMENT_CONFIG[order.paymentStatus] || PAYMENT_CONFIG.pending;
   const currentStepIndex = TIMELINE_ORDER.indexOf(order.status);
@@ -118,8 +117,8 @@ function OrderResult({ order }) {
                   {item.variation && <p style={{ fontSize: '11px', color: '#6b7280', margin: '2px 0 0' }}>{typeof item.variation === 'string' ? item.variation : Object.entries(item.variation).map(([k,v]) => `${k}: ${v}`).join(', ')}</p>}
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>{formatCurrency(item.total)}</p>
-                  <p style={{ fontSize: '12px', color: '#6b7280', margin: '2px 0 0' }}>Qty: {item.quantity} × {formatCurrency(item.price)}</p>
+                  <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>{formatPrice(item.total)}</p>
+                  <p style={{ fontSize: '12px', color: '#6b7280', margin: '2px 0 0' }}>Qty: {item.quantity} × {formatPrice(item.price)}</p>
                 </div>
               </div>
             );
@@ -161,29 +160,29 @@ function OrderResult({ order }) {
       <div style={{ padding: '14px 16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
           <span style={{ fontSize: '13px', color: '#6b7280' }}>Subtotal</span>
-          <span style={{ fontSize: '13px', color: '#374151' }}>{formatCurrency(order.subtotal)}</span>
+          <span style={{ fontSize: '13px', color: '#374151' }}>{formatPrice(order.subtotal)}</span>
         </div>
         {order.tax > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ fontSize: '13px', color: '#6b7280' }}>Tax</span>
-            <span style={{ fontSize: '13px', color: '#374151' }}>{formatCurrency(order.tax)}</span>
+            <span style={{ fontSize: '13px', color: '#374151' }}>{formatPrice(order.tax)}</span>
           </div>
         )}
         {order.shipping > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ fontSize: '13px', color: '#6b7280' }}>Shipping{order.shippingMethod ? ` (${order.shippingMethod})` : ''}</span>
-            <span style={{ fontSize: '13px', color: '#374151' }}>{formatCurrency(order.shipping)}</span>
+            <span style={{ fontSize: '13px', color: '#374151' }}>{formatPrice(order.shipping)}</span>
           </div>
         )}
         {order.discount > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ fontSize: '13px', color: '#059669' }}>Discount</span>
-            <span style={{ fontSize: '13px', color: '#059669' }}>-{formatCurrency(order.discount)}</span>
+            <span style={{ fontSize: '13px', color: '#059669' }}>-{formatPrice(order.discount)}</span>
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #e5e7eb', marginTop: '4px' }}>
           <span style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>Total</span>
-          <span style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatCurrency(order.total)}</span>
+          <span style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatPrice(order.total)}</span>
         </div>
       </div>
 

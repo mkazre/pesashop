@@ -44,6 +44,8 @@ const ProductForm = () => {
 
   const [attributes, setAttributes] = useState([]);
   const [variations, setVariations] = useState([]);
+  const [specifications, setSpecifications] = useState([]);
+  const [generatingSpecs, setGeneratingSpecs] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
@@ -117,6 +119,8 @@ const ProductForm = () => {
           } else if (key === 'variations') {
             setVariations(product[key] || []);
             setValue(key, product[key] || []);
+          } else if (key === 'specifications') {
+            setSpecifications(product[key] || []);
           } else if (key === 'productType') {
             setValue(key, product[key] || 'simple');
           } else {
@@ -204,6 +208,9 @@ const ProductForm = () => {
           }
         }
       });
+
+      // Include specifications
+      formData.specifications = specifications;
 
       // Send as JSON (images are already URLs, not files)
       saveMutation.mutate(formData);
@@ -592,6 +599,115 @@ const ProductForm = () => {
             <p className="text-sm text-gray-500">
               First image will be set as primary. Images will be processed to 1:1 ratio.
             </p>
+          </div>
+        </Card>
+
+        {/* Specifications */}
+        <Card title="Specifications">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">Add key-value specification pairs for this product.</p>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    const productName = watch('name');
+                    if (!productName) { toast.error('Enter a product name first'); return; }
+                    setGeneratingSpecs(true);
+                    try {
+                      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                      const token = localStorage.getItem('token');
+                      const response = await fetch(`${apiUrl}/api/products-ai/generate-specifications/${id || 'temp'}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ productName, description: watch('description') || '' }),
+                      });
+                      const data = await response.json();
+                      if (data.success && data.data?.specifications) {
+                        setSpecifications(data.data.specifications);
+                        toast.success(`Generated ${data.data.specifications.length} specifications`);
+                      } else {
+                        toast.error(data.message || 'Failed to generate specs');
+                      }
+                    } catch (err) {
+                      toast.error(err.message || 'Failed to generate specifications');
+                    } finally {
+                      setGeneratingSpecs(false);
+                    }
+                  }}
+                  disabled={generatingSpecs || !watch('name')}
+                  className="flex items-center gap-2"
+                >
+                  <IoSparkles size={14} />
+                  {generatingSpecs ? 'Generating...' : 'AI Generate'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSpecifications([...specifications, { key: '', value: '' }])}
+                >
+                  <IoAdd size={14} /> Add Row
+                </Button>
+              </div>
+            </div>
+
+            {specifications.length > 0 && (
+              <div className="border-2 border-gray-200">
+                <div className="grid grid-cols-12 gap-0 bg-gray-100 border-b-2 border-gray-200 px-3 py-2">
+                  <div className="col-span-5 text-xs font-bold text-gray-700 uppercase">Key</div>
+                  <div className="col-span-6 text-xs font-bold text-gray-700 uppercase">Value</div>
+                  <div className="col-span-1"></div>
+                </div>
+                {specifications.map((spec, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-0 border-b border-gray-100 px-3 py-1.5 items-center hover:bg-gray-50">
+                    <div className="col-span-5 pr-2">
+                      <input
+                        type="text"
+                        value={spec.key}
+                        onChange={(e) => {
+                          const updated = [...specifications];
+                          updated[idx] = { ...updated[idx], key: e.target.value };
+                          setSpecifications(updated);
+                        }}
+                        placeholder="e.g. Material"
+                        className="w-full px-2 py-1.5 border border-gray-300 text-sm focus:ring-1 focus:ring-primary focus:border-primary"
+                      />
+                    </div>
+                    <div className="col-span-6 pr-2">
+                      <input
+                        type="text"
+                        value={spec.value}
+                        onChange={(e) => {
+                          const updated = [...specifications];
+                          updated[idx] = { ...updated[idx], value: e.target.value };
+                          setSpecifications(updated);
+                        }}
+                        placeholder="e.g. Stainless Steel"
+                        className="w-full px-2 py-1.5 border border-gray-300 text-sm focus:ring-1 focus:ring-primary focus:border-primary"
+                      />
+                    </div>
+                    <div className="col-span-1 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setSpecifications(specifications.filter((_, i) => i !== idx))}
+                        className="p-1 text-red-400 hover:text-red-600"
+                      >
+                        <IoTrash size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {specifications.length === 0 && (
+              <div className="text-center py-8 text-gray-400 text-sm border-2 border-dashed border-gray-200">
+                No specifications yet. Click "Add Row" or "AI Generate" to add product specs.
+              </div>
+            )}
           </div>
         </Card>
 

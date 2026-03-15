@@ -35,7 +35,8 @@ const CurrenciesPage = () => {
       decimalSeparator: '.',
       thousandSeparator: ',',
       isActive: true,
-      showInFrontend: true
+      showInFrontend: true,
+      sortOrder: 0
     }
   });
 
@@ -159,6 +160,7 @@ const CurrenciesPage = () => {
     setValue('thousandSeparator', currency.thousandSeparator);
     setValue('isActive', currency.isActive);
     setValue('showInFrontend', currency.showInFrontend);
+    setValue('sortOrder', currency.sortOrder || 0);
     setShowForm(true);
   };
 
@@ -166,7 +168,8 @@ const CurrenciesPage = () => {
     const currencyData = {
       ...data,
       exchangeRate: parseFloat(data.exchangeRate),
-      decimalDigits: parseInt(data.decimalDigits)
+      decimalDigits: parseInt(data.decimalDigits),
+      sortOrder: parseInt(data.sortOrder) || 0
     };
 
     if (editingCurrency) {
@@ -344,6 +347,14 @@ const CurrenciesPage = () => {
             </span>
           )}
         </div>
+      ),
+    },
+    {
+      key: 'sortOrder',
+      title: 'Order',
+      width: '80px',
+      render: (val) => (
+        <span className="font-mono text-sm">{val || 0}</span>
       ),
     },
     {
@@ -623,23 +634,32 @@ const CurrenciesPage = () => {
             />
           </div>
 
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                {...register('isActive')}
-                className="checkbox checkbox-primary"
-              />
-              <span className="text-sm font-medium">Active</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                {...register('showInFrontend')}
-                className="checkbox checkbox-primary"
-              />
-              <span className="text-sm font-medium">Show in Frontend</span>
-            </label>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Sort Order (lower = first / default)"
+              type="number"
+              min="0"
+              {...register('sortOrder')}
+              fullWidth
+            />
+            <div className="flex items-center gap-6 pt-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register('isActive')}
+                  className="checkbox checkbox-primary"
+                />
+                <span className="text-sm font-medium">Active</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register('showInFrontend')}
+                  className="checkbox checkbox-primary"
+                />
+                <span className="text-sm font-medium">Show in Frontend</span>
+              </label>
+            </div>
           </div>
 
           <div className="flex justify-end gap-4 pt-4">

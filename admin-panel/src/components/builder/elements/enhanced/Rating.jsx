@@ -1,17 +1,15 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Rating = ({
-  value = 4,
-  max = 5,
-  size = '24px',
-  activeColor = '#fbbf24',
-  inactiveColor = '#d1d5db',
-  showValue = true,
-  label = '',
-  className = '',
-  style = {},
-}) => {
+export const Rating = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
+    value = 4, max = 5, size = '24px', activeColor = '#fbbf24',
+    inactiveColor = '#d1d5db', showValue = true, label = '',
+    className = '', style = {},
+  } = resolved;
+  const numericValue = Number(value) || 0;
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   return (
@@ -20,10 +18,10 @@ export const Rating = ({
       {label && <span style={{ fontSize: '14px', color: '#374151', fontWeight: 500 }}>{label}</span>}
       <div style={{ display: 'flex', gap: '2px' }}>
         {Array.from({ length: max }, (_, i) => (
-          <span key={i} style={{ fontSize: size, color: i < value ? activeColor : inactiveColor, lineHeight: 1 }}>★</span>
+          <span key={i} style={{ fontSize: size, color: i < numericValue ? activeColor : inactiveColor, lineHeight: 1 }}>★</span>
         ))}
       </div>
-      {showValue && <span style={{ fontSize: '14px', color: '#6b7280' }}>{value}/{max}</span>}
+      {showValue && <span style={{ fontSize: '14px', color: '#6b7280' }}>{numericValue}/{max}</span>}
     </div>
   );
 };

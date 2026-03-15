@@ -2,8 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { ColorControl, NumberControl, TextControl } from '@/components/builder/controls/PropertyControls';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const BeforeAfter = ({ className = '', style = {} }) => {
+export const BeforeAfter = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { className = '', style = {} } = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

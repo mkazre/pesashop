@@ -14,7 +14,11 @@ export const ProductDescription = ({
   const product = repeaterItem || pageData?.product;
   const displayDescription = product?.shortDescription || product?.description || description;
   return (
-    <div className={className} style={{ fontSize, color: textColor, lineHeight: 1.7, overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', ...style }}>
+    <div className={className} style={(() => {
+      const m = { fontSize, color: textColor, lineHeight: 1.7, wordWrap: 'break-word', overflowWrap: 'break-word', ...style };
+      if (m.WebkitLineClamp && m.display !== '-webkit-box') m.display = '-webkit-box';
+      return m;
+    })()}>
       {displayDescription}
     </div>
   );

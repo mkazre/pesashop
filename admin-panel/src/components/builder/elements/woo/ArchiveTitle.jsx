@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ArchiveTitle = ({
+export const ArchiveTitle = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   title = 'Shop',
   tag = 'h1',
   fontSize = '32px',
@@ -10,7 +13,8 @@ export const ArchiveTitle = ({
   textAlign = 'left',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   const Tag = tag;
   return (

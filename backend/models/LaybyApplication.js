@@ -48,10 +48,22 @@ const laybyApplicationSchema = new mongoose.Schema({
     required: true
   },
 
+  // Selected layby plan
+  laybyPlan: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LaybyPlan'
+  },
+  planName: { type: String, default: '' },
+  depositAmount: { type: Number, default: 0 },
+  installmentAmount: { type: Number, default: 0 },
+  numberOfPayments: { type: Number, default: 0 },
+  frequency: { type: String, default: 'monthly' },
+
   // Optional: linked to existing customer account
   customer: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'User',
+    required: true
   },
 
   // Application Status

@@ -702,68 +702,133 @@ const OrderDetailPage = () => {
             </div>
           </Card>
 
-          {/* Laybye Information */}
-          {order.isLaybye && (
-            <Card title="Laybye Payment Plan">
-              {order.laybye ? (
+          {/* Split Payments */}
+          {order.payments && order.payments.length > 0 && (
+            <Card title="Split Payments">
+              <div className="space-y-2">
+                {order.payments.map((payment, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">
+                        {payment.method === 'eft' ? '🏦' : payment.method === 'ecocash' ? '📱' : payment.method === 'cash' ? '💵' : '💳'}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium capitalize">{payment.method}</p>
+                        {payment.transactionId && <p className="text-xs text-gray-500">Txn: {payment.transactionId}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                        payment.status === 'completed' ? 'bg-green-100 text-green-700 border-green-200' :
+                        payment.status === 'failed' ? 'bg-red-100 text-red-700 border-red-200' :
+                        payment.status === 'refunded' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                        'bg-yellow-100 text-yellow-700 border-yellow-200'
+                      }`}>{payment.status}</span>
+                      <p className="font-bold">R {(payment.amount || 0).toFixed(2)}</p>
+                    </div>
+                  </div>
+                ))}
+                {order.dueNow != null && (
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-200 text-sm">
+                    <span className="text-gray-600">Amount Due at Checkout</span>
+                    <span className="font-bold">R {(order.dueNow || 0).toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Laybye Information (supports multiple laybyes) */}
+          {(order.hasLaybye || order.isLaybye) && (
+            <Card title={`Laybye Payment Plan${(order.laybyes?.length || 0) > 1 ? 's' : ''}`}>
+              {(order.laybyes && order.laybyes.length > 0) ? (
+                <div className="space-y-4">
+                  {order.laybyes.map((lb, idx) => (
+                    <div key={lb._id || idx} className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">
+                            {order.laybyes.length > 1 ? `Laybye #${idx + 1}` : 'Laybye Status'}
+                          </p>
+                          <p className="text-lg font-bold text-blue-600 capitalize">{lb.status || 'Active'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-blue-700">Total Amount</p>
+                          <p className="text-lg font-bold text-blue-600">R {lb.totalAmount?.toFixed(2) || '0.00'}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+                        <div>
+                          <p className="text-blue-600">Paid</p>
+                          <p className="font-bold text-green-600">R {lb.paidAmount?.toFixed(2) || '0.00'}</p>
+                        </div>
+                        <div>
+                          <p className="text-blue-600">Remaining</p>
+                          <p className="font-bold text-red-600">R {lb.remainingAmount?.toFixed(2) || '0.00'}</p>
+                        </div>
+                        <div>
+                          <p className="text-blue-600">Next Payment</p>
+                          <p className="font-medium">{lb.nextPaymentDate ? new Date(lb.nextPaymentDate).toLocaleDateString('en-ZA') : 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-blue-600">Payments</p>
+                          <p className="font-medium">{lb.payments?.length || 0} / {lb.installmentPlan?.numberOfPayments || 0}</p>
+                        </div>
+                      </div>
+                      {/* Laybye items */}
+                      {order.items?.filter(i => i.isLaybye && i.laybyePlan?.toString() === (lb.laybyPlan?._id || lb.laybyPlan)?.toString()).length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-blue-200">
+                          <p className="text-xs font-medium text-blue-700 mb-2">Products on this Laybye:</p>
+                          {order.items.filter(i => i.isLaybye && i.laybyePlan?.toString() === (lb.laybyPlan?._id || lb.laybyPlan)?.toString()).map((item, iIdx) => (
+                            <div key={iIdx} className="flex items-center justify-between text-sm">
+                              <span className="text-blue-800">{item.product?.name || item.name} × {item.quantity}</span>
+                              <span className="font-medium text-blue-900">R {(item.total || 0).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex items-center justify-end mt-3">
+                        <Button variant="secondary" size="sm" onClick={() => navigate(`/laybyes/${lb._id || lb}`)}>
+                          View Laybye Details →
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : order.laybye ? (
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className="text-sm font-medium text-blue-900">Laybye Status</p>
-                        <p className="text-lg font-bold text-blue-600 capitalize">
-                          {order.laybye.status || 'Active'}
-                        </p>
+                        <p className="text-lg font-bold text-blue-600 capitalize">{order.laybye.status || 'Active'}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-blue-700">Total Amount</p>
-                        <p className="text-lg font-bold text-blue-600">
-                          R {order.laybye.totalAmount?.toFixed(2) || order.total?.toFixed(2) || '0.00'}
-                        </p>
+                        <p className="text-lg font-bold text-blue-600">R {order.laybye.totalAmount?.toFixed(2) || order.total?.toFixed(2) || '0.00'}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
                       <div>
-                        <p className="text-blue-600">Paid Amount</p>
-                        <p className="font-bold text-green-600">
-                          R {order.laybye.paidAmount?.toFixed(2) || '0.00'}
-                        </p>
+                        <p className="text-blue-600">Paid</p>
+                        <p className="font-bold text-green-600">R {order.laybye.paidAmount?.toFixed(2) || '0.00'}</p>
                       </div>
                       <div>
                         <p className="text-blue-600">Remaining</p>
-                        <p className="font-bold text-red-600">
-                          R {order.laybye.remainingAmount?.toFixed(2) || order.total?.toFixed(2) || '0.00'}
-                        </p>
+                        <p className="font-bold text-red-600">R {order.laybye.remainingAmount?.toFixed(2) || '0.00'}</p>
                       </div>
                       <div>
                         <p className="text-blue-600">Next Payment</p>
-                        <p className="font-medium">
-                          {order.laybye.nextPaymentDate 
-                            ? new Date(order.laybye.nextPaymentDate).toLocaleDateString('en-ZA')
-                            : 'N/A'}
-                        </p>
+                        <p className="font-medium">{order.laybye.nextPaymentDate ? new Date(order.laybye.nextPaymentDate).toLocaleDateString('en-ZA') : 'N/A'}</p>
                       </div>
                       <div>
-                        <p className="text-blue-600">Payments Made</p>
-                        <p className="font-medium">
-                          {order.laybye.payments?.length || 0} / {order.laybye.installmentPlan?.numberOfPayments || 0}
-                        </p>
+                        <p className="text-blue-600">Payments</p>
+                        <p className="font-medium">{order.laybye.payments?.length || 0} / {order.laybye.installmentPlan?.numberOfPayments || 0}</p>
                       </div>
                     </div>
-                    {order.laybye.expiryDate && (
-                      <div className="mt-3 pt-3 border-t border-blue-200">
-                        <p className="text-xs text-blue-600">
-                          Expires: {new Date(order.laybye.expiryDate).toLocaleDateString('en-ZA')}
-                        </p>
-                      </div>
-                    )}
                   </div>
                   <div className="flex items-center justify-end">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => navigate(`/laybyes/${order.laybye._id || order.laybye}`)}
-                    >
+                    <Button variant="secondary" size="sm" onClick={() => navigate(`/laybyes/${order.laybye._id || order.laybye}`)}>
                       View Full Laybye Details →
                     </Button>
                   </div>
@@ -858,6 +923,21 @@ const OrderDetailPage = () => {
                 {order.shippingAddress.phone && (
                   <p className="mt-2">Phone: {order.shippingAddress.phone}</p>
                 )}
+              </div>
+            </Card>
+          )}
+
+          {/* Pickup Address (if pickup fulfilment) */}
+          {order.deliveryMethod === 'pickup' && order.pickupAddress && (order.pickupAddress.label || order.pickupAddress.address) && (
+            <Card title="Pickup Location">
+              <div className="text-sm">
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">🏪</span>
+                  <div>
+                    {order.pickupAddress.label && <p className="font-medium text-gray-900">{order.pickupAddress.label}</p>}
+                    {order.pickupAddress.address && <p className="text-gray-600">📍 {order.pickupAddress.address}</p>}
+                  </div>
+                </div>
               </div>
             </Card>
           )}

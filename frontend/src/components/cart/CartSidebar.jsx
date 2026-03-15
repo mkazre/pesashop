@@ -1,14 +1,22 @@
 import { IoClose, IoTrashOutline, IoChevronForward } from 'react-icons/io5';
-import { useCartStore, useUIStore, useAuthStore } from '@/store';
+import { useCartStore, useUIStore, useAuthStore, useCurrencyStore } from '@/store';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { calculateBatchB2BPrices, getDisplayPrice } from '@/utils/pricing';
 import Button from '../common/Button';
+import toast from 'react-hot-toast';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+function getImageSrc(path) {
+  if (!path) return '/placeholder.jpg';
+  return path.startsWith('http') ? path : `${API_URL}${path}`;
+}
 
 export default function CartSidebar() {
+  const { formatPrice } = useCurrencyStore();
   const { items, updateQuantity, removeItem, getTotal } = useCartStore();
-  const { cartSidebarOpen, closeCartSidebar } = useUIStore();
-  const { user } = useAuthStore();
+  const { cartSidebarOpen, closeCartSidebar, openCheckoutDrawer, openAuthModal } = useUIStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [b2bPricing, setB2bPricing] = useState({});
 
   useEffect(() => {
@@ -42,10 +50,26 @@ export default function CartSidebar() {
   // Calculate subtotal with B2B pricing
   const subtotal = items.reduce((total, item) => {
     const pricing = b2bPricing[item.product._id];
-    const displayPrice = getDisplayPrice(item.product, pricing);
-    return total + (displayPrice.displayPrice * item.quantity);
+    const dp = getDisplayPrice(item.product, pricing);
+    return total + (dp.displayPrice * item.quantity);
   }, 0);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleProceedToCheckout = (e) => {
+    e.preventDefault();
+    if (items.length === 0) {
+      toast.error('Your cart is empty');
+      return;
+    }
+    if (!isAuthenticated) {
+      closeCartSidebar();
+      openAuthModal('login');
+      toast('Please sign in to proceed to checkout', { icon: '🔒' });
+      return;
+    }
+    // Open the full checkout drawer (same as product detail page)
+    openCheckoutDrawer();
+  };
 
   return (
     <>
@@ -89,46 +113,45 @@ export default function CartSidebar() {
               {items.map((item, index) => {
                 const price = item.product.salePrice || item.product.regularPrice;
                 const itemTotal = price * item.quantity;
-
                 return (
-                  <div key={index} className="flex gap-4 pb-4 border-b border-gray-200">
+                  <div key={index} className="flex gap-3 pb-4 border-b border-gray-200">
                     {/* Product Image */}
                     <Link
-                      to={`/product/${item.product._id}`}
+                      to={`/product/${item.product.slug || item.product._id}`}
                       onClick={closeCartSidebar}
                       className="flex-shrink-0"
                     >
                       <img
-                        src={item.product.images?.[0] || '/placeholder.jpg'}
+                        src={getImageSrc(item.product.featuredImage || item.product.images?.[0])}
                         alt={item.product.name}
-                        className="w-20 h-20 object-cover"
+                        className="w-20 h-20 object-cover rounded"
                       />
                     </Link>
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
                       <Link
-                        to={`/product/${item.product._id}`}
+                        to={`/product/${item.product.slug || item.product._id}`}
                         onClick={closeCartSidebar}
-                        className="font-medium text-gray-900 hover:text-primary line-clamp-2 mb-1"
+                        className="font-medium text-gray-900 hover:text-primary line-clamp-2 text-sm mb-1"
                       >
                         {item.product.name}
                       </Link>
 
                       {/* Variant */}
                       {item.variant && (
-                        <div className="text-sm text-gray-600">
+                        <div className="text-xs text-gray-500">
                           {item.variant.color && `Color: ${item.variant.color}`}
-                          {item.variant.size && `, Size: ${item.variant.size}`}
+                          {item.variant.size && ` | Size: ${item.variant.size}`}
                         </div>
                       )}
 
                       {/* Price & Quantity */}
                       <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-0 border border-gray-300">
+                        <div className="flex items-center gap-0 border border-gray-300 rounded">
                           <button
                             onClick={() => updateQuantity(index, item.quantity - 1)}
-                            className="px-2 py-1 hover:bg-gray-100"
+                            className="px-2 py-1 hover:bg-gray-100 text-sm"
                           >
                             -
                           </button>
@@ -139,26 +162,23 @@ export default function CartSidebar() {
                               const qty = parseInt(e.target.value) || 1;
                               updateQuantity(index, qty);
                             }}
-                            className="w-12 text-center border-x border-gray-300 py-1 text-sm"
+                            className="w-10 text-center border-x border-gray-300 py-1 text-sm"
                           />
                           <button
                             onClick={() => updateQuantity(index, item.quantity + 1)}
-                            className="px-2 py-1 hover:bg-gray-100"
+                            className="px-2 py-1 hover:bg-gray-100 text-sm"
                           >
                             +
                           </button>
                         </div>
                         <div className="text-right">
                           <div className="font-bold text-gray-900">
-                            R{itemTotal.toFixed(2)}
+                            {formatPrice(itemTotal)}
                           </div>
-                          {displayPrice.originalPrice > displayPrice.displayPrice && (
+                          {b2bPricing[item.product._id] && (
                             <div className="text-xs text-gray-500 line-through">
-                              R{(displayPrice.originalPrice * item.quantity).toFixed(2)}
+                              {formatPrice(item.product.regularPrice * item.quantity)}
                             </div>
-                          )}
-                          {displayPrice.isB2B && (
-                            <div className="text-xs text-blue-600">B2B</div>
                           )}
                         </div>
                       </div>
@@ -167,10 +187,10 @@ export default function CartSidebar() {
                     {/* Remove Button */}
                     <button
                       onClick={() => removeItem(index)}
-                      className="flex-shrink-0 text-gray-400 hover:text-red-600 transition-colors"
+                      className="flex-shrink-0 text-gray-400 hover:text-red-600 transition-colors self-start mt-1"
                       title="Remove item"
                     >
-                      <IoTrashOutline size={20} />
+                      <IoTrashOutline size={18} />
                     </button>
                   </div>
                 );
@@ -185,25 +205,24 @@ export default function CartSidebar() {
             {/* Subtotal */}
             <div className="flex items-center justify-between text-lg">
               <span className="font-medium">Subtotal:</span>
-              <span className="font-bold text-2xl">R{subtotal.toFixed(2)}</span>
+              <span className="font-bold text-2xl">{formatPrice(subtotal)}</span>
             </div>
 
             {/* Buttons */}
             <div className="space-y-2">
-              <Link to="/checkout" onClick={closeCartSidebar}>
-                <Button
-                  variant="primary-filled"
-                  fullWidth
-                  icon={<IoChevronForward />}
-                >
-                  Proceed to Checkout
-                </Button>
-              </Link>
-              <Link to="/cart" onClick={closeCartSidebar}>
-                <Button variant="primary" fullWidth>
-                  View Cart
-                </Button>
-              </Link>
+              <button
+                onClick={handleProceedToCheckout}
+                className="w-full flex items-center justify-center gap-2 bg-primary text-white py-3 px-6 font-medium hover:bg-primary/90 transition-colors rounded"
+              >
+                Proceed to Checkout
+                <IoChevronForward size={18} />
+              </button>
+              <button
+                onClick={closeCartSidebar}
+                className="w-full text-center text-sm text-gray-600 hover:text-primary py-2 transition-colors"
+              >
+                Continue Shopping
+              </button>
             </div>
 
             {/* Free Shipping Message */}

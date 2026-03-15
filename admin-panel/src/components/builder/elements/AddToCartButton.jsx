@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { useNode } from '@craftjs/core';
 import { ShoppingCart, Check } from 'lucide-react';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const AddToCartButton = ({ 
+export const AddToCartButton = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { 
   productId = null,
   quantity = 1,
   text = 'Add to Cart',
   successText = 'Added!',
   className = '',
   style = {}
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

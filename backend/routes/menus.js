@@ -169,6 +169,38 @@ async function populateMenuItems(menu) {
   };
 }
 
+// Get active pages for default menu auto-population (public)
+router.get('/default-menu-data', async (req, res) => {
+  try {
+    const Product = require('../models/Product');
+    const pages = await PageTemplate.find({ isPublished: true })
+      .select('name slug isHomepage templateType')
+      .sort({ isHomepage: -1, name: 1 });
+
+    const categories = await Category.find({ isActive: true })
+      .select('name slug iconImage productCount')
+      .sort({ productCount: -1, name: 1 })
+      .limit(12);
+
+    // Trending: featured first, then newest products
+    const trendingProducts = await Product.find({ isActive: true, status: 'active' })
+      .select('name slug featuredImage images regularPrice salePrice isFeatured')
+      .sort({ isFeatured: -1, createdAt: -1 })
+      .limit(8);
+
+    res.json({
+      success: true,
+      data: {
+        pages: pages.filter(p => !['single-product', 'product'].includes(p.templateType)),
+        categories,
+        trendingProducts,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Get single menu
 router.get('/:id', auth.protect, async (req, res) => {
   try {

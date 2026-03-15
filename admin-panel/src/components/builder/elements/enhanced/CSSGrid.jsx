@@ -4,8 +4,12 @@ import { Grid3x3 } from 'lucide-react';
 import { NumberControl, ColorControl, SelectControl, Checkbox } from '@/components/builder/controls/PropertyControls';
 import { useBreakpoint } from '@/components/builder/context/BreakpointContext';
 import { useResponsiveStyles } from '@/components/builder/utils/ResponsiveControls';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const CSSGrid = ({ children, className = '', style = {} }) => {
+export const CSSGrid = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { children, className = '', style = {} } = resolved;
+
   const { breakpoint } = useBreakpoint();
   const { getCurrentStyles } = useResponsiveStyles(style, breakpoint);
   const {

@@ -273,7 +273,9 @@ export function resolveDynamicProps(props, context) {
   for (const [propKey, token] of Object.entries(bindings)) {
     if (!token) continue;
     const value = resolveDynamicValue(token, context);
-    if (value !== '' && value != null) {
+    // Always apply the resolved value (including 0, false, empty string)
+    // so dynamic bindings override static defaults. Only skip null/undefined.
+    if (value != null) {
       resolved[propKey] = value;
     }
   }

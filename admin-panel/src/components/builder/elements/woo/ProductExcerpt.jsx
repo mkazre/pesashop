@@ -1,13 +1,17 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductExcerpt = ({
+export const ProductExcerpt = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   excerpt = 'A brief summary of this amazing product. Perfect for quick browsing and comparison shopping.',
   fontSize = '14px',
   textColor = '#6b7280',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   return (
     <p ref={(ref) => connect(drag(ref))} className={className}

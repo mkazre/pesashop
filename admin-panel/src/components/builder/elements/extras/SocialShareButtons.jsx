@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const SocialShareButtons = ({
+export const SocialShareButtons = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   platforms = ['facebook', 'twitter', 'linkedin', 'whatsapp', 'email'],
   shareUrl = 'https://example.com',
   shareText = 'Check this out!',
@@ -10,7 +13,8 @@ export const SocialShareButtons = ({
   gap = '8px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   const colors = { facebook: '#1877f2', twitter: '#1da1f2', linkedin: '#0a66c2', whatsapp: '#25d366', email: '#6b7280', pinterest: '#e60023', reddit: '#ff4500' };

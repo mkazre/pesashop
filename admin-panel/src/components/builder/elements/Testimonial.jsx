@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Testimonial = ({
+export const Testimonial = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   quote = 'This product changed my life. Highly recommended!',
   author = 'Jane Doe',
   role = 'CEO, Company',
@@ -14,7 +17,8 @@ export const Testimonial = ({
   backgroundColor = '#f9fafb',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

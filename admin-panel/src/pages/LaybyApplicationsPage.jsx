@@ -109,6 +109,7 @@ const LaybyApplicationsPage = () => {
         <div>
           <p className="font-medium">{name}</p>
           <p className="text-sm text-gray-500">R {(row.productPrice || 0).toFixed(2)}</p>
+          {row.planName && <p className="text-xs text-primary mt-0.5">{row.planName}</p>}
         </div>
       ),
     },
@@ -282,6 +283,35 @@ const LaybyApplicationsPage = () => {
               <p className="font-medium">{viewModal.productName}</p>
               <p className="text-sm text-gray-500">R {(viewModal.productPrice || 0).toFixed(2)}</p>
             </div>
+
+            {viewModal.planName && (
+              <div className="border-t pt-4">
+                <p className="text-sm text-gray-600 mb-2">Selected Layby Plan</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="font-semibold text-blue-900 mb-2">{viewModal.planName}</p>
+                  <div className="grid grid-cols-3 gap-3 text-sm">
+                    {viewModal.depositAmount > 0 && (
+                      <div>
+                        <p className="text-blue-600">Deposit</p>
+                        <p className="font-bold">R {viewModal.depositAmount.toFixed(2)}</p>
+                      </div>
+                    )}
+                    {viewModal.numberOfPayments > 0 && (
+                      <div>
+                        <p className="text-blue-600">{viewModal.numberOfPayments}× Installments</p>
+                        <p className="font-bold">R {(viewModal.installmentAmount || 0).toFixed(2)}</p>
+                      </div>
+                    )}
+                    {viewModal.frequency && (
+                      <div>
+                        <p className="text-blue-600">Frequency</p>
+                        <p className="font-bold capitalize">{viewModal.frequency}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {viewModal.idDocument && (
               <div className="border-t pt-4">

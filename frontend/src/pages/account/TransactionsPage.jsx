@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useQuery } from 'react-query';
 import { laybyAPI } from '@/services/api';
+import { useCurrencyStore } from '@/store';
 
 export default function TransactionsPage() {
+  const { formatPrice } = useCurrencyStore();
   const [page, setPage] = useState(1);
   const { data, isLoading } = useQuery(
     ['myTransactions', page],
@@ -97,11 +99,11 @@ export default function TransactionsPage() {
                       </td>
                       <td className="px-6 py-3.5 text-sm font-semibold text-right whitespace-nowrap">
                         <span className={tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}>
-                          {tx.amount >= 0 ? '+' : ''}R {Math.abs(tx.amount).toFixed(2)}
+                          {tx.amount >= 0 ? '+' : '-'}{formatPrice(Math.abs(tx.amount))}
                         </span>
                       </td>
                       <td className="px-6 py-3.5 text-sm text-gray-600 text-right whitespace-nowrap">
-                        R {(tx.balanceAfter || 0).toFixed(2)}
+                        {formatPrice(tx.balanceAfter || 0)}
                       </td>
                       <td className="px-6 py-3.5 text-center">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${

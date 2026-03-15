@@ -507,6 +507,8 @@ router.post('/pricing-rules', protect, authorize('admin'), async (req, res, next
 });
 
 // PUT update pricing rule
+// Query params:
+//   ?updateProducts=true  — re-apply the updated rule to all affected products (default: false)
 router.put('/pricing-rules/:id', protect, authorize('admin'), async (req, res, next) => {
   try {
     // Clean data similar to POST
@@ -561,23 +563,57 @@ router.put('/pricing-rules/:id', protect, authorize('admin'), async (req, res, n
       return res.status(404).json({ success: false, message: 'Pricing rule not found' });
     }
 
-    // Apply rule to affected products to update their regular prices
-    const productPriceUpdater = require('../services/productPriceUpdater');
-    try {
-      const updatedCount = await productPriceUpdater.applyRuleToProducts(rule._id);
-      console.log(`Applied updated pricing rule to ${updatedCount} products`);
-    } catch (error) {
-      console.error('Error applying rule to products:', error);
-      // Don't fail the request, just log the error
+    let updatedCount = 0;
+    const shouldUpdate = req.query.updateProducts === 'true';
+
+    if (shouldUpdate) {
+      const productPriceUpdater = require('../services/productPriceUpdater');
+      try {
+        updatedCount = await productPriceUpdater.applyRuleToProducts(rule._id);
+        console.log(`Applied updated pricing rule to ${updatedCount} products`);
+      } catch (error) {
+        console.error('Error applying rule to products:', error);
+      }
     }
 
-    res.json({ success: true, data: rule });
+    res.json({ success: true, data: rule, updatedProducts: updatedCount });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET affected products count for a pricing rule (preview before delete/update)
+router.get('/pricing-rules/:id/affected-products', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+  try {
+    const rule = await PricingRule.findById(req.params.id);
+    if (!rule) {
+      return res.status(404).json({ success: false, message: 'Pricing rule not found' });
+    }
+
+    const productPriceUpdater = require('../services/productPriceUpdater');
+    const productIds = await productPriceUpdater.getAffectedProductIds(rule);
+
+    res.json({
+      success: true,
+      data: {
+        count: productIds.length,
+        targetField: rule.targetField || 'regularPrice',
+        sourceField: rule.sourceField || 'backendPrice',
+        action: rule.action,
+        value: rule.value
+      }
+    });
   } catch (error) {
     next(error);
   }
 });
 
 // DELETE pricing rule
+// Query params:
+//   ?priceAction=none       — just delete the rule, don't touch product prices
+//   ?priceAction=clear       — delete rule AND clear the target price field on affected products
+//   ?priceAction=clearBoth   — delete rule AND clear both regularPrice and salePrice
+//   ?priceAction=recalculate — (default) delete rule AND recalculate remaining rules on affected products
 router.delete('/pricing-rules/:id', protect, authorize('admin'), async (req, res, next) => {
   try {
     const rule = await PricingRule.findById(req.params.id);
@@ -585,34 +621,41 @@ router.delete('/pricing-rules/:id', protect, authorize('admin'), async (req, res
       return res.status(404).json({ success: false, message: 'Pricing rule not found' });
     }
 
-    // Get affected products before deleting
-    let productIds = [];
-    if (rule.products && rule.products.length > 0) {
-      productIds = rule.products.map(p => String(p._id || p));
-    } else if (rule.categories && rule.categories.length > 0) {
-      const Product = require('../models/Product');
-      const products = await Product.find({
-        categories: { $in: rule.categories },
-        status: { $ne: 'trash' }
-      }).select('_id');
-      productIds = products.map(p => String(p._id));
+    const priceAction = req.query.priceAction || 'recalculate';
+    const productPriceUpdater = require('../services/productPriceUpdater');
+
+    // Get affected product IDs before deleting the rule
+    const productIds = await productPriceUpdater.getAffectedProductIds(rule);
+    let affectedCount = 0;
+
+    if (priceAction === 'clear') {
+      // Clear only the target field (e.g. regularPrice) on affected products
+      affectedCount = await productPriceUpdater.clearProductPrices(rule, { clearTarget: true });
+    } else if (priceAction === 'clearBoth') {
+      // Clear both regularPrice and salePrice on affected products
+      affectedCount = await productPriceUpdater.clearProductPrices(rule, { clearBoth: true });
     }
 
+    // Delete the rule
     await rule.deleteOne();
-    
-    // Recalculate prices for affected products (to remove this rule's effect)
-    if (productIds.length > 0) {
-      const productPriceUpdater = require('../services/productPriceUpdater');
+
+    if (priceAction === 'recalculate' && productIds.length > 0) {
+      // Recalculate remaining rules for affected products
       for (const productId of productIds) {
         try {
           await productPriceUpdater.applyRulesToProduct(productId);
+          affectedCount++;
         } catch (error) {
           console.error(`Error recalculating product ${productId}:`, error);
         }
       }
     }
-    
-    res.json({ success: true, message: 'Pricing rule deleted successfully' });
+
+    res.json({
+      success: true,
+      message: 'Pricing rule deleted successfully',
+      affectedProducts: affectedCount
+    });
   } catch (error) {
     next(error);
   }

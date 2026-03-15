@@ -2,8 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { ArrowUp, ChevronUp } from 'lucide-react';
 import { NumberControl, ColorControl, SelectControl, Checkbox } from '@/components/builder/controls/PropertyControls';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const BackToTop = ({ className = '', style = {} }) => {
+export const BackToTop = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { className = '', style = {} } = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

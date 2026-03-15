@@ -2,8 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { Type, Zap } from 'lucide-react';
 import { TextControl, ColorControl, NumberControl, SelectControl } from '@/components/builder/controls/PropertyControls';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const AnimatedHeading = ({ text = 'Animated Heading', className = '', style = {} }) => {
+export const AnimatedHeading = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { text = 'Animated Heading', className = '', style = {} } = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

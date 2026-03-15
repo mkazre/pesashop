@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Menu = ({
+export const Menu = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = [
     { label: 'Home', url: '#' },
     { label: 'About', url: '#' },
@@ -20,7 +23,8 @@ export const Menu = ({
   gap = '24px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

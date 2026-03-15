@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const HeaderSearch = ({
+export const HeaderSearch = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   placeholder = 'Search...',
   iconColor = '#6b7280',
   expandedWidth = '300px',
@@ -9,7 +12,8 @@ export const HeaderSearch = ({
   borderRadius = '9999px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const [expanded, setExpanded] = useState(false);
 

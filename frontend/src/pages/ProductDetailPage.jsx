@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { productsAPI } from '@/services/api';
 import { useRecentlyViewedStore } from '@/store';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import ProductGallery from '@/components/product/ProductGallery';
 import ProductInfo from '@/components/product/ProductInfo';
@@ -11,16 +12,23 @@ import BuyButtons from '@/components/product/BuyButtons';
 import TrustBadges from '@/components/product/TrustBadges';
 import ProductTabs from '@/components/product/ProductTabs';
 import RelatedProducts from '@/components/product/RelatedProducts';
+import CustomersAlsoBought from '@/components/product/CustomersAlsoBought';
+import RecommendedWithPurchase from '@/components/product/RecommendedWithPurchase';
 import Loading from '@/components/common/Loading';
 import LaybyWidget from '@/components/product/LaybyWidget';
 import LoyaltyPointsBadge from '@/components/loyalty/LoyaltyPointsBadge';
 import { usePageTemplate } from '@/hooks/usePageTemplate';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
+import WalmartProductPage from '@/components/product/WalmartProductPage';
+import useProductPageSettings from '@/hooks/useProductPageSettings';
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
   const { addProduct } = useRecentlyViewedStore();
+  const { trackProductView } = useAnalytics();
+  const trackedRef = useRef(null);
   const { components: templateComponents, isLoading: templateLoading, hasTemplate } = usePageTemplate('single-product');
+  const { settings: pageSettings, isLoading: settingsLoading } = useProductPageSettings();
   
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
@@ -32,12 +40,20 @@ export default function ProductDetailPage() {
     {
       enabled: !!slug,
       onSuccess: (data) => {
-        addProduct(data.data);
+        addProduct(data.data?.data || data.data);
       }
     }
   );
 
-  const product = data?.data;
+  const product = data?.data?.data || data?.data;
+
+  // Track product view for stats
+  useEffect(() => {
+    if (product?._id && trackedRef.current !== product._id) {
+      trackedRef.current = product._id;
+      trackProductView(product._id, product.name);
+    }
+  }, [product?._id, product?.name, trackProductView]);
 
   // Extract unique sizes and colors from variants
   const sizes = product?.variants?.map(v => v.size).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i) || [];
@@ -53,7 +69,7 @@ export default function ProductDetailPage() {
     }
   }, [sizes, colors]);
 
-  if (isLoading || templateLoading) {
+  if (isLoading || templateLoading || settingsLoading) {
     return <Loading fullScreen text="Loading product..." />;
   }
 
@@ -75,7 +91,12 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Fallback: hardcoded product detail layout
+  // If ProductPageSettings exist and layout is 3-col-walmart, use WalmartProductPage
+  if (pageSettings && pageSettings.layout?.type === '3-col-walmart') {
+    return <WalmartProductPage product={product} settings={pageSettings} />;
+  }
+
+  // Fallback: standard 2-column product detail layout
   const categoryName = product.categories?.[0]?.name || 'Products';
   const categorySlug = product.categories?.[0]?.slug || 'shop';
 
@@ -161,6 +182,18 @@ export default function ProductDetailPage() {
           productId={product._id} 
           categoryId={product.categories?.[0]?._id}
         />
+
+        {/* Customers Also Bought */}
+        <div className="mt-8">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Customers Also Bought</h2>
+          <CustomersAlsoBought productId={product._id} />
+        </div>
+
+        {/* Recommended With Your Purchase */}
+        <div className="mt-8 mb-8">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Recommended With Your Purchase</h2>
+          <RecommendedWithPurchase productId={product._id} />
+        </div>
       </div>
     </div>
   );

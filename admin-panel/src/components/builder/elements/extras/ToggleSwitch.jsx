@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ToggleSwitch = ({
+export const ToggleSwitch = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   label = 'Enable Feature',
   defaultChecked = false,
   activeColor = '#3b82f6',
@@ -10,7 +13,8 @@ export const ToggleSwitch = ({
   labelPosition = 'left',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const [checked, setChecked] = useState(defaultChecked);
   const sizes = { small: { w: 36, h: 20, dot: 16 }, medium: { w: 48, h: 26, dot: 22 }, large: { w: 60, h: 32, dot: 28 } };

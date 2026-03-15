@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const UltimateVideo = ({
+export const UltimateVideo = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   src = '',
   type = 'youtube',
   youtubeId = 'dQw4w9WgXcQ',
@@ -18,7 +21,8 @@ export const UltimateVideo = ({
   showPlayButton = true,
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
 
   const renderVideo = () => {

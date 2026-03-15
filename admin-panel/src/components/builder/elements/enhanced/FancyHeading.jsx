@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const FancyHeading = ({
+export const FancyHeading = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   text = 'Fancy Heading',
   tag = 'h2',
   gradientFrom = '#3b82f6',
@@ -16,7 +19,8 @@ export const FancyHeading = ({
   textTransform = 'none',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const Tag = tag;
   const gradientStyle = useGradient ? { background: `linear-gradient(${gradientDirection}, ${gradientFrom}, ${gradientTo})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' } : { color: textColor };

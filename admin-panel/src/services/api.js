@@ -80,6 +80,9 @@ export const categoriesAPI = {
   delete: (id) => api.delete(`/categories/${id}`),
   getTree: () => api.get('/categories', { params: { tree: 'true' } }),
   getProducts: (id) => api.get(`/categories/${id}/products`),
+  removeProducts: (id, productIds) => api.put(`/categories/${id}/products/remove`, { productIds }),
+  reassignProducts: (id, productIds, targetCategoryId) => api.put(`/categories/${id}/products/reassign`, { productIds, targetCategoryId }),
+  addProducts: (id, productIds) => api.put(`/categories/${id}/products/add`, { productIds }),
 };
 
 // Orders API
@@ -134,6 +137,18 @@ export const laybyApplicationsAPI = {
   delete: (id) => api.delete(`/layby-applications/${id}`),
   downloadDocument: (id) => api.get(`/layby-applications/${id}/document`, { responseType: 'blob' }),
   getByCustomer: (customerId) => api.get(`/layby-applications/customer/${customerId}`),
+};
+
+// Email Templates API
+export const emailTemplatesAPI = {
+  getAll: (params) => api.get('/email-templates', { params }),
+  getOne: (id) => api.get(`/email-templates/${id}`),
+  create: (data) => api.post('/email-templates', data),
+  update: (id, data) => api.put(`/email-templates/${id}`, data),
+  delete: (id) => api.delete(`/email-templates/${id}`),
+  preview: (id, sampleData) => api.post(`/email-templates/${id}/preview`, { sampleData }),
+  test: (id, testEmail) => api.post(`/email-templates/${id}/test`, { testEmail }),
+  seed: () => api.post('/email-templates/seed'),
 };
 
 // Layby Transactions API
@@ -239,6 +254,9 @@ export const reviewsAPI = {
   canReview: (productId) => api.get(`/reviews/can-review/${productId}`),
   getSettings: () => api.get('/reviews/settings/get'),
   updateSettings: (data) => api.put('/reviews/settings/update', data),
+  bulkStatus: (reviewIds, status) => api.post('/reviews/bulk-status', { reviewIds, status }),
+  getSummary: () => api.get('/reviews/summary/stats'),
+  adminResponse: (id, content) => api.post(`/reviews/${id}/admin-response`, { content }),
 };
 
 // Code Snippets API
@@ -286,7 +304,7 @@ export const importAPI = {
     formData.append('type', type);
     return api.post('/import/validate', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 300000,
+      timeout: 10800000, // 3 hours for large file validation (100K+)
     });
   },
   import: (type, file, options = {}) => {
@@ -298,14 +316,19 @@ export const importAPI = {
     }
     formData.append('duplicateResolution', JSON.stringify(options.duplicateResolution || {}));
     formData.append('stripHtml', options.stripHtml !== false ? 'true' : 'false');
+    formData.append('useJob', 'true'); // always use job-based import
     
     const endpoint = `/import/${type}`;
     
     return api.post(endpoint, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 1800000,
+      timeout: 10800000, // 3 hours — covers file upload + job kickoff; actual import runs in background
     });
   },
+  // Poll a background import job for status
+  getJobStatus: (jobId) => api.get(`/import/job/${jobId}`),
+  // Deduplicate products — dryRun=true to preview, false to delete
+  deduplicateProducts: (dryRun = true) => api.post('/import/deduplicate-products', { dryRun }, { timeout: 10800000 }),
   export: (type, filters = {}) => 
     api.get(`/import/export/${type}`, { 
       params: { ...filters },
@@ -385,6 +408,21 @@ export const mediaAPI = {
 export const settingsAPI = {
   getAll: () => api.get('/settings'),
   update: (data) => api.put('/settings', data),
+  testEmail: (to) => api.post('/settings/test-email', { to }),
+};
+
+// Notifications API
+export const notificationsAPI = {
+  getAll: (params) => api.get('/notifications', { params }),
+  getOne: (id) => api.get(`/notifications/${id}`),
+  create: (data) => api.post('/notifications', data),
+  update: (id, data) => api.put(`/notifications/${id}`, data),
+  delete: (id) => api.delete(`/notifications/${id}`),
+  send: (id) => api.post(`/notifications/${id}/send`),
+  duplicate: (id) => api.post(`/notifications/${id}/duplicate`),
+  cancel: (id) => api.post(`/notifications/${id}/cancel`),
+  getStats: () => api.get('/notifications/admin/stats'),
+  generateVapidKeys: () => api.post('/notifications/admin/generate-vapid-keys'),
 };
 
 // Dashboard API
@@ -440,8 +478,9 @@ export const b2bkingAPI = {
   getPricingRules: (params) => api.get('/b2bking/pricing-rules', { params }),
   getPricingRule: (id) => api.get(`/b2bking/pricing-rules/${id}`),
   createPricingRule: (data) => api.post('/b2bking/pricing-rules', data),
-  updatePricingRule: (id, data) => api.put(`/b2bking/pricing-rules/${id}`, data),
-  deletePricingRule: (id) => api.delete(`/b2bking/pricing-rules/${id}`),
+  updatePricingRule: (id, data, params = {}) => api.put(`/b2bking/pricing-rules/${id}`, data, { params }),
+  deletePricingRule: (id, params = {}) => api.delete(`/b2bking/pricing-rules/${id}`, { params }),
+  getAffectedProducts: (id) => api.get(`/b2bking/pricing-rules/${id}/affected-products`),
   
   // Price Calculation
   calculatePrice: (data) => api.post('/b2bking/calculate-price', data),
@@ -449,6 +488,79 @@ export const b2bkingAPI = {
   
   // Price Recalculation
   recalculatePrices: (data = {}) => api.post('/b2bking/recalculate-prices', data),
+};
+
+// Product Page Settings API
+export const productPageSettingsAPI = {
+  get: () => api.get('/product-page-settings'),
+  update: (data) => api.put('/product-page-settings', data),
+  updateSection: (sectionKey, data) => api.put(`/product-page-settings/section/${sectionKey}`, data),
+  reset: () => api.post('/product-page-settings/reset'),
+};
+
+// Product Archive Settings API
+export const productArchiveSettingsAPI = {
+  get: () => api.get('/product-archive-settings'),
+  update: (data) => api.put('/product-archive-settings', data),
+  reset: () => api.post('/product-archive-settings/reset'),
+};
+
+// Home Page Config API
+export const homePageConfigAPI = {
+  get: () => api.get('/home-page-config'),
+  update: (data) => api.put('/home-page-config', data),
+  reset: () => api.post('/home-page-config/reset'),
+};
+
+// Stats / Analytics API (admin endpoints)
+export const statsAPI = {
+  getOverview: (params) => api.get('/stats/admin/overview', { params }),
+  getHotspots: (params) => api.get('/stats/admin/hotspots', { params }),
+  getConversionInsights: (params) => api.get('/stats/admin/conversion-insights', { params }),
+  getTrendingProducts: (params) => api.get('/stats/trending-products', { params }),
+  getPopularProducts: (params) => api.get('/stats/popular-products', { params }),
+  getTopSearches: (params) => api.get('/stats/top-searches', { params }),
+  backfillOrders: () => api.post('/stats/admin/backfill-orders'),
+};
+
+// Products AI API (admin)
+export const productsAIAPI = {
+  generateSpecs: (id) => api.post(`/products-ai/generate-specifications/${id}`),
+  applySpecs: (id, specifications) => api.post(`/products-ai/apply-specifications/${id}`, { specifications }),
+  bulkGenerateSpecs: (data) => api.post('/products-ai/bulk-generate-specifications', data),
+};
+
+// Questions API (admin)
+export const questionsAPI = {
+  getAll: (params) => api.get('/questions/admin/all', { params }),
+  getStats: () => api.get('/questions/admin/stats'),
+  update: (id, data) => api.put(`/questions/admin/${id}`, data),
+  delete: (id) => api.delete(`/questions/admin/${id}`),
+  deleteAnswer: (questionId, answerId) => api.delete(`/questions/admin/${questionId}/answers/${answerId}`),
+  bulkDelete: (questionIds) => api.post('/questions/admin/bulk-delete', { questionIds }),
+  answer: (questionId, content) => api.post(`/questions/${questionId}/answer`, { content }),
+};
+
+// Users API (admin)
+export const usersAPI = {
+  getAll: (params) => api.get('/users', { params }),
+  getStats: () => api.get('/users/stats'),
+  getOne: (id) => api.get(`/users/${id}`),
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.put(`/users/${id}`, data),
+  delete: (id) => api.delete(`/users/${id}`),
+  toggleStatus: (id) => api.put(`/users/${id}/toggle-status`),
+};
+
+// Roles API (admin)
+export const rolesAPI = {
+  getAll: () => api.get('/roles'),
+  getOne: (id) => api.get(`/roles/${id}`),
+  getResources: () => api.get('/roles/meta/resources'),
+  create: (data) => api.post('/roles', data),
+  update: (id, data) => api.put(`/roles/${id}`, data),
+  delete: (id) => api.delete(`/roles/${id}`),
+  seed: () => api.post('/roles/seed'),
 };
 
 export default api;

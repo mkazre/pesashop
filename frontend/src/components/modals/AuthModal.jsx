@@ -6,6 +6,7 @@ import { authAPI, menusAPI } from '@/services/api';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import toast from 'react-hot-toast';
+import pesaLogo from '@/assets/pesashop-logo.png';
 
 // Load Google Identity Services script
 function loadGoogleScript(clientId) {
@@ -484,13 +485,7 @@ export default function AuthModal() {
 
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            {logoSrc ? (
-              <img src={logoSrc} alt="PesaShop" className="h-14 w-auto object-contain" />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-primary-50 flex items-center justify-center text-4xl">
-                {currentMode.icon}
-              </div>
-            )}
+            <img src={logoSrc || pesaLogo} alt="PesaShop" className="h-14 w-auto object-contain" />
           </div>
 
           {/* Title */}

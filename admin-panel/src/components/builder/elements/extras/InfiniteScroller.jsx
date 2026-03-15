@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const InfiniteScroller = ({
+export const InfiniteScroller = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = ['Item 1 ★', 'Item 2 ★', 'Item 3 ★', 'Item 4 ★', 'Item 5 ★'],
   speed = 30,
   direction = 'left',
@@ -11,7 +14,8 @@ export const InfiniteScroller = ({
   pauseOnHover = true,
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   const content = items.join(`  •  `);
 

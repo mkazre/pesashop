@@ -88,8 +88,9 @@ export const productsAPI = {
 
 // Categories API
 export const categoriesAPI = {
-  getAll: () => api.get('/api/categories'),
+  getAll: (params) => api.get('/api/categories', { params }),
   getOne: (id) => api.get(`/api/categories/${id}`),
+  getBySlug: (slug) => api.get(`/api/categories/slug/${slug}`),
 };
 
 // Orders API
@@ -133,6 +134,7 @@ export const giftCardsAPI = {
 // Menus API (public endpoints for frontend)
 export const menusAPI = {
   getByLocation: (location, pageId) => api.get(`/api/menus/location/${location}`, { params: pageId ? { pageId } : {} }),
+  getDefaultMenuData: () => api.get('/api/menus/default-menu-data'),
 };
 
 // Page Builder API (legacy - PageBuilder model)
@@ -168,9 +170,26 @@ export const settingsAPI = {
   getBankDetails: () => api.get('/api/settings/bank-details'),
 };
 
+// Product Page Settings API (public)
+export const productPageSettingsAPI = {
+  get: () => api.get('/api/product-page-settings/public'),
+};
+
+// Product Archive Settings API (public)
+export const productArchiveSettingsAPI = {
+  get: () => api.get('/api/product-archive-settings/public'),
+};
+
+// Layby Plans API (public — for inline plan display)
+export const laybyPlansAPI = {
+  getActive: () => api.get('/api/layby-plans/active/list'),
+  getForProduct: (productId) => api.get('/api/layby-plans/active/list', { params: { productId } }),
+};
+
 // Layby API (customer-facing)
 export const laybyAPI = {
   getSettings: () => api.get('/api/layby-applications/settings'),
+  checkEligibility: () => api.get('/api/layby-applications/check-eligibility'),
   submitApplication: (formData) => api.post('/api/layby-applications/apply', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
@@ -179,6 +198,64 @@ export const laybyAPI = {
   getMyLaybye: (id) => api.get(`/api/laybyes/my-laybyes/${id}`),
   makePayment: (id, data) => api.post(`/api/laybyes/my-laybyes/${id}/pay`, data),
   getMyTransactions: (params) => api.get('/api/layby-transactions/my-transactions', { params }),
+};
+
+// Currencies API (public)
+export const currenciesAPI = {
+  getFrontend: () => api.get('/api/currencies', { params: { frontend: 'true' } }),
+  getBase: () => api.get('/api/currencies/base/get'),
+};
+
+// Home Page Config API (public)
+export const homePageConfigAPI = {
+  getPublic: () => api.get('/api/home-page-config/public'),
+};
+
+// Stats / Analytics API (public endpoints)
+export const statsAPI = {
+  trackEvent: (eventData) => api.post('/api/stats/event', eventData),
+  trackBatch: (events) => api.post('/api/stats/events/batch', { events }),
+  getTrendingProducts: (params) => api.get('/api/stats/trending-products', { params }),
+  getPopularProducts: (params) => api.get('/api/stats/popular-products', { params }),
+  getAlsoBought: (productId, params) => api.get(`/api/stats/also-bought/${productId}`, { params }),
+  getRecommended: (productId, params) => api.get(`/api/stats/recommended/${productId}`, { params }),
+  getAlsoViewed: (productId, params) => api.get(`/api/stats/also-viewed/${productId}`, { params }),
+  getFrequentlyBoughtTogether: (productId, params) => api.get(`/api/stats/frequently-bought-together/${productId}`, { params }),
+  getTopSearches: (params) => api.get('/api/stats/top-searches', { params }),
+  getMegaMenuData: () => api.get('/api/stats/mega-menu-data'),
+};
+
+// Reviews API (public + authenticated)
+export const reviewsAPI = {
+  getForProduct: (productId, params) => api.get('/api/reviews', { params: { product: productId, public: 'true', ...params } }),
+  getSettings: () => api.get('/api/reviews/settings/public'),
+  canReview: (productId) => api.get(`/api/reviews/can-review/${productId}`),
+  create: (formData) => api.post('/api/reviews', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  vote: (reviewId, vote) => api.post(`/api/reviews/${reviewId}/vote`, { vote }),
+  report: (reviewId, reason) => api.post(`/api/reviews/${reviewId}/report`, { reason }),
+};
+
+// Q&A API (public + authenticated)
+export const questionsAPI = {
+  getForProduct: (productId, params) => api.get(`/api/questions/product/${productId}`, { params }),
+  ask: (data) => api.post('/api/questions', data),
+  answer: (questionId, content) => api.post(`/api/questions/${questionId}/answer`, { content }),
+  voteAnswer: (questionId, answerId, vote) => api.post(`/api/questions/${questionId}/answers/${answerId}/vote`, { vote }),
+};
+
+// Notifications API (customer-facing)
+export const notificationsAPI = {
+  getMy: (params) => api.get('/api/notifications/my', { params }),
+  getUnreadCount: () => api.get('/api/notifications/my/unread-count'),
+  markAsRead: (id) => api.put(`/api/notifications/my/${id}/read`),
+  markAllAsRead: () => api.put('/api/notifications/my/read-all'),
+  recordClick: (id) => api.post(`/api/notifications/my/${id}/click`),
+  dismiss: (id) => api.delete(`/api/notifications/my/${id}`),
+  subscribe: (data) => api.post('/api/notifications/subscribe', data),
+  unsubscribe: (data) => api.delete('/api/notifications/subscribe', { data }),
+  getVapidPublicKey: () => api.get('/api/notifications/vapid-public-key'),
 };
 
 export default api;

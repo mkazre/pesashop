@@ -25,6 +25,18 @@ router.get('/', protect, authorize('admin', 'shop_manager'), async (req, res, ne
   }
 });
 
+// GET active layby plans (public — for frontend storefront inline display)
+router.get('/active/list', async (req, res, next) => {
+  try {
+    const plans = await LaybyPlan.find({ isActive: true })
+      .sort({ displayOrder: 1, createdAt: -1 });
+
+    res.json({ success: true, data: plans });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET single layby plan
 router.get('/:id', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
   try {

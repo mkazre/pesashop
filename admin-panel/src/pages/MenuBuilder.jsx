@@ -52,10 +52,13 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 
 const MENU_LOCATIONS = [
-  { value: 'header', label: 'Header' },
-  { value: 'footer', label: 'Footer' },
+  { value: 'header', label: 'Header Primary' },
+  { value: 'header-secondary', label: 'Header Secondary' },
+  { value: 'footer', label: 'Footer Primary' },
+  { value: 'footer-secondary', label: 'Footer Secondary' },
+  { value: 'mobile-menu', label: 'Mobile Menu' },
   { value: 'sidebar', label: 'Sidebar' },
-  { value: 'mobile', label: 'Mobile' },
+  { value: 'mobile', label: 'Mobile (Legacy)' },
   { value: 'custom', label: 'Custom' },
 ];
 

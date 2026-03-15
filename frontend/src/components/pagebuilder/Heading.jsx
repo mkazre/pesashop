@@ -5,8 +5,12 @@ import { useDynamicProps } from './useDynamicProps';
 export const Heading = (rawProps) => {
   const { content = 'Heading', level = 2, className = '', style = {} } = useDynamicProps(rawProps);
   const Tag = `h${Math.min(6, Math.max(1, level))}`;
+  const merged = { wordWrap: 'break-word', overflowWrap: 'break-word', ...style };
+  if (merged.WebkitLineClamp && merged.display !== '-webkit-box') {
+    merged.display = '-webkit-box';
+  }
   return (
-    <Tag className={`heading ${className}`} style={{ overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', ...style }}>
+    <Tag className={`heading ${className}`} style={merged}>
       {content}
     </Tag>
   );

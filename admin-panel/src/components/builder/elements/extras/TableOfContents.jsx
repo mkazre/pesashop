@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const TableOfContents = ({
+export const TableOfContents = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = [
     { text: 'Introduction', level: 1, id: 'intro' },
     { text: 'Getting Started', level: 1, id: 'getting-started' },
@@ -18,7 +21,8 @@ export const TableOfContents = ({
   borderRadius = '8px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   return (

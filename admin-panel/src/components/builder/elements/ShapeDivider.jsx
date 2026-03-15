@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
 const SHAPES = {
   wave: 'M0,64L48,80C96,96,192,128,288,128C384,128,480,96,576,85.3C672,75,768,85,864,96C960,107,1056,117,1152,112C1248,107,1344,85,1392,74.7L1440,64L1440,320L0,320Z',
@@ -9,7 +10,9 @@ const SHAPES = {
   zigzag: 'M0,288L120,256L240,288L360,256L480,288L600,256L720,288L840,256L960,288L1080,256L1200,288L1320,256L1440,288L1440,320L0,320Z',
 };
 
-export const ShapeDivider = ({
+export const ShapeDivider = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   shape = 'wave',
   color = '#3b82f6',
   height = '80px',
@@ -17,7 +20,8 @@ export const ShapeDivider = ({
   position = 'bottom',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

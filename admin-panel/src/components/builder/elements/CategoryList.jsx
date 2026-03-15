@@ -3,8 +3,11 @@ import { useNode } from '@craftjs/core';
 import { categoriesAPI } from '@/services/api';
 import { useResponsiveGridProps } from '@/components/builder/utils/useResponsiveGridProps';
 import { Folder } from 'lucide-react';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const CategoryList = ({ 
+export const CategoryList = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { 
   layout = 'grid', // 'grid' or 'list'
   columns = 3,
   showImage = true,
@@ -12,7 +15,8 @@ export const CategoryList = ({
   responsiveProps = {},
   className = '',
   style = {}
-}) => {
+} = resolved;
+
   const { effectiveColumns, effectiveGap } = useResponsiveGridProps(columns, '16px', responsiveProps);
   const {
     connectors: { connect, drag },

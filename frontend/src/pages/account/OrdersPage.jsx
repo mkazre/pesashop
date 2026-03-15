@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { ordersAPI } from '@/services/api';
+import { useCurrencyStore } from '@/store';
 
 const STATUS_STYLES = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -23,6 +24,7 @@ const PAYMENT_STYLES = {
 
 export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('');
+  const { formatPrice } = useCurrencyStore();
 
   const { data, isLoading } = useQuery(
     ['myOrders', statusFilter],
@@ -124,7 +126,7 @@ export default function OrdersPage() {
                     </span>
                   </div>
                   <span className="text-lg font-bold text-gray-900">
-                    R {(order.total || 0).toFixed(2)}
+                    {formatPrice(order.total || 0)}
                   </span>
                 </div>
               </div>

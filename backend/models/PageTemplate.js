@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const pageTemplateSchema = new mongoose.Schema({
   templateType: {
     type: String,
-    enum: ['shop', 'category', 'single-product', 'cart', 'checkout', 'account', 'page', 'custom'],
+    enum: ['shop', 'category', 'single-product', 'product', 'cart', 'checkout', 'account', 'page', 'custom'],
     required: true,
   },
   name: {

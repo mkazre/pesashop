@@ -92,7 +92,7 @@ const menuSchema = new mongoose.Schema({
   name: { type: String, required: true },
   location: {
     type: String,
-    enum: ['header', 'footer', 'sidebar', 'mobile', 'custom'],
+    enum: ['header', 'header-secondary', 'footer', 'footer-secondary', 'sidebar', 'mobile', 'mobile-menu', 'custom'],
     required: true,
   },
   items: [menuItemSchema],

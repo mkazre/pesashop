@@ -2,8 +2,11 @@ import React from 'react';
 import { useNode } from '@craftjs/core';
 import { useEditor } from '@craftjs/core';
 import { canElementContainChildren } from '@/components/builder/utils/NestingRules';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Video = ({
+export const Video = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   src = 'https://www.youtube.com/embed/dQw4w9WgXcQ',
   autoplay = false,
   loop = false,
@@ -12,7 +15,8 @@ export const Video = ({
   aspectRatio = '16/9',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const DynamicList = ({
+export const DynamicList = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = [
     { title: 'Item One', description: 'Description for item one', icon: '📌' },
     { title: 'Item Two', description: 'Description for item two', icon: '📌' },
@@ -13,7 +16,8 @@ export const DynamicList = ({
   showDescription = true,
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

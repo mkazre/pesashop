@@ -1,6 +1,14 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { ordersAPI } from '@/services/api';
+import { useCurrencyStore } from '@/store';
+import {
+  IoCheckmarkCircleOutline,
+  IoCardOutline,
+  IoCubeOutline,
+  IoAirplaneOutline,
+  IoHomeOutline,
+} from 'react-icons/io5';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 function resolveImg(path) {
@@ -21,8 +29,28 @@ const STATUS_STYLES = {
   failed: 'bg-red-100 text-red-800',
 };
 
+const JOURNEY_STEPS = [
+  { key: 'placed',    label: 'Order Placed',       icon: IoCheckmarkCircleOutline, statusMatch: ['pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed'] },
+  { key: 'confirmed', label: 'Payment Confirmed',  icon: IoCardOutline,            statusMatch: ['processing', 'on-hold', 'completed'] },
+  { key: 'packing',   label: 'Packing',            icon: IoCubeOutline,            statusMatch: ['processing', 'completed'] },
+  { key: 'shipped',   label: 'Shipped',            icon: IoAirplaneOutline,        statusMatch: ['completed'] },
+  { key: 'delivered', label: 'Delivered',           icon: IoHomeOutline,            statusMatch: ['completed'] },
+];
+
+function getActiveStepIdx(order) {
+  if (!order) return 0;
+  const st = order.status;
+  const ps = order.paymentStatus;
+  if (st === 'completed') return 4;
+  if (order.shippedAt || st === 'shipped') return 3;
+  if (st === 'processing' && ps === 'completed') return 2;
+  if (ps === 'completed' || ps === 'processing') return 1;
+  return 0;
+}
+
 export default function OrderDetailPage() {
   const { id } = useParams();
+  const { formatPrice } = useCurrencyStore();
 
   const { data, isLoading, error } = useQuery(
     ['order', id],
@@ -51,6 +79,9 @@ export default function OrderDetailPage() {
   }
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+  const currentStepIdx = getActiveStepIdx(order);
+  const sa = order.shippingAddress || {};
+  const streetAddr = sa.street || sa.address || '';
 
   return (
     <div className="space-y-4">
@@ -107,15 +138,15 @@ export default function OrderDetailPage() {
                 <p className="text-sm text-gray-500">
                   {item.salePrice ? (
                     <>
-                      <span className="line-through text-gray-400 mr-1">R {item.price?.toFixed(2)}</span>
-                      R {item.salePrice?.toFixed(2)}
+                      <span className="line-through text-gray-400 mr-1">{formatPrice(item.price)}</span>
+                      {formatPrice(item.salePrice)}
                     </>
                   ) : (
-                    <>R {item.price?.toFixed(2)}</>
+                    formatPrice(item.price)
                   )}
                   {' × '}{item.quantity}
                 </p>
-                <p className="font-semibold text-gray-900">R {item.total?.toFixed(2)}</p>
+                <p className="font-semibold text-gray-900">{formatPrice(item.total)}</p>
               </div>
             </div>
           ))}
@@ -125,36 +156,36 @@ export default function OrderDetailPage() {
         <div className="border-t border-gray-200 px-5 py-4 space-y-2 bg-gray-50">
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Subtotal</span>
-            <span className="text-gray-900">R {(order.subtotal || 0).toFixed(2)}</span>
+            <span className="text-gray-900">{formatPrice(order.subtotal || 0)}</span>
           </div>
           {order.shipping > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Shipping {order.shippingMethod && `(${order.shippingMethod})`}</span>
-              <span className="text-gray-900">R {order.shipping.toFixed(2)}</span>
+              <span className="text-gray-900">{formatPrice(order.shipping)}</span>
             </div>
           )}
           {order.tax > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Tax {order.taxRate ? `(${order.taxRate}%)` : ''}</span>
-              <span className="text-gray-900">R {order.tax.toFixed(2)}</span>
+              <span className="text-gray-900">{formatPrice(order.tax)}</span>
             </div>
           )}
           {order.discount > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Discount</span>
-              <span className="text-green-600">-R {order.discount.toFixed(2)}</span>
+              <span className="text-green-600">-{formatPrice(order.discount)}</span>
             </div>
           )}
           {order.couponsApplied?.length > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Coupons ({order.couponsApplied.map(c => c.code).join(', ')})</span>
-              <span className="text-green-600">-R {order.couponsApplied.reduce((s, c) => s + (c.discount || 0), 0).toFixed(2)}</span>
+              <span className="text-green-600">-{formatPrice(order.couponsApplied.reduce((s, c) => s + (c.discount || 0), 0))}</span>
             </div>
           )}
           {order.giftCardsApplied?.length > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Gift Cards</span>
-              <span className="text-green-600">-R {order.giftCardsApplied.reduce((s, g) => s + (g.amount || 0), 0).toFixed(2)}</span>
+              <span className="text-green-600">-{formatPrice(order.giftCardsApplied.reduce((s, g) => s + (g.amount || 0), 0))}</span>
             </div>
           )}
           {order.loyaltyPointsUsed > 0 && (
@@ -165,7 +196,7 @@ export default function OrderDetailPage() {
           )}
           <div className="flex justify-between pt-2 border-t border-gray-200">
             <span className="font-semibold text-gray-900">Total</span>
-            <span className="text-xl font-bold text-gray-900">R {(order.total || 0).toFixed(2)}</span>
+            <span className="text-xl font-bold text-gray-900">{formatPrice(order.total || 0)}</span>
           </div>
         </div>
       </div>
@@ -197,68 +228,95 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
-        {/* Tracking */}
+        {/* Shipping — Vertical Order Tracking Steps */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <h2 className="font-semibold text-gray-900 mb-3">Shipping</h2>
-          <div className="space-y-2 text-sm">
-            {order.trackingNumber ? (
-              <>
+          <h2 className="font-semibold text-gray-900 mb-4">Shipping</h2>
+          {order.trackingNumber && (
+            <div className="space-y-2 text-sm mb-4 pb-4 border-b border-gray-100">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Tracking #</span>
+                {order.trackingUrl ? (
+                  <a href={order.trackingUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-mono text-xs">{order.trackingNumber}</a>
+                ) : (
+                  <span className="text-gray-900 font-mono text-xs">{order.trackingNumber}</span>
+                )}
+              </div>
+              {order.shippedAt && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Tracking #</span>
-                  {order.trackingUrl ? (
-                    <a href={order.trackingUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-mono text-xs">{order.trackingNumber}</a>
-                  ) : (
-                    <span className="text-gray-900 font-mono text-xs">{order.trackingNumber}</span>
-                  )}
+                  <span className="text-gray-500">Shipped</span>
+                  <span className="text-gray-900">{formatDate(order.shippedAt)}</span>
                 </div>
-                {order.shippedAt && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Shipped</span>
-                    <span className="text-gray-900">{formatDate(order.shippedAt)}</span>
+              )}
+              {order.deliveredAt && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Delivered</span>
+                  <span className="text-green-600">{formatDate(order.deliveredAt)}</span>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="relative">
+            {JOURNEY_STEPS.map((step, i) => {
+              const isActive = i <= currentStepIdx;
+              const isCurrent = i === currentStepIdx;
+              const Icon = step.icon;
+              return (
+                <div key={step.key} className="flex items-start gap-3 relative" style={{ paddingBottom: i < JOURNEY_STEPS.length - 1 ? '16px' : 0 }}>
+                  {i < JOURNEY_STEPS.length - 1 && (
+                    <div
+                      className="absolute left-[13px] top-[28px] w-[2px]"
+                      style={{
+                        height: 'calc(100% - 12px)',
+                        backgroundColor: i < currentStepIdx ? '#10b981' : '#e5e7eb',
+                      }}
+                    />
+                  )}
+                  <div
+                    className={`relative z-10 w-[28px] h-[28px] rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                      isActive ? 'bg-[#10b981] text-white' : 'bg-gray-200 text-gray-400'
+                    } ${isCurrent ? 'ring-3 ring-green-200' : ''}`}
+                  >
+                    <Icon size={14} />
                   </div>
-                )}
-                {order.deliveredAt && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Delivered</span>
-                    <span className="text-green-600">{formatDate(order.deliveredAt)}</span>
+                  <div className="flex-1 pt-0.5">
+                    <span className={`text-sm font-semibold ${isActive ? 'text-gray-900' : 'text-gray-400'}`}>{step.label}</span>
+                    {isCurrent && <span className="text-xs text-green-600 font-medium ml-1.5">— Current</span>}
                   </div>
-                )}
-              </>
-            ) : (
-              <p className="text-gray-400">No tracking information yet.</p>
-            )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Addresses */}
       <div className="grid md:grid-cols-2 gap-4">
-        {order.billingAddress && (
+        {order.deliveryMethod === 'pickup' && order.pickupAddress && (order.pickupAddress.label || order.pickupAddress.address) && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <h2 className="font-semibold text-gray-900 mb-3">Billing Address</h2>
-            <div className="text-sm text-gray-600 space-y-0.5">
-              <p className="font-medium text-gray-900">{order.billingAddress.firstName} {order.billingAddress.lastName}</p>
-              {order.billingAddress.company && <p>{order.billingAddress.company}</p>}
-              <p>{order.billingAddress.street}</p>
-              {order.billingAddress.street2 && <p>{order.billingAddress.street2}</p>}
-              <p>{order.billingAddress.city}, {order.billingAddress.state} {order.billingAddress.postalCode}</p>
-              <p>{order.billingAddress.country}</p>
-              {order.billingAddress.phone && <p className="mt-1">{order.billingAddress.phone}</p>}
-              {order.billingAddress.email && <p>{order.billingAddress.email}</p>}
+            <h2 className="font-semibold text-gray-900 mb-3">Pickup Location</h2>
+            <div className="flex items-start gap-2 text-sm">
+              <span className="text-lg">🏪</span>
+              <div>
+                {order.pickupAddress.label && <p className="font-medium text-gray-900">{order.pickupAddress.label}</p>}
+                {order.pickupAddress.address && <p className="text-gray-600">📍 {order.pickupAddress.address}</p>}
+              </div>
             </div>
           </div>
         )}
         {order.shippingAddress && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <h2 className="font-semibold text-gray-900 mb-3">Shipping Address</h2>
+            <h2 className="font-semibold text-gray-900 mb-3">Delivery Address</h2>
             <div className="text-sm text-gray-600 space-y-0.5">
-              <p className="font-medium text-gray-900">{order.shippingAddress.firstName} {order.shippingAddress.lastName}</p>
-              {order.shippingAddress.company && <p>{order.shippingAddress.company}</p>}
-              <p>{order.shippingAddress.street}</p>
-              {order.shippingAddress.street2 && <p>{order.shippingAddress.street2}</p>}
-              <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}</p>
-              <p>{order.shippingAddress.country}</p>
-              {order.shippingAddress.phone && <p className="mt-1">{order.shippingAddress.phone}</p>}
+              <p className="font-medium text-gray-900">{sa.firstName} {sa.lastName}</p>
+              {sa.company && <p>{sa.company}</p>}
+              {streetAddr && <p>{streetAddr}</p>}
+              {sa.street2 && <p>{sa.street2}</p>}
+              <p>
+                {[sa.city, sa.state, sa.postalCode].filter(Boolean).join(', ')}
+              </p>
+              {sa.country && <p>{sa.country}</p>}
+              {sa.phone && <p className="mt-1">📞 {sa.phone}</p>}
+              {sa.email && <p>✉️ {sa.email}</p>}
             </div>
           </div>
         )}

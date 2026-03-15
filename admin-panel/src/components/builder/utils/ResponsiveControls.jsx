@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Monitor, Tablet, Smartphone } from 'lucide-react';
+import { resolveStyles } from './resolveStyles';
 
 const BREAKPOINTS = {
   desktop: { name: 'Desktop', icon: Monitor, width: '100%' },
@@ -42,10 +43,12 @@ export const useResponsiveStyles = (styles, breakpoint) => {
     // Build desktop base: everything except the 'responsive' key
     const { responsive, ...desktopBase } = styles;
 
-    if (breakpoint === 'desktop' || !responsive) return desktopBase;
+    const merged = (breakpoint === 'desktop' || !responsive)
+      ? desktopBase
+      : { ...desktopBase, ...(responsive[breakpoint] || {}) };
 
-    const overrides = responsive[breakpoint] || {};
-    return { ...desktopBase, ...overrides };
+    // Auto-resolve nested style objects (padding/margin/border objects)
+    return resolveStyles(merged);
   };
 
   // Get a single style property for the current breakpoint

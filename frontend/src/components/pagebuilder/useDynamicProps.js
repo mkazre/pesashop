@@ -10,7 +10,7 @@ import { resolveDynamicProps, buildContextFromItem } from './dynamicData';
  */
 function cleanStyle(style) {
   if (!style || typeof style !== 'object') return style;
-  const { responsive, responsiveProps, badge, ...clean } = style;
+  const { responsive, responsiveProps, badge, badgeMode, badgeModuleIds, badgeOverrides, customCSS, ...clean } = style;
   return clean;
 }
 
@@ -53,7 +53,7 @@ export function useDynamicProps(props) {
     }
 
     // Strip non-CSS keys from style to prevent invalid inline styles
-    if (resolved?.style && (resolved.style.responsive || resolved.style.responsiveProps || resolved.style.badge)) {
+    if (resolved?.style && (resolved.style.responsive || resolved.style.responsiveProps || resolved.style.badge || resolved.style.badgeMode || resolved.style.badgeModuleIds || resolved.style.badgeOverrides || resolved.style.customCSS)) {
       return { ...resolved, style: cleanStyle(resolved.style) };
     }
 

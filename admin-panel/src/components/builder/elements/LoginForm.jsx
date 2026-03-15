@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const LoginForm = ({
+export const LoginForm = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   title = 'Sign In',
   showRemember = true,
   showForgot = true,
@@ -10,7 +13,8 @@ export const LoginForm = ({
   borderRadius = '8px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

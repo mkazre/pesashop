@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const UltimateImage = ({
+export const UltimateImage = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   src = 'https://placehold.co/600x400/e2e8f0/64748b?text=Ultimate+Image',
   alt = 'Ultimate Image',
   width = '100%',
@@ -16,7 +19,8 @@ export const UltimateImage = ({
   lightbox = false,
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
 
   const hoverStyles = {

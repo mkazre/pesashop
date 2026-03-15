@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Breadcrumb = ({
+export const Breadcrumb = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = [
     { label: 'Home', url: '#' },
     { label: 'Shop', url: '#' },
@@ -15,7 +18,8 @@ export const Breadcrumb = ({
   linkColor = '#3b82f6',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   return (

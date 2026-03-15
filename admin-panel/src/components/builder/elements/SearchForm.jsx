@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const SearchForm = ({
+export const SearchForm = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   placeholder = 'Search...',
   buttonText = 'Search',
   showButton = true,
@@ -11,7 +14,8 @@ export const SearchForm = ({
   buttonColor = '#3b82f6',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

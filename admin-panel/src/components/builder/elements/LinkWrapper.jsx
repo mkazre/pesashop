@@ -1,14 +1,18 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const LinkWrapper = ({
+export const LinkWrapper = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   url = '#',
   target = '_self',
   display = 'block',
   className = '',
   style = {},
   children,
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

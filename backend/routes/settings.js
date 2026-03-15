@@ -3,6 +3,20 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const Settings = require('../models/Settings');
 
+const MASK = '***configured***';
+const SENSITIVE_KEYS = [
+  'openaiApiKey', 'deepseekApiKey', 'anthropicApiKey', 'aiWebSearchApiKey',
+  'smtpPassword', 'vapidPrivateKey',
+];
+
+function maskSensitive(obj) {
+  const data = typeof obj.toObject === 'function' ? obj.toObject() : { ...obj };
+  SENSITIVE_KEYS.forEach(k => { if (data[k]) data[k] = MASK; });
+  if (data.socialLogin?.google?.clientSecret) data.socialLogin.google.clientSecret = MASK;
+  if (data.socialLogin?.facebook?.appSecret) data.socialLogin.facebook.appSecret = MASK;
+  return data;
+}
+
 /**
  * @route   GET /api/settings
  * @desc    Get all settings
@@ -11,22 +25,10 @@ const Settings = require('../models/Settings');
 router.get('/', protect, authorize('admin'), async (req, res) => {
   try {
     const settings = await Settings.getSettings();
-    
-    // Don't send the API key in response - only send if it's configured
-    const settingsData = settings.toObject();
-    settingsData.openaiApiKey = settingsData.openaiApiKey ? '***configured***' : '';
-    
-    res.json({
-      success: true,
-      data: settingsData
-    });
+    res.json({ success: true, data: maskSensitive(settings) });
   } catch (error) {
     console.error('Error fetching settings:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching settings',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error fetching settings', error: error.message });
   }
 });
 
@@ -42,10 +44,12 @@ router.put('/', protect, authorize('admin'), async (req, res) => {
     if (!settings) {
       settings = await Settings.create(req.body);
     } else {
-      // If API key is being updated and it's the masked value, don't update it
-      if (req.body.openaiApiKey === '***configured***') {
-        delete req.body.openaiApiKey;
-      }
+      // Strip masked sensitive values so we don't overwrite with the mask
+      SENSITIVE_KEYS.forEach(k => {
+        if (req.body[k] === MASK || req.body[k] === '') delete req.body[k];
+      });
+      if (req.body.socialLogin?.google?.clientSecret === MASK) delete req.body.socialLogin.google.clientSecret;
+      if (req.body.socialLogin?.facebook?.appSecret === MASK) delete req.body.socialLogin.facebook.appSecret;
       
       Object.keys(req.body).forEach(key => {
         if (req.body[key] !== undefined) {
@@ -55,23 +59,23 @@ router.put('/', protect, authorize('admin'), async (req, res) => {
       
       await settings.save();
     }
-    
-    // Don't send the API key in response
-    const settingsData = settings.toObject();
-    settingsData.openaiApiKey = settingsData.openaiApiKey ? '***configured***' : '';
+
+    // Re-initialize email transporter if SMTP settings changed
+    if (req.body.smtpHost || req.body.smtpPort || req.body.smtpUser || req.body.smtpPassword) {
+      try {
+        const emailService = require('../services/emailService');
+        emailService.reinitialize(settings);
+      } catch (e) { /* ignore if method not yet available */ }
+    }
     
     res.json({
       success: true,
       message: 'Settings updated successfully',
-      data: settingsData
+      data: maskSensitive(settings)
     });
   } catch (error) {
     console.error('Error updating settings:', error);
-    res.status(400).json({
-      success: false,
-      message: 'Error updating settings',
-      error: error.message
-    });
+    res.status(400).json({ success: false, message: 'Error updating settings', error: error.message });
   }
 });
 
@@ -136,6 +140,53 @@ router.get('/bank-details', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error fetching bank details' });
+  }
+});
+
+/**
+ * @route   POST /api/settings/test-email
+ * @desc    Send a test email to verify SMTP configuration
+ * @access  Private/Admin
+ */
+router.post('/test-email', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { to } = req.body;
+    if (!to) return res.status(400).json({ success: false, message: 'Please provide a recipient email' });
+
+    const emailService = require('../services/emailService');
+    
+    // Re-initialize from DB settings first
+    const settings = await Settings.getSettings();
+    emailService.reinitialize(settings);
+
+    // Try verifying connection first
+    const verify = await emailService.testConnection();
+    if (!verify.success) {
+      return res.status(400).json({ success: false, message: `SMTP connection failed: ${verify.message}` });
+    }
+
+    // Send actual test email
+    await emailService.sendEmail({
+      to,
+      subject: `Test Email from ${settings.storeName || 'PesaShop'}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+          <div style="background:#1b5e35;color:#fff;padding:20px;text-align:center"><h1 style="margin:0">✅ Email Configuration Working</h1></div>
+          <div style="padding:20px;background:#f9f9f9">
+            <p>This is a test email from your <strong>${settings.storeName || 'PesaShop'}</strong> admin panel.</p>
+            <p>If you received this email, your SMTP settings are configured correctly.</p>
+            <hr style="border:none;border-top:1px solid #ddd;margin:20px 0">
+            <p style="font-size:12px;color:#999"><strong>SMTP Host:</strong> ${settings.smtpHost || 'N/A'}<br>
+            <strong>Port:</strong> ${settings.smtpPort || 'N/A'}<br>
+            <strong>From:</strong> ${settings.fromEmail || 'N/A'}</p>
+          </div>
+        </div>`,
+    });
+
+    res.json({ success: true, message: `Test email sent successfully to ${to}` });
+  } catch (error) {
+    console.error('Test email error:', error);
+    res.status(500).json({ success: false, message: `Failed to send test email: ${error.message}` });
   }
 });
 

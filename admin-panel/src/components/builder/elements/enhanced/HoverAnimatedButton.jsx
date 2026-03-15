@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const HoverAnimatedButton = ({
+export const HoverAnimatedButton = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   text = 'Hover Me',
   url = '#',
   hoverEffect = 'slide-right',
@@ -14,7 +17,8 @@ export const HoverAnimatedButton = ({
   borderRadius = '8px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   const effectStyles = {

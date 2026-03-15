@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { useRepeaterItem } from '@/components/builder/utils/RepeaterContext';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductCartButton = ({
+export const ProductCartButton = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   buttonText = 'Add to Cart',
   addedText = 'Added!',
   showQuantity = true,
@@ -13,7 +16,8 @@ export const ProductCartButton = ({
   fullWidth = true,
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);

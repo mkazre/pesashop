@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
 const MASKS = {
   circle: '50%',
@@ -10,7 +11,9 @@ const MASKS = {
   star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
 };
 
-export const ImageMask = ({
+export const ImageMask = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   src = 'https://placehold.co/400x400/e2e8f0/64748b?text=Masked+Image',
   alt = 'Masked image',
   maskShape = 'circle',
@@ -18,7 +21,8 @@ export const ImageMask = ({
   height = '250px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const isClipPath = ['diamond', 'hexagon', 'triangle', 'star'].includes(maskShape);
 

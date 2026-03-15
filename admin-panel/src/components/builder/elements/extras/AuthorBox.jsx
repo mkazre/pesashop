@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const AuthorBox = ({
+export const AuthorBox = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   name = 'John Doe',
   bio = 'A passionate writer and developer sharing insights about web development and design.',
   avatar = 'https://placehold.co/80x80/e2e8f0/64748b?text=JD',
@@ -9,7 +12,8 @@ export const AuthorBox = ({
   socialLinks = [{ platform: 'twitter', url: '#' }, { platform: 'linkedin', url: '#' }],
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
 
   return (

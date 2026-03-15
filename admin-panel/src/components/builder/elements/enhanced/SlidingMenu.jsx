@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const SlidingMenu = ({
+export const SlidingMenu = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = [
     { label: 'Home', url: '#', icon: '🏠' },
     { label: 'About', url: '#', icon: '📄' },
@@ -17,7 +20,8 @@ export const SlidingMenu = ({
   accentColor = '#3b82f6',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const [isOpen, setIsOpen] = useState(false);
 

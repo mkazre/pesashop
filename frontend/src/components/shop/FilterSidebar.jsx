@@ -1,17 +1,29 @@
-import { useState, useEffect } from 'react';
-import { IoChevronDown, IoChevronUp, IoClose } from 'react-icons/io5';
+import { useState, useMemo } from 'react';
+import { IoChevronDown, IoChevronUp, IoStarSharp } from 'react-icons/io5';
 import { useQuery } from 'react-query';
 import { productsAPI } from '@/services/api';
+import { useCurrencyStore } from '@/store';
 import Loading from '../common/Loading';
 
-export default function FilterSidebar({ filters, setFilters, onClose, isMobile }) {
-  const [expandedSections, setExpandedSections] = useState({
-    categories: true,
-    price: true,
-    brands: true,
-    sizes: false,
-    colors: false,
-  });
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+function getImageSrc(path) {
+  if (!path) return '';
+  return path.startsWith('http') ? path : `${API_URL}${path}`;
+}
+
+export default function FilterSidebar({ filters, setFilters, onClose, isMobile, settings = {}, currentCategoryId }) {
+  const { formatPrice } = useCurrencyStore();
+  const sb = settings?.sidebar || {};
+  const widgets = sb.widgets || [];
+
+  // Determine initial expanded state from settings widgets
+  const initialExpanded = useMemo(() => {
+    const expanded = { categories: true, priceRange: true, brands: true, sizes: false, colors: false, rating: false, tags: false };
+    widgets.forEach(w => { if (w.id && w.enabled) expanded[w.id] = !w.collapsed; });
+    return expanded;
+  }, [widgets]);
+
+  const [expandedSections, setExpandedSections] = useState(initialExpanded);
 
   const { data: availableFilters, isLoading } = useQuery(
     'productFilters',
@@ -127,49 +139,57 @@ export default function FilterSidebar({ filters, setFilters, onClose, isMobile }
     </label>
   );
 
+  // Helper: check if a widget is enabled
+  const isWidgetEnabled = (widgetId) => {
+    if (!widgets.length) return true; // default all on if no widget config
+    const widget = widgets.find(w => w.id === widgetId);
+    return widget ? widget.enabled : false;
+  };
+
+  // Rating filter handler
+  const handleRatingChange = (minRating) => {
+    setFilters({ ...filters, minRating: filters.minRating === minRating ? undefined : minRating });
+  };
+
   return (
-    <div className={`bg-white ${isMobile ? 'fixed inset-0 z-50 overflow-y-auto' : 'sticky top-4'}`}>
-      {/* Mobile Header */}
-      {isMobile && (
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h3 className="text-lg font-bold">Filters</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100">
-            <IoClose size={24} />
-          </button>
-        </div>
-      )}
-
-      <div className="p-6">
+    <div className={`bg-white ${isMobile ? '' : ''}`} style={{ background: settings?.theme?.sidebarBackground || '#ffffff' }}>
+      <div className="p-5">
         {/* Header with Clear All */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold">Filters</h3>
-          {hasActiveFilters && (
-            <button
-              onClick={clearAllFilters}
-              className="text-sm text-red-600 hover:text-red-700 font-medium"
-            >
-              Clear All
-            </button>
-          )}
-        </div>
+        {!isMobile && (
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-base font-bold text-gray-900">Filters</h3>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="text-xs text-red-600 hover:text-red-700 font-medium"
+              >
+                Clear All
+              </button>
+            )}
+          </div>
+        )}
 
-        {/* Categories Filter - Always show */}
-        {availableFilters?.data?.categories?.length > 0 && (
+        {/* Categories Filter */}
+        {isWidgetEnabled('categories') && availableFilters?.data?.categories?.length > 0 && (
           <FilterSection title="Categories" section="categories">
             {availableFilters.data.categories.map((category) => (
-              <Checkbox
-                key={category._id}
-                label={`${category.name} (${category.count})`}
-                checked={filters.categories?.includes(category._id)}
-                onChange={(checked) => handleCategoryChange(category._id, checked)}
-              />
+              <div key={category._id} className="flex items-center gap-2">
+                {sb.showCategoryIcon && category.iconImage?.url && (
+                  <img src={getImageSrc(category.iconImage.url)} alt="" className="w-5 h-5 rounded object-cover flex-shrink-0" />
+                )}
+                <Checkbox
+                  label={`${category.name}${sb.showCategoryCount !== false ? ` (${category.count})` : ''}`}
+                  checked={filters.categories?.includes(category._id) || category._id === currentCategoryId}
+                  onChange={(checked) => handleCategoryChange(category._id, checked)}
+                />
+              </div>
             ))}
           </FilterSection>
         )}
 
         {/* Price Range Filter */}
-        {availableFilters?.data?.priceRange && (
-          <FilterSection title="Price Range" section="price">
+        {isWidgetEnabled('priceRange') && availableFilters?.data?.priceRange && (
+          <FilterSection title="Price Range" section="priceRange">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <input
@@ -177,26 +197,26 @@ export default function FilterSidebar({ filters, setFilters, onClose, isMobile }
                   placeholder="Min"
                   value={filters.priceRange?.min || ''}
                   onChange={(e) => handlePriceChange(e.target.value, filters.priceRange?.max)}
-                  className="w-full px-3 py-2 border-2 border-gray-300 text-sm focus:border-primary focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:border-primary focus:outline-none"
                 />
-                <span className="text-gray-500">-</span>
+                <span className="text-gray-400">–</span>
                 <input
                   type="number"
                   placeholder="Max"
                   value={filters.priceRange?.max || ''}
                   onChange={(e) => handlePriceChange(filters.priceRange?.min, e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-300 text-sm focus:border-primary focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:border-primary focus:outline-none"
                 />
               </div>
               <div className="text-xs text-gray-500">
-                Range: R{availableFilters.data.priceRange.min} - R{availableFilters.data.priceRange.max}
+                Range: {formatPrice(availableFilters.data.priceRange.min)} – {formatPrice(availableFilters.data.priceRange.max)}
               </div>
             </div>
           </FilterSection>
         )}
 
-        {/* Brands Filter - Only show if exists */}
-        {availableFilters?.data?.brands && availableFilters.data.brands.length > 0 && (
+        {/* Brands Filter */}
+        {isWidgetEnabled('brands') && availableFilters?.data?.brands?.length > 0 && (
           <FilterSection title="Brands" section="brands">
             {availableFilters.data.brands.map((brand) => (
               <Checkbox
@@ -209,15 +229,39 @@ export default function FilterSidebar({ filters, setFilters, onClose, isMobile }
           </FilterSection>
         )}
 
-        {/* Sizes Filter - Only show if exists */}
-        {availableFilters?.data?.sizes && availableFilters.data.sizes.length > 0 && (
+        {/* Rating Filter */}
+        {isWidgetEnabled('rating') && (
+          <FilterSection title="Rating" section="rating">
+            <div className="space-y-1">
+              {[4, 3, 2, 1].map(star => (
+                <button
+                  key={star}
+                  onClick={() => handleRatingChange(star)}
+                  className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm transition-colors ${
+                    filters.minRating === star ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <IoStarSharp key={i} size={14} className={i < star ? 'text-yellow-400' : 'text-gray-300'} />
+                    ))}
+                  </div>
+                  <span className="text-xs text-gray-500">& up</span>
+                </button>
+              ))}
+            </div>
+          </FilterSection>
+        )}
+
+        {/* Sizes Filter */}
+        {isWidgetEnabled('sizes') && availableFilters?.data?.sizes?.length > 0 && (
           <FilterSection title="Sizes" section="sizes">
             <div className="flex flex-wrap gap-2">
               {availableFilters.data.sizes.map((size) => (
                 <button
                   key={size}
                   onClick={() => handleSizeToggle(size)}
-                  className={`px-4 py-2 border-2 text-sm font-medium transition-colors ${
+                  className={`px-3 py-1.5 border text-xs font-medium transition-colors rounded ${
                     filters.sizes?.includes(size)
                       ? 'bg-primary border-primary text-white'
                       : 'border-gray-300 hover:border-primary'
@@ -230,17 +274,17 @@ export default function FilterSidebar({ filters, setFilters, onClose, isMobile }
           </FilterSection>
         )}
 
-        {/* Colors Filter - Only show if exists */}
-        {availableFilters?.data?.colors && availableFilters.data.colors.length > 0 && (
+        {/* Colors Filter */}
+        {isWidgetEnabled('colors') && availableFilters?.data?.colors?.length > 0 && (
           <FilterSection title="Colors" section="colors">
             <div className="flex flex-wrap gap-2">
               {availableFilters.data.colors.map((color) => (
                 <button
                   key={color}
                   onClick={() => handleColorToggle(color)}
-                  className={`w-10 h-10 border-2 transition-all ${
+                  className={`w-8 h-8 border-2 transition-all rounded-full ${
                     filters.colors?.includes(color)
-                      ? 'border-primary ring-2 ring-primary ring-offset-2'
+                      ? 'border-primary ring-2 ring-primary ring-offset-1'
                       : 'border-gray-300'
                   }`}
                   style={{ backgroundColor: color.toLowerCase() }}
@@ -255,7 +299,7 @@ export default function FilterSidebar({ filters, setFilters, onClose, isMobile }
         {availableFilters?.data?.customFilters && 
           Object.entries(availableFilters.data.customFilters).map(([key, values]) => (
             values.length > 0 && (
-              <FilterSection key={key} title={key.replace(/_/g, ' ').toUpperCase()} section={key}>
+              <FilterSection key={key} title={key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} section={key}>
                 {values.map((value) => (
                   <Checkbox
                     key={value}
@@ -269,11 +313,27 @@ export default function FilterSidebar({ filters, setFilters, onClose, isMobile }
           ))
         }
 
+        {/* Sidebar Promo Banner */}
+        {sb.sidebarBannerImage && isWidgetEnabled('sidebarBanner') && (
+          <div className="mt-4">
+            {sb.sidebarBannerLink ? (
+              <a href={sb.sidebarBannerLink} target="_blank" rel="noopener noreferrer">
+                <img src={getImageSrc(sb.sidebarBannerImage)} alt={sb.sidebarBannerText || ''} className="w-full rounded-lg" />
+              </a>
+            ) : (
+              <img src={getImageSrc(sb.sidebarBannerImage)} alt={sb.sidebarBannerText || ''} className="w-full rounded-lg" />
+            )}
+            {sb.sidebarBannerText && (
+              <p className="text-xs text-gray-500 mt-1 text-center">{sb.sidebarBannerText}</p>
+            )}
+          </div>
+        )}
+
         {/* Apply Filters Button (Mobile) */}
         {isMobile && (
           <button
             onClick={onClose}
-            className="w-full mt-6 bg-primary text-white py-3 px-6 font-medium hover:bg-primary-600 transition-colors"
+            className="w-full mt-6 bg-primary text-white py-3 px-6 font-medium rounded hover:bg-primary/90 transition-colors"
           >
             Apply Filters
           </button>

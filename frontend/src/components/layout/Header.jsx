@@ -15,7 +15,17 @@ import {
 import { useCartStore, useWishlistStore, useAuthStore, useUIStore } from '@/store';
 import { useQuery } from 'react-query';
 import { menusAPI, categoriesAPI } from '@/services/api';
+import CurrencyPicker from '@/components/common/CurrencyPicker';
+import SearchBar from '@/components/common/SearchBar';
+import NotificationBell from '@/components/common/NotificationBell';
 const PageRenderer = React.lazy(() => import('@/components/pagebuilder/PageRenderer'));
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const resolveImgSrc = (src) => {
+  if (!src) return '';
+  if (src.startsWith('http')) return src;
+  return `${API_URL}${src}`;
+};
 
 // ── Helper: get nested setting ───────────────────────────────────────
 const getSetting = (settings, path, fallback = '') => {
@@ -290,8 +300,10 @@ const MobileMenuItem = ({ item, onClose, level = 0 }) => {
 };
 
 // ── Main Header Component ────────────────────────────────────────────
+// Lazy-load DefaultHeader to avoid bundling it when not needed
+const DefaultHeader = React.lazy(() => import('./DefaultHeader'));
+
 export default function Header() {
-  const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
@@ -305,18 +317,21 @@ export default function Header() {
   const { openAuthModal, openCartSidebar } = useUIStore();
 
   // Fetch header menu from API
-  const { data: menuResponse } = useQuery('menu-header', () => menusAPI.getByLocation('header'), {
+  const { data: menuResponse, isLoading: menuLoading } = useQuery('menu-header', () => menusAPI.getByLocation('header'), {
     staleTime: 5 * 60 * 1000,
   });
   const menu = menuResponse?.data?.data;
   const menuItems = menu?.items || [];
   const settings = menu?.settings || {};
+  const hasDynamicMenu = menuItems.length > 0;
 
-  // Fallback categories for when no menu is configured
-  const { data: categoriesResponse } = useQuery('categories', categoriesAPI.getAll);
+  // Categories fallback (always called to satisfy rules-of-hooks)
+  const { data: categoriesResponse } = useQuery('categories', categoriesAPI.getAll, {
+    enabled: hasDynamicMenu, // only fetch when admin menu is active
+  });
   const categoryList = categoriesResponse?.data?.data ?? [];
 
-  // Settings
+  // Settings (safe to read even when settings is {})
   const stickyEnabled = getSetting(settings, 'sticky', false);
   const transparentEnabled = getSetting(settings, 'transparent', false);
   const logoEnabled = getSetting(settings, 'logo.enabled', false);
@@ -377,6 +392,7 @@ export default function Header() {
 
   // Dynamic responsive CSS injection
   useEffect(() => {
+    if (!hasDynamicMenu) return;
     const mbp = parseInt(mobileBreakpoint) || 768;
     const tbp = parseInt(tabletBreakpoint) || 1024;
     const styleId = 'pesa-menu-responsive';
@@ -414,32 +430,32 @@ export default function Header() {
       .pesa-mobile-panel { transition: transform 0.3s ease; }
     `;
     return () => { if (styleEl.parentNode) styleEl.parentNode.removeChild(styleEl); };
-  }, [mobileBreakpoint, tabletBreakpoint, tabletFontSize, tabletItemPadding, hamburgerColor, hamburgerStyle]);
+  }, [hasDynamicMenu, mobileBreakpoint, tabletBreakpoint, tabletFontSize, tabletItemPadding, hamburgerColor, hamburgerStyle]);
 
   // Sticky scroll handler
   useEffect(() => {
-    if (!stickyEnabled) return;
+    if (!stickyEnabled || !hasDynamicMenu) return;
     const offset = parseInt(getSetting(settings, 'stickyOffset', '0')) || 0;
     const handleScroll = () => setIsSticky(window.scrollY > offset);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [stickyEnabled, settings]);
+  }, [stickyEnabled, hasDynamicMenu, settings]);
 
   // Close mobile menu on route change
   useEffect(() => { setMobileMenuOpen(false); }, [location.pathname]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/shop?search=${searchQuery}`);
-      setSearchQuery('');
-      setSearchExpanded(false);
-    }
-  };
-
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const wishlistCount = wishlistItems.length;
   const closeMobile = useCallback(() => setMobileMenuOpen(false), []);
+
+  // If no admin-configured menu exists, render the enhanced DefaultHeader
+  if (!menuLoading && !hasDynamicMenu) {
+    return (
+      <React.Suspense fallback={<div className="h-16 bg-white shadow-sm" />}>
+        <DefaultHeader />
+      </React.Suspense>
+    );
+  }
 
   // Sticky styles
   const stickyStyle = isSticky ? {
@@ -449,18 +465,7 @@ export default function Header() {
     boxShadow: getSetting(settings, 'stickyBoxShadow', '0 2px 10px rgba(0,0,0,0.1)'),
   } : {};
 
-  // Determine if we have a dynamic menu or need fallback
-  const hasDynamicMenu = menuItems.length > 0;
-
-  // Fallback nav items when no menu is configured
-  const fallbackItems = [
-    { label: 'Home', link: '/', linkType: 'manual', children: [] },
-    { label: 'Shop', link: '/shop', linkType: 'manual', children: [] },
-    { label: 'About Us', link: '/about', linkType: 'manual', children: [] },
-    { label: 'Contact', link: '/contact', linkType: 'manual', children: [] },
-  ];
-
-  const displayItems = hasDynamicMenu ? menuItems : fallbackItems;
+  const displayItems = menuItems;
 
   return (
     <>
@@ -473,10 +478,10 @@ export default function Header() {
             <div className="container-custom">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-6">
-                  {(topBarPhone || !hasDynamicMenu) && (
+                  {topBarPhone && (
                     <div className="flex items-center gap-2">
                       <IoCallOutline />
-                      <span>{topBarPhoneLabel} <strong>{topBarPhone || '(480) 555-0103'}</strong></span>
+                      <span>{topBarPhoneLabel} <strong>{topBarPhone}</strong></span>
                     </div>
                   )}
                   {topBarAnnouncement && (
@@ -484,27 +489,23 @@ export default function Header() {
                       <span>{topBarAnnouncement}</span>
                     </div>
                   )}
-                  {(topBarLocation || !hasDynamicMenu) && (
+                  {topBarLocation && (
                     <div className="hidden md:flex items-center gap-2">
                       <IoLocationOutline />
-                      <span>{topBarLocation || 'Johannesburg, South Africa'}</span>
+                      <span>{topBarLocation}</span>
                     </div>
                   )}
                 </div>
                 <div className="flex items-center gap-4">
-                  {(topBarShowLang || !hasDynamicMenu) && (
+                  {topBarShowLang && (
                     <select className="bg-transparent border-0 text-inherit text-sm cursor-pointer" style={{ fontSize: topBarFontSize }}>
                       {(topBarLanguages || 'English,Afrikaans').split(',').map(l => (
                         <option key={l.trim()} className="text-black">{l.trim()}</option>
                       ))}
                     </select>
                   )}
-                  {(topBarShowCurrency || !hasDynamicMenu) && (
-                    <select className="bg-transparent border-0 text-inherit text-sm cursor-pointer" style={{ fontSize: topBarFontSize }}>
-                      {(topBarCurrencies || 'ZAR,USD,EUR').split(',').map(c => (
-                        <option key={c.trim()} className="text-black">{c.trim()}</option>
-                      ))}
-                    </select>
+                  {topBarShowCurrency && (
+                    <CurrencyPicker variant="topbar" />
                   )}
                 </div>
               </div>
@@ -520,30 +521,21 @@ export default function Header() {
                 {/* Logo */}
                 <Link to={logoLink} className="flex items-center gap-2 shrink-0">
                   {logoEnabled && logoSrc ? (
-                    <img src={isSticky && getSetting(settings, 'logo.stickyLogo', '') ? getSetting(settings, 'logo.stickyLogo') : logoSrc}
+                    <img src={resolveImgSrc(isSticky && getSetting(settings, 'logo.stickyLogo', '') ? getSetting(settings, 'logo.stickyLogo') : logoSrc)}
                       alt="Logo" style={{ width: logoWidth, height: getSetting(settings, 'logo.height', 'auto') }} />
                   ) : (
                     <>
                       <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-xl">S</span>
+                        <span className="text-white font-bold text-xl">P</span>
                       </div>
-                      <span className="text-2xl font-bold text-gray-900">Sellzy</span>
+                      <span className="text-2xl font-bold text-gray-900">Pesa</span>
                     </>
                   )}
                 </Link>
 
                 {/* Search Bar */}
                 {headerRowShowSearch && (
-                  <form onSubmit={handleSearch} className="flex-1 max-w-2xl hidden md:block">
-                    <div className="relative">
-                      <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search for items..."
-                        className="w-full pl-4 pr-12 py-3 border-2 border-gray-300 focus:border-primary focus:outline-none transition-colors" />
-                      <button type="submit" className="absolute right-0 top-0 h-full px-6 bg-primary text-white hover:bg-primary-600 transition-colors">
-                        <IoSearch size={20} />
-                      </button>
-                    </div>
-                  </form>
+                  <SearchBar className="flex-1 max-w-2xl hidden md:block" />
                 )}
 
                 {/* Right Icons */}
@@ -565,6 +557,9 @@ export default function Header() {
                       </div>
                     </button>
                   )}
+
+                  {/* Notifications Bell */}
+                  <NotificationBell />
 
                   {headerRowShowWishlist && (
                     <Link to="/wishlist" className="relative hover:text-primary transition-colors" style={{ color: headerRowIconColor || undefined }}>
@@ -597,6 +592,9 @@ export default function Header() {
                     </button>
                   )}
 
+                  {/* Currency Switcher */}
+                  <CurrencyPicker variant="header" className="hidden md:block" />
+
                   {/* Mobile Menu Toggle */}
                   <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                     className={`pesa-mobile-toggle pesa-hamburger ${mobileMenuOpen ? 'pesa-hamburger--active' : ''}`}>
@@ -607,15 +605,9 @@ export default function Header() {
 
               {/* Mobile Search */}
               {headerRowShowSearch && (
-                <form onSubmit={handleSearch} className="mt-4 md:hidden">
-                  <div className="relative">
-                    <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search for items..." className="w-full pl-4 pr-12 py-3 border-2 border-gray-300 focus:border-primary focus:outline-none" />
-                    <button type="submit" className="absolute right-0 top-0 h-full px-4 bg-primary text-white">
-                      <IoSearch size={20} />
-                    </button>
-                  </div>
-                </form>
+                <div className="mt-4 md:hidden">
+                  <SearchBar variant="mobile" />
+                </div>
               )}
             </div>
           </div>
@@ -658,16 +650,6 @@ export default function Header() {
                 </button>
               )}
 
-              {/* Support Info (fallback) */}
-              {!hasDynamicMenu && (
-                <div className="hidden lg:flex items-center gap-2 text-sm">
-                  <IoCallOutline className="text-primary" size={20} />
-                  <div>
-                    <div className="text-gray-600">24/7 Support</div>
-                    <div className="font-medium">888-777-999</div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -705,17 +687,15 @@ export default function Header() {
             {/* Mobile search */}
             {getSetting(settings, 'mobile.showSearch', false) && (
               <div className="p-4 border-t border-gray-200">
-                <form onSubmit={(e) => { handleSearch(e); closeMobile(); }}>
-                  <div className="relative">
-                    <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search..." className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded text-sm" />
-                    <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
-                      <IoSearch size={18} />
-                    </button>
-                  </div>
-                </form>
+                <SearchBar variant="mobile" onClose={closeMobile} />
               </div>
             )}
+
+            {/* Currency Switcher (mobile) */}
+            <div className="p-4 border-t border-gray-200">
+              <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">Currency</div>
+              <CurrencyPicker variant="header" />
+            </div>
 
             {/* Auth link */}
             {!isAuthenticated && (

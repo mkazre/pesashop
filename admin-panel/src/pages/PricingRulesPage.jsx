@@ -10,7 +10,7 @@ import Select from '@/components/common/Select';
 import Table from '@/components/common/Table';
 import Modal from '@/components/common/Modal';
 import toast from 'react-hot-toast';
-import { IoAdd, IoTrash, IoCreate, IoFlash, IoClose } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoCreate, IoFlash, IoClose, IoWarning, IoRefresh } from 'react-icons/io5';
 
 const PricingRulesPage = () => {
   const queryClient = useQueryClient();
@@ -19,6 +19,10 @@ const PricingRulesPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
+  const [deleteAction, setDeleteAction] = useState('recalculate');
+  const [affectedCount, setAffectedCount] = useState(null);
+  const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
+  const [pendingSaveData, setPendingSaveData] = useState(null);
   const [isActiveFilter, setIsActiveFilter] = useState('');
   const [ruleTypeFilter, setRuleTypeFilter] = useState('');
 
@@ -100,70 +104,98 @@ const PricingRulesPage = () => {
     { enabled: showForm }
   );
 
+  const cleanFormData = (data) => {
+    const cleanData = { ...data };
+    if (cleanData.customerGroups && !Array.isArray(cleanData.customerGroups)) {
+      cleanData.customerGroups = cleanData.customerGroups ? [cleanData.customerGroups] : [];
+    }
+    if (cleanData.customers && !Array.isArray(cleanData.customers)) {
+      cleanData.customers = cleanData.customers ? [cleanData.customers] : [];
+    }
+    if (cleanData.products && !Array.isArray(cleanData.products)) {
+      cleanData.products = cleanData.products ? [cleanData.products] : [];
+    }
+    if (cleanData.categories && !Array.isArray(cleanData.categories)) {
+      cleanData.categories = cleanData.categories ? [cleanData.categories] : [];
+    }
+    if (Array.isArray(cleanData.daysOfWeek)) {
+      cleanData.daysOfWeek = cleanData.daysOfWeek.map(d => typeof d === 'string' ? parseInt(d) : d).filter(d => !isNaN(d));
+    }
+    return cleanData;
+  };
+
   const saveMutation = useMutation(
-    (data) => {
-      console.log('[PricingRulesPage] Saving rule with data:', data);
-      // Clean up the data before sending
-      const cleanData = { ...data };
-      
-      // Ensure arrays are properly formatted
-      if (cleanData.customerGroups && !Array.isArray(cleanData.customerGroups)) {
-        cleanData.customerGroups = cleanData.customerGroups ? [cleanData.customerGroups] : [];
-      }
-      if (cleanData.customers && !Array.isArray(cleanData.customers)) {
-        cleanData.customers = cleanData.customers ? [cleanData.customers] : [];
-      }
-      if (cleanData.products && !Array.isArray(cleanData.products)) {
-        cleanData.products = cleanData.products ? [cleanData.products] : [];
-      }
-      if (cleanData.categories && !Array.isArray(cleanData.categories)) {
-        cleanData.categories = cleanData.categories ? [cleanData.categories] : [];
-      }
-      
-      // Convert daysOfWeek to numbers
-      if (Array.isArray(cleanData.daysOfWeek)) {
-        cleanData.daysOfWeek = cleanData.daysOfWeek.map(d => typeof d === 'string' ? parseInt(d) : d).filter(d => !isNaN(d));
-      }
-      
-      console.log('Saving pricing rule:', cleanData);
-      
+    ({ data, updateProducts = false }) => {
+      const cleanData = cleanFormData(data);
       return editingRule
-        ? b2bkingAPI.updatePricingRule(editingRule._id, cleanData)
+        ? b2bkingAPI.updatePricingRule(editingRule._id, cleanData, updateProducts ? { updateProducts: 'true' } : {})
         : b2bkingAPI.createPricingRule(cleanData);
     },
     {
       onSuccess: async (response) => {
-        console.log('Pricing rule saved successfully:', response.data);
-        // Invalidate all pricing-rules queries
         await queryClient.invalidateQueries(['pricing-rules']);
-        // Force refetch
         await refetch();
-        toast.success(`Pricing rule ${editingRule ? 'updated' : 'created'} successfully`);
+        const updatedCount = response.data?.updatedProducts;
+        const msg = editingRule
+          ? `Pricing rule updated${updatedCount ? ` — ${updatedCount} product(s) re-priced` : ''}`
+          : 'Pricing rule created successfully';
+        toast.success(msg);
         setShowForm(false);
         setEditingRule(null);
+        setShowUpdateConfirm(false);
+        setPendingSaveData(null);
         reset();
       },
       onError: (error) => {
         console.error('Error saving pricing rule:', error);
-        console.error('Error response:', error.response?.data);
         toast.error(error.response?.data?.message || error.message || 'Failed to save pricing rule');
       },
     }
   );
 
+  // When the user submits the edit form, show update confirmation instead of saving directly
+  const handleFormSubmit = (data) => {
+    if (editingRule) {
+      // Editing — ask whether to update affected products
+      setPendingSaveData(data);
+      // Fetch affected count
+      b2bkingAPI.getAffectedProducts(editingRule._id)
+        .then(res => setAffectedCount(res.data?.data?.count || 0))
+        .catch(() => setAffectedCount(0));
+      setShowUpdateConfirm(true);
+    } else {
+      // Creating — just save (auto-applies on create in the backend)
+      saveMutation.mutate({ data });
+    }
+  };
+
   const deleteMutation = useMutation(
-    (id) => b2bkingAPI.deletePricingRule(id),
+    ({ id, priceAction }) => b2bkingAPI.deletePricingRule(id, { priceAction }),
     {
-      onSuccess: () => {
+      onSuccess: (response) => {
         queryClient.invalidateQueries('pricing-rules');
-        toast.success('Pricing rule deleted successfully');
+        const affected = response.data?.affectedProducts;
+        const actionLabel = deleteAction === 'clear' ? 'prices cleared' : deleteAction === 'clearBoth' ? 'all prices cleared' : deleteAction === 'recalculate' ? 'prices recalculated' : '';
+        toast.success(`Pricing rule deleted${affected ? ` — ${affected} product(s) ${actionLabel}` : ''}`);
         setDeleteModal(null);
+        setDeleteAction('recalculate');
+        setAffectedCount(null);
       },
       onError: (error) => {
         toast.error(error.response?.data?.message || 'Failed to delete pricing rule');
       },
     }
   );
+
+  // When opening delete modal, fetch affected product count
+  const handleDeleteClick = (rule) => {
+    setDeleteModal(rule);
+    setDeleteAction('recalculate');
+    setAffectedCount(null);
+    b2bkingAPI.getAffectedProducts(rule._id)
+      .then(res => setAffectedCount(res.data?.data?.count || 0))
+      .catch(() => setAffectedCount(0));
+  };
 
   const recalculateMutation = useMutation(
     (data) => b2bkingAPI.recalculatePrices(data),
@@ -310,7 +342,7 @@ const PricingRulesPage = () => {
           <Button
             size="sm"
             variant="danger"
-            onClick={() => setDeleteModal(row)}
+            onClick={() => handleDeleteClick(row)}
           >
             <IoTrash size={16} />
           </Button>
@@ -425,7 +457,7 @@ const PricingRulesPage = () => {
         title={editingRule ? 'Edit Pricing Rule' : 'New Pricing Rule'}
         size="large"
       >
-        <form onSubmit={handleSubmit(saveMutation.mutate)} className="space-y-4 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto">
           <Input
             label="Name *"
             {...register('name', { required: 'Name is required' })}
@@ -819,26 +851,159 @@ const PricingRulesPage = () => {
         </form>
       </Modal>
 
-      {/* Delete Modal */}
+      {/* Delete Modal — enhanced with price action options */}
       <Modal
         isOpen={!!deleteModal}
-        onClose={() => setDeleteModal(null)}
+        onClose={() => { setDeleteModal(null); setDeleteAction('recalculate'); setAffectedCount(null); }}
         title="Delete Pricing Rule"
       >
-        <p className="mb-4">
-          Are you sure you want to delete <strong>{deleteModal?.name}</strong>?
-        </p>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setDeleteModal(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => deleteMutation.mutate(deleteModal._id)}
-            loading={deleteMutation.isLoading}
-          >
-            Delete
-          </Button>
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <IoWarning className="text-red-500 mt-0.5 flex-shrink-0" size={20} />
+            <div>
+              <p className="text-sm text-red-800 font-medium">
+                You are about to delete <strong>{deleteModal?.name}</strong>.
+              </p>
+              {affectedCount !== null && (
+                <p className="text-sm text-red-700 mt-1">
+                  This rule affects <strong>{affectedCount}</strong> product(s).
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              What should happen to affected product prices?
+            </label>
+            <div className="space-y-2">
+              <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="deleteAction"
+                  value="recalculate"
+                  checked={deleteAction === 'recalculate'}
+                  onChange={(e) => setDeleteAction(e.target.value)}
+                  className="mt-0.5"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-900">Recalculate prices</span>
+                  <p className="text-xs text-gray-500 mt-0.5">Remove this rule's effect and recalculate using remaining active rules. Recommended if other rules still apply.</p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="deleteAction"
+                  value="clear"
+                  checked={deleteAction === 'clear'}
+                  onChange={(e) => setDeleteAction(e.target.value)}
+                  className="mt-0.5"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-900">
+                    Clear {deleteModal?.targetField === 'salePrice' ? 'sale' : deleteModal?.targetField === 'backendPrice' ? 'backend' : 'regular'} price
+                  </span>
+                  <p className="text-xs text-gray-500 mt-0.5">Set the target field ({deleteModal?.targetField || 'regularPrice'}) to empty on all affected products.</p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="deleteAction"
+                  value="clearBoth"
+                  checked={deleteAction === 'clearBoth'}
+                  onChange={(e) => setDeleteAction(e.target.value)}
+                  className="mt-0.5"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-900">Clear both regular &amp; sale price</span>
+                  <p className="text-xs text-gray-500 mt-0.5">Reset both regularPrice and salePrice to empty on all affected products. Use when starting fresh.</p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="deleteAction"
+                  value="none"
+                  checked={deleteAction === 'none'}
+                  onChange={(e) => setDeleteAction(e.target.value)}
+                  className="mt-0.5"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-900">Don't touch prices</span>
+                  <p className="text-xs text-gray-500 mt-0.5">Only delete the rule. Product prices remain as they are (keeps the last calculated values).</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button variant="outline" onClick={() => { setDeleteModal(null); setDeleteAction('recalculate'); setAffectedCount(null); }}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => deleteMutation.mutate({ id: deleteModal._id, priceAction: deleteAction })}
+              loading={deleteMutation.isLoading}
+            >
+              <IoTrash size={16} className="mr-1" />
+              Delete Rule
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Update Confirmation Modal — shown when editing a rule */}
+      <Modal
+        isOpen={showUpdateConfirm}
+        onClose={() => { setShowUpdateConfirm(false); setPendingSaveData(null); }}
+        title="Update Product Prices?"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <IoRefresh className="text-blue-500 mt-0.5 flex-shrink-0" size={20} />
+            <div>
+              <p className="text-sm text-blue-800">
+                You've updated the pricing rule <strong>{editingRule?.name}</strong>.
+              </p>
+              {affectedCount !== null && (
+                <p className="text-sm text-blue-700 mt-1">
+                  <strong>{affectedCount}</strong> product(s) are currently controlled by this rule.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-600">
+            Would you like to re-apply the updated rule to all affected products now? This will recalculate their prices based on the new values.
+          </p>
+
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Save WITHOUT updating products
+                saveMutation.mutate({ data: pendingSaveData, updateProducts: false });
+              }}
+              loading={saveMutation.isLoading}
+            >
+              Save Only
+            </Button>
+            <Button
+              onClick={() => {
+                // Save AND update all affected products
+                saveMutation.mutate({ data: pendingSaveData, updateProducts: true });
+              }}
+              loading={saveMutation.isLoading}
+            >
+              <IoRefresh size={16} className="mr-1" />
+              Save &amp; Update Products
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

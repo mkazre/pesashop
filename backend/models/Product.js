@@ -136,6 +136,10 @@ const productSchema = new mongoose.Schema({
     type: Map,
     of: mongoose.Schema.Types.Mixed
   },
+  specifications: [{
+    key: { type: String, required: true },
+    value: { type: String, required: true },
+  }],
   seoTitle: String,
   seoDescription: String,
   seoKeywords: [String],
@@ -168,6 +172,18 @@ productSchema.index({ sku: 1 });
 productSchema.index({ categories: 1 });
 productSchema.index({ status: 1 });
 productSchema.index({ isActive: 1, isFeatured: 1 });
+
+// Get price for a customer group (B2B pricing support)
+productSchema.methods.getPriceForCustomerGroup = function(customerGroup, quantity) {
+  // If there's a sale price, use it; otherwise use regular price
+  return this.salePrice || this.regularPrice;
+};
+
+// Decrement stock by the given quantity
+productSchema.methods.updateStock = async function(quantity) {
+  this.stock = Math.max(0, (this.stock || 0) - quantity);
+  await this.save();
+};
 
 // Generate slug before saving
 productSchema.pre('save', async function(next) {

@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Counter = ({
+export const Counter = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   endValue = 1000,
   startValue = 0,
   duration = 2000,
@@ -15,7 +18,8 @@ export const Counter = ({
   textAlign = 'center',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const [count, setCount] = useState(startValue);
   const ref = useRef(null);

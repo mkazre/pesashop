@@ -1,155 +1,323 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from 'react-query';
-import { useSearchParams } from 'react-router-dom';
-import { productsAPI } from '@/services/api';
+import { useSearchParams, useParams } from 'react-router-dom';
+import { productsAPI, categoriesAPI } from '@/services/api';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import FilterSidebar from '@/components/shop/FilterSidebar';
-import ProductGrid from '@/components/shop/ProductGrid';
+import ArchiveProductCard from '@/components/shop/ArchiveProductCard';
+import CategoryBanner from '@/components/shop/CategoryBanner';
+import CategoryShowcase from '@/components/shop/CategoryShowcase';
+import FloatingCompareBar from '@/components/shop/FloatingCompareBar';
 import { SortDropdown, ViewToggle } from '@/components/shop/ShopControls';
 import Pagination from '@/components/common/Pagination';
+import Loading from '@/components/common/Loading';
 import { IoFilter, IoClose } from 'react-icons/io5';
 import { usePageTemplate } from '@/hooks/usePageTemplate';
+import { useProductArchiveSettings } from '@/hooks/useProductArchiveSettings';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
 
 export default function ShopPage() {
   const { components: templateComponents, hasTemplate } = usePageTemplate('shop');
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { settings: archiveSettings } = useProductArchiveSettings();
+  const { category: categorySlug } = useParams();
+  const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState({});
-  const [layout, setLayout] = useState('grid');
-  const [sortBy, setSortBy] = useState('featured');
-  const [page, setPage] = useState(1);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  const limit = 12;
+  const s = archiveSettings || {};
+  const tb = s.toolbar || {};
+  const pg = s.productGrid || {};
+  const layoutConfig = s.layout || {};
+
+  const [layout, setLayout] = useState(tb.defaultView || 'grid');
+  const [sortBy, setSortBy] = useState(tb.defaultSort || 'featured');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(tb.defaultPerPage || 12);
+
+  // Reset page when filters or category change
+  useEffect(() => { setPage(1); }, [filters, categorySlug]);
+
+  // Fetch current category data if on category page
+  const { data: categoryData } = useQuery(
+    ['category', categorySlug],
+    () => categoriesAPI.getBySlug(categorySlug),
+    { enabled: !!categorySlug, staleTime: 5 * 60 * 1000 }
+  );
+  const currentCategory = useMemo(() => {
+    if (!categoryData) return null;
+    const d = categoryData?.data?.data || categoryData?.data;
+    if (Array.isArray(d)) return d[0] || null;
+    return d || null;
+  }, [categoryData]);
 
   // Build query params
-  const queryParams = {
+  const queryParams = useMemo(() => ({
     page,
-    limit,
+    limit: perPage,
     sort: sortBy,
     ...filters,
+    ...(categorySlug ? { categories: [currentCategory?._id].filter(Boolean) } : {}),
     search: searchParams.get('search') || undefined,
-  };
+  }), [page, perPage, sortBy, filters, categorySlug, currentCategory, searchParams]);
+
+  // Don't fetch products until the category is resolved (if on a category page)
+  const categoryReady = !categorySlug || !!currentCategory;
 
   const { data, isLoading } = useQuery(
     ['products', queryParams],
-    () => productsAPI.getAll(queryParams)
+    () => productsAPI.getAll(queryParams),
+    { keepPreviousData: true, enabled: categoryReady }
   );
 
-  const products = data?.data?.products || [];
+  // API returns { success, count, data: [...products], pagination: { page, limit, total, totalPages } }
+  // After axios wraps: response.data = { success, count, data: [...], pagination: {...} }
+  const products = data?.data?.data || [];
   const totalPages = data?.data?.pagination?.totalPages || 1;
   const totalProducts = data?.data?.pagination?.total || 0;
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (s.pagination?.scrollToTop !== false) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
-  const activeFiltersCount = Object.values(filters).flat().length;
+  const activeFiltersCount = Object.values(filters).flat().filter(Boolean).length;
+  const searchTerm = searchParams.get('search');
+  const isShopPage = !categorySlug && !searchTerm;
+  const isSearchPage = !!searchTerm;
+
+  // Breadcrumbs
+  const breadcrumbItems = useMemo(() => {
+    const items = [{ label: 'Shop', href: '/shop' }];
+    if (currentCategory) items.push({ label: currentCategory.name });
+    if (searchTerm) items.push({ label: `Search: "${searchTerm}"` });
+    return items;
+  }, [currentCategory, searchTerm]);
 
   // If a published shop template exists, render it via page builder
   if (hasTemplate && templateComponents) {
     return <PageRenderer components={templateComponents} />;
   }
 
+  // Layout type
+  const layoutType = layoutConfig.type || 'sidebar-left';
+  const sidebarWidth = layoutConfig.sidebarWidth || '280px';
+  const contentGap = (layoutConfig.contentGap || 24) + 'px';
+  const showSidebar = (s.sidebar?.enabled !== false) && layoutType !== 'full-width';
+
+  // Grid columns
+  const colsDesktop = pg.columnsDesktop || 3;
+  const colsTablet = pg.columnsTablet || 2;
+  const colsMobile = pg.columnsMobile || 2;
+  const gridGap = (pg.gap || 16) + 'px';
+
+  // Responsive grid CSS injected via style tag (Tailwind can't do dynamic grid-cols)
+  const gridId = 'archive-product-grid';
+  const gridStyle = {
+    display: 'grid',
+    gap: gridGap,
+    gridTemplateColumns: `repeat(${colsMobile}, 1fr)`,
+  };
+  const responsiveGridCSS = `
+    @media (min-width: 640px) { #${gridId} { grid-template-columns: repeat(${colsTablet}, 1fr) !important; } }
+    @media (min-width: 1024px) { #${gridId} { grid-template-columns: repeat(${colsDesktop}, 1fr) !important; } }
+  `;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container-custom py-6">
+      <div className="py-6" style={{ maxWidth: layoutConfig.containerMaxWidth || '1400px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Breadcrumbs */}
-        <Breadcrumbs 
-          items={[
-            { label: 'Shop', href: '/shop' }
-          ]} 
+        {(s.pageHeader?.showBreadcrumbs !== false) && (
+          <Breadcrumbs items={breadcrumbItems} />
+        )}
+
+        {/* Category Banner / Page Header */}
+        <CategoryBanner
+          category={currentCategory}
+          settings={s}
+          totalProducts={totalProducts}
+          isShopPage={isShopPage}
         />
 
-        {/* Page Header */}
-        <div className="py-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {searchParams.get('search') 
-              ? `Search Results for "${searchParams.get('search')}"`
-              : 'All Products'}
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Showing {products.length} of {totalProducts} products
-          </p>
-        </div>
+        {/* Search term display */}
+        {isSearchPage && s.searchResults?.showSearchTerm !== false && (
+          <div className="mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Search Results for "{searchTerm}"
+            </h1>
+          </div>
+        )}
 
-        <div className="flex gap-6">
-          {/* Sidebar - Desktop */}
-          <aside className="hidden lg:block w-64 flex-shrink-0">
-            <div className="sticky top-4">
-              <FilterSidebar 
-                filters={filters} 
-                setFilters={setFilters}
-              />
-            </div>
-          </aside>
+        {/* Category Showcase */}
+        {s.categoryShowcase?.enabled !== false && s.categoryShowcase?.showOnShopPage !== false && isShopPage && s.categoryShowcase?.position !== 'in-sidebar' && (
+          <CategoryShowcase settings={s} />
+        )}
+
+        {/* Main Layout */}
+        <div
+          className="flex"
+          style={{
+            gap: contentGap,
+            flexDirection: layoutType === 'sidebar-right' ? 'row' : 'row',
+          }}
+        >
+          {/* Sidebar — Left or Right */}
+          {showSidebar && layoutType === 'sidebar-left' && (
+            <aside className="hidden lg:block flex-shrink-0" style={{ width: sidebarWidth }}>
+              <div className={layoutConfig.stickyFilters !== false ? 'sticky top-4' : ''}>
+                <FilterSidebar
+                  filters={filters}
+                  setFilters={setFilters}
+                  settings={s}
+                  currentCategoryId={currentCategory?._id}
+                />
+              </div>
+            </aside>
+          )}
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Toolbar */}
-            <div className="bg-white border-2 border-gray-200 p-4 mb-6">
-              <div className="flex items-center justify-between gap-4">
-                {/* Left: Filter Button (Mobile) + Results Count */}
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setMobileFiltersOpen(true)}
-                    className="lg:hidden flex items-center gap-2 px-4 py-2 bg-primary text-white hover:bg-primary-600"
-                  >
-                    <IoFilter />
-                    Filters
-                    {activeFiltersCount > 0 && (
-                      <span className="bg-secondary text-black px-2 py-0.5 text-xs font-bold">
-                        {activeFiltersCount}
+            {tb.enabled !== false && (
+              <div className="bg-white border border-gray-200 p-3 mb-4 rounded-lg" style={{ background: s.theme?.toolbarBackground || '#ffffff' }}>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  {/* Left: Mobile filter + count */}
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setMobileFiltersOpen(true)}
+                      className="lg:hidden flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-white hover:bg-primary/90 rounded transition-colors"
+                    >
+                      <IoFilter size={16} />
+                      Filters
+                      {activeFiltersCount > 0 && (
+                        <span className="bg-white/20 text-white px-1.5 py-0.5 text-[10px] font-bold rounded">
+                          {activeFiltersCount}
+                        </span>
+                      )}
+                    </button>
+                    {tb.showResultCount !== false && (
+                      <span className="hidden sm:inline text-sm text-gray-600">
+                        {totalProducts > 0
+                          ? `${((page - 1) * perPage) + 1}–${Math.min(page * perPage, totalProducts)} of ${totalProducts} products`
+                          : '0 products'}
                       </span>
                     )}
-                  </button>
-                  <span className="hidden sm:inline text-gray-600">
-                    {((page - 1) * limit) + 1}–{Math.min(page * limit, totalProducts)} of {totalProducts} results
-                  </span>
-                </div>
+                  </div>
 
-                {/* Right: Sort + View Toggle */}
-                <div className="flex items-center gap-3">
-                  <SortDropdown value={sortBy} onChange={setSortBy} />
-                  <ViewToggle value={layout} onChange={setLayout} />
+                  {/* Right: Per page + Sort + View */}
+                  <div className="flex items-center gap-2">
+                    {tb.showPerPageSelector !== false && (
+                      <select
+                        value={perPage}
+                        onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+                        className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:border-primary focus:outline-none"
+                      >
+                        {(tb.perPageOptions || [12, 24, 36, 48]).map(n => (
+                          <option key={n} value={n}>Show {n}</option>
+                        ))}
+                      </select>
+                    )}
+                    {tb.showSortDropdown !== false && (
+                      <SortDropdown value={sortBy} onChange={setSortBy} />
+                    )}
+                    {tb.showViewToggle !== false && (
+                      <ViewToggle value={layout} onChange={setLayout} />
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Products Grid */}
-            <ProductGrid 
-              products={products} 
-              isLoading={isLoading}
-              layout={layout}
-            />
+            {/* Products */}
+            {isLoading ? (
+              <Loading text="Loading products..." />
+            ) : products.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="text-5xl mb-4">{s.emptyState?.icon || '🔍'}</div>
+                <h3 className="text-xl font-medium text-gray-900 mb-2">{s.emptyState?.title || 'No products found'}</h3>
+                <p className="text-gray-600 mb-4">{s.emptyState?.message || 'Try adjusting your filters or search terms'}</p>
+                {s.emptyState?.showClearFiltersButton !== false && activeFiltersCount > 0 && (
+                  <button onClick={() => setFilters({})} className="px-4 py-2 bg-primary text-white rounded text-sm hover:bg-primary/90 transition-colors">
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
+            ) : layout === 'list' ? (
+              <div className="space-y-3">
+                {products.map((product) => (
+                  <ArchiveProductCard key={product._id} product={product} layout="list" settings={s} />
+                ))}
+              </div>
+            ) : (
+              <>
+                <style>{responsiveGridCSS}</style>
+                <div id={gridId} style={gridStyle}>
+                  {products.map((product) => (
+                    <ArchiveProductCard key={product._id} product={product} layout="grid" settings={s} />
+                  ))}
+                </div>
+              </>
+            )}
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                showing={{
-                  from: ((page - 1) * limit) + 1,
-                  to: Math.min(page * limit, totalProducts),
-                  total: totalProducts
-                }}
-              />
+              <div className="mt-6">
+                <Pagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  showing={{
+                    from: ((page - 1) * perPage) + 1,
+                    to: Math.min(page * perPage, totalProducts),
+                    total: totalProducts
+                  }}
+                />
+              </div>
             )}
           </div>
+
+          {/* Sidebar — Right */}
+          {showSidebar && layoutType === 'sidebar-right' && (
+            <aside className="hidden lg:block flex-shrink-0" style={{ width: sidebarWidth }}>
+              <div className={layoutConfig.stickyFilters !== false ? 'sticky top-4' : ''}>
+                <FilterSidebar
+                  filters={filters}
+                  setFilters={setFilters}
+                  settings={s}
+                  currentCategoryId={currentCategory?._id}
+                />
+              </div>
+            </aside>
+          )}
         </div>
       </div>
 
-      {/* Mobile Filters Sidebar */}
+      {/* Mobile Filters Drawer */}
       {mobileFiltersOpen && (
-        <FilterSidebar 
-          filters={filters} 
-          setFilters={setFilters}
-          onClose={() => setMobileFiltersOpen(false)}
-          isMobile
-        />
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setMobileFiltersOpen(false)} />
+          <div className={`absolute top-0 ${(s.mobile?.filterDrawerPosition || 'left') === 'right' ? 'right-0' : 'left-0'} bottom-0 w-80 bg-white overflow-y-auto`}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-bold">Filters</h3>
+              <button onClick={() => setMobileFiltersOpen(false)} className="p-2 hover:bg-gray-100 rounded">
+                <IoClose size={24} />
+              </button>
+            </div>
+            <FilterSidebar
+              filters={filters}
+              setFilters={setFilters}
+              settings={s}
+              currentCategoryId={currentCategory?._id}
+              onClose={() => setMobileFiltersOpen(false)}
+              isMobile
+            />
+          </div>
+        </div>
       )}
+
+      {/* Floating Compare Bar */}
+      <FloatingCompareBar settings={s} />
     </div>
   );
 }

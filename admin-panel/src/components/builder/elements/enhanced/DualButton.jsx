@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { ArrowRight, ChevronRight } from 'lucide-react';
 import { TextControl, ColorControl, SelectControl } from '@/components/builder/controls/PropertyControls';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const DualButton = ({ className = '', style = {} }) => {
+export const DualButton = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { className = '', style = {} } = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

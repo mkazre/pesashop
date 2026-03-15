@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { laybyAPI, settingsAPI } from '@/services/api';
+import { useCurrencyStore } from '@/store';
 import toast from 'react-hot-toast';
 
 export default function LaybyesPage() {
+  const { formatPrice } = useCurrencyStore();
   const queryClient = useQueryClient();
   const [selectedLaybye, setSelectedLaybye] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -44,9 +46,18 @@ export default function LaybyesPage() {
   const activeLaybyes = laybyes.filter(l => l.status === 'active');
   const completedLaybyes = laybyes.filter(l => l.status !== 'active');
 
+  const getEffectiveRemaining = (laybye) => {
+    const pendingTotal = (laybye.payments || [])
+      .filter(p => p.status === 'pending')
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+    return Math.max(0, (laybye.remainingAmount || 0) - pendingTotal);
+  };
+
   const openPayModal = (laybye) => {
     setSelectedLaybye(laybye);
-    setPaymentAmount((laybye.installmentPlan?.installmentAmount || 0).toFixed(2));
+    const effective = getEffectiveRemaining(laybye);
+    const suggested = Math.min(laybye.installmentPlan?.installmentAmount || 0, effective);
+    setPaymentAmount(suggested > 0 ? suggested.toFixed(2) : '');
     setPayStep('amount');
     setPaymentMethod('');
     setShowPayModal(true);
@@ -178,6 +189,30 @@ export default function LaybyesPage() {
                         </button>
                       </div>
 
+                      {/* Attached Products */}
+                      {laybye.order?.items && laybye.order.items.filter(i => i.isLaybye).length > 0 && (
+                        <div className="mb-4 bg-gray-50 rounded-lg p-3">
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Products on Laybye</p>
+                          <div className="space-y-2">
+                            {laybye.order.items.filter(i => i.isLaybye).map((item, idx) => (
+                              <div key={idx} className="flex items-center gap-3">
+                                {item.product?.images?.[0] && (
+                                  <img
+                                    src={item.product.images[0].startsWith('http') ? item.product.images[0] : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${item.product.images[0]}`}
+                                    alt="" className="w-10 h-10 rounded object-cover border border-gray-200"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 truncate">{item.product?.name || item.name}</p>
+                                  <p className="text-xs text-gray-500">Qty: {item.quantity} × {formatPrice(item.price || 0)}</p>
+                                </div>
+                                <p className="text-sm font-semibold text-gray-900">{formatPrice(item.total || 0)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Progress Bar */}
                       <div className="mb-4">
                         <div className="flex items-center justify-between text-sm mb-1.5">
@@ -196,15 +231,15 @@ export default function LaybyesPage() {
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                         <div>
                           <p className="text-gray-500">Total Amount</p>
-                          <p className="font-semibold text-gray-900">R {(laybye.totalAmount || 0).toFixed(2)}</p>
+                          <p className="font-semibold text-gray-900">{formatPrice(laybye.totalAmount || 0)}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Paid</p>
-                          <p className="font-semibold text-green-600">R {(laybye.paidAmount || 0).toFixed(2)}</p>
+                          <p className="font-semibold text-green-600">{formatPrice(laybye.paidAmount || 0)}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Remaining</p>
-                          <p className="font-semibold text-red-600">R {(laybye.remainingAmount || 0).toFixed(2)}</p>
+                          <p className="font-semibold text-red-600">{formatPrice(laybye.remainingAmount || 0)}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Next Payment</p>
@@ -217,7 +252,7 @@ export default function LaybyesPage() {
                       {/* Installment Info */}
                       <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-sm">
                         <span className="text-gray-500">
-                          {laybye.installmentPlan?.frequency} payments of R {(laybye.installmentPlan?.installmentAmount || 0).toFixed(2)}
+                          {laybye.installmentPlan?.frequency} payments of {formatPrice(laybye.installmentPlan?.installmentAmount || 0)}
                         </span>
                         {laybye.expiryDate && (
                           <span className="text-gray-400">
@@ -236,7 +271,7 @@ export default function LaybyesPage() {
                             {laybye.payments.map((payment, idx) => (
                               <div key={idx} className={`flex items-center justify-between py-2 px-3 rounded-lg text-sm ${payment.status === 'pending' ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}>
                                 <div className="flex items-center gap-2">
-                                  <span className="font-medium text-gray-900">R {(payment.amount || 0).toFixed(2)}</span>
+                                  <span className="font-medium text-gray-900">{formatPrice(payment.amount || 0)}</span>
                                   <span className="text-gray-400">{payment.paymentMethod}</span>
                                   {payment.status === 'pending' && (
                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">Pending</span>
@@ -273,7 +308,7 @@ export default function LaybyesPage() {
                         <span className={getStatusBadge(laybye.status)}>{laybye.status}</span>
                       </div>
                       <p className="text-sm text-gray-500 mt-1">
-                        R {(laybye.totalAmount || 0).toFixed(2)} — {laybye.payments?.filter(p => p.status === 'completed').length || 0} payments
+                        {formatPrice(laybye.totalAmount || 0)} — {laybye.payments?.filter(p => p.status === 'completed').length || 0} payments
                       </p>
                     </div>
                     <p className="text-sm text-gray-400">
@@ -300,7 +335,14 @@ export default function LaybyesPage() {
                           <p className="font-medium text-gray-900">{app.productName}</p>
                           <span className={getStatusBadge(app.status)}>{app.status}</span>
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">R {(app.productPrice || 0).toFixed(2)}</p>
+                        <p className="text-sm text-gray-500 mt-1">{formatPrice(app.productPrice || 0)}</p>
+                        {app.planName && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            <span className="font-medium">Plan:</span> {app.planName}
+                            {app.depositAmount > 0 && <> — Deposit: {formatPrice(app.depositAmount)}</>}
+                            {app.numberOfPayments > 0 && <> — {app.numberOfPayments}× {formatPrice(app.installmentAmount || 0)}/{app.frequency || 'month'}</>}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-400 mt-1">
                           Applied: {new Date(app.createdAt).toLocaleDateString('en-ZA')}
                         </p>
@@ -308,6 +350,12 @@ export default function LaybyesPage() {
                       {app.status === 'rejected' && app.rejectionReason && (
                         <div className="text-right max-w-[200px]">
                           <p className="text-xs text-red-600">{app.rejectionReason}</p>
+                        </div>
+                      )}
+                      {app.status === 'approved' && (
+                        <div className="text-right">
+                          <span className="text-xs text-green-600 font-medium">✓ Approved</span>
+                          {app.reviewedAt && <p className="text-xs text-gray-400">{new Date(app.reviewedAt).toLocaleDateString('en-ZA')}</p>}
                         </div>
                       )}
                     </div>
@@ -334,47 +382,60 @@ export default function LaybyesPage() {
             </div>
 
             {/* Step 1: Enter Amount */}
-            {payStep === 'amount' && (
+            {payStep === 'amount' && (() => {
+              const effRemaining = getEffectiveRemaining(selectedLaybye);
+              const hasPendingDeduction = effRemaining < (selectedLaybye.remainingAmount || 0);
+              return (
               <div className="p-6 space-y-4">
                 <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="text-gray-500">Outstanding</p>
-                    <p className="font-bold text-lg text-gray-900">R {(selectedLaybye.remainingAmount || 0).toFixed(2)}</p>
+                    <p className="font-bold text-lg text-gray-900">{formatPrice(effRemaining)}</p>
+                    {hasPendingDeduction && (
+                      <p className="text-[10px] text-yellow-600 mt-0.5">Pending payments deducted</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-gray-500">Suggested</p>
-                    <p className="font-bold text-lg text-gray-900">R {(selectedLaybye.installmentPlan?.installmentAmount || 0).toFixed(2)}</p>
+                    <p className="font-bold text-lg text-gray-900">{formatPrice(Math.min(selectedLaybye.installmentPlan?.installmentAmount || 0, effRemaining))}</p>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Amount (R)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="1"
-                    max={selectedLaybye.remainingAmount}
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
-                  />
-                </div>
+                {effRemaining <= 0 ? (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-sm text-yellow-700 font-medium">You already have pending payments covering the full remaining balance. Please wait for verification.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Amount</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="1"
+                      max={effRemaining}
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                    />
+                  </div>
+                )}
                 <div className="flex items-center justify-end gap-3 pt-2">
                   <button onClick={closePayModal} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium">Cancel</button>
                   <button
                     onClick={() => setPayStep('method')}
-                    disabled={!paymentAmount || parseFloat(paymentAmount) <= 0 || parseFloat(paymentAmount) > selectedLaybye.remainingAmount + 0.01}
+                    disabled={effRemaining <= 0 || !paymentAmount || parseFloat(paymentAmount) <= 0 || parseFloat(paymentAmount) > effRemaining + 0.01}
                     className="px-6 py-2.5 bg-gray-900 text-white rounded-lg font-medium text-sm hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Continue
                   </button>
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* Step 2: Choose Payment Method */}
             {payStep === 'method' && (
               <div className="p-6 space-y-4">
-                <p className="text-sm text-gray-600 mb-2">Amount: <span className="font-bold text-gray-900">R {parseFloat(paymentAmount).toFixed(2)}</span></p>
+                <p className="text-sm text-gray-600 mb-2">Amount: <span className="font-bold text-gray-900">{formatPrice(parseFloat(paymentAmount))}</span></p>
                 <p className="text-sm font-medium text-gray-700 mb-3">How would you like to pay?</p>
                 <div className="space-y-3">
                   <button
@@ -431,7 +492,7 @@ export default function LaybyesPage() {
               <div className="p-6 space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm font-medium text-blue-800 mb-1">EFT / Bank Transfer</p>
-                  <p className="text-xs text-blue-600">Please transfer <span className="font-bold">R {parseFloat(paymentAmount).toFixed(2)}</span> to one of the accounts below and use your order/layby reference.</p>
+                  <p className="text-xs text-blue-600">Please transfer <span className="font-bold">{formatPrice(parseFloat(paymentAmount))}</span> to one of the accounts below and use your order/layby reference.</p>
                 </div>
                 {bankDetails.length > 0 ? (
                   <div className="space-y-3">
@@ -478,7 +539,7 @@ export default function LaybyesPage() {
               <div className="p-6 space-y-4">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-sm font-medium text-green-800 mb-1">Cash Payment</p>
-                  <p className="text-xs text-green-600">You are recording a cash payment of <span className="font-bold">R {parseFloat(paymentAmount).toFixed(2)}</span>.</p>
+                  <p className="text-xs text-green-600">You are recording a cash payment of <span className="font-bold">{formatPrice(parseFloat(paymentAmount))}</span>.</p>
                 </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                   <p className="text-xs text-yellow-700">Your payment will be marked as <span className="font-bold">pending</span> until the store admin verifies the funds have been received.</p>
@@ -522,7 +583,7 @@ export default function LaybyesPage() {
                 </div>
                 <h3 className="text-lg font-bold text-gray-900">Payment Submitted</h3>
                 <p className="text-sm text-gray-600">
-                  Your {paymentMethod === 'eft' ? 'EFT' : 'cash'} payment of <span className="font-bold">R {parseFloat(paymentAmount).toFixed(2)}</span> has been recorded and is awaiting verification by the store.
+                  Your {paymentMethod === 'eft' ? 'EFT' : 'cash'} payment of <span className="font-bold">{formatPrice(parseFloat(paymentAmount))}</span> has been recorded and is awaiting verification by the store.
                 </p>
                 <p className="text-xs text-gray-400">You will be notified once the payment has been confirmed.</p>
                 <button

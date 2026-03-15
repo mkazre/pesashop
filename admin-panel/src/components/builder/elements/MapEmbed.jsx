@@ -1,14 +1,18 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const MapEmbed = ({
+export const MapEmbed = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   address = 'New York, NY',
   zoom = 14,
   height = '400px',
   mapType = 'roadmap',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

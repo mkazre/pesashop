@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Toggle = ({
+export const Toggle = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   title = 'Toggle Title',
   content = 'Toggle content goes here. Click the title to expand or collapse.',
   icon = '▸',
@@ -11,7 +14,8 @@ export const Toggle = ({
   headerBg = '#f9fafb',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

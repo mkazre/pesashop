@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { Palette } from 'lucide-react';
 import { TextControl, ColorControl } from '@/components/builder/controls/PropertyControls';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const DualColorText = ({ text = 'Dual Color Text', className = '', style = {} }) => {
+export const DualColorText = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { text = 'Dual Color Text', className = '', style = {} } = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

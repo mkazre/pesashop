@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Preloader = ({
+export const Preloader = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   type = 'spinner',
   size = '48px',
   color = '#3b82f6',
@@ -11,7 +14,8 @@ export const Preloader = ({
   textColor = '#6b7280',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   const spinnerStyle = `@keyframes spin { to { transform: rotate(360deg); } }`;

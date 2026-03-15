@@ -27,10 +27,14 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (e.g. curl, server-to-server)
+    // Allow requests with no origin (e.g. curl, server-to-server, mobile apps)
     if (!origin) return callback(null, true);
     // Allow any localhost / 127.0.0.1 origin (dev proxies use random ports)
     if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+    // Allow production domains (pesashop.com and all subdomains)
+    if (/^https?:\/\/([a-z0-9-]+\.)?pesashop\.com$/.test(origin)) {
       return callback(null, true);
     }
     // Also allow explicitly configured origins
@@ -46,7 +50,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "http://localhost:5000", "http://localhost:3000", "http://localhost:3001", "*"],
+      imgSrc: ["'self'", "data:", "blob:", "*"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
     },
@@ -67,7 +71,7 @@ if (process.env.NODE_ENV === 'development') {
 } else {
   const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW) * 60 * 1000 || 15 * 60 * 1000,
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500,
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 1000,
     message: 'Too many requests from this IP, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
@@ -121,6 +125,16 @@ const dashboardRoutes = require('./routes/dashboard');
 const mediaRoutes = require('./routes/media');
 const laybyApplicationRoutes = require('./routes/laybyApplications');
 const laybyTransactionRoutes = require('./routes/laybyTransactions');
+const badgeRoutes = require('./routes/badges');
+const productPageSettingsRoutes = require('./routes/productPageSettings');
+const productArchiveSettingsRoutes = require('./routes/productArchiveSettings');
+const homePageConfigRoutes = require('./routes/homePageConfig');
+const aiRoutes = require('./routes/ai');
+const statsRoutes = require('./routes/stats');
+const questionRoutes = require('./routes/questions');
+const notificationRoutes = require('./routes/notifications');
+const roleRoutes = require('./routes/roles');
+const userRoutes = require('./routes/users');
 
 // Mount routes
 app.use('/api/auth', authRoutes);
@@ -151,6 +165,16 @@ app.use('/api/b2bking', b2bkingRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/layby-applications', laybyApplicationRoutes);
 app.use('/api/layby-transactions', laybyTransactionRoutes);
+app.use('/api/badges', badgeRoutes);
+app.use('/api/product-page-settings', productPageSettingsRoutes);
+app.use('/api/product-archive-settings', productArchiveSettingsRoutes);
+app.use('/api/home-page-config', homePageConfigRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/questions', questionRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -211,6 +235,17 @@ initCouponEmailCronJobs();
 // Initialize review reminder cron jobs
 initReviewReminderCron();
 
+// Process scheduled notifications every 60 seconds
+const notificationService = require('./services/notificationService');
+setInterval(async () => {
+  try {
+    const count = await notificationService.processScheduled();
+    if (count > 0) console.log(`Processed ${count} scheduled notification(s)`);
+  } catch (err) {
+    console.error('Scheduled notification error:', err.message);
+  }
+}, 60000);
+
 // Start server
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
@@ -219,8 +254,8 @@ const server = app.listen(PORT, () => {
 
 // Allow long-running requests (imports, bulk operations) — individual routes
 // set their own timeouts via req.setTimeout() for finer control
-server.timeout = 1800000; // 30 minutes
-server.keepAliveTimeout = 1800000;
+server.timeout = 10800000; // 3 hours (for large imports with image processing)
+server.keepAliveTimeout = 10800000;
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {

@@ -68,10 +68,12 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { ordersAPI } from '@/services/api';
 import { IoCheckmarkCircle } from 'react-icons/io5';
+import { useCurrencyStore } from '@/store';
 import Button from '@/components/common/Button';
 import Loading from '@/components/common/Loading';
 
 export function OrderSuccessPage() {
+  const { formatPrice } = useCurrencyStore();
   const { orderId } = useParams();
 
   const { data, isLoading } = useQuery(
@@ -123,7 +125,7 @@ export function OrderSuccessPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Amount Payable:</span>
-                <span className="font-bold text-lg">R{order.total.toFixed(2)} (Paid)</span>
+                <span className="font-bold text-lg">{formatPrice(order.total)} (Paid)</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Order Date:</span>

@@ -6,12 +6,34 @@ import { Monitor, Tablet, Smartphone, Database, Trash2, Plus, Upload } from 'luc
 import { DynamicDataPicker } from '@/components/builder/utils/DynamicDataPicker';
 import { isDynamicValue, extractField, getPropType, DATA_POINT_CATEGORIES, ALL_DATA_POINTS, makeDynamicToken } from '@/components/builder/utils/dynamicData';
 import MediaLibraryModal from '@/components/media/MediaLibraryModal';
+import { AdvancedSpacingControl, AdvancedBorderControl, BoxShadowControl } from '@/components/builder/controls/PropertyControls';
+import BadgeModulePicker from '@/components/badges/BadgeModulePicker';
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500';
 const selectCls = inputCls;
 const labelCls = 'block text-xs font-medium text-gray-600 mb-1';
 const sectionCls = 'space-y-3';
 const headingCls = 'text-sm font-semibold text-gray-800 border-b border-gray-200 pb-1';
+
+// Stable CollapsibleSection component — defined OUTSIDE render to prevent unmount/remount on re-render
+const CollapsibleSection = React.memo(({ id, title, defaultOpen = true, isOpen, onToggle, children }) => {
+  const open = isOpen !== undefined ? isOpen : defaultOpen;
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onToggle(id)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+      >
+        <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">{title}</span>
+        <span className="text-gray-400 text-xs">{open ? '▾' : '▸'}</span>
+      </button>
+      {open && (
+        <div className="p-3 space-y-3">{children}</div>
+      )}
+    </div>
+  );
+});
 
 const GOOGLE_FONTS = [
   'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Raleway',
@@ -54,7 +76,7 @@ const MediaLibraryButton = ({ onSelect }) => {
   );
 };
 
-export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
+export const ComprehensiveSettings = ({ nodeId, displayName, activeTab, hasDedicatedSettings = false }) => {
   const [openSections, setOpenSections] = useState({});
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerProp, setPickerProp] = useState(null);
@@ -73,7 +95,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
 
   // If this is a Column child, find the parent Columns node so we can show its layout controls
   const parentColumnsInfo = useEditor((state) => {
-    const dn = (displayName || '').toLowerCase();
+    const dn = (typeof displayName === 'string' ? displayName : '').toLowerCase();
     if (dn !== 'column') return null;
     const node = state.nodes[nodeId];
     const parentId = node?.data?.parent;
@@ -187,6 +209,19 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
     });
   };
 
+  const deleteStyle = (key) => {
+    setProp((p) => {
+      if (!p.style) return;
+      if (breakpoint === 'desktop') {
+        delete p.style[key];
+      } else {
+        if (p.style.responsive?.[breakpoint]) {
+          delete p.style.responsive[breakpoint][key];
+        }
+      }
+    });
+  };
+
   const clearOverride = (key) => {
     setProp((p) => {
       if (p.style?.responsive?.[breakpoint]) {
@@ -219,21 +254,11 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
     return openSections[id] !== undefined ? openSections[id] : defaultOpen;
   };
 
-  const CollapsibleSection = ({ id, title, defaultOpen = true, children }) => (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
-      <button
-        type="button"
-        onClick={() => toggleSection(id)}
-        className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
-      >
-        <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">{title}</span>
-        <span className="text-gray-400 text-xs">{isSectionOpen(id, defaultOpen) ? '▾' : '▸'}</span>
-      </button>
-      {isSectionOpen(id, defaultOpen) && (
-        <div className="p-3 space-y-3">{children}</div>
-      )}
-    </div>
-  );
+  // Helper to create CollapsibleSection props from local open/toggle state
+  const csProps = (id, defaultOpen = true) => ({
+    isOpen: openSections[id] !== undefined ? openSections[id] : defaultOpen,
+    onToggle: toggleSection,
+  });
 
   // ── Element-specific helpers ──────────────────────────────────────
   const handleImageUpload = (e) => {
@@ -244,7 +269,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
     reader.readAsDataURL(file);
   };
 
-  const dn = (displayName || '').toLowerCase();
+  const dn = (typeof displayName === 'string' ? displayName : '').toLowerCase();
   const isImage = dn === 'image' || dn === 'ultimate image';
   const isButton = dn === 'button' || dn === 'link button' || dn === 'hover animated button' || dn === 'dual button' || dn === 'add to cart button' || dn === 'product cart button';
   const isHeading = dn === 'heading' || dn === 'animated heading' || dn === 'fancy heading' || dn === 'highlighted heading' || dn === 'dual color text' || dn === 'product title';
@@ -315,9 +340,9 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
     <div className="space-y-3">
       <BreakpointBar />
 
-      {/* ── Image-specific controls ── */}
-      {isImage && (
-        <CollapsibleSection id="imageProps" title="Image">
+      {/* ── Element-specific controls (hidden when dedicated settings panel shown above) ── */}
+      {!hasDedicatedSettings && isImage && (
+        <CollapsibleSection id="imageProps" title="Image" {...csProps('imageProps')}>
           <div>
             <label className={labelCls}>Image Source (URL)</label>
             <input type="text" value={props.src || ''} onChange={(e) => updateProp('src', e.target.value)} className={inputCls} placeholder="https://example.com/image.jpg" />
@@ -401,8 +426,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Heading-specific controls ── */}
-      {isHeading && (
-        <CollapsibleSection id="headingProps" title="Heading">
+      {!hasDedicatedSettings && isHeading && (
+        <CollapsibleSection id="headingProps" title="Heading" {...csProps('headingProps')}>
           <div>
             <label className={labelCls}>Content</label>
             <textarea value={content} onChange={(e) => updateProp('content', e.target.value)} className={inputCls} placeholder="Enter heading text" rows={2} />
@@ -432,8 +457,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Text-specific controls ── */}
-      {isText && !isHeading && (
-        <CollapsibleSection id="textProps" title="Text Content">
+      {!hasDedicatedSettings && isText && !isHeading && (
+        <CollapsibleSection id="textProps" title="Text Content" {...csProps('textProps')}>
           <textarea value={content} onChange={(e) => updateProp('content', e.target.value)} className={inputCls} placeholder="Enter text content" rows={3} />
           <div>
             <label className={labelCls}>Text Align</label>
@@ -449,8 +474,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Button-specific controls ── */}
-      {isButton && (
-        <CollapsibleSection id="buttonProps" title="Button">
+      {!hasDedicatedSettings && isButton && (
+        <CollapsibleSection id="buttonProps" title="Button" {...csProps('buttonProps')}>
           <div>
             <label className={labelCls}>Button Text</label>
             <input type="text" value={props.text || ''} onChange={(e) => updateProp('text', e.target.value)} className={inputCls} placeholder="Click me" />
@@ -511,8 +536,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Link-specific controls (for Link Text, Link Wrapper) ── */}
-      {isLink && !isButton && (
-        <CollapsibleSection id="linkProps" title="Link">
+      {!hasDedicatedSettings && isLink && !isButton && (
+        <CollapsibleSection id="linkProps" title="Link" {...csProps('linkProps')}>
           {props.text !== undefined && (
             <div>
               <label className={labelCls}>Link Text</label>
@@ -534,8 +559,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Video-specific controls ── */}
-      {isVideo && (
-        <CollapsibleSection id="videoProps" title="Video">
+      {!hasDedicatedSettings && isVideo && (
+        <CollapsibleSection id="videoProps" title="Video" {...csProps('videoProps')}>
           <div>
             <label className={labelCls}>Video URL</label>
             <input type="text" value={props.src || props.url || ''} onChange={(e) => updateProp(props.src !== undefined ? 'src' : 'url', e.target.value)} className={inputCls} placeholder="https://youtube.com/watch?v=..." />
@@ -562,8 +587,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Icon Box-specific controls ── */}
-      {isIconBox && (
-        <CollapsibleSection id="iconBoxProps" title="Icon Box">
+      {!hasDedicatedSettings && isIconBox && (
+        <CollapsibleSection id="iconBoxProps" title="Icon Box" {...csProps('iconBoxProps')}>
           <div>
             <label className={labelCls}>Icon (emoji or text)</label>
             <input type="text" value={props.icon || ''} onChange={(e) => updateProp('icon', e.target.value)} className={inputCls} placeholder="⭐" />
@@ -603,8 +628,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Columns-specific controls (shown for Columns parent OR Column child) ── */}
-      {showColumnsControls && (
-        <CollapsibleSection id="columnsProps" title="Columns Layout">
+      {!hasDedicatedSettings && showColumnsControls && (
+        <CollapsibleSection id="columnsProps" title="Columns Layout" {...csProps('columnsProps')}>
           {isColumn && <p className="text-[10px] text-blue-600 mb-2">Editing parent Columns layout</p>}
 
           {/* Desktop: full column count + width presets (syncs Craft.js nodes) */}
@@ -735,8 +760,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Accordion-specific controls ── */}
-      {isAccordion && (
-        <CollapsibleSection id="accordionProps" title="Accordion">
+      {!hasDedicatedSettings && isAccordion && (
+        <CollapsibleSection id="accordionProps" title="Accordion" {...csProps('accordionProps')}>
           <div>
             <label className={labelCls}>Allow Multiple Open</label>
             <div className="flex items-center gap-2">
@@ -780,8 +805,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Tabs-specific controls ── */}
-      {isTabs && (
-        <CollapsibleSection id="tabsProps" title="Tabs">
+      {!hasDedicatedSettings && isTabs && (
+        <CollapsibleSection id="tabsProps" title="Tabs" {...csProps('tabsProps')}>
           <div>
             <label className={labelCls}>Tab Style</label>
             <select value={props.tabStyle || 'default'} onChange={(e) => updateProp('tabStyle', e.target.value)} className={selectCls}>
@@ -818,8 +843,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Gallery-specific controls ── */}
-      {isGallery && (
-        <CollapsibleSection id="galleryProps" title="Gallery">
+      {!hasDedicatedSettings && isGallery && (
+        <CollapsibleSection id="galleryProps" title="Gallery" {...csProps('galleryProps')}>
           <div>
             <label className={labelCls}>
               Columns
@@ -863,8 +888,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Testimonial-specific controls ── */}
-      {isTestimonial && (
-        <CollapsibleSection id="testimonialProps" title="Testimonial">
+      {!hasDedicatedSettings && isTestimonial && (
+        <CollapsibleSection id="testimonialProps" title="Testimonial" {...csProps('testimonialProps')}>
           <div>
             <label className={labelCls}>Layout</label>
             <select value={props.layout || 'card'} onChange={(e) => updateProp('layout', e.target.value)} className={selectCls}>
@@ -904,8 +929,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── PricingBox-specific controls ── */}
-      {isPricingBox && (
-        <CollapsibleSection id="pricingProps" title="Pricing Box">
+      {!hasDedicatedSettings && isPricingBox && (
+        <CollapsibleSection id="pricingProps" title="Pricing Box" {...csProps('pricingProps')}>
           <div>
             <label className={labelCls}>Featured / Highlighted</label>
             <div className="flex items-center gap-2">
@@ -941,8 +966,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── ProgressBar-specific controls ── */}
-      {isProgressBar && (
-        <CollapsibleSection id="progressProps" title="Progress Bar">
+      {!hasDedicatedSettings && isProgressBar && (
+        <CollapsibleSection id="progressProps" title="Progress Bar" {...csProps('progressProps')}>
           <div>
             <label className={labelCls}>Value (%)</label>
             <div className="flex items-center gap-2">
@@ -984,8 +1009,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Countdown-specific controls ── */}
-      {isCountdown && (
-        <CollapsibleSection id="countdownProps" title="Countdown">
+      {!hasDedicatedSettings && isCountdown && (
+        <CollapsibleSection id="countdownProps" title="Countdown" {...csProps('countdownProps')}>
           <div>
             <label className={labelCls}>Target Date</label>
             <input type="datetime-local" value={props.targetDate || ''} onChange={(e) => updateProp('targetDate', e.target.value)} className={inputCls} />
@@ -1031,8 +1056,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Counter-specific controls ── */}
-      {isCounter && (
-        <CollapsibleSection id="counterProps" title="Counter">
+      {!hasDedicatedSettings && isCounter && (
+        <CollapsibleSection id="counterProps" title="Counter" {...csProps('counterProps')}>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className={labelCls}>Start Value</label>
@@ -1069,8 +1094,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Slider/Carousel-specific controls ── */}
-      {isSlider && (
-        <CollapsibleSection id="sliderProps" title="Slider / Carousel">
+      {!hasDedicatedSettings && isSlider && (
+        <CollapsibleSection id="sliderProps" title="Slider / Carousel" {...csProps('sliderProps')}>
           <div>
             <label className={labelCls}>Autoplay</label>
             <div className="flex items-center gap-2">
@@ -1121,8 +1146,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Modal/OffCanvas-specific controls ── */}
-      {isModal && (
-        <CollapsibleSection id="modalProps" title="Modal / Overlay">
+      {!hasDedicatedSettings && isModal && (
+        <CollapsibleSection id="modalProps" title="Modal / Overlay" {...csProps('modalProps')}>
           <div>
             <label className={labelCls}>Trigger Text</label>
             <input type="text" value={props.triggerText || 'Open'} onChange={(e) => updateProp('triggerText', e.target.value)} className={inputCls} />
@@ -1167,8 +1192,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Map-specific controls ── */}
-      {isMap && (
-        <CollapsibleSection id="mapProps" title="Map">
+      {!hasDedicatedSettings && isMap && (
+        <CollapsibleSection id="mapProps" title="Map" {...csProps('mapProps')}>
           <div>
             <label className={labelCls}>Address / Location</label>
             <input type="text" value={props.address || ''} onChange={(e) => updateProp('address', e.target.value)} className={inputCls} placeholder="123 Main St, City" />
@@ -1188,8 +1213,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Toggle-specific controls ── */}
-      {isToggle && (
-        <CollapsibleSection id="toggleProps" title="Toggle">
+      {!hasDedicatedSettings && isToggle && (
+        <CollapsibleSection id="toggleProps" title="Toggle" {...csProps('toggleProps')}>
           <div>
             <label className={labelCls}>Default State</label>
             <select value={props.defaultOpen ? 'open' : 'closed'} onChange={(e) => updateProp('defaultOpen', e.target.value === 'open')} className={selectCls}>
@@ -1210,8 +1235,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Form-specific controls ── */}
-      {isForm && (
-        <CollapsibleSection id="formProps" title="Form">
+      {!hasDedicatedSettings && isForm && (
+        <CollapsibleSection id="formProps" title="Form" {...csProps('formProps')}>
           <div>
             <label className={labelCls}>Placeholder Text</label>
             <input type="text" value={props.placeholder || ''} onChange={(e) => updateProp('placeholder', e.target.value)} className={inputCls} placeholder="Search..." />
@@ -1242,8 +1267,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── ShapeDivider-specific controls ── */}
-      {isShapeDivider && (
-        <CollapsibleSection id="shapeDividerProps" title="Shape Divider">
+      {!hasDedicatedSettings && isShapeDivider && (
+        <CollapsibleSection id="shapeDividerProps" title="Shape Divider" {...csProps('shapeDividerProps')}>
           <div>
             <label className={labelCls}>Shape</label>
             <select value={props.shape || 'wave'} onChange={(e) => updateProp('shape', e.target.value)} className={selectCls}>
@@ -1285,8 +1310,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Repeater-specific quick controls ── */}
-      {isRepeater && (
-        <CollapsibleSection id="repeaterQuick" title="Repeater Quick Settings">
+      {!hasDedicatedSettings && isRepeater && (
+        <CollapsibleSection id="repeaterQuick" title="Repeater Quick Settings" {...csProps('repeaterQuick')}>
           <div>
             <label className={labelCls}>
               Columns
@@ -1315,8 +1340,8 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Grid element columns/gap (ProductGrid, EasyPosts, ArchiveProducts, etc.) ── */}
-      {isGridElement && (
-        <CollapsibleSection id="gridElementProps" title="Grid Layout">
+      {!hasDedicatedSettings && isGridElement && (
+        <CollapsibleSection id="gridElementProps" title="Grid Layout" {...csProps('gridElementProps')}>
           <div>
             <label className={labelCls}>
               Columns
@@ -1341,21 +1366,21 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
       )}
 
       {/* ── Generic content for elements that have content but aren't specifically handled ── */}
-      {hasContentProp && !isHeading && !isText && (
-        <CollapsibleSection id="content" title="Content">
+      {!hasDedicatedSettings && hasContentProp && !isHeading && !isText && (
+        <CollapsibleSection id="content" title="Content" {...csProps('content')}>
           <textarea value={content} onChange={(e) => updateProp('content', e.target.value)} className={inputCls} placeholder="Enter content" rows={3} />
         </CollapsibleSection>
       )}
 
       {/* ── Generic text prop for non-button elements that have a text prop ── */}
-      {hasTextProp && !isButton && (
-        <CollapsibleSection id="textProp" title="Text">
+      {!hasDedicatedSettings && hasTextProp && !isButton && (
+        <CollapsibleSection id="textProp" title="Text" {...csProps('textProp')}>
           <input type="text" value={props.text || ''} onChange={(e) => updateProp('text', e.target.value)} className={inputCls} placeholder="Enter text" />
         </CollapsibleSection>
       )}
 
       {/* ── Generic prop editor for any remaining custom props ── */}
-      {(() => {
+      {!hasDedicatedSettings && (() => {
         const skipProps = ['content', 'className', 'customCSS', 'style', 'level', 'dynamicBindings',
           'src', 'alt', 'width', 'height', 'text', 'link', 'url', 'target', 'size', 'variant',
           'icon', 'title', 'description', 'iconSize', 'iconColor', 'layout',
@@ -1382,7 +1407,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         );
         if (customProps.length === 0) return null;
         return (
-          <CollapsibleSection id="elementProps" title="Element Properties" defaultOpen={false}>
+          <CollapsibleSection id="elementProps" title="Element Properties" defaultOpen={false} {...csProps('elementProps', false)}>
             {customProps.map(([key, value]) => (
               <div key={key}>
                 <label className={labelCls}>{key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</label>
@@ -1402,10 +1427,20 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         );
       })()}
 
-      <CollapsibleSection id="display" title="Display">
+      <CollapsibleSection id="display" title="Display" {...csProps('display')}>
         <div>
           <label className={labelCls}>Display</label>
-          <select value={s.display || 'block'} onChange={(e) => updateStyle('display', e.target.value)} className={selectCls}>
+          <select value={s.display === '-webkit-box' ? '-webkit-box' : (s.display || 'block')} onChange={(e) => {
+            const val = e.target.value;
+            if (s.WebkitLineClamp && val !== '-webkit-box') {
+              // Changing display away from -webkit-box breaks line clamping — clear it
+              updateStyle('WebkitLineClamp', '');
+              updateStyle('WebkitBoxOrient', '');
+              updateStyle('overflow', '');
+              updateStyle('textOverflow', '');
+            }
+            updateStyle('display', val);
+          }} className={selectCls}>
             <option value="block">Block</option>
             <option value="inline">Inline</option>
             <option value="inline-block">Inline Block</option>
@@ -1414,7 +1449,11 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
             <option value="grid">Grid</option>
             <option value="inline-grid">Inline Grid</option>
             <option value="none">None</option>
+            {s.display === '-webkit-box' && <option value="-webkit-box">-webkit-box (Line Clamp)</option>}
           </select>
+          {s.WebkitLineClamp > 0 && s.display !== '-webkit-box' && (
+            <p className="text-[10px] text-amber-600 mt-1">⚠ Line clamp requires -webkit-box display. It has been cleared.</p>
+          )}
         </div>
         {(s.display === 'flex' || s.display === 'inline-flex') && (
           <>
@@ -1536,7 +1575,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection id="flexChild" title="Flex/Grid Child" defaultOpen={false}>
+      <CollapsibleSection id="flexChild" title="Flex/Grid Child" defaultOpen={false} {...csProps('flexChild', false)}>
         <p className="text-[10px] text-gray-400 mb-2">Controls for this element when inside a flex or grid parent.</p>
         <div className="grid grid-cols-3 gap-2">
           <div>
@@ -1591,7 +1630,188 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="dimensions" title="Size & Dimensions">
+      {/* ── Advanced Styling Controls (Oxygen Builder style) ── */}
+      <CollapsibleSection id="spacing" title="Spacing" {...csProps('spacing')}>
+        <AdvancedSpacingControl
+          label="Padding"
+          value={{
+            top: s.paddingTop || s.padding?.top || '0px',
+            right: s.paddingRight || s.padding?.right || '0px',
+            bottom: s.paddingBottom || s.padding?.bottom || '0px',
+            left: s.paddingLeft || s.padding?.left || '0px',
+          }}
+          onChange={(value) => {
+            if (typeof value === 'object') {
+              updateStyle('paddingTop', value.top || '0px');
+              updateStyle('paddingRight', value.right || '0px');
+              updateStyle('paddingBottom', value.bottom || '0px');
+              updateStyle('paddingLeft', value.left || '0px');
+              deleteStyle('padding');
+            }
+          }}
+        />
+        <AdvancedSpacingControl
+          label="Margin"
+          value={{
+            top: s.marginTop || s.margin?.top || '0px',
+            right: s.marginRight || s.margin?.right || '0px',
+            bottom: s.marginBottom || s.margin?.bottom || '0px',
+            left: s.marginLeft || s.margin?.left || '0px',
+          }}
+          onChange={(value) => {
+            if (typeof value === 'object') {
+              updateStyle('marginTop', value.top || '0px');
+              updateStyle('marginRight', value.right || '0px');
+              updateStyle('marginBottom', value.bottom || '0px');
+              updateStyle('marginLeft', value.left || '0px');
+              deleteStyle('margin');
+            }
+          }}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection id="borders" title="Borders" {...csProps('borders')}>
+        <AdvancedBorderControl
+          value={{
+            width: {
+              top: s.borderTopWidth || '0px',
+              right: s.borderRightWidth || '0px',
+              bottom: s.borderBottomWidth || '0px',
+              left: s.borderLeftWidth || '0px',
+            },
+            style: s.borderStyle || 'solid',
+            color: s.borderColor || '#000000',
+            radius: {
+              topLeft: s.borderTopLeftRadius || '0px',
+              topRight: s.borderTopRightRadius || '0px',
+              bottomRight: s.borderBottomRightRadius || '0px',
+              bottomLeft: s.borderBottomLeftRadius || '0px',
+            }
+          }}
+          onChange={(value) => {
+            if (typeof value === 'object') {
+              if (value.width) {
+                updateStyle('borderTopWidth', value.width.top || '0px');
+                updateStyle('borderRightWidth', value.width.right || '0px');
+                updateStyle('borderBottomWidth', value.width.bottom || '0px');
+                updateStyle('borderLeftWidth', value.width.left || '0px');
+              }
+              if (value.style) updateStyle('borderStyle', value.style);
+              if (value.color) updateStyle('borderColor', value.color);
+              if (value.radius) {
+                updateStyle('borderTopLeftRadius', value.radius.topLeft || '0px');
+                updateStyle('borderTopRightRadius', value.radius.topRight || '0px');
+                updateStyle('borderBottomRightRadius', value.radius.bottomRight || '0px');
+                updateStyle('borderBottomLeftRadius', value.radius.bottomLeft || '0px');
+              }
+              deleteStyle('border');
+            }
+          }}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection id="shadows" title="Shadows & Effects" {...csProps('shadows')}>
+        <BoxShadowControl
+          value={(() => {
+            const v = s.boxShadow;
+            if (!v) return { x: '0px', y: '0px', blur: '0px', spread: '0px', color: 'rgba(0, 0, 0, 0.2)', inset: false };
+            if (typeof v === 'object') return v;
+            // Parse CSS box-shadow string back to object for the control
+            if (typeof v === 'string') {
+              try {
+                const isInset = v.startsWith('inset ');
+                const parts = (isInset ? v.slice(6) : v).trim().split(/\s+/);
+                return {
+                  x: parts[0] || '0px',
+                  y: parts[1] || '0px',
+                  blur: parts[2] || '0px',
+                  spread: parts[3] || '0px',
+                  color: parts.slice(4).join(' ') || 'rgba(0, 0, 0, 0.2)',
+                  inset: isInset,
+                };
+              } catch { /* fall through */ }
+            }
+            return { x: '0px', y: '0px', blur: '0px', spread: '0px', color: 'rgba(0, 0, 0, 0.2)', inset: false };
+          })()}
+          onChange={(value) => {
+            // Convert to CSS string so all elements can use it directly without resolveStyles
+            if (typeof value === 'object' && value !== null) {
+              const { x = '0px', y = '0px', blur: b = '0px', spread = '0px', color = 'rgba(0,0,0,0.2)', inset = false } = value;
+              const css = `${inset ? 'inset ' : ''}${x} ${y} ${b} ${spread} ${color}`;
+              updateStyle('boxShadow', css);
+            } else {
+              updateStyle('boxShadow', value);
+            }
+          }}
+        />
+        
+        <div className="mt-4">
+          <label className={labelCls}>Opacity</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={s.opacity !== undefined ? s.opacity : 1}
+              onChange={(e) => updateStyle('opacity', parseFloat(e.target.value))}
+              className="flex-1"
+            />
+            <span className="text-xs text-gray-500 w-8">{Math.round((s.opacity !== undefined ? s.opacity : 1) * 100)}%</span>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className={labelCls}>Transform</label>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Rotate</label>
+                <input
+                  type="text"
+                  value={s.transform?.rotate || '0deg'}
+                  onChange={(e) => {
+                    const current = s.transform || {};
+                    updateStyle('transform', { ...current, rotate: e.target.value });
+                  }}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                  placeholder="0deg"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Scale</label>
+                <input
+                  type="text"
+                  value={s.transform?.scale || '1'}
+                  onChange={(e) => {
+                    const current = s.transform || {};
+                    updateStyle('transform', { ...current, scale: e.target.value });
+                  }}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                  placeholder="1"
+                />
+              </div>
+            </div>
+            <div className="flex gap-1">
+              {['0deg', '45deg', '90deg', '180deg'].map(angle => (
+                <button
+                  key={angle}
+                  type="button"
+                  onClick={() => {
+                    const current = s.transform || {};
+                    updateStyle('transform', { ...current, rotate: angle });
+                  }}
+                  className="flex-1 px-2 py-1 text-[10px] border border-gray-200 rounded hover:bg-gray-50"
+                >
+                  {angle}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection id="dimensions" title="Size & Dimensions" {...csProps('dimensions')}>
         {/* Width Presets */}
         <div>
           <label className={labelCls}>Width Preset</label>
@@ -1691,7 +1911,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="spacing" title="Spacing">
+      <CollapsibleSection id="spacingManual" title="Spacing (Per-Side)" {...csProps('spacingManual')}>
         <div>
           <label className={labelCls}>Margin</label>
           <div className="grid grid-cols-4 gap-1">
@@ -1716,7 +1936,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="background" title="Background">
+      <CollapsibleSection id="background" title="Background" {...csProps('background')}>
         <div>
           <label className={labelCls}>Background Color</label>
           <div className="flex gap-2">
@@ -1825,7 +2045,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="borders" title="Borders" defaultOpen={false}>
+      <CollapsibleSection id="bordersManual" title="Borders (Per-Side)" defaultOpen={false} {...csProps('bordersManual', false)}>
         <div>
           <label className={labelCls}>Border Style</label>
           <select value={s.borderStyle || 'none'} onChange={(e) => updateStyle('borderStyle', e.target.value)} className={selectCls}>
@@ -1877,7 +2097,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="shadow" title="Box Shadow" defaultOpen={false}>
+      <CollapsibleSection id="shadowManual" title="Box Shadow (Presets)" defaultOpen={false} {...csProps('shadowManual', false)}>
         <div>
           <label className={labelCls}>Box Shadow</label>
           <input type="text" value={s.boxShadow || ''} onChange={(e) => updateStyle('boxShadow', e.target.value)} className={inputCls} placeholder="0px 4px 6px rgba(0,0,0,0.1)" />
@@ -1897,26 +2117,50 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="badge" title="Badge Text" defaultOpen={false}>
-        {/* Enable toggle */}
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={!!(s.badge?.enabled)}
-            onChange={(e) => {
-              setProp((p) => {
-                if (!p.style) p.style = {};
-                if (!p.style.badge) p.style.badge = {};
-                p.style.badge.enabled = e.target.checked;
-                if (e.target.checked && !p.style.badge.text) p.style.badge.text = 'Sale';
-              });
-            }}
-            className="rounded"
-          />
-          <label className="text-xs text-gray-600">Show Badge</label>
+      <CollapsibleSection id="badge" title="Badges" defaultOpen={false} {...csProps('badge', false)}>
+        {/* Badge Mode Toggle */}
+        <div className="flex items-center gap-2 mb-2">
+          <label className="text-xs text-gray-600 font-medium">Badge Mode:</label>
+          <div className="flex gap-1">
+            <button type="button"
+              onClick={() => setProp((p) => { if (!p.style) p.style = {}; p.style.badgeMode = 'module'; })}
+              className={`px-2.5 py-1 text-[10px] font-medium rounded border transition-colors ${
+                (s.badgeMode || 'module') === 'module' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}>
+              From Badge Manager
+            </button>
+            <button type="button"
+              onClick={() => setProp((p) => { if (!p.style) p.style = {}; p.style.badgeMode = 'manual'; })}
+              className={`px-2.5 py-1 text-[10px] font-medium rounded border transition-colors ${
+                s.badgeMode === 'manual' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}>
+              Manual / Custom
+            </button>
+          </div>
         </div>
 
-        {s.badge?.enabled && (() => {
+        {/* ── Badge Module Picker ── */}
+        {(s.badgeMode || 'module') === 'module' && (() => {
+          const selectedBadgeIds = s.badgeModuleIds || [];
+          const badgeOverrides = s.badgeOverrides || {};
+          return (
+            <>
+              <div>
+                <label className={labelCls}>Select Badges from Badge Manager</label>
+                <p className="text-[10px] text-gray-400 mb-2">Pick badges you created in the Badge Manager. Multiple badges can be applied with independent positions.</p>
+                <BadgeModulePicker
+                  selectedIds={selectedBadgeIds}
+                  overrides={badgeOverrides}
+                  onChangeIds={(ids) => setProp((p) => { if (!p.style) p.style = {}; p.style.badgeModuleIds = ids; })}
+                  onChangeOverrides={(ov) => setProp((p) => { if (!p.style) p.style = {}; p.style.badgeOverrides = ov; })}
+                />
+              </div>
+            </>
+          );
+        })()}
+
+        {/* ── Manual Badge (legacy) ── */}
+        {s.badgeMode === 'manual' && (() => {
           const b = s.badge || {};
           const updateBadge = (key, value) => {
             setProp((p) => {
@@ -1927,194 +2171,64 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
           };
           return (
             <>
-              {/* Badge Text */}
-              <div>
-                <label className={labelCls}>Badge Text</label>
-                <input type="text" value={b.text || ''} onChange={(e) => updateBadge('text', e.target.value)} className={inputCls} placeholder="Sale" />
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {['Sale', 'New', 'Hot', 'Best Seller', 'Limited', 'Free Shipping', '-20%', 'Sold Out'].map(preset => (
-                    <button key={preset} type="button" onClick={() => updateBadge('text', preset)}
-                      className={`px-2 py-0.5 text-[10px] rounded border transition-colors ${b.text === preset ? 'bg-blue-100 border-blue-400 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'}`}>{preset}</button>
-                  ))}
-                </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={!!(b.enabled)} onChange={(e) => { updateBadge('enabled', e.target.checked); if (e.target.checked && !b.text) updateBadge('text', 'Sale'); }} className="rounded" />
+                <label className="text-xs text-gray-600">Show Manual Badge</label>
               </div>
-
-              {/* Position */}
-              <div>
-                <label className={labelCls}>Position</label>
-                <div className="grid grid-cols-3 gap-1">
-                  {[
-                    { value: 'top-left', label: '↖ Top Left' },
-                    { value: 'top-center', label: '↑ Top Center' },
-                    { value: 'top-right', label: '↗ Top Right' },
-                    { value: 'middle-left', label: '← Mid Left' },
-                    { value: 'middle-right', label: '→ Mid Right', colStart: 3 },
-                    { value: 'bottom-left', label: '↙ Btm Left' },
-                    { value: 'bottom-center', label: '↓ Btm Center' },
-                    { value: 'bottom-right', label: '↘ Btm Right' },
-                  ].map(pos => (
-                    <button key={pos.value} type="button" onClick={() => updateBadge('position', pos.value)}
-                      className={`px-1 py-1.5 text-[10px] font-medium rounded border transition-colors ${
-                        (b.position || 'top-right') === pos.value ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                      }`}
-                      style={pos.colStart ? { gridColumn: pos.colStart } : undefined}
-                    >{pos.label}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Margin (4-sided) */}
-              <div>
-                <label className={labelCls}>Badge Margin (offset from edge)</label>
-                <div className="grid grid-cols-4 gap-1">
-                  <input type="text" value={b.marginTop || ''} onChange={(e) => updateBadge('marginTop', e.target.value)} className={inputCls} placeholder="T" title="Margin Top" />
-                  <input type="text" value={b.marginRight || ''} onChange={(e) => updateBadge('marginRight', e.target.value)} className={inputCls} placeholder="R" title="Margin Right" />
-                  <input type="text" value={b.marginBottom || ''} onChange={(e) => updateBadge('marginBottom', e.target.value)} className={inputCls} placeholder="B" title="Margin Bottom" />
-                  <input type="text" value={b.marginLeft || ''} onChange={(e) => updateBadge('marginLeft', e.target.value)} className={inputCls} placeholder="L" title="Margin Left" />
-                </div>
-                <p className="text-[10px] text-gray-400 mt-0.5">Top / Right / Bottom / Left</p>
-              </div>
-
-              {/* Padding (4-sided) */}
-              <div>
-                <label className={labelCls}>Badge Padding (inner spacing)</label>
-                <div className="grid grid-cols-4 gap-1">
-                  <input type="text" value={b.paddingTop || ''} onChange={(e) => updateBadge('paddingTop', e.target.value)} className={inputCls} placeholder="T" title="Padding Top" />
-                  <input type="text" value={b.paddingRight || ''} onChange={(e) => updateBadge('paddingRight', e.target.value)} className={inputCls} placeholder="R" title="Padding Right" />
-                  <input type="text" value={b.paddingBottom || ''} onChange={(e) => updateBadge('paddingBottom', e.target.value)} className={inputCls} placeholder="B" title="Padding Bottom" />
-                  <input type="text" value={b.paddingLeft || ''} onChange={(e) => updateBadge('paddingLeft', e.target.value)} className={inputCls} placeholder="L" title="Padding Left" />
-                </div>
-                <p className="text-[10px] text-gray-400 mt-0.5">Top / Right / Bottom / Left</p>
-              </div>
-
-              {/* Font Size & Weight */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelCls}>Font Size</label>
-                  <input type="text" value={b.fontSize || ''} onChange={(e) => updateBadge('fontSize', e.target.value)} className={inputCls} placeholder="11px" />
-                  <div className="flex gap-1 mt-1">
-                    {['9px', '11px', '12px', '14px', '16px'].map(v => (
-                      <button key={v} type="button" onClick={() => updateBadge('fontSize', v)}
-                        className={`flex-1 px-1 py-0.5 text-[10px] rounded border ${(b.fontSize || '11px') === v ? 'bg-blue-100 border-blue-400 text-blue-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>{v}</button>
-                    ))}
+              {b.enabled && (
+                <>
+                  <div>
+                    <label className={labelCls}>Badge Text</label>
+                    <input type="text" value={b.text || ''} onChange={(e) => updateBadge('text', e.target.value)} className={inputCls} placeholder="Sale" />
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {['Sale', 'New', 'Hot', 'Best Seller', 'Limited', 'Free Shipping', '-20%', 'Sold Out'].map(preset => (
+                        <button key={preset} type="button" onClick={() => updateBadge('text', preset)}
+                          className={`px-2 py-0.5 text-[10px] rounded border transition-colors ${b.text === preset ? 'bg-blue-100 border-blue-400 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'}`}>{preset}</button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className={labelCls}>Font Weight</label>
-                  <select value={b.fontWeight || '700'} onChange={(e) => updateBadge('fontWeight', e.target.value)} className={selectCls}>
-                    <option value="400">400 - Normal</option>
-                    <option value="500">500 - Medium</option>
-                    <option value="600">600 - Semi Bold</option>
-                    <option value="700">700 - Bold</option>
-                    <option value="800">800 - Extra Bold</option>
-                    <option value="900">900 - Black</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Font Style & Text Transform */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelCls}>Font Style</label>
-                  <select value={b.fontStyle || 'normal'} onChange={(e) => updateBadge('fontStyle', e.target.value)} className={selectCls}>
-                    <option value="normal">Normal</option>
-                    <option value="italic">Italic</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>Text Transform</label>
-                  <select value={b.textTransform || 'uppercase'} onChange={(e) => updateBadge('textTransform', e.target.value)} className={selectCls}>
-                    <option value="none">None</option>
-                    <option value="uppercase">UPPERCASE</option>
-                    <option value="lowercase">lowercase</option>
-                    <option value="capitalize">Capitalize</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Letter Spacing */}
-              <div>
-                <label className={labelCls}>Letter Spacing</label>
-                <input type="text" value={b.letterSpacing || ''} onChange={(e) => updateBadge('letterSpacing', e.target.value)} className={inputCls} placeholder="0.5px" />
-              </div>
-
-              {/* Colors */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelCls}>Text Color</label>
-                  <div className="flex gap-1">
-                    <input type="color" value={b.color || '#ffffff'} onChange={(e) => updateBadge('color', e.target.value)} className="w-9 h-9 border border-gray-300 rounded cursor-pointer" />
-                    <input type="text" value={b.color || ''} onChange={(e) => updateBadge('color', e.target.value)} className={inputCls} placeholder="#ffffff" />
+                  <div>
+                    <label className={labelCls}>Position</label>
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        { value: 'top-left', label: '↖ Top Left' }, { value: 'top-center', label: '↑ Top Center' }, { value: 'top-right', label: '↗ Top Right' },
+                        { value: 'middle-left', label: '← Mid Left' }, { value: 'middle-right', label: '→ Mid Right', colStart: 3 },
+                        { value: 'bottom-left', label: '↙ Btm Left' }, { value: 'bottom-center', label: '↓ Btm Center' }, { value: 'bottom-right', label: '↘ Btm Right' },
+                      ].map(pos => (
+                        <button key={pos.value} type="button" onClick={() => updateBadge('position', pos.value)}
+                          className={`px-1 py-1.5 text-[10px] font-medium rounded border transition-colors ${(b.position || 'top-right') === pos.value ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                          style={pos.colStart ? { gridColumn: pos.colStart } : undefined}>{pos.label}</button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className={labelCls}>Background</label>
-                  <div className="flex gap-1">
-                    <input type="color" value={b.backgroundColor || '#ef4444'} onChange={(e) => updateBadge('backgroundColor', e.target.value)} className="w-9 h-9 border border-gray-300 rounded cursor-pointer" />
-                    <input type="text" value={b.backgroundColor || ''} onChange={(e) => updateBadge('backgroundColor', e.target.value)} className={inputCls} placeholder="#ef4444" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={labelCls}>Text Color</label>
+                      <div className="flex gap-1">
+                        <input type="color" value={b.color || '#ffffff'} onChange={(e) => updateBadge('color', e.target.value)} className="w-9 h-9 border border-gray-300 rounded cursor-pointer" />
+                        <input type="text" value={b.color || ''} onChange={(e) => updateBadge('color', e.target.value)} className={inputCls} placeholder="#ffffff" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Background</label>
+                      <div className="flex gap-1">
+                        <input type="color" value={b.backgroundColor || '#ef4444'} onChange={(e) => updateBadge('backgroundColor', e.target.value)} className="w-9 h-9 border border-gray-300 rounded cursor-pointer" />
+                        <input type="text" value={b.backgroundColor || ''} onChange={(e) => updateBadge('backgroundColor', e.target.value)} className={inputCls} placeholder="#ef4444" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              {/* Color presets */}
-              <div>
-                <label className={labelCls}>Color Presets</label>
-                <div className="flex flex-wrap gap-1">
-                  {[
-                    { label: 'Red', bg: '#ef4444', fg: '#ffffff' },
-                    { label: 'Green', bg: '#22c55e', fg: '#ffffff' },
-                    { label: 'Blue', bg: '#3b82f6', fg: '#ffffff' },
-                    { label: 'Orange', bg: '#f97316', fg: '#ffffff' },
-                    { label: 'Purple', bg: '#8b5cf6', fg: '#ffffff' },
-                    { label: 'Black', bg: '#111827', fg: '#ffffff' },
-                    { label: 'Gold', bg: '#f59e0b', fg: '#111827' },
-                    { label: 'Pink', bg: '#ec4899', fg: '#ffffff' },
-                  ].map(preset => (
-                    <button key={preset.label} type="button" onClick={() => { updateBadge('backgroundColor', preset.bg); updateBadge('color', preset.fg); }}
-                      className="px-2 py-0.5 text-[10px] rounded border border-gray-200 hover:opacity-80 transition-opacity"
-                      style={{ backgroundColor: preset.bg, color: preset.fg }}>{preset.label}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Border Radius */}
-              <div>
-                <label className={labelCls}>Border Radius</label>
-                <input type="text" value={b.borderRadius || ''} onChange={(e) => updateBadge('borderRadius', e.target.value)} className={inputCls} placeholder="4px" />
-                <div className="flex gap-1 mt-1">
-                  {['0px', '2px', '4px', '8px', '12px', '9999px'].map(v => (
-                    <button key={v} type="button" onClick={() => updateBadge('borderRadius', v)}
-                      className={`flex-1 px-1 py-0.5 text-[10px] rounded border ${(b.borderRadius || '4px') === v ? 'bg-blue-100 border-blue-400 text-blue-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>{v}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Live Preview */}
-              <div>
-                <label className={labelCls}>Preview</label>
-                <div className="relative p-6 bg-gray-100 rounded border border-gray-200 flex items-center justify-center min-h-[60px]">
-                  <span className="text-xs text-gray-400">Element</span>
-                  <span style={{
-                    position: 'absolute',
-                    ...((() => {
-                      const pos = b.position || 'top-right';
-                      const map = {
-                        'top-left': { top: 0, left: 0 }, 'top-center': { top: 0, left: '50%', transform: 'translateX(-50%)' }, 'top-right': { top: 0, right: 0 },
-                        'middle-left': { top: '50%', left: 0, transform: 'translateY(-50%)' }, 'middle-right': { top: '50%', right: 0, transform: 'translateY(-50%)' },
-                        'bottom-left': { bottom: 0, left: 0 }, 'bottom-center': { bottom: 0, left: '50%', transform: 'translateX(-50%)' }, 'bottom-right': { bottom: 0, right: 0 },
-                      };
-                      return map[pos] || map['top-right'];
-                    })()),
-                    marginTop: b.marginTop || '0px', marginRight: b.marginRight || '0px', marginBottom: b.marginBottom || '0px', marginLeft: b.marginLeft || '0px',
-                    paddingTop: b.paddingTop || '4px', paddingRight: b.paddingRight || '8px', paddingBottom: b.paddingBottom || '4px', paddingLeft: b.paddingLeft || '8px',
-                    fontSize: b.fontSize || '11px', fontWeight: b.fontWeight || '700', fontStyle: b.fontStyle || 'normal',
-                    textTransform: b.textTransform || 'uppercase', letterSpacing: b.letterSpacing || '0.5px',
-                    color: b.color || '#ffffff', backgroundColor: b.backgroundColor || '#ef4444', borderRadius: b.borderRadius || '4px',
-                    lineHeight: 1, whiteSpace: 'nowrap',
-                  }}>
-                    {b.text || 'Sale'}
-                  </span>
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={labelCls}>Font Size</label>
+                      <input type="text" value={b.fontSize || ''} onChange={(e) => updateBadge('fontSize', e.target.value)} className={inputCls} placeholder="11px" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Border Radius</label>
+                      <input type="text" value={b.borderRadius || ''} onChange={(e) => updateBadge('borderRadius', e.target.value)} className={inputCls} placeholder="4px" />
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           );
         })()}
@@ -2126,7 +2240,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
   const renderTypographySettings = () => (
     <div className="space-y-3">
       <BreakpointBar />
-      <CollapsibleSection id="font" title="Font">
+      <CollapsibleSection id="font" title="Font" {...csProps('font')}>
         <div>
           <label className={labelCls}>Font Family</label>
           <select value={s.fontFamily || ''} onChange={(e) => updateStyle('fontFamily', e.target.value)} className={selectCls}>
@@ -2170,7 +2284,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="text" title="Text">
+      <CollapsibleSection id="text" title="Text" {...csProps('text')}>
         <div>
           <label className={labelCls}>Text Color</label>
           <div className="flex gap-2">
@@ -2204,7 +2318,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="textDecoration" title="Text Decoration" defaultOpen={false}>
+      <CollapsibleSection id="textDecoration" title="Text Decoration" defaultOpen={false} {...csProps('textDecoration', false)}>
         <div>
           <label className={labelCls}>Text Decoration</label>
           <select value={s.textDecoration || 'none'} onChange={(e) => updateStyle('textDecoration', e.target.value)} className={selectCls}>
@@ -2260,7 +2374,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
 
       {/* Text Clamping — show for any element that could contain text */}
       {!isImage && !isVideo && (
-        <CollapsibleSection id="textClamping" title="Text Clamping" defaultOpen={false}>
+        <CollapsibleSection id="textClamping" title="Text Clamping" defaultOpen={false} {...csProps('textClamping', false)}>
           <p className="text-[10px] text-gray-500 mb-2">
             Limit visible text to a set number of lines with an ellipsis. Set to 0 or leave empty for no limit.
           </p>
@@ -2321,7 +2435,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </CollapsibleSection>
       )}
 
-      <CollapsibleSection id="textShadow" title="Text Shadow" defaultOpen={false}>
+      <CollapsibleSection id="textShadow" title="Text Shadow" defaultOpen={false} {...csProps('textShadow', false)}>
         <div>
           <label className={labelCls}>Text Shadow</label>
           <input type="text" value={s.textShadow || ''} onChange={(e) => updateStyle('textShadow', e.target.value)} className={inputCls} placeholder="1px 1px 2px rgba(0,0,0,0.3)" />
@@ -2347,7 +2461,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
   const renderAdvancedSettings = () => (
     <div className="space-y-3">
       <BreakpointBar />
-      <CollapsibleSection id="position" title="Position">
+      <CollapsibleSection id="position" title="Position" {...csProps('position')}>
         <div>
           <label className={labelCls}>Position</label>
           <select value={s.position || 'static'} onChange={(e) => updateStyle('position', e.target.value)} className={selectCls}>
@@ -2388,7 +2502,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="opacity" title="Opacity & Visibility">
+      <CollapsibleSection id="opacity" title="Opacity & Visibility" {...csProps('opacity')}>
         <div>
           <label className={labelCls}>Opacity</label>
           <div className="flex items-center gap-2">
@@ -2428,7 +2542,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="transform" title="Transform" defaultOpen={false}>
+      <CollapsibleSection id="transform" title="Transform" defaultOpen={false} {...csProps('transform', false)}>
         <div>
           <label className={labelCls}>Transform</label>
           <input type="text" value={s.transform || ''} onChange={(e) => updateStyle('transform', e.target.value)} className={inputCls} placeholder="e.g. rotate(5deg) scale(1.1)" />
@@ -2464,7 +2578,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="transition" title="Transition & Animation" defaultOpen={false}>
+      <CollapsibleSection id="transition" title="Transition & Animation" defaultOpen={false} {...csProps('transition', false)}>
         <div>
           <label className={labelCls}>Transition Property</label>
           <select value={s.transitionProperty || ''} onChange={(e) => updateStyle('transitionProperty', e.target.value)} className={selectCls}>
@@ -2501,7 +2615,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="filters" title="CSS Filters" defaultOpen={false}>
+      <CollapsibleSection id="filters" title="CSS Filters" defaultOpen={false} {...csProps('filters', false)}>
         <div>
           <label className={labelCls}>Filter</label>
           <input type="text" value={s.filter || ''} onChange={(e) => updateStyle('filter', e.target.value)} className={inputCls} placeholder="e.g. blur(2px) brightness(1.2)" />
@@ -2561,7 +2675,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="hoverState" title="Hover & Focus States" defaultOpen={false}>
+      <CollapsibleSection id="hoverState" title="Hover & Focus States" defaultOpen={false} {...csProps('hoverState', false)}>
         <div className="p-2 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-700 mb-2">
           Set styles that apply on hover/focus. These are stored as inline style overrides and applied via custom CSS.
         </div>
@@ -2662,7 +2776,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         })()}
       </CollapsibleSection>
 
-      <CollapsibleSection id="cssClass" title="CSS Class & ID">
+      <CollapsibleSection id="cssClass" title="CSS Class & ID" {...csProps('cssClass')}>
         <div>
           <label className={labelCls}>CSS Class</label>
           <input type="text" value={className} onChange={(e) => updateProp('className', e.target.value)} className={inputCls} placeholder="e.g. my-custom-class" />
@@ -2674,7 +2788,7 @@ export const ComprehensiveSettings = ({ nodeId, displayName, activeTab }) => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="customCSS" title="Custom CSS" defaultOpen={false}>
+      <CollapsibleSection id="customCSS" title="Custom CSS" defaultOpen={false} {...csProps('customCSS', false)}>
         <div>
           <label className={labelCls}>Custom CSS (applied to this element)</label>
           <textarea

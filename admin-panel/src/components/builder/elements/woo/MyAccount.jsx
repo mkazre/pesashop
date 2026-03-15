@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const MyAccount = ({
+export const MyAccount = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   tabs = ['Dashboard', 'Orders', 'Downloads', 'Addresses', 'Account Details', 'Logout'],
   userName = 'John Doe',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   const [active, setActive] = useState(0);
 

@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const CodeBlock = ({
+export const CodeBlock = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   code = '<div class="custom">\n  <p>Hello World</p>\n</div>',
   language = 'html',
   showLineNumbers = true,
@@ -10,7 +13,8 @@ export const CodeBlock = ({
   fontSize = '13px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductTabs = ({
+export const ProductTabs = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   tabs = [
     { label: 'Description', content: 'Full product description goes here with all the details about the product.' },
     { label: 'Additional Info', content: 'Weight: 1.5kg\nDimensions: 30 × 20 × 10 cm\nMaterial: Premium Cotton' },
@@ -13,7 +16,8 @@ export const ProductTabs = ({
   fontSize = '14px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const [active, setActive] = useState(0);
 

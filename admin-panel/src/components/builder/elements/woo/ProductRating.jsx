@@ -1,20 +1,19 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductRating = ({
-  rating = 4.5,
-  reviewCount = 128,
-  showCount = true,
-  starSize = '18px',
-  activeColor = '#fbbf24',
-  inactiveColor = '#d1d5db',
-  textColor = '#6b7280',
-  className = '',
-  style = {},
-}) => {
+export const ProductRating = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
+    rating = 4.5, reviewCount = 128, showCount = true,
+    starSize = '18px', activeColor = '#fbbf24', inactiveColor = '#d1d5db',
+    textColor = '#6b7280', className = '', style = {},
+  } = resolved;
+  const numericRating = Number(rating) || 0;
+  const numericReviewCount = Number(reviewCount) || 0;
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
-  const fullStars = Math.floor(rating);
-  const hasHalf = rating % 1 >= 0.5;
+  const fullStars = Math.floor(numericRating);
+  const hasHalf = numericRating % 1 >= 0.5;
 
   return (
     <div ref={(ref) => connect(drag(ref))} className={`product-rating ${className} ${selected ? 'ring-2 ring-blue-500' : ''} ${hovered ? 'ring-2 ring-blue-300' : ''}`}
@@ -26,7 +25,7 @@ export const ProductRating = ({
           </span>
         ))}
       </div>
-      {showCount && <span style={{ fontSize: '13px', color: textColor }}>({reviewCount} reviews)</span>}
+      {showCount && <span style={{ fontSize: '13px', color: textColor }}>({numericReviewCount} reviews)</span>}
     </div>
   );
 };

@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Header = ({
+export const Header = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   children,
   sticky = false,
   transparent = false,
@@ -13,7 +16,8 @@ export const Header = ({
   zIndex = 50,
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

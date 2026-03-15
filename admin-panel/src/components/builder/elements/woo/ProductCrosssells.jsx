@@ -2,8 +2,11 @@ import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { useResponsiveGridProps } from '@/components/builder/utils/useResponsiveGridProps';
 import { useBreakpoint } from '@/components/builder/context/BreakpointContext';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductCrosssells = ({
+export const ProductCrosssells = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   title = 'You may be interested in…',
   products = [
     { name: 'Accessory Pack', price: '$14.99', image: 'https://placehold.co/200x200/e2e8f0/64748b?text=X1' },
@@ -14,7 +17,8 @@ export const ProductCrosssells = ({
   responsiveProps = {},
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { effectiveColumns, effectiveGap } = useResponsiveGridProps(columns, gap, responsiveProps);
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   return (

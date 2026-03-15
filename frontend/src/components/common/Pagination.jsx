@@ -16,7 +16,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange, show
   }
 
   return (
-    <div className="flex items-center justify-between py-8">
+    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4 py-8">
       {/* Showing Info */}
       {showing && (
         <div className="text-sm text-gray-600">
@@ -25,7 +25,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange, show
       )}
 
       {/* Pagination */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap justify-center">
         {/* Previous Button */}
         <button
           onClick={() => onPageChange(currentPage - 1)}

@@ -471,7 +471,8 @@ function PageBuilderInner({
           </button>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">{page?.name || 'Page'}</span>
+          <span className="text-sm text-gray-500">{page?.templateType || ''}</span>
+          <span className="text-sm text-gray-500 font-medium">{page?.name || 'Page'}</span>
           <UIButton onClick={handleSave} disabled={isSaving} className="flex items-center gap-2">
             <Save size={16} />
             {isSaving ? 'Saving...' : 'Save'}

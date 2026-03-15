@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const HighlightedHeading = ({
+export const HighlightedHeading = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   beforeText = 'We provide ',
   highlightText = 'amazing',
   afterText = ' solutions',
@@ -14,7 +17,8 @@ export const HighlightedHeading = ({
   textAlign = 'center',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const Tag = tag;
   const hlStyle = highlightStyle === 'background'

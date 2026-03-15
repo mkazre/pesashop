@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ShoppingCartPage = ({
+export const ShoppingCartPage = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = [
     { name: 'Product 1', price: '$29.99', qty: 2, image: 'https://placehold.co/80x80/e2e8f0/64748b?text=P1' },
     { name: 'Product 2', price: '$49.99', qty: 1, image: 'https://placehold.co/80x80/e2e8f0/64748b?text=P2' },
@@ -9,7 +12,8 @@ export const ShoppingCartPage = ({
   showCoupon = true,
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   return (
     <div ref={(ref) => connect(drag(ref))} className={className}

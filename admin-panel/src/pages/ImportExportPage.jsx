@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useMutation } from 'react-query';
 import api, { importAPI } from '@/services/api';
 import Card from '@/components/common/Card';
@@ -19,17 +19,92 @@ const ImportExportPage = () => {
   const [showDuplicateResolution, setShowDuplicateResolution] = useState(false);
   const [importProgress, setImportProgress] = useState(null);
   const [stripHtml, setStripHtml] = useState(true);
+  const [activeJobId, setActiveJobId] = useState(null);
+  const [jobPolling, setJobPolling] = useState(false);
+  const pollIntervalRef = useRef(null);
   const eventSourceRef = useRef(null);
 
-  // SSE progress listener
+  // Job polling — polls every 2 seconds while a job is active
+  const startJobPolling = useCallback((jobId) => {
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    setActiveJobId(jobId);
+    setJobPolling(true);
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const response = await importAPI.getJobStatus(jobId);
+        const job = response.data?.data || response.data;
+        if (!job) return;
+
+        setImportProgress({
+          phase: job.phase,
+          current: job.progress?.current || 0,
+          total: job.progress?.total || 0,
+          type: job.type,
+          status: job.status,
+          results: job.results,
+          imageStats: job.imageStats,
+          error: job.error
+        });
+
+        if (job.status === 'completed') {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+          setJobPolling(false);
+          setActiveJobId(null);
+
+          // Show final results
+          const r = job.results || {};
+          setImportResults({
+            created: Array(r.created || 0).fill({}),
+            updated: Array(r.updated || 0).fill({}),
+            merged: Array(r.merged || 0).fill({}),
+            skipped: Array(r.skipped || 0).fill({}),
+            errors: Array(r.errors || 0).fill({}),
+            imageStats: job.imageStats,
+            _jobResults: r,
+            _resultDetails: job.resultDetails
+          });
+          toast.success(`Import completed: ${r.created} created, ${r.updated} updated, ${r.merged} merged, ${r.skipped} skipped, ${r.errors} errors`);
+          setFile(null);
+          setValidationResults(null);
+          setDuplicateResolutions({});
+          setShowDuplicateResolution(false);
+          setTimeout(() => setImportProgress(null), 5000);
+        } else if (job.status === 'failed') {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+          setJobPolling(false);
+          setActiveJobId(null);
+          toast.error(`Import failed: ${job.error || 'Unknown error'}. Products imported before the failure are saved.`);
+          setTimeout(() => setImportProgress(null), 5000);
+        }
+      } catch (err) {
+        // If job not found (404) — it completed/expired and was cleaned up
+        if (err.response?.status === 404) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+          setJobPolling(false);
+          setActiveJobId(null);
+          setImportProgress(null);
+          toast.info('Import job finished (status expired from server). Check your product count to verify.');
+          return;
+        }
+        // Network error during poll — keep trying
+        console.warn('[Import] Poll error:', err.message);
+      }
+    }, 2000);
+  }, []);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      if (eventSourceRef.current) eventSourceRef.current.close();
     };
   }, []);
 
+  // Legacy SSE progress listener (for strip-html and non-job operations)
   const startProgressListener = () => {
     if (eventSourceRef.current) eventSourceRef.current.close();
     const token = localStorage.getItem('token');
@@ -81,22 +156,28 @@ const ImportExportPage = () => {
   const importMutation = useMutation(
     ({ type, file, options }) => importAPI.import(type, file, options),
     {
-      onMutate: () => { startProgressListener(); },
       onSuccess: (data) => {
-        stopProgressListener();
-        setImportResults(data.data);
-        toast.success(data.message || 'Import completed');
-        setFile(null);
-        setValidationResults(null);
-        setDuplicateResolutions({});
-        setShowDuplicateResolution(false);
+        // Job-based: data.data.jobId is returned
+        const jobId = data.data?.jobId;
+        if (jobId) {
+          toast.success('File uploaded — import started in background');
+          setImportProgress({ phase: 'starting', current: 0, total: 0, type: importType, status: 'running' });
+          startJobPolling(jobId);
+        } else {
+          // Legacy sync response (shouldn't happen with useJob=true, but safe fallback)
+          setImportResults(data.data);
+          toast.success(data.message || 'Import completed');
+          setFile(null);
+          setValidationResults(null);
+          setDuplicateResolutions({});
+          setShowDuplicateResolution(false);
+        }
       },
       onError: (error) => {
-        stopProgressListener();
         if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-          toast.error('Import timed out. Products imported so far are saved. Re-import the same file — duplicates will be skipped automatically.');
+          toast.error('Upload timed out. The file may be too large. Try again or check your connection.');
         } else if (!error.response) {
-          toast.error('Network error during import. Products imported so far are saved. You can safely re-import.');
+          toast.error('Network error during upload. Please check your connection and try again.');
         } else {
           toast.error(error.response?.data?.message || 'Import failed');
         }
@@ -120,6 +201,34 @@ const ImportExportPage = () => {
           toast.error(error.response?.data?.message || 'Failed to strip HTML');
         }
       },
+    }
+  );
+
+  const [dedupResults, setDedupResults] = useState(null);
+
+  const dedupPreviewMutation = useMutation(
+    () => importAPI.deduplicateProducts(true),
+    {
+      onSuccess: (response) => {
+        setDedupResults(response.data);
+        if (response.data?.data?.toDelete > 0) {
+          toast.success(`Found ${response.data.data.toDelete} duplicates across ${response.data.data.duplicateGroups} groups`);
+        } else {
+          toast.success('No duplicate products found!');
+        }
+      },
+      onError: (error) => toast.error(error.response?.data?.message || 'Failed to scan for duplicates'),
+    }
+  );
+
+  const dedupDeleteMutation = useMutation(
+    () => importAPI.deduplicateProducts(false),
+    {
+      onSuccess: (response) => {
+        setDedupResults(response.data);
+        toast.success(response.data?.message || 'Duplicates removed');
+      },
+      onError: (error) => toast.error(error.response?.data?.message || 'Failed to remove duplicates'),
     }
   );
 
@@ -300,7 +409,7 @@ const ImportExportPage = () => {
                 variant="primary"
                 onClick={handleImport}
                 loading={importMutation.isLoading}
-                disabled={!file || !validationResults || (validationResults.duplicates > 0 && Object.keys(duplicateResolutions).length < validationResults.duplicates)}
+                disabled={!file || !validationResults || jobPolling || (validationResults.duplicates > 0 && Object.keys(duplicateResolutions).length < validationResults.duplicates)}
                 fullWidth
               >
                 <IoCheckmarkCircle size={20} className="mr-2" />
@@ -313,19 +422,60 @@ const ImportExportPage = () => {
               <div className="p-4 bg-indigo-50 border-2 border-indigo-200 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-indigo-700">
-                    {importProgress.phase === 'validate' ? 'Validating' : 'Importing'} {importProgress.type || importType}...
+                    {importProgress.phase === 'validate' ? 'Validating' :
+                     importProgress.phase === 'counting' ? 'Counting rows' :
+                     importProgress.phase === 'starting' ? 'Starting import' :
+                     importProgress.phase === 'images' ? 'Processing images' :
+                     importProgress.phase === 'done' ? 'Completed' :
+                     importProgress.phase === 'failed' ? 'Failed' :
+                     'Importing'} {importProgress.type || importType}...
                   </span>
-                  <span className="text-sm font-bold text-indigo-700">{progressPercent}%</span>
+                  <span className="text-sm font-bold text-indigo-700">
+                    {importProgress.phase === 'done' ? '100' : progressPercent}%
+                  </span>
                 </div>
                 <div className="w-full bg-indigo-200 rounded-full h-3">
                   <div
-                    className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${progressPercent}%` }}
+                    className={`h-3 rounded-full transition-all duration-300 ${
+                      importProgress.phase === 'failed' ? 'bg-red-500' :
+                      importProgress.phase === 'done' ? 'bg-green-500' :
+                      importProgress.phase === 'images' ? 'bg-purple-500' :
+                      'bg-indigo-600'
+                    }`}
+                    style={{ width: `${importProgress.phase === 'done' ? 100 : progressPercent}%` }}
                   />
                 </div>
-                <p className="text-xs text-indigo-600 mt-1">
-                  {importProgress.current} / {importProgress.total} rows processed
-                </p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-indigo-600">
+                    {importProgress.current?.toLocaleString()} / {importProgress.total?.toLocaleString()} rows processed
+                  </p>
+                  {jobPolling && (
+                    <span className="text-xs text-indigo-500 animate-pulse">● Live</span>
+                  )}
+                </div>
+                {/* Running totals from job */}
+                {importProgress.results && importProgress.status === 'running' && (
+                  <div className="flex gap-3 mt-2 text-xs">
+                    <span className="text-green-600">{importProgress.results.created || 0} created</span>
+                    <span className="text-blue-600">{importProgress.results.updated || 0} updated</span>
+                    <span className="text-yellow-600">{importProgress.results.skipped || 0} skipped</span>
+                    <span className="text-red-600">{importProgress.results.errors || 0} errors</span>
+                  </div>
+                )}
+                {/* Image processing stats */}
+                {importProgress.imageStats && (importProgress.imageStats.total > 0 || importProgress.phase === 'images') && (
+                  <div className="mt-2 p-2 bg-purple-50 rounded text-xs text-purple-700">
+                    Images: {importProgress.imageStats.processed || 0} processed,{' '}
+                    {importProgress.imageStats.failed || 0} failed,{' '}
+                    {importProgress.imageStats.pending || 0} pending
+                    {importProgress.imageStats.total > 0 && (
+                      <> of {importProgress.imageStats.total} total</>
+                    )}
+                  </div>
+                )}
+                {importProgress.phase === 'failed' && importProgress.error && (
+                  <p className="text-xs text-red-600 mt-2 font-medium">Error: {importProgress.error}</p>
+                )}
               </div>
             )}
 
@@ -354,14 +504,91 @@ const ImportExportPage = () => {
                   Import Results
                 </h4>
                 <div className="space-y-1 text-sm">
-                  <p className="text-green-600"><strong>Created:</strong> {importResults.created?.length || 0}</p>
-                  <p className="text-blue-600"><strong>Updated:</strong> {importResults.updated?.length || 0}</p>
-                  <p className="text-purple-600"><strong>Merged:</strong> {importResults.merged?.length || 0}</p>
-                  <p className="text-yellow-600"><strong>Skipped:</strong> {importResults.skipped?.length || 0}</p>
-                  <p className="text-red-600"><strong>Errors:</strong> {importResults.errors?.length || 0}</p>
+                  <p className="text-green-600"><strong>Created:</strong> {importResults._jobResults?.created ?? importResults.created?.length ?? 0}</p>
+                  <p className="text-blue-600"><strong>Updated:</strong> {importResults._jobResults?.updated ?? importResults.updated?.length ?? 0}</p>
+                  <p className="text-purple-600"><strong>Merged:</strong> {importResults._jobResults?.merged ?? importResults.merged?.length ?? 0}</p>
+                  <p className="text-yellow-600"><strong>Skipped:</strong> {importResults._jobResults?.skipped ?? importResults.skipped?.length ?? 0}</p>
+                  <p className="text-red-600"><strong>Errors:</strong> {importResults._jobResults?.errors ?? importResults.errors?.length ?? 0}</p>
                 </div>
+                {importResults.imageStats && importResults.imageStats.total > 0 && (
+                  <div className="mt-2 pt-2 border-t border-green-200 text-sm">
+                    <p className="text-purple-600">
+                      <strong>Images:</strong> {importResults.imageStats.processed || 0} processed, {importResults.imageStats.failed || 0} failed of {importResults.imageStats.total} total
+                    </p>
+                  </div>
+                )}
+                {/* Show first few errors if available */}
+                {importResults._resultDetails?.errors?.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-green-200">
+                    <p className="text-xs text-red-600 font-medium mb-1">First errors (up to 200 shown):</p>
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {importResults._resultDetails.errors.slice(0, 10).map((err, i) => (
+                        <p key={i} className="text-xs text-red-500">Row {err.row}: {err.error} {err.data?.sku ? `(SKU: ${err.data.sku})` : ''}</p>
+                      ))}
+                      {importResults._resultDetails.errors.length > 10 && (
+                        <p className="text-xs text-red-400">...and {importResults._resultDetails.errors.length - 10} more</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Deduplicate Products */}
+            <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+              <h4 className="font-semibold mb-2 flex items-center gap-2 text-sm">
+                <IoTrash className="text-red-600" size={18} />
+                Remove Duplicate Products
+              </h4>
+              <p className="text-xs text-gray-600 mb-3">
+                Scan for duplicate products (by SKU and name). The version with the most data (images, description, categories) is kept; duplicates are deleted.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => dedupPreviewMutation.mutate()}
+                  loading={dedupPreviewMutation.isLoading}
+                >
+                  <IoRefresh size={16} className="mr-2" />
+                  Scan for Duplicates
+                </Button>
+                {dedupResults?.data?.toDelete > 0 && dedupResults?.dryRun && (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => {
+                      if (confirm(`This will permanently delete ${dedupResults.data.toDelete} duplicate products. Continue?`)) {
+                        dedupDeleteMutation.mutate();
+                      }
+                    }}
+                    loading={dedupDeleteMutation.isLoading}
+                  >
+                    <IoTrash size={16} className="mr-2" />
+                    Delete {dedupResults.data.toDelete} Duplicates
+                  </Button>
+                )}
+              </div>
+              {dedupResults && (
+                <div className="mt-3 text-xs space-y-1">
+                  <p className={dedupResults.data?.toDelete > 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
+                    {dedupResults.message}
+                  </p>
+                  {dedupResults.data?.details?.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto mt-2 space-y-1">
+                      {dedupResults.data.details.slice(0, 20).map((d, i) => (
+                        <p key={i} className="text-gray-600">
+                          <strong>{d.group}:</strong> Kept "{d.kept.name}" (score {d.kept.score}, {d.kept.images} imgs) — removing {d.removed.length} duplicate{d.removed.length > 1 ? 's' : ''}
+                        </p>
+                      ))}
+                      {dedupResults.data.details.length > 20 && (
+                        <p className="text-gray-400">...and {dedupResults.data.details.length - 20} more groups</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Strip HTML from existing products */}
             <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
@@ -584,10 +811,13 @@ const ImportExportPage = () => {
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold mb-2">Large File Support</h4>
+            <h4 className="font-semibold mb-2">Large File Support (up to 100,000+ products)</h4>
             <p className="text-sm text-gray-600">
-              The importer supports files with 30,000+ rows. Progress is tracked in real-time 
-              and rows are processed efficiently with batch database operations.
+              The importer uses streaming CSV parsing and background job processing — your file 
+              is never loaded fully into memory. Rows are imported in batches of 200 with real-time 
+              progress polling. Images are processed in a parallel queue (5 at a time) without 
+              blocking the main import. You can safely close the browser and return — the import 
+              continues on the server.
             </p>
           </div>
           <div>

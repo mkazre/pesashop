@@ -1,14 +1,18 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const OrderTracking = ({
+export const OrderTracking = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   title = 'Track Your Order',
   description = 'Enter your order ID and billing email to track your order status.',
   buttonText = 'Track Order',
   buttonColor = '#3b82f6',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   return (
     <div ref={(ref) => connect(drag(ref))} className={className}

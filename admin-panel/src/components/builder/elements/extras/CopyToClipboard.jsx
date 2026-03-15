@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const CopyToClipboard = ({
+export const CopyToClipboard = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   textToCopy = 'npm install my-package',
   displayText = 'npm install my-package',
   buttonText = 'Copy',
@@ -12,7 +15,8 @@ export const CopyToClipboard = ({
   borderRadius = '8px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const [copied, setCopied] = useState(false);
 

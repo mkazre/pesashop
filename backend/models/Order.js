@@ -38,14 +38,24 @@ const orderItemSchema = new mongoose.Schema({
     required: true
   },
   variation: mongoose.Schema.Types.Mixed,
-  metadata: mongoose.Schema.Types.Mixed
+  metadata: mongoose.Schema.Types.Mixed,
+  // Per-item laybye tracking
+  isLaybye: {
+    type: Boolean,
+    default: false
+  },
+  laybyePlan: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LaybyPlan'
+  },
+  laybyeDeposit: Number,
+  laybyeInstallment: Number
 });
 
 const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
-    unique: true,
-    required: true
+    unique: true
   },
   
   customer: {
@@ -137,7 +147,16 @@ const orderSchema = new mongoose.Schema({
   shippedAt: Date,
   deliveredAt: Date,
   
-  // Laybye
+  // Laybye (supports multiple laybyes per order)
+  hasLaybye: {
+    type: Boolean,
+    default: false
+  },
+  laybyes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Laybye'
+  }],
+  // Legacy single laybye reference (backward compat)
   isLaybye: {
     type: Boolean,
     default: false
@@ -145,6 +164,31 @@ const orderSchema = new mongoose.Schema({
   laybye: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Laybye'
+  },
+  
+  // Split Payments
+  payments: [{
+    method: { type: String, required: true },
+    amount: { type: Number, required: true },
+    transactionId: String,
+    status: {
+      type: String,
+      enum: ['pending', 'completed', 'failed', 'refunded'],
+      default: 'pending'
+    },
+    paidAt: Date
+  }],
+  dueNow: Number,
+  
+  // Delivery
+  deliveryMethod: {
+    type: String,
+    enum: ['delivery', 'pickup'],
+    default: 'delivery'
+  },
+  pickupAddress: {
+    label: { type: String, default: '' },
+    address: { type: String, default: '' },
   },
   
   // Loyalty

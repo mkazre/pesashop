@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ContentTimeline = ({
+export const ContentTimeline = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = [
     { date: '2024', title: 'Company Founded', description: 'Started with a small team of 3 people.' },
     { date: '2025', title: 'First Product Launch', description: 'Released our flagship product to market.' },
@@ -14,7 +17,8 @@ export const ContentTimeline = ({
   textColor = '#6b7280',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   return (

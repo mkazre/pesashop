@@ -4,8 +4,12 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { TextControl, ColorControl, Checkbox } from '@/components/builder/controls/PropertyControls';
 import { AccordionSettings } from './AccordionSettings';
 import { canElementContainChildren } from '@/components/builder/utils/NestingRules';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Accordion = ({ items = [], className = '', style = {} }) => {
+export const Accordion = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { items = [], className = '', style = {} } = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

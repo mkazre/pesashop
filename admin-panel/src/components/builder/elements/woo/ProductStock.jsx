@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductStock = ({
+export const ProductStock = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   status = 'in-stock',
   quantity = 15,
   showQuantity = true,
@@ -15,7 +18,8 @@ export const ProductStock = ({
   fontSize = '14px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const isLow = status === 'in-stock' && quantity <= lowStockThreshold;
   const color = status === 'out-of-stock' ? outOfStockColor : isLow ? lowStockColor : inStockColor;

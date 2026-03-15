@@ -1,5 +1,7 @@
+import { useCallback } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { statsAPI } from '@/services/api';
 
 // Auth Store
 export const useAuthStore = create(
@@ -34,7 +36,7 @@ export const useAuthStore = create(
 export const useCartStore = create(
   persist(
     (set, get) => ({
-      items: [],
+      items: [], // Each item: { product, quantity, variant, laybye?: { plan, deposit, installment } }
       giftCardCode: null,
       giftCardAmount: 0,
       giftCardBalance: 0,
@@ -49,8 +51,12 @@ export const useCartStore = create(
           newItems[existingIndex].quantity += quantity;
           set({ items: newItems });
         } else {
-          set({ items: [...items, { product, quantity, variant }] });
+          set({ items: [...items, { product, quantity, variant, laybye: null }] });
         }
+        // Trigger cart badge bounce animation
+        useUIStore.getState().triggerCartBounce();
+        // Track add_to_cart event for stats
+        try { statsAPI.trackEvent({ type: 'add_to_cart', productId: product._id, quantity, sessionId: sessionStorage.getItem('pesa_sid') || 'unknown' }); } catch(e) {}
       },
       updateQuantity: (index, quantity) => {
         const items = get().items;
@@ -63,7 +69,28 @@ export const useCartStore = create(
         }
       },
       removeItem: (index) => {
+        const removed = get().items[index];
         set({ items: get().items.filter((_, i) => i !== index) });
+        // Track remove_from_cart event for stats
+        if (removed?.product?._id) {
+          try { statsAPI.trackEvent({ type: 'remove_from_cart', productId: removed.product._id, sessionId: sessionStorage.getItem('pesa_sid') || 'unknown' }); } catch(e) {}
+        }
+      },
+      // Per-item laybye management
+      setItemLaybye: (index, laybyeData) => {
+        // laybyeData: { plan, deposit, installment } or null to clear
+        const newItems = [...get().items];
+        if (newItems[index]) {
+          newItems[index] = { ...newItems[index], laybye: laybyeData };
+          set({ items: newItems });
+        }
+      },
+      clearItemLaybye: (index) => {
+        const newItems = [...get().items];
+        if (newItems[index]) {
+          newItems[index] = { ...newItems[index], laybye: null };
+          set({ items: newItems });
+        }
       },
       clearCart: () => set({ items: [], giftCardCode: null, giftCardAmount: 0, giftCardBalance: 0 }),
       setGiftCard: (code, amount, balance) => set({ giftCardCode: code, giftCardAmount: amount, giftCardBalance: balance }),
@@ -81,6 +108,20 @@ export const useCartStore = create(
       },
       getItemCount: () => {
         return get().items.reduce((count, item) => count + item.quantity, 0);
+      },
+      // Helpers for checkout: separate cash vs laybye items
+      getCashItems: () => get().items.filter(i => !i.laybye),
+      getLaybyeItems: () => get().items.filter(i => !!i.laybye),
+      getCashTotal: () => {
+        return get().items.filter(i => !i.laybye).reduce((t, item) => {
+          const price = item.product.salePrice || item.product.regularPrice;
+          return t + price * item.quantity;
+        }, 0);
+      },
+      getLaybyeDepositTotal: () => {
+        return get().items.filter(i => !!i.laybye).reduce((t, item) => {
+          return t + (item.laybye.deposit || 0) * item.quantity;
+        }, 0);
       },
     }),
     { name: 'cart-storage' }
@@ -137,13 +178,22 @@ export const useCompareStore = create(
 // UI Store
 export const useUIStore = create((set) => ({
   cartSidebarOpen: false,
+  checkoutDrawerOpen: false,
   quickViewProduct: null,
   authModalOpen: false,
   authModalMode: 'login', // 'login', 'register', 'forgot', 'reset'
+  cartBadgeBounce: false,
   
+  triggerCartBounce: () => {
+    set({ cartBadgeBounce: true });
+    setTimeout(() => set({ cartBadgeBounce: false }), 600);
+  },
   toggleCartSidebar: () => set((state) => ({ cartSidebarOpen: !state.cartSidebarOpen })),
   openCartSidebar: () => set({ cartSidebarOpen: true }),
   closeCartSidebar: () => set({ cartSidebarOpen: false }),
+  
+  openCheckoutDrawer: () => set({ checkoutDrawerOpen: true, cartSidebarOpen: false }),
+  closeCheckoutDrawer: () => set({ checkoutDrawerOpen: false }),
   
   openQuickView: (product) => set({ quickViewProduct: product }),
   closeQuickView: () => set({ quickViewProduct: null }),
@@ -153,32 +203,33 @@ export const useUIStore = create((set) => ({
   setAuthModalMode: (mode) => set({ authModalMode: mode }),
 }));
 
-// Currency Store
-export const useCurrencyStore = create(
+// Currency Store (base)
+const _useCurrencyStoreBase = create(
   persist(
     (set, get) => ({
       currencies: [],
       selectedCurrency: null, // { code, symbol, exchangeRate, ... }
       baseCurrency: null,
       setCurrencies: (currencies) => {
-        const base = currencies.find(c => c.isBaseCurrency) || currencies.find(c => c.code === 'ZAR') || currencies[0];
+        const base = currencies.find(c => c.isBaseCurrency) || currencies[0];
         const current = get().selectedCurrency;
-        // Keep selected if still valid, otherwise default to base
-        const selected = current && currencies.find(c => c.code === current.code) ? currencies.find(c => c.code === current.code) : base;
+        const selected = current && currencies.find(c => c.code === current.code)
+          ? currencies.find(c => c.code === current.code)
+          : (currencies[0] || base);
         set({ currencies, baseCurrency: base, selectedCurrency: selected });
       },
       setSelectedCurrency: (currency) => set({ selectedCurrency: currency }),
-      // Convert ZAR amount to selected currency
-      convertFromZAR: (amountInZAR) => {
+      convertFromBase: (amount) => {
         const selected = get().selectedCurrency;
-        if (!selected || selected.code === 'ZAR') return amountInZAR;
-        return amountInZAR / selected.exchangeRate;
+        if (!selected || selected.isBaseCurrency || selected.exchangeRate === 1) return amount;
+        return amount / selected.exchangeRate;
       },
-      // Format amount in selected currency
-      formatPrice: (amountInZAR) => {
+      formatPrice: (amountInBase) => {
         const selected = get().selectedCurrency;
-        if (!selected) return `R${(amountInZAR || 0).toFixed(2)}`;
-        const converted = selected.code === 'ZAR' ? amountInZAR : amountInZAR / selected.exchangeRate;
+        if (!selected) return `R${(amountInBase || 0).toFixed(2)}`;
+        const converted = (selected.isBaseCurrency || selected.exchangeRate === 1)
+          ? amountInBase
+          : amountInBase / selected.exchangeRate;
         const formatted = converted.toFixed(selected.decimalDigits || 2)
           .replace('.', selected.decimalSeparator || '.')
           .replace(/\B(?=(\d{3})+(?!\d))/g, selected.thousandSeparator || ',');
@@ -188,6 +239,48 @@ export const useCurrencyStore = create(
     { name: 'currency-storage' }
   )
 );
+
+// Wrapper hook — subscribes to selectedCurrency so components re-render on currency change.
+// Components using `const { formatPrice } = useCurrencyStore()` will re-render when
+// selectedCurrency changes, and formatPrice (which reads via get()) returns the new value.
+export function useCurrencyStore(selectorFn) {
+  // If a custom selector is passed, delegate to the base store
+  if (typeof selectorFn === 'function') {
+    return _useCurrencyStoreBase(selectorFn);
+  }
+  // Subscribe to selectedCurrency to force re-renders on currency change
+  const selectedCurrency = _useCurrencyStoreBase(s => s.selectedCurrency);
+
+  const convertFromBase = useCallback((amount) => {
+    if (!selectedCurrency || selectedCurrency.isBaseCurrency || selectedCurrency.exchangeRate === 1) return amount;
+    return amount / selectedCurrency.exchangeRate;
+  }, [selectedCurrency]);
+
+  const formatPrice = useCallback((amountInBase) => {
+    if (!selectedCurrency) return `R${(amountInBase || 0).toFixed(2)}`;
+    const converted = (selectedCurrency.isBaseCurrency || selectedCurrency.exchangeRate === 1)
+      ? amountInBase
+      : amountInBase / selectedCurrency.exchangeRate;
+    const formatted = converted.toFixed(selectedCurrency.decimalDigits || 2)
+      .replace('.', selectedCurrency.decimalSeparator || '.')
+      .replace(/\B(?=(\d{3})+(?!\d))/g, selectedCurrency.thousandSeparator || ',');
+    return selectedCurrency.symbolPosition === 'after' ? `${formatted}${selectedCurrency.symbol}` : `${selectedCurrency.symbol}${formatted}`;
+  }, [selectedCurrency]);
+
+  return {
+    currencies: _useCurrencyStoreBase(s => s.currencies),
+    selectedCurrency,
+    baseCurrency: _useCurrencyStoreBase(s => s.baseCurrency),
+    setCurrencies: _useCurrencyStoreBase(s => s.setCurrencies),
+    setSelectedCurrency: _useCurrencyStoreBase(s => s.setSelectedCurrency),
+    convertFromBase,
+    formatPrice,
+  };
+}
+// Expose .getState() and .subscribe() for non-React usage
+useCurrencyStore.getState = _useCurrencyStoreBase.getState;
+useCurrencyStore.subscribe = _useCurrencyStoreBase.subscribe;
+useCurrencyStore.setState = _useCurrencyStoreBase.setState;
 
 // Recently Viewed Store
 export const useRecentlyViewedStore = create(

@@ -14,8 +14,12 @@ const fsPromises = fs.promises;
 
 const { buildLookupMaps, checkDuplicateFast } = require('./validationHelper');
 
+// ─── Tuning constants for 100K+ imports ─────────────────────────
 const BATCH_SIZE = 100;
-const IMAGE_CONCURRENCY = 3;
+const DB_BATCH_SIZE = 200;
+const IMAGE_CONCURRENCY = 5;
+const IMAGE_DOWNLOAD_TIMEOUT = 45000;
+const MAX_IMAGE_RETRIES = 2;
 
 class WooCommerceImporter extends EventEmitter {
   constructor() {
@@ -24,9 +28,150 @@ class WooCommerceImporter extends EventEmitter {
     this.tempImageDir = path.join(__dirname, '../uploads/temp/images');
     this.processedImageDir = path.join(__dirname, '../uploads/products');
     this._categoryCache = new Map();
+    this._jobs = new Map(); // jobId → job state for background imports
 
     [this.tempImageDir, this.processedImageDir].forEach(dir => {
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    });
+  }
+
+  // ─── Job management (background imports for 100K+) ─────────────
+
+  getJob(jobId) {
+    return this._jobs.get(jobId) || null;
+  }
+
+  _createJob(jobId, type) {
+    const job = {
+      id: jobId, type,
+      status: 'running',
+      phase: 'starting',
+      progress: { current: 0, total: 0 },
+      results: { created: 0, updated: 0, merged: 0, skipped: 0, errors: 0 },
+      resultDetails: { created: [], updated: [], merged: [], skipped: [], errors: [] },
+      startedAt: new Date(), completedAt: null, error: null,
+      imageStats: { total: 0, processed: 0, failed: 0, pending: 0 }
+    };
+    this._jobs.set(jobId, job);
+    return job;
+  }
+
+  _updateJobProgress(jobId, phase, current, total, extras = {}) {
+    const job = this._jobs.get(jobId);
+    if (!job) return;
+    job.phase = phase;
+    job.progress = { current, total };
+    Object.assign(job, extras);
+    this.emit('progress', { jobId, phase, current, total, type: job.type, results: job.results, imageStats: job.imageStats, status: job.status });
+  }
+
+  _completeJob(jobId) {
+    const job = this._jobs.get(jobId);
+    if (!job) return;
+    job.status = 'completed'; job.phase = 'done'; job.completedAt = new Date();
+    this.emit('progress', { jobId, phase: 'done', current: job.progress.total, total: job.progress.total, type: job.type, results: job.results, imageStats: job.imageStats, status: 'completed' });
+    setTimeout(() => this._jobs.delete(jobId), 30 * 60 * 1000);
+  }
+
+  _failJob(jobId, error) {
+    const job = this._jobs.get(jobId);
+    if (!job) return;
+    job.status = 'failed'; job.error = error.message || String(error); job.completedAt = new Date();
+    this.emit('progress', { jobId, phase: 'failed', current: job.progress.current, total: job.progress.total, type: job.type, results: job.results, status: 'failed', error: job.error });
+    setTimeout(() => this._jobs.delete(jobId), 30 * 60 * 1000);
+  }
+
+  // ─── Concurrent image queue (non-blocking) ───────────────────
+
+  _createImageQueue(concurrency = IMAGE_CONCURRENCY) {
+    const queue = [];
+    let running = 0;
+    let resolveIdle = null;
+    let idlePromise = null;
+
+    const run = async () => {
+      while (queue.length > 0 && running < concurrency) {
+        const task = queue.shift();
+        running++;
+        task().finally(() => {
+          running--;
+          if (queue.length > 0) run();
+          if (running === 0 && resolveIdle) { resolveIdle(); resolveIdle = null; idlePromise = null; }
+        });
+      }
+    };
+
+    return {
+      push(fn) { queue.push(fn); run(); },
+      get pending() { return queue.length + running; },
+      waitIdle() {
+        if (running === 0 && queue.length === 0) return Promise.resolve();
+        if (!idlePromise) idlePromise = new Promise(r => { resolveIdle = r; });
+        return idlePromise;
+      }
+    };
+  }
+
+  // ─── Count CSV rows without loading into memory ──────────────
+
+  countCSVRows(filePath) {
+    return new Promise((resolve, reject) => {
+      let count = 0;
+      fs.createReadStream(filePath)
+        .pipe(csv())
+        .on('data', () => { count++; })
+        .on('end', () => resolve(count))
+        .on('error', reject);
+    });
+  }
+
+  // ─── True streaming CSV with backpressure (100K+ safe) ───────
+
+  streamCSVChunked(filePath, chunkSize = DB_BATCH_SIZE) {
+    return new Promise((resolve, reject) => {
+      const chunks = [];
+      let currentChunk = [];
+      let rowNumber = 0;
+      let resolveNext = null;
+      let done = false;
+
+      const readable = fs.createReadStream(filePath, { highWaterMark: 64 * 1024 }).pipe(csv());
+
+      const iterator = {
+        [Symbol.asyncIterator]() { return this; },
+        next() {
+          if (chunks.length > 0) return Promise.resolve({ value: chunks.shift(), done: false });
+          if (done && currentChunk.length > 0) { const last = currentChunk; currentChunk = []; return Promise.resolve({ value: last, done: false }); }
+          if (done) return Promise.resolve({ value: undefined, done: true });
+          return new Promise(r => { resolveNext = r; readable.resume(); });
+        }
+      };
+
+      readable.on('data', (row) => {
+        rowNumber++;
+        const cleaned = {};
+        for (const key of Object.keys(row)) { if (!key.startsWith('meta:')) cleaned[key] = row[key]; }
+        currentChunk.push({ rowNumber, data: cleaned });
+
+        if (currentChunk.length >= chunkSize) {
+          const chunk = currentChunk; currentChunk = [];
+          if (resolveNext) { const rn = resolveNext; resolveNext = null; readable.pause(); rn({ value: chunk, done: false }); }
+          else { chunks.push(chunk); if (chunks.length > 2) readable.pause(); }
+        }
+      });
+
+      readable.on('end', () => {
+        done = true;
+        if (resolveNext) {
+          const rn = resolveNext; resolveNext = null;
+          if (currentChunk.length > 0) { const last = currentChunk; currentChunk = []; rn({ value: last, done: false }); }
+          else rn({ value: undefined, done: true });
+        }
+      });
+
+      readable.on('error', (err) => { done = true; reject(err); });
+      readable.pause();
+      resolve({ iterator, getTotalRead: () => rowNumber });
     });
   }
 
@@ -88,31 +233,46 @@ class WooCommerceImporter extends EventEmitter {
     return images;
   }
 
-  async downloadImage(imageUrl, filename) {
+  async downloadImage(imageUrl, filename, retries = MAX_IMAGE_RETRIES) {
     const protocol = imageUrl.startsWith('https') ? https : http;
     const tempPath = path.join(this.tempImageDir, filename);
     return new Promise((resolve, reject) => {
       const file = fs.createWriteStream(tempPath);
-      const req = protocol.get(imageUrl, { timeout: 30000 }, (response) => {
+      const req = protocol.get(imageUrl, { timeout: IMAGE_DOWNLOAD_TIMEOUT }, (response) => {
         if (response.statusCode === 301 || response.statusCode === 302) {
           file.close();
-          fs.unlinkSync(tempPath);
-          return this.downloadImage(response.headers.location, filename).then(resolve).catch(reject);
+          try { fs.unlinkSync(tempPath); } catch (_) {}
+          return this.downloadImage(response.headers.location, filename, retries).then(resolve).catch(reject);
         }
         if (response.statusCode !== 200) {
           file.close();
-          if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+          try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch (_) {}
           return reject(new Error(`HTTP ${response.statusCode}`));
         }
         response.pipe(file);
         file.on('finish', () => { file.close(); resolve(tempPath); });
       });
-      req.on('error', (err) => {
+      req.on('error', async (err) => {
         file.close();
-        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+        try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch (_) {}
+        if (retries > 0) {
+          await new Promise(r => setTimeout(r, 1000));
+          return this.downloadImage(imageUrl, filename, retries - 1).then(resolve).catch(reject);
+        }
         reject(err);
       });
-      req.on('timeout', () => { req.destroy(); reject(new Error('Download timeout')); });
+      req.on('timeout', () => {
+        req.destroy();
+        file.close();
+        try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch (_) {}
+        if (retries > 0) {
+          setTimeout(() => {
+            this.downloadImage(imageUrl, filename, retries - 1).then(resolve).catch(reject);
+          }, 1000);
+        } else {
+          reject(new Error('Download timeout'));
+        }
+      });
     });
   }
 
@@ -203,26 +363,7 @@ class WooCommerceImporter extends EventEmitter {
     });
   }
 
-  // For very large files, read in chunks to avoid memory issues
-  async *readCSVChunked(filePath, chunkSize = BATCH_SIZE) {
-    let chunk = [];
-    let rowNumber = 0;
-
-    const rows = await new Promise((resolve, reject) => {
-      const allRows = [];
-      fs.createReadStream(filePath)
-        .pipe(csv())
-        .on('data', (row) => { rowNumber++; allRows.push({ rowNumber, data: row }); })
-        .on('end', () => resolve(allRows))
-        .on('error', reject);
-    });
-
-    for (let i = 0; i < rows.length; i += chunkSize) {
-      yield rows.slice(i, i + chunkSize);
-    }
-  }
-
-  // ─── Validation ────────────────────────────────────────────────
+  // ─── Validation (streaming for 100K+) ─────────────────────────
 
   async validateImport(filePath, type) {
     if (!this.supportedTypes.includes(type)) {
@@ -232,16 +373,19 @@ class WooCommerceImporter extends EventEmitter {
     const errors = [];
     let totalRows = 0;
 
-    const rows = await this.readCSVStream(filePath);
-    totalRows = rows.length;
+    // Count rows first (quick pass)
+    const countedTotal = await this.countCSVRows(filePath);
+    this.emit('progress', { phase: 'validate', current: 0, total: countedTotal });
 
     // Pre-load all existing records into memory for fast duplicate checking
     const lookupMaps = await buildLookupMaps(type);
-    this.emit('progress', { phase: 'validate', current: 0, total: totalRows });
 
-    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-      const batch = rows.slice(i, i + BATCH_SIZE);
-      for (const { rowNumber, data: row } of batch) {
+    // Stream through CSV in chunks — never loads all rows into memory
+    const { iterator } = await this.streamCSVChunked(filePath, DB_BATCH_SIZE);
+
+    for await (const chunk of iterator) {
+      for (const { rowNumber, data: row } of chunk) {
+        totalRows++;
         try {
           const duplicate = checkDuplicateFast(row, type, lookupMaps);
           if (duplicate) {
@@ -260,7 +404,7 @@ class WooCommerceImporter extends EventEmitter {
           errors.push({ row: rowNumber, error: error.message, data: this.extractKeyFields(row, type) });
         }
       }
-      this.emit('progress', { phase: 'validate', current: Math.min(i + BATCH_SIZE, totalRows), total: totalRows });
+      this.emit('progress', { phase: 'validate', current: totalRows, total: countedTotal });
     }
 
     return { totalRows, duplicates: duplicates.length, duplicatesList: duplicates, errors: errors.length, errorsList: errors, valid: errors.length === 0 };
@@ -436,145 +580,362 @@ class WooCommerceImporter extends EventEmitter {
     return productData;
   }
 
-  // ─── Import Products (30k+ capable, batched for performance) ──
+  // ─── Fast product mapping (no inline image processing) ────────
+  // Stores raw image URLs; actual download/processing happens in background queue
+
+  async mapProductDataFast(row, options = {}) {
+    let categoryIds = [];
+    const categoryString = row['tax:product_cat'] || row.Categories || row.categories;
+    if (categoryString) {
+      const categoryNames = categoryString.split(',').map(c => c.trim()).filter(c => c);
+      for (const name of categoryNames) {
+        const catId = await this.getOrCreateCategory(name);
+        if (catId) categoryIds.push(catId);
+      }
+    }
+
+    let tags = [];
+    const tagString = row['tax:product_tag'] || row.Tags || row.tags;
+    if (tagString) tags = tagString.split(',').map(t => t.trim()).filter(t => t);
+
+    const slug = row.post_name || slugify(row.post_title || row.Name || row.name || 'product', { lower: true, strict: true });
+
+    let sku = row.sku || row.SKU;
+    if (!sku) {
+      sku = `PROD-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`.toUpperCase();
+    } else {
+      sku = sku.toUpperCase();
+    }
+
+    const regularPriceValue = row.regular_price || row['Regular price'] || row.price || 0;
+    const backendPriceValue = parseFloat(regularPriceValue);
+
+    const rawName = row.post_title || row.Name || row.name;
+    const rawDescription = row.post_content || row.Description || row.description || '';
+    const rawShortDescription = row.post_excerpt || row['Short description'] || row.short_description || '';
+
+    const productData = {
+      name: options.stripHtml ? this.stripHtml(rawName) : rawName,
+      slug,
+      sku,
+      description: options.stripHtml ? this.stripHtml(rawDescription) : rawDescription,
+      shortDescription: options.stripHtml ? this.stripHtml(rawShortDescription) : rawShortDescription,
+      regularPrice: 0,
+      salePrice: row.sale_price || row['Sale price'] ? parseFloat(row.sale_price || row['Sale price']) : undefined,
+      backendPrice: isNaN(backendPriceValue) ? 0 : backendPriceValue,
+      stock: parseInt(row.stock || row.Stock || row.stock_quantity || 0),
+      categories: categoryIds,
+      tags,
+      weight: row.weight || row.Weight ? parseFloat(row.weight || row.Weight) : undefined,
+      productType: (row.Type === 'variable' || row.type === 'variable' || row['tax:product_type'] === 'variable') ? 'variable' : 'simple',
+      isActive: row.post_status === 'publish' || row.Published === '1' || row.status === 'published',
+      isFeatured: row.featured === '1' || row.Featured === '1' || false,
+      status: (row.post_status === 'publish' || row.Published === '1') ? 'active' : 'draft'
+    };
+
+    // Store raw image URLs — actual processing happens in image queue
+    if (row.images) {
+      const imageDataArray = this.parseWooCommerceImages(row.images);
+      if (imageDataArray.length > 0) {
+        productData.featuredImage = imageDataArray[0].url;
+        productData.images = imageDataArray.map(img => img.url);
+        productData._rawImageData = imageDataArray; // saved for queue processing
+      }
+    }
+
+    return productData;
+  }
+
+  // Helper: queue image processing for a successfully inserted/upserted product
+  _queueImageProcessing(imageQueue, imageStats, processImages, pi, doc) {
+    if (!processImages || !imageQueue || !pi.rawImageData || pi.rawImageData.length === 0) return;
+    const slug = pi.productData.slug;
+    const productId = doc?._id;
+    if (!productId) return;
+    const imgData = pi.rawImageData;
+    imageStats.total += imgData.length;
+    imageQueue.push(async () => {
+      try {
+        const processedImages = await this.processProductImages(imgData, slug);
+        if (processedImages.length > 0) {
+          await Product.findByIdAndUpdate(productId, {
+            $set: { featuredImage: processedImages[0], images: processedImages }
+          });
+          imageStats.processed += processedImages.length;
+          imageStats.failed += (imgData.length - processedImages.length);
+        } else {
+          imageStats.failed += imgData.length;
+        }
+      } catch (err) {
+        console.error(`[Import] Image processing failed for ${slug}:`, err.message);
+        imageStats.failed += imgData.length;
+      }
+    });
+  }
+
+  // ─── Import Products (100K+ capable, streaming + batched) ──────
 
   async importProducts(filePath, options = {}) {
     const { processImages = true, duplicateResolution = {} } = options;
     const results = { created: [], updated: [], merged: [], skipped: [], errors: [] };
-    const INSERT_BATCH = 50;
 
     this._categoryCache.clear();
-    const rows = await this.readCSVStream(filePath);
-    const totalRows = rows.length;
+
+    // Phase 1: Count rows (quick scan, no memory)
+    const totalRows = await this.countCSVRows(filePath);
+    console.log(`[Import] Starting import of ${totalRows} product rows`);
+    this.emit('progress', { phase: 'import', current: 0, total: totalRows, type: 'products' });
 
     // Pre-load existing products for fast duplicate checking
     const lookupMaps = await buildLookupMaps('products');
-    this.emit('progress', { phase: 'import', current: 0, total: totalRows, type: 'products' });
 
-    let pendingInserts = []; // { rowNumber, productData }
-    const flushInserts = async () => {
-      if (pendingInserts.length === 0) return;
-      try {
-        // Mongoose 8: insertMany returns an array of documents
-        const docs = await Product.insertMany(
-          pendingInserts.map(p => p.productData),
-          { ordered: false }
-        );
-        for (let j = 0; j < docs.length; j++) {
-          const pi = pendingInserts[j];
-          results.created.push({
-            row: pi.rowNumber,
-            sku: pi.productData.sku,
-            id: docs[j]?._id?.toString() || 'unknown'
-          });
-        }
-      } catch (bulkError) {
-        // insertMany with ordered:false may partially succeed
-        if (bulkError.insertedDocs && bulkError.insertedDocs.length > 0) {
-          const insertedSkus = new Set(bulkError.insertedDocs.map(d => d.sku));
-          for (const pi of pendingInserts) {
-            if (insertedSkus.has(pi.productData.sku)) {
-              const doc = bulkError.insertedDocs.find(d => d.sku === pi.productData.sku);
-              results.created.push({ row: pi.rowNumber, sku: pi.productData.sku, id: doc?._id?.toString() || 'unknown' });
-            } else {
-              results.errors.push({ row: pi.rowNumber, error: 'Batch insert failed for this row', data: { sku: pi.productData.sku, name: pi.productData.name } });
+    // Image queue for background processing
+    const imageQueue = processImages ? this._createImageQueue(IMAGE_CONCURRENCY) : null;
+    let imageStats = { total: 0, processed: 0, failed: 0 };
+
+    // Phase 2: Stream through CSV in chunks, never loading all rows
+    const { iterator } = await this.streamCSVChunked(filePath, DB_BATCH_SIZE);
+    let processed = 0;
+
+    for await (const chunk of iterator) {
+      const pendingInserts = [];
+      const pendingUpdates = [];
+
+      // Map all rows in this chunk
+      for (const { rowNumber, data: row } of chunk) {
+        try {
+          const duplicate = checkDuplicateFast(row, 'products', lookupMaps);
+          const resolution = duplicateResolution[rowNumber];
+
+          if (duplicate) {
+            // Default to 'update' when no resolution specified — ensures re-imports always work
+            const effectiveResolution = resolution || 'update';
+            if (effectiveResolution === 'ignore') {
+              results.skipped.push({ row: rowNumber, sku: row.sku || row.SKU, name: row.post_title || row.Name, reason: 'Duplicate - ignored' });
+            } else if (effectiveResolution === 'merge') {
+              const fullDoc = await Product.findById(duplicate._id);
+              if (fullDoc) {
+                const existingData = fullDoc.toObject();
+                const newData = await this.mapProductDataFast(row, { stripHtml: options.stripHtml });
+                delete newData._rawImageData;
+                const mergedData = { ...existingData, ...newData,
+                  categories: [...new Set([...(existingData.categories || []).map(String), ...(newData.categories || []).map(String)])],
+                  tags: [...new Set([...(existingData.tags || []), ...(newData.tags || [])])],
+                  images: [...new Set([...(existingData.images || []), ...(newData.images || [])])]
+                };
+                if (!newData.featuredImage && existingData.featuredImage) mergedData.featuredImage = existingData.featuredImage;
+                pendingUpdates.push({ rowNumber, filter: { _id: duplicate._id }, update: mergedData, sku: mergedData.sku, id: duplicate._id.toString(), type: 'merge' });
+              }
+            } else if (effectiveResolution === 'update') {
+              const productData = await this.mapProductDataFast(row, { stripHtml: options.stripHtml });
+              const rawImageData = productData._rawImageData;
+              delete productData._rawImageData;
+              pendingUpdates.push({ rowNumber, filter: { _id: duplicate._id }, update: productData, sku: productData.sku, id: duplicate._id.toString(), type: 'update', rawImageData });
             }
+          } else {
+            const productData = await this.mapProductDataFast(row, { stripHtml: options.stripHtml });
+            const rawImageData = productData._rawImageData;
+            delete productData._rawImageData;
+            pendingInserts.push({ rowNumber, productData, rawImageData });
+
+            // Update lookup maps to prevent duplicates within the same import
+            if (productData.sku && lookupMaps.bySku) lookupMaps.bySku.set(productData.sku.toUpperCase(), productData);
+            if (productData.slug && lookupMaps.bySlug) lookupMaps.bySlug.set(productData.slug, productData);
+            if (productData.name && lookupMaps.byName) lookupMaps.byName.set(productData.name, productData);
           }
-        } else {
-          // Total failure — fall back to individual inserts
-          for (const pi of pendingInserts) {
-            try {
-              const product = await Product.create(pi.productData);
-              results.created.push({ row: pi.rowNumber, sku: pi.productData.sku, id: product._id.toString() });
-            } catch (err) {
-              results.errors.push({ row: pi.rowNumber, error: err.message, data: { sku: pi.productData.sku, name: pi.productData.name } });
+        } catch (error) {
+          results.errors.push({ row: rowNumber, error: error.message, data: this.extractKeyFields(row, 'products') });
+        }
+      }
+
+      // Flush inserts for this chunk
+      if (pendingInserts.length > 0) {
+        try {
+          const docs = await Product.insertMany(
+            pendingInserts.map(p => p.productData),
+            { ordered: false }
+          );
+          for (let j = 0; j < docs.length; j++) {
+            const pi = pendingInserts[j];
+            const docId = docs[j]?._id?.toString() || 'unknown';
+            results.created.push({ row: pi.rowNumber, sku: pi.productData.sku, id: docId });
+            this._queueImageProcessing(imageQueue, imageStats, processImages, pi, docs[j]);
+          }
+        } catch (bulkError) {
+          // insertMany({ordered:false}) throws BulkWriteError but still inserts non-conflicting docs.
+          // Use writeErrors to identify which rows failed, then fall back to individual inserts for those.
+          const failedIndexes = new Set();
+          if (bulkError.writeErrors) {
+            for (const we of bulkError.writeErrors) {
+              failedIndexes.add(we.index);
+            }
+          } else if (bulkError.code === 11000) {
+            // Single duplicate key error — entire batch failed on one doc
+            // Fall back to individual inserts for all
+            for (let j = 0; j < pendingInserts.length; j++) failedIndexes.add(j);
+          }
+
+          // Rows that DID succeed (not in failedIndexes) — find them in DB by SKU
+          for (let j = 0; j < pendingInserts.length; j++) {
+            const pi = pendingInserts[j];
+            if (!failedIndexes.has(j)) {
+              // This row was inserted successfully — find the doc
+              const doc = await Product.findOne({ sku: pi.productData.sku }).select('_id').lean();
+              results.created.push({ row: pi.rowNumber, sku: pi.productData.sku, id: doc?._id?.toString() || 'unknown' });
+              this._queueImageProcessing(imageQueue, imageStats, processImages, pi, doc);
+            } else {
+              // This row failed batch insert — try individual upsert
+              try {
+                const product = await Product.findOneAndUpdate(
+                  { $or: [{ sku: pi.productData.sku }, { slug: pi.productData.slug }] },
+                  { $set: pi.productData },
+                  { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+                results.created.push({ row: pi.rowNumber, sku: pi.productData.sku, id: product._id.toString() });
+                this._queueImageProcessing(imageQueue, imageStats, processImages, pi, product);
+              } catch (err) {
+                results.errors.push({ row: pi.rowNumber, error: err.message, data: { sku: pi.productData.sku, name: pi.productData.name } });
+              }
             }
           }
         }
       }
-      pendingInserts = [];
-    };
 
-    // Collect duplicate updates for bulkWrite
-    let pendingUpdates = []; // { rowNumber, filter, update, sku, type }
-    const flushUpdates = async () => {
-      if (pendingUpdates.length === 0) return;
-      try {
-        const bulkOps = pendingUpdates.map(pu => ({
-          updateOne: { filter: pu.filter, update: { $set: pu.update } }
-        }));
-        await Product.bulkWrite(bulkOps, { ordered: false });
-        for (const pu of pendingUpdates) {
-          if (pu.type === 'merge') {
-            results.merged.push({ row: pu.rowNumber, sku: pu.sku, id: pu.id });
-          } else {
-            results.updated.push({ row: pu.rowNumber, sku: pu.sku, id: pu.id });
-          }
-        }
-      } catch (err) {
-        // Fall back to individual updates
-        for (const pu of pendingUpdates) {
-          try {
-            await Product.findOneAndUpdate(pu.filter, { $set: pu.update });
+      // Flush updates for this chunk
+      if (pendingUpdates.length > 0) {
+        try {
+          const bulkOps = pendingUpdates.map(pu => ({
+            updateOne: { filter: pu.filter, update: { $set: pu.update } }
+          }));
+          await Product.bulkWrite(bulkOps, { ordered: false });
+          for (const pu of pendingUpdates) {
             if (pu.type === 'merge') {
               results.merged.push({ row: pu.rowNumber, sku: pu.sku, id: pu.id });
             } else {
               results.updated.push({ row: pu.rowNumber, sku: pu.sku, id: pu.id });
             }
-          } catch (e) {
-            results.errors.push({ row: pu.rowNumber, error: e.message, data: { sku: pu.sku } });
+            // Queue image processing for updated products too
+            if (pu.rawImageData) {
+              this._queueImageProcessing(imageQueue, imageStats, processImages, { productData: pu.update, rawImageData: pu.rawImageData }, { _id: pu.filter._id || pu.id });
+            }
+          }
+        } catch (err) {
+          for (const pu of pendingUpdates) {
+            try {
+              await Product.findOneAndUpdate(pu.filter, { $set: pu.update });
+              if (pu.type === 'merge') {
+                results.merged.push({ row: pu.rowNumber, sku: pu.sku, id: pu.id });
+              } else {
+                results.updated.push({ row: pu.rowNumber, sku: pu.sku, id: pu.id });
+              }
+              if (pu.rawImageData) {
+                this._queueImageProcessing(imageQueue, imageStats, processImages, { productData: pu.update, rawImageData: pu.rawImageData }, { _id: pu.filter._id || pu.id });
+              }
+            } catch (e) {
+              results.errors.push({ row: pu.rowNumber, error: e.message, data: { sku: pu.sku } });
+            }
           }
         }
       }
-      pendingUpdates = [];
-    };
 
-    for (let i = 0; i < rows.length; i++) {
-      const { rowNumber, data: row } = rows[i];
-      try {
-        const duplicate = checkDuplicateFast(row, 'products', lookupMaps);
-        const resolution = duplicateResolution[rowNumber];
+      processed += chunk.length;
+      this.emit('progress', {
+        phase: 'import',
+        current: processed,
+        total: totalRows,
+        type: 'products',
+        imageStats: processImages ? { ...imageStats, pending: imageQueue ? imageQueue.pending : 0 } : undefined
+      });
 
-        if (duplicate) {
-          if (resolution === 'ignore' || !resolution) {
-            results.skipped.push({ row: rowNumber, sku: row.sku || row.SKU, name: row.post_title || row.Name, reason: resolution ? 'Duplicate - ignored' : 'Duplicate - no resolution specified' });
-          } else if (resolution === 'merge') {
-            const fullDoc = await Product.findById(duplicate._id);
-            const existingData = fullDoc.toObject();
-            const newData = await this.mapProductData(row, { processImages });
-            const mergedData = { ...existingData, ...newData,
-              categories: [...new Set([...(existingData.categories || []).map(String), ...(newData.categories || []).map(String)])],
-              tags: [...new Set([...(existingData.tags || []), ...(newData.tags || [])])],
-              images: [...new Set([...(existingData.images || []), ...(newData.images || [])])]
-            };
-            if (!newData.featuredImage && existingData.featuredImage) mergedData.featuredImage = existingData.featuredImage;
-            pendingUpdates.push({ rowNumber, filter: { _id: duplicate._id }, update: mergedData, sku: mergedData.sku, id: duplicate._id.toString(), type: 'merge' });
-          } else if (resolution === 'update') {
-            const productData = await this.mapProductData(row, { processImages });
-            pendingUpdates.push({ rowNumber, filter: { _id: duplicate._id }, update: productData, sku: productData.sku, id: duplicate._id.toString(), type: 'update' });
-          }
-        } else {
-          const productData = await this.mapProductData(row, { processImages, stripHtml: options.stripHtml });
-          pendingInserts.push({ rowNumber, productData });
-        }
-      } catch (error) {
-        results.errors.push({ row: rowNumber, error: error.message, data: this.extractKeyFields(row, 'products') });
-      }
-
-      // Flush batches periodically
-      if (pendingInserts.length >= INSERT_BATCH) await flushInserts();
-      if (pendingUpdates.length >= INSERT_BATCH) await flushUpdates();
-
-      if ((i + 1) % 50 === 0 || i === rows.length - 1) {
-        this.emit('progress', { phase: 'import', current: i + 1, total: totalRows, type: 'products' });
-      }
+      // Allow event loop to breathe on large imports
+      if (processed % 1000 === 0) await new Promise(r => setImmediate(r));
     }
 
-    // Flush remaining
-    await flushInserts();
-    await flushUpdates();
+    // Wait for background image processing to complete
+    if (imageQueue && imageQueue.pending > 0) {
+      this.emit('progress', { phase: 'images', current: processed, total: totalRows, type: 'products', imageStats: { ...imageStats, pending: imageQueue.pending } });
+      await imageQueue.waitIdle();
+    }
 
-    return results;
+    console.log(`[Import] Completed: ${results.created.length} created, ${results.updated.length} updated, ${results.merged.length} merged, ${results.skipped.length} skipped, ${results.errors.length} errors`);
+    return { ...results, imageStats };
+  }
+
+  // ─── Background job wrapper (fire-and-forget, frontend polls) ──
+
+  startImportJob(filePath, type, options = {}) {
+    const jobId = `import-${type}-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    this._createJob(jobId, type);
+
+    // Run in background — DO NOT await
+    (async () => {
+      try {
+        const totalRows = await this.countCSVRows(filePath);
+        this._updateJobProgress(jobId, 'counting', 0, totalRows);
+
+        // Attach progress listener to update job state
+        const progressHandler = (data) => {
+          if (!data.jobId) { // only forward internal progress events
+            const j = this._jobs.get(jobId);
+            if (j && (data.phase === 'import' || data.phase === 'images')) {
+              j.progress = { current: data.current, total: data.total };
+              j.phase = data.phase;
+              if (data.imageStats) j.imageStats = data.imageStats;
+            }
+          }
+        };
+        this.on('progress', progressHandler);
+
+        this._updateJobProgress(jobId, 'importing', 0, totalRows);
+
+        let results;
+        if (type === 'products') {
+          results = await this.importProducts(filePath, options);
+        } else if (type === 'categories') {
+          results = await this.importCategories(filePath, options);
+        } else if (type === 'customers') {
+          results = await this.importCustomers(filePath, options);
+        } else if (type === 'orders') {
+          results = await this.importOrders(filePath, options);
+        } else {
+          throw new Error(`Unsupported import type: ${type}`);
+        }
+
+        this.removeListener('progress', progressHandler);
+
+        // Finalize job
+        const job = this._jobs.get(jobId);
+        if (job) {
+          job.results = {
+            created: results.created?.length || 0,
+            updated: results.updated?.length || 0,
+            merged: results.merged?.length || 0,
+            skipped: results.skipped?.length || 0,
+            errors: results.errors?.length || 0
+          };
+          // Only keep summary in resultDetails to avoid memory bloat on 100K imports
+          job.resultDetails = {
+            created: results.created?.slice(0, 50) || [],
+            updated: results.updated?.slice(0, 50) || [],
+            merged: results.merged?.slice(0, 50) || [],
+            skipped: results.skipped?.slice(0, 50) || [],
+            errors: results.errors?.slice(0, 200) || []
+          };
+          if (results.imageStats) job.imageStats = results.imageStats;
+        }
+        this._completeJob(jobId);
+
+        // Clean up temp file
+        try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (_) {}
+
+      } catch (error) {
+        console.error(`[Import] Job ${jobId} failed:`, error);
+        this._failJob(jobId, error);
+        try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (_) {}
+      }
+    })();
+
+    return jobId;
   }
 
   // ─── Import Categories ────────────────────────────────────────

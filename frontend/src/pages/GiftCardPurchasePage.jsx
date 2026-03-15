@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation } from 'react-query';
 import { giftCardsAPI } from '@/services/api';
-import { useAuthStore } from '@/store';
+import { useAuthStore, useCurrencyStore } from '@/store';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
@@ -13,6 +13,7 @@ import { IoGift } from 'react-icons/io5';
 export default function GiftCardPurchasePage() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
+  const { formatPrice } = useCurrencyStore();
   const [selectedPreset, setSelectedPreset] = useState(null);
   const [customAmount, setCustomAmount] = useState('');
   
@@ -54,12 +55,12 @@ export default function GiftCardPurchasePage() {
     const amount = selectedPreset || parseFloat(customAmount);
     
     if (!amount || amount < minAmount) {
-      toast.error(`Minimum gift card amount is R${minAmount}`);
+      toast.error(`Minimum gift card amount is ${formatPrice(minAmount)}`);
       return;
     }
     
     if (amount > maxAmount) {
-      toast.error(`Maximum gift card amount is R${maxAmount}`);
+      toast.error(`Maximum gift card amount is ${formatPrice(maxAmount)}`);
       return;
     }
 
@@ -123,7 +124,7 @@ export default function GiftCardPurchasePage() {
                               : 'border-gray-300 hover:border-primary'
                           }`}
                         >
-                          <div className="font-bold text-lg">R{preset.amount}</div>
+                          <div className="font-bold text-lg">{formatPrice(preset.amount)}</div>
                           {preset.label && (
                             <div className="text-sm text-gray-600 mt-1">{preset.label}</div>
                           )}
@@ -146,11 +147,11 @@ export default function GiftCardPurchasePage() {
                       max={maxAmount}
                       value={customAmount}
                       onChange={handleCustomAmountChange}
-                      placeholder={`R${minAmount} - R${maxAmount}`}
+                      placeholder={`${formatPrice(minAmount)} - ${formatPrice(maxAmount)}`}
                       fullWidth
                     />
                     <p className="text-xs text-gray-500 mt-2">
-                      Minimum: R{minAmount} | Maximum: R{maxAmount}
+                      Minimum: {formatPrice(minAmount)} | Maximum: {formatPrice(maxAmount)}
                     </p>
                   </div>
                 )}
@@ -160,7 +161,7 @@ export default function GiftCardPurchasePage() {
                   <div className="mt-6 p-4 bg-primary/10 border-2 border-primary rounded-lg">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Selected Amount:</span>
-                      <span className="text-2xl font-bold text-primary">R{selectedAmount.toFixed(2)}</span>
+                      <span className="text-2xl font-bold text-primary">{formatPrice(selectedAmount)}</span>
                     </div>
                   </div>
                 )}
@@ -222,7 +223,7 @@ export default function GiftCardPurchasePage() {
                 disabled={selectedAmount < minAmount || selectedAmount > maxAmount}
                 loading={purchaseMutation.isLoading}
               >
-                Purchase Gift Card for R{selectedAmount > 0 ? selectedAmount.toFixed(2) : '0.00'}
+                Purchase Gift Card for {formatPrice(selectedAmount)}
               </Button>
               {!isAuthenticated && (
                 <p className="text-sm text-red-600 mt-2">

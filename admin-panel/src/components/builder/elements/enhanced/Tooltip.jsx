@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Tooltip = ({
+export const Tooltip = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   triggerText = 'Hover me',
   tooltipText = 'This is a tooltip',
   position = 'top',
@@ -11,7 +14,8 @@ export const Tooltip = ({
   maxWidth = '200px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const [show, setShow] = useState(false);
 

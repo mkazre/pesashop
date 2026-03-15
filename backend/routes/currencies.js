@@ -15,13 +15,28 @@ router.get('/', async (req, res, next) => {
       currencies = await Currency.getFrontendCurrencies();
     } else {
       // For admin, return all currencies
-      currencies = await Currency.find().sort({ code: 1 });
+      currencies = await Currency.find().sort({ sortOrder: 1, code: 1 });
     }
     
     res.json({
       success: true,
       data: currencies
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET base currency — MUST be before /:id to avoid Express matching "base" as an id
+router.get('/base/get', async (req, res, next) => {
+  try {
+    const baseCurrency = await Currency.getBase();
+    
+    if (!baseCurrency) {
+      return res.status(404).json({ success: false, message: 'Base currency not found' });
+    }
+    
+    res.json({ success: true, data: baseCurrency });
   } catch (error) {
     next(error);
   }
@@ -42,25 +57,10 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// GET base currency
-router.get('/base/get', async (req, res, next) => {
-  try {
-    const baseCurrency = await Currency.getBase();
-    
-    if (!baseCurrency) {
-      return res.status(404).json({ success: false, message: 'Base currency not found' });
-    }
-    
-    res.json({ success: true, data: baseCurrency });
-  } catch (error) {
-    next(error);
-  }
-});
-
 // POST create currency
 router.post('/', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
   try {
-    const { code, name, symbol, exchangeRate, decimalDigits, symbolPosition, decimalSeparator, thousandSeparator, isActive, showInFrontend } = req.body;
+    const { code, name, symbol, exchangeRate, decimalDigits, symbolPosition, decimalSeparator, thousandSeparator, isActive, showInFrontend, sortOrder } = req.body;
     
     // Validate code
     if (!code || code.length !== 3) {
@@ -84,6 +84,7 @@ router.post('/', protect, authorize('admin', 'shop_manager'), async (req, res, n
       thousandSeparator: thousandSeparator || ',',
       isActive: isActive !== undefined ? isActive : true,
       showInFrontend: showInFrontend !== undefined ? showInFrontend : true,
+      sortOrder: sortOrder || 0,
       isBaseCurrency: false // Can only be set via set-base endpoint
     });
     
@@ -99,7 +100,7 @@ router.post('/', protect, authorize('admin', 'shop_manager'), async (req, res, n
 // PUT update currency
 router.put('/:id', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
   try {
-    const { name, symbol, exchangeRate, decimalDigits, symbolPosition, decimalSeparator, thousandSeparator, isActive, showInFrontend } = req.body;
+    const { name, symbol, exchangeRate, decimalDigits, symbolPosition, decimalSeparator, thousandSeparator, isActive, showInFrontend, sortOrder } = req.body;
     
     const currency = await Currency.findById(req.params.id);
     
@@ -122,6 +123,7 @@ router.put('/:id', protect, authorize('admin', 'shop_manager'), async (req, res,
     if (thousandSeparator !== undefined) currency.thousandSeparator = thousandSeparator;
     if (isActive !== undefined) currency.isActive = isActive;
     if (showInFrontend !== undefined) currency.showInFrontend = showInFrontend;
+    if (sortOrder !== undefined) currency.sortOrder = sortOrder;
     
     await currency.save();
     
@@ -240,7 +242,7 @@ router.post('/bulk-update', protect, authorize('admin', 'shop_manager'), async (
     }
     
     // Build update object (only allow specific fields)
-    const allowedUpdates = ['isActive', 'showInFrontend'];
+    const allowedUpdates = ['isActive', 'showInFrontend', 'sortOrder'];
     const updateData = {};
     
     allowedUpdates.forEach(field => {

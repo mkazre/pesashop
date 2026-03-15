@@ -6,6 +6,7 @@ const Product = require('../models/Product');
 const { LoyaltyPoint } = require('../models/LoyaltyPoint');
 const loyaltyService = require('../services/loyaltyService');
 const couponEmailService = require('../services/couponEmailService');
+const emailService = require('../services/emailService');
 
 // GET all orders (with filters)
 router.get('/', protect, async (req, res, next) => {
@@ -36,6 +37,7 @@ router.get('/', protect, async (req, res, next) => {
     const orders = await Order.find(query)
       .populate('customer', 'firstName lastName email')
       .populate('laybye', 'status totalAmount paidAmount remainingAmount')
+      .populate('laybyes', 'status totalAmount paidAmount remainingAmount depositAmount installmentPlan laybyPlan')
       .populate('giftCardsApplied.giftCard', 'code currentBalance')
       .populate('couponsApplied.coupon', 'code type value')
       .sort({ createdAt: -1 })
@@ -112,7 +114,9 @@ router.get('/:id', protect, async (req, res, next) => {
     const order = await Order.findById(req.params.id)
       .populate('customer')
       .populate('items.product')
+      .populate('items.laybyePlan')
       .populate('laybye')
+      .populate('laybyes')
       .populate('giftCardsApplied.giftCard', 'code currentBalance initialBalance')
       .populate('couponsApplied.coupon', 'code type value description');
     
@@ -142,7 +146,14 @@ router.post('/', protect, async (req, res, next) => {
       subtotal: providedSubtotal, 
       tax, 
       shipping, 
-      total: providedTotal 
+      total: providedTotal,
+      // Enhanced checkout fields
+      hasLaybye,
+      laybyeGroups,
+      payments: clientPayments,
+      dueNow: clientDueNow,
+      deliveryMethod,
+      pickupAddress: clientPickupAddress,
     } = req.body;
     
     let subtotal = 0;
@@ -161,7 +172,12 @@ router.post('/', protect, async (req, res, next) => {
         sku: product.sku,
         quantity: item.quantity,
         price,
-        total
+        total,
+        // Per-item laybye fields
+        isLaybye: item.isLaybye || false,
+        laybyePlan: item.laybyePlanId || undefined,
+        laybyeDeposit: item.laybyeDeposit || undefined,
+        laybyeInstallment: item.laybyeInstallment || undefined,
       });
       
       subtotal += total;
@@ -227,7 +243,7 @@ router.post('/', protect, async (req, res, next) => {
     }
     
     // Calculate total discount (gift card + coupon + PESA Coins)
-    const loyaltyPointsDiscount = loyaltyPointsUsed || 0; // Assuming 1 point = R1, adjust as needed
+    const loyaltyPointsDiscount = loyaltyPointsUsed || 0;
     const totalDiscount = giftCardDiscount + couponDiscount + loyaltyPointsDiscount;
     const finalTotal = providedTotal || Math.max(0, finalSubtotal + finalTax + finalShipping - totalDiscount);
     
@@ -236,9 +252,13 @@ router.post('/', protect, async (req, res, next) => {
     if (giftCardAmount > 0 && finalTotal === 0) {
       finalPaymentMethod = 'gift_card';
     } else if (giftCardAmount > 0 && finalTotal > 0) {
-      // Partial payment with gift card, keep original payment method
       finalPaymentMethod = paymentMethod || 'card';
     }
+    
+    // Build split payments array
+    const orderPayments = (clientPayments && clientPayments.length > 0) 
+      ? clientPayments.map(p => ({ method: p.method, amount: p.amount, status: 'pending' }))
+      : [];
     
     const order = await Order.create({
       customer: req.user._id,
@@ -248,20 +268,124 @@ router.post('/', protect, async (req, res, next) => {
       shipping: finalShipping,
       discount: totalDiscount,
       total: finalTotal,
+      dueNow: clientDueNow || finalTotal,
       billingAddress,
       shippingAddress,
       paymentMethod: finalPaymentMethod,
+      deliveryMethod: deliveryMethod || 'delivery',
+      pickupAddress: (deliveryMethod === 'pickup' && clientPickupAddress) ? clientPickupAddress : undefined,
+      hasLaybye: hasLaybye || false,
+      isLaybye: hasLaybye || false,
+      payments: orderPayments,
       giftCardsApplied,
       couponsApplied,
       loyaltyPointsUsed: loyaltyPointsUsed || 0
     });
+    
+    // Create Laybye records for each laybye group
+    const createdLaybyes = [];
+    if (hasLaybye && laybyeGroups && laybyeGroups.length > 0) {
+      const Laybye = require('../models/Laybye');
+      const LaybyPlan = require('../models/LaybyPlan');
+      
+      for (const group of laybyeGroups) {
+        const plan = await LaybyPlan.findById(group.planId);
+        if (!plan) continue;
+        
+        // Calculate total for items in this laybye group
+        const groupItems = orderItems.filter(oi => 
+          group.items.some(gi => gi.product.toString() === oi.product.toString())
+        );
+        const groupTotal = groupItems.reduce((t, oi) => t + oi.total, 0);
+        const depositAmount = group.deposit || 0;
+        const remainingAmount = groupTotal - depositAmount;
+        const installmentAmount = remainingAmount / (plan.numberOfPayments || 1);
+        
+        const laybye = await Laybye.create({
+          order: order._id,
+          customer: req.user._id,
+          laybyPlan: plan._id,
+          totalAmount: groupTotal,
+          depositAmount,
+          remainingAmount,
+          paidAmount: depositAmount,
+          installmentPlan: {
+            frequency: plan.frequency || 'monthly',
+            numberOfPayments: plan.numberOfPayments,
+            installmentAmount,
+          },
+          startDate: new Date(),
+          status: 'active',
+          payments: [{
+            amount: depositAmount,
+            paymentDate: new Date(),
+            paymentMethod: finalPaymentMethod,
+            status: 'completed',
+            note: 'Initial deposit',
+          }],
+        });
+        
+        // Calculate next payment date
+        laybye.calculateNextPaymentDate();
+        await laybye.save();
+        
+        createdLaybyes.push(laybye._id);
+      }
+      
+      // Attach all laybyes to the order
+      if (createdLaybyes.length > 0) {
+        order.laybyes = createdLaybyes;
+        order.laybye = createdLaybyes[0]; // backward compat
+        await order.save();
+        
+        // Auto-link recent approved application (within 3 months) to the first created laybye
+        try {
+          const LaybyApplication = require('../models/LaybyApplication');
+          const threeMonthsAgo = new Date();
+          threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+          
+          const recentApproval = await LaybyApplication.findOne({
+            customer: req.user._id,
+            status: 'approved',
+            reviewedAt: { $gte: threeMonthsAgo }
+          }).sort({ reviewedAt: -1 });
+          
+          if (recentApproval) {
+            // Link the application to the first laybye created in this order
+            recentApproval.laybye = createdLaybyes[0];
+            await recentApproval.save();
+          }
+        } catch (linkErr) {
+          console.error('Failed to auto-link laybye application:', linkErr);
+        }
+      }
+    }
     
     // Redeem gift card after order creation
     if (giftCard && order._id && giftCardAmount > 0) {
       await giftCard.redeem(giftCardAmount, order._id);
     }
     
-    res.status(201).json({ success: true, data: order });
+    // Re-fetch order with populated laybyes for the response
+    const populatedOrder = await Order.findById(order._id)
+      .populate('laybyes')
+      .populate('items.product', 'name slug images');
+
+    // Send emails (non-blocking, failures don't break order creation)
+    try {
+      emailService.sendOrderConfirmation(order).catch(e => console.error('Order confirmation email error:', e));
+      emailService.sendAdminNewOrder(order).catch(e => console.error('Admin new order email error:', e));
+      // Send laybye created emails
+      if (createdLaybyes.length > 0) {
+        const Laybye = require('../models/Laybye');
+        for (const laybyeId of createdLaybyes) {
+          const lb = await Laybye.findById(laybyeId);
+          if (lb) emailService.sendLaybyeCreated(lb).catch(e => console.error('Laybye created email error:', e));
+        }
+      }
+    } catch (emailErr) { console.error('Email sending error (order create):', emailErr); }
+    
+    res.status(201).json({ success: true, data: populatedOrder });
   } catch (error) {
     next(error);
   }
@@ -287,6 +411,20 @@ router.put('/:id/status', protect, authorize('admin', 'shop_manager'), async (re
       // Remove points for canceled/refunded order
       await loyaltyService.removeOrderPoints(order._id);
     }
+
+    // Send status-change emails (non-blocking)
+    try {
+      const newStatus = req.body.status;
+      if (newStatus === 'shipped' && oldStatus !== 'shipped') {
+        emailService.sendOrderShipped(order).catch(e => console.error('Order shipped email error:', e));
+      } else if (newStatus === 'delivered' && oldStatus !== 'delivered') {
+        emailService.sendOrderDelivered(order).catch(e => console.error('Order delivered email error:', e));
+      } else if (newStatus === 'cancelled' && oldStatus !== 'cancelled') {
+        emailService.sendOrderCancelled(order, req.body.note).catch(e => console.error('Order cancelled email error:', e));
+      } else if (newStatus === 'refunded' && oldStatus !== 'refunded') {
+        emailService.sendOrderRefunded(order).catch(e => console.error('Order refunded email error:', e));
+      }
+    } catch (emailErr) { console.error('Email sending error (status change):', emailErr); }
     
     res.json({ success: true, data: order });
   } catch (error) {
@@ -334,6 +472,11 @@ router.post('/:id/notes', protect, authorize('admin', 'shop_manager'), async (re
     });
     
     await order.save();
+
+    // Send note email if customer should be notified
+    if (isCustomerNotified) {
+      emailService.sendOrderNote(order, content).catch(e => console.error('Order note email error:', e));
+    }
     
     res.json({ success: true, data: order, message: 'Note added successfully' });
   } catch (error) {

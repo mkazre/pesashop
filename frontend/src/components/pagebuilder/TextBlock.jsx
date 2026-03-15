@@ -4,8 +4,10 @@ export const TextBlock = ({
   content = '<p>This is a text block.</p>',
   className = '',
   style = {},
-}) => (
-  <div className={className} style={{ overflow: 'hidden', wordWrap: 'break-word', overflowWrap: 'break-word', ...style }} dangerouslySetInnerHTML={{ __html: content }} />
-);
+}) => {
+  const merged = { wordWrap: 'break-word', overflowWrap: 'break-word', ...style };
+  if (merged.WebkitLineClamp && merged.display !== '-webkit-box') merged.display = '-webkit-box';
+  return <div className={className} style={merged} dangerouslySetInnerHTML={{ __html: content }} />;
+};
 
 TextBlock.craft = { displayName: 'Text Block' };

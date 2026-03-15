@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const OffCanvas = ({
+export const OffCanvas = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   triggerText = 'Open Panel',
   title = 'Panel Title',
   content = 'Panel content goes here.',
@@ -11,7 +14,8 @@ export const OffCanvas = ({
   backgroundColor = '#ffffff',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const [isOpen, setIsOpen] = useState(false);
 

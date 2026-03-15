@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ContentSwitcher = ({
+export const ContentSwitcher = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   labelA = 'Monthly',
   labelB = 'Yearly',
   contentA = 'Monthly pricing content goes here.',
@@ -12,7 +15,8 @@ export const ContentSwitcher = ({
   fontSize = '14px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const [isB, setIsB] = useState(false);
 

@@ -37,26 +37,87 @@ const settingsSchema = new mongoose.Schema({
     default: 15
   },
   
-  // Email Settings
-  smtpHost: String,
-  smtpPort: Number,
-  smtpUser: String,
-  smtpPassword: String,
-  smtpSecure: {
-    type: Boolean,
-    default: true
+  // Web Push (VAPID) Keys
+  vapidPublicKey: { type: String, default: '' },
+  vapidPrivateKey: { type: String, default: '' },
+
+  // Email Settings — SMTP
+  smtpHost: { type: String, default: '' },
+  smtpPort: { type: Number, default: 587 },
+  smtpUser: { type: String, default: '' },
+  smtpPassword: { type: String, default: '' },
+  smtpSecure: { type: Boolean, default: false },
+  fromEmail: { type: String, default: '' },
+  fromName: { type: String, default: '' },
+  replyToEmail: { type: String, default: '' },
+
+  // Email Notification Toggles
+  emailNotifications: {
+    // Orders
+    orderConfirmation: { type: Boolean, default: true },
+    orderShipped: { type: Boolean, default: true },
+    orderDelivered: { type: Boolean, default: true },
+    orderCancelled: { type: Boolean, default: true },
+    orderRefunded: { type: Boolean, default: true },
+    orderNote: { type: Boolean, default: true },
+    // Laybye
+    laybyeApplicationReceived: { type: Boolean, default: true },
+    laybyeApplicationApproved: { type: Boolean, default: true },
+    laybyeApplicationRejected: { type: Boolean, default: true },
+    laybyeCreated: { type: Boolean, default: true },
+    laybyePaymentReceived: { type: Boolean, default: true },
+    laybyeCompleted: { type: Boolean, default: true },
+    laybyeReminder: { type: Boolean, default: true },
+    laybyeOverdueReminder: { type: Boolean, default: true },
+    laybyeExpiryReminder: { type: Boolean, default: true },
+    // Accounts
+    newAccount: { type: Boolean, default: true },
+    passwordReset: { type: Boolean, default: true },
+    // Loyalty & Coupons
+    loyaltyPointsEarned: { type: Boolean, default: true },
+    loyaltyPointsRedeemed: { type: Boolean, default: true },
+    giftCardIssued: { type: Boolean, default: true },
+    couponFirstPurchase: { type: Boolean, default: true },
+    couponNewUser: { type: Boolean, default: true },
+    couponSpendingMilestone: { type: Boolean, default: true },
+    couponBirthday: { type: Boolean, default: true },
+    // Reviews
+    reviewReminder: { type: Boolean, default: true },
+    // Admin notifications
+    adminNewOrder: { type: Boolean, default: true },
+    adminLowStock: { type: Boolean, default: true },
+    adminNewLaybyeApplication: { type: Boolean, default: true },
   },
-  fromEmail: String,
-  fromName: String,
   
   // AI Settings
   openaiApiKey: {
     type: String,
     default: ''
   },
+  deepseekApiKey: {
+    type: String,
+    default: ''
+  },
+  anthropicApiKey: {
+    type: String,
+    default: ''
+  },
   aiEnabled: {
     type: Boolean,
     default: false
+  },
+  aiFallbackProvider: {
+    type: String,
+    enum: ['openai', 'deepseek', 'anthropic'],
+    default: 'openai'
+  },
+  aiWebSearchEnabled: {
+    type: Boolean,
+    default: false
+  },
+  aiWebSearchApiKey: {
+    type: String,
+    default: ''
   },
   
   // Advanced Settings

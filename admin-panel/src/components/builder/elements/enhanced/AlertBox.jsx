@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { useEditor } from '@craftjs/core';
 import { TextControl, NumberControl, ColorControl, SelectControl, Checkbox } from '@/components/builder/controls/PropertyControls';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const AlertBox = ({ type = 'info', title = 'Alert Title', message = 'Alert message', className = '', style = {} }) => {
+export const AlertBox = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { type = 'info', title = 'Alert Title', message = 'Alert message', className = '', style = {} } = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

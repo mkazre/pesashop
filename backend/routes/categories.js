@@ -61,10 +61,58 @@ router.get('/', async (req, res, next) => {
         .lean();
     }
 
+    // Compute real product counts from the products collection
+    const countAgg = await Product.aggregate([
+      { $match: { status: { $ne: 'trashed' } } },
+      { $unwind: '$categories' },
+      { $group: { _id: '$categories', count: { $sum: 1 } } }
+    ]);
+    const countMap = {};
+    countAgg.forEach(item => { countMap[item._id.toString()] = item.count; });
+
+    // Attach counts to categories
+    const attachCounts = (cats) => {
+      for (const cat of cats) {
+        cat.productCount = countMap[cat._id.toString()] || 0;
+        if (cat.children) attachCounts(cat.children);
+      }
+    };
+    attachCounts(Array.isArray(categories) ? categories : []);
+
     res.json({
       success: true,
       count: categories.length,
       data: categories
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   GET /api/categories/slug/:slug
+ * @desc    Get single category by slug
+ * @access  Public
+ */
+router.get('/slug/:slug', async (req, res, next) => {
+  try {
+    const category = await Category.findOne({ slug: req.params.slug })
+      .populate('parent', 'name slug')
+      .lean();
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    // Attach real product count
+    category.productCount = await Product.countDocuments({ categories: category._id, status: { $ne: 'trashed' } });
+
+    res.json({
+      success: true,
+      data: category
     });
   } catch (error) {
     next(error);
@@ -254,14 +302,124 @@ router.get('/:id/products', async (req, res, next) => {
       });
     }
     
-    const products = await Product.find({ categories: category._id })
-      .select('name sku regularPrice featuredImage')
-      .limit(10);
+    const products = await Product.find({ categories: category._id, status: { $ne: 'trashed' } })
+      .select('name sku regularPrice salePrice featuredImage status categories')
+      .populate('categories', 'name slug')
+      .sort({ name: 1 });
     
     res.json({
       success: true,
       count: products.length,
       data: products
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   PUT /api/categories/:id/products/remove
+ * @desc    Remove specific products from this category
+ * @access  Private/Admin
+ */
+router.put('/:id/products/remove', protect, authorize('admin', 'manager'), async (req, res, next) => {
+  try {
+    const { productIds } = req.body;
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'productIds array is required' });
+    }
+
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+
+    // Pull this category from the products' categories array
+    const result = await Product.updateMany(
+      { _id: { $in: productIds } },
+      { $pull: { categories: category._id } }
+    );
+
+    res.json({
+      success: true,
+      message: `Removed ${result.modifiedCount} product(s) from category "${category.name}"`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   PUT /api/categories/:id/products/reassign
+ * @desc    Move products from this category to another (removes from source, adds to target)
+ * @access  Private/Admin
+ */
+router.put('/:id/products/reassign', protect, authorize('admin', 'manager'), async (req, res, next) => {
+  try {
+    const { productIds, targetCategoryId } = req.body;
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'productIds array is required' });
+    }
+    if (!targetCategoryId) {
+      return res.status(400).json({ success: false, message: 'targetCategoryId is required' });
+    }
+
+    const sourceCategory = await Category.findById(req.params.id);
+    if (!sourceCategory) {
+      return res.status(404).json({ success: false, message: 'Source category not found' });
+    }
+
+    const targetCategory = await Category.findById(targetCategoryId);
+    if (!targetCategory) {
+      return res.status(404).json({ success: false, message: 'Target category not found' });
+    }
+
+    // Remove source category and add target category
+    await Product.updateMany(
+      { _id: { $in: productIds } },
+      { $pull: { categories: sourceCategory._id } }
+    );
+    await Product.updateMany(
+      { _id: { $in: productIds } },
+      { $addToSet: { categories: targetCategory._id } }
+    );
+
+    res.json({
+      success: true,
+      message: `Reassigned ${productIds.length} product(s) from "${sourceCategory.name}" to "${targetCategory.name}"`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   PUT /api/categories/:id/products/add
+ * @desc    Add products to a category (without removing from current categories)
+ * @access  Private/Admin
+ */
+router.put('/:id/products/add', protect, authorize('admin', 'manager'), async (req, res, next) => {
+  try {
+    const { productIds } = req.body;
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'productIds array is required' });
+    }
+
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+
+    const result = await Product.updateMany(
+      { _id: { $in: productIds } },
+      { $addToSet: { categories: category._id } }
+    );
+
+    res.json({
+      success: true,
+      message: `Added ${result.modifiedCount} product(s) to category "${category.name}"`,
+      modifiedCount: result.modifiedCount
     });
   } catch (error) {
     next(error);

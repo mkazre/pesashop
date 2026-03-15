@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ListItem = ({
+export const ListItem = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = ['List item one', 'List item two', 'List item three'],
   listType = 'ul',
   icon = '',
@@ -9,7 +12,8 @@ export const ListItem = ({
   gap = '8px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

@@ -1,8 +1,12 @@
 import React from 'react';
 import { useNode } from '@craftjs/core';
 import { ComprehensiveSettings } from '@/components/builder/panels/ComprehensiveSettings';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const TestElement = ({ content = "Test Element", className = '', style = {} }) => {
+export const TestElement = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { content = "Test Element", className = '', style = {} } = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

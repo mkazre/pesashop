@@ -185,6 +185,78 @@ class ProductPriceUpdater {
   }
 
   /**
+   * Get product IDs affected by a pricing rule
+   * @param {Object} rule - The pricing rule document
+   * @returns {Promise<Array<String>>} - Array of product ID strings
+   */
+  async getAffectedProductIds(rule) {
+    let productIds = [];
+    if (rule.products && rule.products.length > 0) {
+      productIds = rule.products.map(p => String(p._id || p));
+    } else if (rule.categories && rule.categories.length > 0) {
+      const products = await Product.find({
+        categories: { $in: rule.categories },
+        status: { $ne: 'trash' }
+      }).select('_id');
+      productIds = products.map(p => String(p._id));
+    }
+    return productIds;
+  }
+
+  /**
+   * Clear price fields on products that were affected by a rule.
+   * Sets the target field (e.g. regularPrice or salePrice) to null/0 for all affected products.
+   * @param {Object} rule - The pricing rule document (before deletion)
+   * @param {Object} options
+   * @param {Boolean} options.clearTarget - If true, set targetField to null
+   * @param {Boolean} options.clearBoth - If true, clear both regularPrice and salePrice
+   * @returns {Promise<Number>} - Number of products updated
+   */
+  async clearProductPrices(rule, options = {}) {
+    const { clearTarget = true, clearBoth = false } = options;
+    const productIds = await this.getAffectedProductIds(rule);
+    console.log(`[ProductPriceUpdater.clearProductPrices] clearBoth=${clearBoth} clearTarget=${clearTarget} products=${productIds.length}`);
+    if (productIds.length === 0) return 0;
+
+    const targetField = rule.targetField || 'regularPrice';
+
+    // regularPrice is required in the Product schema, so we set it to 0 rather than null/unset.
+    // salePrice is optional, so we can unset it.
+    const setFields = {};
+    const unsetFields = {};
+
+    if (clearBoth) {
+      setFields.regularPrice = 0;
+      unsetFields.salePrice = '';
+    } else if (clearTarget) {
+      if (targetField === 'regularPrice') {
+        setFields.regularPrice = 0;
+      } else if (targetField === 'salePrice') {
+        unsetFields.salePrice = '';
+      } else {
+        setFields[targetField] = 0;
+      }
+    }
+
+    const updateOp = {};
+    if (Object.keys(setFields).length > 0) updateOp.$set = setFields;
+    if (Object.keys(unsetFields).length > 0) updateOp.$unset = unsetFields;
+    if (Object.keys(updateOp).length === 0) return 0;
+
+    console.log(`[ProductPriceUpdater.clearProductPrices] updateOp:`, JSON.stringify(updateOp), 'on', productIds.length, 'products');
+
+    // Use raw MongoDB updateMany to bypass Mongoose validators (salePrice validator checks against regularPrice)
+    const mongoose = require('mongoose');
+    const result = await Product.collection.updateMany(
+      { _id: { $in: productIds.map(id => new mongoose.Types.ObjectId(id)) } },
+      updateOp
+    );
+
+    console.log(`[ProductPriceUpdater] Cleared prices for ${result.modifiedCount} products (matched: ${result.matchedCount})`);
+    return result.modifiedCount;
+  }
+
+  /**
    * Recalculate prices for all products (useful after bulk rule changes)
    * @returns {Promise<Number>} - Number of products updated
    */

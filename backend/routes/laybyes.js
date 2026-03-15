@@ -8,13 +8,18 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const { LAYBYE_STATUS } = require('../config/constants');
 const LaybyTransaction = require('../models/LaybyTransaction');
+const emailService = require('../services/emailService');
 
 // ─── CUSTOMER: Get my laybyes (MUST be before /:id routes) ───
 router.get('/my-laybyes', protect, async (req, res, next) => {
   try {
     const laybyes = await Laybye.find({ customer: req.user._id })
-      .populate('laybyPlan', 'name description')
-      .populate('order', 'orderNumber total')
+      .populate('laybyPlan', 'name description frequency')
+      .populate({
+        path: 'order',
+        select: 'orderNumber total items payments deliveryMethod hasLaybye',
+        populate: { path: 'items.product', select: 'name slug images salePrice regularPrice' }
+      })
       .sort({ createdAt: -1 });
 
     res.json({ success: true, data: laybyes });
@@ -28,7 +33,11 @@ router.get('/my-laybyes/:id', protect, async (req, res, next) => {
   try {
     const laybye = await Laybye.findOne({ _id: req.params.id, customer: req.user._id })
       .populate('laybyPlan')
-      .populate('order', 'orderNumber total status');
+      .populate({
+        path: 'order',
+        select: 'orderNumber total status items payments deliveryMethod hasLaybye',
+        populate: { path: 'items.product', select: 'name slug images salePrice regularPrice' }
+      });
 
     if (!laybye) {
       return res.status(404).json({ success: false, message: 'Laybye not found' });
@@ -60,8 +69,14 @@ router.post('/my-laybyes/:id/pay', protect, async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Invalid payment amount' });
     }
 
-    if (amount > laybye.remainingAmount + 0.01) {
-      return res.status(400).json({ success: false, message: 'Payment amount exceeds remaining balance' });
+    // Calculate effective remaining after pending payments
+    const pendingTotal = (laybye.payments || [])
+      .filter(p => p.status === 'pending')
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+    const effectiveRemaining = laybye.remainingAmount - pendingTotal;
+
+    if (amount > effectiveRemaining + 0.01) {
+      return res.status(400).json({ success: false, message: 'Payment amount exceeds remaining balance (accounting for pending payments)' });
     }
 
     const method = paymentMethod || 'cash';
@@ -119,6 +134,16 @@ router.post('/my-laybyes/:id/pay', protect, async (req, res, next) => {
       note: note || '',
       source: 'customer'
     });
+
+    // Send emails for completed payments (non-blocking)
+    if (!isPending) {
+      try {
+        emailService.sendLaybyePaymentReceived(laybye, amount).catch(e => console.error('Laybye payment email error:', e));
+        if (laybye.status === LAYBYE_STATUS.COMPLETED) {
+          emailService.sendLaybyeCompleted(laybye).catch(e => console.error('Laybye completed email error:', e));
+        }
+      } catch (emailErr) { console.error('Email sending error (customer laybye payment):', emailErr); }
+    }
 
     const message = isPending
       ? 'Payment submitted and awaiting verification. You will be notified once confirmed.'
@@ -421,6 +446,14 @@ router.post('/:id/payments', protect, authorize('admin', 'shop_manager'), async 
       recordedBy: req.user._id,
       source: 'admin'
     });
+
+    // Send emails (non-blocking)
+    try {
+      emailService.sendLaybyePaymentReceived(laybye, amount).catch(e => console.error('Laybye payment email error:', e));
+      if (laybye.status === LAYBYE_STATUS.COMPLETED) {
+        emailService.sendLaybyeCompleted(laybye).catch(e => console.error('Laybye completed email error:', e));
+      }
+    } catch (emailErr) { console.error('Email sending error (laybye payment):', emailErr); }
     
     res.json({
       success: true,

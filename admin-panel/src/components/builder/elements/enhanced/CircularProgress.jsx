@@ -2,8 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { Circle, Target } from 'lucide-react';
 import { NumberControl, ColorControl, SelectControl, Checkbox } from '@/components/builder/controls/PropertyControls';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const CircularProgress = ({ className = '', style = {} }) => {
+export const CircularProgress = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { className = '', style = {} } = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

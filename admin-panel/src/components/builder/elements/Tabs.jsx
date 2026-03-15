@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Tabs = ({
+export const Tabs = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   tabs = [
     { label: 'Tab 1', content: 'Content for tab 1' },
     { label: 'Tab 2', content: 'Content for tab 2' },
@@ -12,7 +15,8 @@ export const Tabs = ({
   tabStyle = 'underline',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

@@ -57,6 +57,12 @@ const currencySchema = new mongoose.Schema({
     default: true
   },
   
+  // Display order (lower = shown first / default)
+  sortOrder: {
+    type: Number,
+    default: 0
+  },
+  
   // Update tracking
   lastUpdated: {
     type: Date,
@@ -71,6 +77,7 @@ const currencySchema = new mongoose.Schema({
 // Indexes
 currencySchema.index({ code: 1 });
 currencySchema.index({ isActive: 1 });
+currencySchema.index({ sortOrder: 1, code: 1 });
 
 // Method to format amount
 currencySchema.methods.formatAmount = function(amount) {
@@ -97,12 +104,12 @@ currencySchema.methods.convertToZAR = function(amount) {
 
 // Static method to get active currencies
 currencySchema.statics.getActive = function() {
-  return this.find({ isActive: true }).sort({ code: 1 });
+  return this.find({ isActive: true }).sort({ sortOrder: 1, code: 1 });
 };
 
 // Static method to get currencies visible in frontend
 currencySchema.statics.getFrontendCurrencies = function() {
-  return this.find({ isActive: true, showInFrontend: true }).sort({ code: 1 });
+  return this.find({ isActive: true, showInFrontend: true }).sort({ sortOrder: 1, code: 1 });
 };
 
 // Static method to get base currency

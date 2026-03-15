@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const MegaMenu = ({
+export const MegaMenu = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = [
     { label: 'Products', children: [{ label: 'Category 1', url: '#' }, { label: 'Category 2', url: '#' }, { label: 'Category 3', url: '#' }] },
     { label: 'Services', children: [{ label: 'Service 1', url: '#' }, { label: 'Service 2', url: '#' }] },
@@ -14,7 +17,8 @@ export const MegaMenu = ({
   accentColor = '#3b82f6',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   const [openIndex, setOpenIndex] = useState(-1);
 

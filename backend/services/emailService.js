@@ -5,22 +5,71 @@ class EmailService {
   constructor() {
     this.transporter = null;
     this.from = process.env.EMAIL_FROM || 'noreply@ecommerce.com';
+    this._dbInitialized = false;
     this.initializeTransporter();
   }
 
   /**
-   * Initialize email transporter
+   * Initialize email transporter from env vars (startup fallback)
    */
   initializeTransporter() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT) || 587,
-      secure: parseInt(process.env.EMAIL_PORT) === 465,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      }
-    });
+    const host = process.env.EMAIL_HOST;
+    const port = parseInt(process.env.EMAIL_PORT) || 587;
+    if (host) {
+      this.transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD },
+      });
+    }
+  }
+
+  /**
+   * Re-initialize transporter from DB settings (called when admin saves SMTP config)
+   */
+  reinitialize(settings) {
+    const host = settings.smtpHost || process.env.EMAIL_HOST;
+    const port = settings.smtpPort || parseInt(process.env.EMAIL_PORT) || 587;
+    const user = settings.smtpUser || process.env.EMAIL_USER;
+    const pass = settings.smtpPassword || process.env.EMAIL_PASSWORD;
+    this.from = settings.fromEmail
+      ? (settings.fromName ? `"${settings.fromName}" <${settings.fromEmail}>` : settings.fromEmail)
+      : (process.env.EMAIL_FROM || 'noreply@ecommerce.com');
+    if (host) {
+      this.transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: settings.smtpSecure || port === 465,
+        auth: { user, pass },
+      });
+    }
+    this._dbInitialized = true;
+  }
+
+  /**
+   * Ensure transporter is initialized from DB settings (lazy, once)
+   */
+  async ensureInitialized() {
+    if (this._dbInitialized) return;
+    try {
+      const Settings = require('../models/Settings');
+      const settings = await Settings.getSettings();
+      if (settings.smtpHost) this.reinitialize(settings);
+      this._dbInitialized = true;
+    } catch (e) { /* settings not yet available */ }
+  }
+
+  /**
+   * Check if a specific notification type is enabled
+   */
+  async isEnabled(notificationKey) {
+    try {
+      const Settings = require('../models/Settings');
+      const settings = await Settings.getSettings();
+      const notifs = settings.emailNotifications || {};
+      return notifs[notificationKey] !== false; // default true
+    } catch (e) { return true; }
   }
 
   /**
@@ -60,10 +109,32 @@ class EmailService {
   }
 
   /**
+   * Test SMTP connection
+   */
+  async testConnection() {
+    try {
+      await this.ensureInitialized();
+      if (!this.transporter) {
+        return { success: false, message: 'No SMTP transporter configured' };
+      }
+      await this.transporter.verify();
+      return { success: true, message: 'SMTP connection successful' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  /**
    * Send plain email
    */
   async sendEmail({ to, subject, html, text, attachments = [], cc = null, bcc = null }) {
     try {
+      await this.ensureInitialized();
+
+      if (!this.transporter) {
+        throw new Error('Email transporter not configured. Set SMTP settings in admin Settings or .env');
+      }
+
       const mailOptions = {
         from: this.from,
         to,
@@ -103,6 +174,10 @@ class EmailService {
       order_items: this.formatOrderItems(order.items),
       billing_address: this.formatAddress(order.billingAddress),
       shipping_address: this.formatAddress(order.shippingAddress),
+      delivery_method: order.deliveryMethod || 'delivery',
+      pickup_location: order.deliveryMethod === 'pickup' && order.pickupAddress
+        ? `${order.pickupAddress.label || ''} — ${order.pickupAddress.address || ''}`.trim()
+        : '',
       tracking_url: order.trackingUrl || '#'
     };
 
@@ -132,6 +207,141 @@ class EmailService {
       'order_shipped',
       variables
     );
+  }
+
+  /**
+   * Send order delivered notification
+   */
+  async sendOrderDelivered(order) {
+    if (!(await this.isEnabled('orderDelivered'))) return;
+    const user = await order.populate('customer');
+    return await this.sendTemplatedEmail(user.customer.email, 'order_delivered', {
+      customer_name: user.customer.getFullName?.() || user.customer.firstName || 'Customer',
+      order_number: order.orderNumber,
+      order_total: `R ${order.total.toFixed(2)}`,
+      delivery_date: new Date().toLocaleDateString('en-ZA'),
+    });
+  }
+
+  /**
+   * Send order cancelled notification
+   */
+  async sendOrderCancelled(order, reason = '') {
+    if (!(await this.isEnabled('orderCancelled'))) return;
+    const user = await order.populate('customer');
+    return await this.sendTemplatedEmail(user.customer.email, 'order_cancelled', {
+      customer_name: user.customer.getFullName?.() || user.customer.firstName || 'Customer',
+      order_number: order.orderNumber,
+      order_total: `R ${order.total.toFixed(2)}`,
+      cancellation_reason: reason || 'No reason provided',
+    });
+  }
+
+  /**
+   * Send order refunded notification
+   */
+  async sendOrderRefunded(order, refundAmount) {
+    if (!(await this.isEnabled('orderRefunded'))) return;
+    const user = await order.populate('customer');
+    return await this.sendTemplatedEmail(user.customer.email, 'order_refunded', {
+      customer_name: user.customer.getFullName?.() || user.customer.firstName || 'Customer',
+      order_number: order.orderNumber,
+      refund_amount: `R ${(refundAmount || order.total).toFixed(2)}`,
+      order_total: `R ${order.total.toFixed(2)}`,
+    });
+  }
+
+  /**
+   * Send order note to customer
+   */
+  async sendOrderNote(order, note) {
+    if (!(await this.isEnabled('orderNote'))) return;
+    const user = await order.populate('customer');
+    return await this.sendTemplatedEmail(user.customer.email, 'order_note', {
+      customer_name: user.customer.getFullName?.() || user.customer.firstName || 'Customer',
+      order_number: order.orderNumber,
+      note_content: note,
+    });
+  }
+
+  /**
+   * Send new order admin notification
+   */
+  async sendAdminNewOrder(order) {
+    if (!(await this.isEnabled('adminNewOrder'))) return;
+    try {
+      const Settings = require('../models/Settings');
+      const settings = await Settings.getSettings();
+      const adminEmail = settings.storeEmail;
+      if (!adminEmail) return;
+      return await this.sendEmail({
+        to: adminEmail,
+        subject: `New Order #${order.orderNumber} — R ${order.total.toFixed(2)}`,
+        html: `<h2>New Order Received</h2><p><strong>Order:</strong> #${order.orderNumber}</p><p><strong>Total:</strong> R ${order.total.toFixed(2)}</p><p><strong>Items:</strong> ${order.items?.length || 0}</p><p><a href="${process.env.ADMIN_URL || 'http://localhost:3001'}/orders/${order._id}">View Order</a></p>`,
+      });
+    } catch (e) { console.error('Admin new order email error:', e); }
+  }
+
+  /**
+   * Send laybye created notification (when order with laybye is placed)
+   */
+  async sendLaybyeCreated(laybye) {
+    if (!(await this.isEnabled('laybyeCreated'))) return;
+    try {
+      if (!laybye.customer || typeof laybye.customer === 'string') await laybye.populate('customer');
+      if (!laybye.order || typeof laybye.order === 'string') await laybye.populate('order');
+      const customer = laybye.customer;
+      if (!customer?.email) return;
+      return await this.sendTemplatedEmail(customer.email, 'laybye_created', {
+        customer_name: customer.firstName ? `${customer.firstName} ${customer.lastName}` : customer.email,
+        order_number: laybye.order?.orderNumber || 'N/A',
+        plan_name: laybye.installmentPlan?.planName || 'Layby Plan',
+        deposit_amount: `R ${(laybye.depositAmount || 0).toFixed(2)}`,
+        installment_amount: `R ${(laybye.installmentPlan?.installmentAmount || 0).toFixed(2)}`,
+        total_amount: `R ${(laybye.totalAmount || 0).toFixed(2)}`,
+        payment_link: `${process.env.FRONTEND_URL}/account/laybyes/${laybye._id}`,
+      });
+    } catch (e) { console.error('Laybye created email error:', e); }
+  }
+
+  /**
+   * Send laybye payment received notification
+   */
+  async sendLaybyePaymentReceived(laybye, paymentAmount) {
+    if (!(await this.isEnabled('laybyePaymentReceived'))) return;
+    try {
+      if (!laybye.customer || typeof laybye.customer === 'string') await laybye.populate('customer');
+      if (!laybye.order || typeof laybye.order === 'string') await laybye.populate('order');
+      const customer = laybye.customer;
+      if (!customer?.email) return;
+      return await this.sendTemplatedEmail(customer.email, 'laybye_payment', {
+        customer_name: customer.firstName ? `${customer.firstName} ${customer.lastName}` : customer.email,
+        order_number: laybye.order?.orderNumber || 'N/A',
+        payment_amount: `R ${(paymentAmount || 0).toFixed(2)}`,
+        remaining_balance: `R ${(laybye.remainingAmount || 0).toFixed(2)}`,
+        paid_amount: `R ${(laybye.paidAmount || 0).toFixed(2)}`,
+        total_amount: `R ${(laybye.totalAmount || 0).toFixed(2)}`,
+        payment_link: `${process.env.FRONTEND_URL}/account/laybyes/${laybye._id}`,
+      });
+    } catch (e) { console.error('Laybye payment email error:', e); }
+  }
+
+  /**
+   * Send laybye completed notification
+   */
+  async sendLaybyeCompleted(laybye) {
+    if (!(await this.isEnabled('laybyeCompleted'))) return;
+    try {
+      if (!laybye.customer || typeof laybye.customer === 'string') await laybye.populate('customer');
+      if (!laybye.order || typeof laybye.order === 'string') await laybye.populate('order');
+      const customer = laybye.customer;
+      if (!customer?.email) return;
+      return await this.sendTemplatedEmail(customer.email, 'laybye_completed', {
+        customer_name: customer.firstName ? `${customer.firstName} ${customer.lastName}` : customer.email,
+        order_number: laybye.order?.orderNumber || 'N/A',
+        total_amount: `R ${(laybye.totalAmount || 0).toFixed(2)}`,
+      });
+    } catch (e) { console.error('Laybye completed email error:', e); }
   }
 
   /**

@@ -1,14 +1,18 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const CheckoutPage = ({
+export const CheckoutPage = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   showOrderNotes = true,
   showShipping = true,
   buttonText = 'Place Order',
   buttonColor = '#3b82f6',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   const fields = [
     { label: 'First Name', type: 'text', half: true },

@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const IconBox = ({
+export const IconBox = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   icon = '⭐',
   title = 'Feature Title',
   description = 'Feature description goes here.',
@@ -10,7 +13,8 @@ export const IconBox = ({
   layout = 'top',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

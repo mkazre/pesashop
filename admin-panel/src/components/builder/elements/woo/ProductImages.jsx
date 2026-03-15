@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
 import { useRepeaterItem } from '@/components/builder/utils/RepeaterContext';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductImages = ({
+export const ProductImages = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   mainImage = 'https://placehold.co/600x600/e2e8f0/64748b?text=Product+Image',
   thumbnails = [
     'https://placehold.co/100x100/e2e8f0/64748b?text=1',
@@ -13,7 +16,8 @@ export const ProductImages = ({
   thumbnailGap = '8px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
   const repeaterItem = useRepeaterItem();
   const displayMainImage = repeaterItem?.featuredImage || repeaterItem?.images?.[0] || mainImage;

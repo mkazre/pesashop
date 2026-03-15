@@ -1,11 +1,15 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Span = ({
+export const Span = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   content = 'Span text',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

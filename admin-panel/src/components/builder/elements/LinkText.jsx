@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const LinkText = ({
+export const LinkText = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   text = 'Link Text',
   url = '#',
   target = '_self',
@@ -11,7 +14,8 @@ export const LinkText = ({
   textDecoration = 'underline',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

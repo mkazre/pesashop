@@ -23,15 +23,27 @@ const emailTemplateSchema = new mongoose.Schema({
     type: String,
     required: true,
     enum: [
+      // Orders
       'order_confirmation',
       'order_shipped',
       'order_delivered',
       'order_cancelled',
+      'order_refunded',
+      'order_note',
+      // Accounts
       'new_account',
       'password_reset',
+      // Laybye lifecycle
+      'laybye_application_received',
+      'laybye_application_approved',
+      'laybye_application_rejected',
       'laybye_created',
       'laybye_payment',
       'laybye_completed',
+      'laybye_reminder',
+      'laybye_overdue_reminder',
+      'laybye_expiry_reminder',
+      // Loyalty & Coupons
       'loyalty_points_earned',
       'loyalty_points_redeemed',
       'gift_card_issued',
@@ -39,6 +51,9 @@ const emailTemplateSchema = new mongoose.Schema({
       'coupon_new_user',
       'coupon_spending_milestone',
       'coupon_birthday',
+      // Reviews
+      'review_reminder',
+      // Other
       'promotional',
       'custom'
     ]

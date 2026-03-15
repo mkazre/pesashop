@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const PricingBox = ({
+export const PricingBox = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   title = 'Pro Plan',
   price = '$29',
   period = '/month',
@@ -14,7 +17,8 @@ export const PricingBox = ({
   backgroundColor = '#ffffff',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

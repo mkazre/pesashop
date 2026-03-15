@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const LinkButton = ({
+export const LinkButton = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   text = 'Click Here',
   url = '#',
   target = '_self',
@@ -13,7 +16,8 @@ export const LinkButton = ({
   fontWeight = '500',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

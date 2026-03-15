@@ -1,31 +1,68 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRepeaterItem } from './RepeaterContext';
+import { usePageData } from './PageDataContext';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const defaultProducts = [
+  { name: 'Accessory Pack', price: '$14.99', image: 'https://placehold.co/200x200/e2e8f0/64748b?text=X1' },
+  { name: 'Carrying Case', price: '$24.99', image: 'https://placehold.co/200x200/e2e8f0/64748b?text=X2' },
+];
 
 export const ProductCrosssells = ({
   title = 'You may be interested in…',
-  products = [
-    { name: 'Accessory Pack', price: '$14.99', image: 'https://placehold.co/200x200/e2e8f0/64748b?text=X1' },
-    { name: 'Carrying Case', price: '$24.99', image: 'https://placehold.co/200x200/e2e8f0/64748b?text=X2' },
-  ],
+  products = defaultProducts,
   columns = 4,
   gap = '16px',
   className = '',
   style = {},
-}) => (
-  <div className={className} style={style}>
-    <h3 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>{title}</h3>
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, 1fr)`, gap }}>
-      {products.map((p, i) => (
-        <div key={i} style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-          <img src={p.image} alt={p.name} style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
-          <div style={{ padding: '12px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>{p.name}</div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: '#3b82f6' }}>{p.price}</div>
-            <button style={{ marginTop: '8px', width: '100%', padding: '8px', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>Add to Cart</button>
-          </div>
-        </div>
-      ))}
+}) => {
+  const repeaterItem = useRepeaterItem();
+  const pageData = usePageData();
+  const product = repeaterItem || pageData?.product;
+  const [fetched, setFetched] = useState(null);
+
+  useEffect(() => {
+    if (!product?._id) { setFetched(null); return; }
+    const categoryId = product.categories?.[0]?._id || product.categories?.[0];
+    if (!categoryId) { setFetched(null); return; }
+    let cancelled = false;
+    fetch(`${API_URL}/api/products?category=${categoryId}&limit=8&sort=-createdAt`)
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        const items = (data?.data || []).filter(p => p._id !== product._id).slice(0, parseInt(columns) || 4);
+        setFetched(items.length > 0 ? items : null);
+      })
+      .catch(() => { if (!cancelled) setFetched(null); });
+    return () => { cancelled = true; };
+  }, [product?._id, columns]);
+
+  const displayProducts = fetched
+    ? fetched.map(p => ({
+        name: p.name,
+        price: `R ${(p.salePrice || p.regularPrice || 0).toFixed(2)}`,
+        image: (() => { const img = p.featuredImage || p.images?.[0]; return img ? (img.startsWith('/uploads/') ? `${API_URL}${img}` : img) : 'https://placehold.co/200x200/e2e8f0/64748b?text=X'; })(),
+        slug: p.slug,
+      }))
+    : products;
+
+  return (
+    <div className={className} style={style}>
+      <h3 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>{title}</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, 1fr)`, gap }}>
+        {displayProducts.map((p, i) => (
+          <a key={i} href={p.slug ? `/product/${p.slug}` : '#'} style={{ textDecoration: 'none', color: 'inherit', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb', display: 'block' }}>
+            <img src={p.image} alt={p.name} style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
+            <div style={{ padding: '12px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>{p.name}</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#3b82f6' }}>{p.price}</div>
+            </div>
+          </a>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 ProductCrosssells.craft = { displayName: 'Product Cross-sells' };

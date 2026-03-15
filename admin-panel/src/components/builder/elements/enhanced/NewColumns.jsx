@@ -3,6 +3,7 @@ import { useNode, Element } from '@craftjs/core';
 import { NewColumnsSettings } from './NewColumnsSettings';
 import { useBreakpoint } from '@/components/builder/context/BreakpointContext';
 import { Column } from './Column';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
 // Preset width ratios
 const WIDTH_PRESETS = {
@@ -22,7 +23,10 @@ const WIDTH_PRESETS = {
 
 export { WIDTH_PRESETS };
 
-export const NewColumns = ({ columns = 2, columnWidths, gap = '16px', stackOn = 'mobile', responsiveProps = {}, className = '', style = {} }) => {
+export const NewColumns = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { columns = 2, columnWidths, gap = '16px', stackOn = 'mobile', responsiveProps = {}, className = '', style = {} } = resolved;
+
   const { breakpoint } = useBreakpoint();
   const {
     connectors: { connect, drag },

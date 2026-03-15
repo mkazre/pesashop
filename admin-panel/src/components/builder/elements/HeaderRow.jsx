@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const HeaderRow = ({
+export const HeaderRow = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   children,
   layout = 'space-between',
   alignItems = 'center',
@@ -15,7 +18,8 @@ export const HeaderRow = ({
   containerMaxWidth = '1280px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

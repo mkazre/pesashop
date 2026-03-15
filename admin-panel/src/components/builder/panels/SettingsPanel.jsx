@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useEditor } from '@craftjs/core';
 import { LayoutDashboard, Type, Settings, Database } from 'lucide-react';
 import { ContainerSettingsForNode } from './ContainerSettings';
@@ -342,28 +342,26 @@ const SETTINGS_TABS = [
 
 export const SettingsPanel = () => {
   const [activeTab, setActiveTab] = useState('layout');
+  const scrollRef = useRef(null);
   
-  // Combine the useEditor calls to prevent issues with multiple calls
-  const { selectedNodeId, selectedNode } = useEditor((state) => {
+  // Single useEditor call — selector must return an object (Craft.js spreads it into the result).
+  const { selectedNodeId, resolvedName, displayName } = useEditor((state) => {
     const selected = state.events.selected;
-    if (!selected || selected.size === 0) return { selectedNodeId: null, selectedNode: null };
-    
-    const id = Array.from(selected)[0];
-    if (!id) return { selectedNodeId: null, selectedNode: null };
-    
-    const node = state.nodes[id];
-    if (!node) return { selectedNodeId: id, selectedNode: null };
-    
-    const resolved = node.data.type?.resolvedName || node.data.displayName || node.data.name || 'Component';
-    const displayName = node.data.displayName || node.data.name || resolved;
-    
-    return { 
-      selectedNodeId: id, 
-      selectedNode: { id, resolvedName: resolved, displayName } 
+    if (!selected || selected.size === 0) return { selectedNodeId: null, resolvedName: null, displayName: null };
+    const nid = Array.from(selected)[0] || null;
+    if (!nid) return { selectedNodeId: null, resolvedName: null, displayName: null };
+    const node = state.nodes[nid];
+    if (!node) return { selectedNodeId: null, resolvedName: null, displayName: null };
+    const rn = node.data.type?.resolvedName || node.data.displayName || node.data.name || 'Component';
+    const dn = node.data.displayName || node.data.name || node.data.type?.resolvedName || 'Component';
+    return {
+      selectedNodeId: nid,
+      resolvedName: typeof rn === 'string' ? rn : 'Component',
+      displayName: typeof dn === 'string' ? dn : 'Component',
     };
   });
 
-  if (!selectedNodeId || !selectedNode) {
+  if (!selectedNodeId || !resolvedName) {
     return (
       <div className="p-4 text-sm text-gray-500 bg-white border-l h-full flex items-center justify-center">
         <p>Select an element to edit its settings</p>
@@ -371,14 +369,14 @@ export const SettingsPanel = () => {
     );
   }
 
-  const SettingsComponent = SETTINGS_FOR_NODE_MAP[selectedNode.resolvedName] || SETTINGS_FOR_NODE_MAP[selectedNode.displayName];
+  const SettingsComponent = SETTINGS_FOR_NODE_MAP[resolvedName] || SETTINGS_FOR_NODE_MAP[displayName];
   const useGeneric = !SettingsComponent || SettingsComponent === GenericNodeSettings;
 
   return (
     <div className="bg-white border-l h-full flex flex-col overflow-hidden">
       <div className="p-3 border-b bg-gray-50 shrink-0">
         <h3 className="text-sm font-semibold text-gray-800">Settings</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{selectedNode.displayName}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{displayName}</p>
       </div>
       {/* Oxygen-style tabs: Layout, Typography, Advanced */}
       <div className="flex border-b border-gray-200 shrink-0">
@@ -399,12 +397,18 @@ export const SettingsPanel = () => {
           );
         })}
       </div>
-      <div className="flex-1 overflow-auto p-4">
-        {activeTab === 'layout' && !useGeneric && SettingsComponent ? (
-          <SettingsComponent nodeId={selectedNodeId} />
-        ) : (
-          <ComprehensiveSettings nodeId={selectedNodeId} displayName={selectedNode.displayName} activeTab={activeTab} />
+      <div ref={scrollRef} className="flex-1 overflow-auto p-4">
+        {activeTab === 'layout' && !useGeneric && SettingsComponent && (
+          <div className="mb-4 pb-4 border-b border-gray-200">
+            <SettingsComponent nodeId={selectedNodeId} />
+          </div>
         )}
+        <ComprehensiveSettings
+          nodeId={selectedNodeId}
+          displayName={displayName}
+          activeTab={activeTab}
+          hasDedicatedSettings={activeTab === 'layout' && !useGeneric && !!SettingsComponent}
+        />
       </div>
     </div>
   );

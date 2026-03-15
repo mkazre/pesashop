@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { useCartStore, useAuthStore } from '@/store';
+import { useCartStore, useAuthStore, useCurrencyStore } from '@/store';
 import { ordersAPI, giftCardsAPI } from '@/services/api';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import Button from '@/components/common/Button';
@@ -14,6 +14,7 @@ import { usePageTemplate } from '@/hooks/usePageTemplate';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
 
 export default function CheckoutPage() {
+  const { formatPrice } = useCurrencyStore();
   const { components: templateComponents, hasTemplate } = usePageTemplate('checkout');
   const navigate = useNavigate();
   const { items, getTotal, clearCart, giftCardCode, giftCardAmount, giftCardBalance, setGiftCard, clearGiftCard } = useCartStore();
@@ -132,7 +133,7 @@ export default function CheckoutPage() {
       const response = await ordersAPI.create(orderData);
       clearCart();
       toast.success('Order placed successfully!');
-      navigate(`/order-success/${response.data._id}`);
+      navigate(`/order-success/${response.data.data?._id || response.data._id}`);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to place order');
     } finally {
@@ -284,7 +285,7 @@ export default function CheckoutPage() {
                               Gift Card: {giftCardCode}
                             </div>
                             <div className="text-xs text-green-600">
-                              R{giftCardAmount.toFixed(2)} applied | R{giftCardBalance.toFixed(2)} remaining
+                              {formatPrice(giftCardAmount)} applied | {formatPrice(giftCardBalance)} remaining
                             </div>
                           </div>
                         </div>
@@ -357,7 +358,7 @@ export default function CheckoutPage() {
                             {item.product.name}
                           </div>
                           <div className="text-sm text-gray-600 mt-1">
-                            {item.quantity} × R{price.toFixed(2)}
+                            {item.quantity} × {formatPrice(price)}
                           </div>
                         </div>
                       </div>
@@ -369,28 +370,28 @@ export default function CheckoutPage() {
                 <div className="space-y-3 border-t border-gray-200 pt-4">
                   <div className="flex justify-between text-gray-700">
                     <span>Sub-Total</span>
-                    <span>R{subtotal.toFixed(2)}</span>
+                    <span>{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-gray-700">
                     <span>VAT (15%)</span>
-                    <span>R{tax.toFixed(2)}</span>
+                    <span>{formatPrice(tax)}</span>
                   </div>
                   {giftCardDiscount > 0 && (
                     <div className="flex justify-between text-gray-700">
                       <span>Gift Card</span>
-                      <span className="text-green-600">-R{giftCardDiscount.toFixed(2)}</span>
+                      <span className="text-green-600">-{formatPrice(giftCardDiscount)}</span>
                     </div>
                   )}
                   {couponDiscount > 0 && (
                     <div className="flex justify-between text-gray-700">
                       <span>Coupon ({couponCode})</span>
-                      <span className="text-green-600">-R{couponDiscount.toFixed(2)}</span>
+                      <span className="text-green-600">-{formatPrice(couponDiscount)}</span>
                     </div>
                   )}
                   {loyaltyDiscount > 0 && (
                     <div className="flex justify-between text-gray-700">
                       <span>PESA Coins ({loyaltyPointsUsed} pts)</span>
-                      <span className="text-green-600">-R{loyaltyDiscount.toFixed(2)}</span>
+                      <span className="text-green-600">-{formatPrice(loyaltyDiscount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-gray-700">
@@ -399,7 +400,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between text-xl font-bold border-t-2 border-gray-200 pt-3">
                     <span>Total</span>
-                    <span>R{total.toFixed(2)}</span>
+                    <span>{formatPrice(total)}</span>
                   </div>
                 </div>
 

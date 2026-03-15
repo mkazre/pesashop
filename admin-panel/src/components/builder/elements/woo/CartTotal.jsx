@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const CartTotal = ({
+export const CartTotal = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   subtotal = '$109.97',
   shipping = 'Free Shipping',
   total = '$109.97',
@@ -10,7 +13,8 @@ export const CartTotal = ({
   buttonColor = '#3b82f6',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   return (
     <div ref={(ref) => connect(drag(ref))} className={className}

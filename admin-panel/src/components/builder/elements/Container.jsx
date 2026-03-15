@@ -4,8 +4,12 @@ import { Square } from 'lucide-react';
 import { useBreakpoint } from '@/components/builder/context/BreakpointContext';
 import { useResponsiveStyles } from '@/components/builder/utils/ResponsiveControls';
 import { canElementContainChildren } from '@/components/builder/utils/NestingRules';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const Container = ({ children, className = '', style = {} }) => {
+export const Container = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const { children, className = '', style = {} } = resolved;
+
   const { breakpoint } = useBreakpoint();
   const { getCurrentStyles } = useResponsiveStyles(style, breakpoint);
   

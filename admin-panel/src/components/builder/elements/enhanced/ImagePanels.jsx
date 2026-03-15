@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { Image as ImageIcon, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import MediaLibraryModal from '@/components/media/MediaLibraryModal';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ImagePanels = ({
+export const ImagePanels = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   panels = [
     { src: 'https://placehold.co/400x600/3b82f6/ffffff?text=Panel+1', title: 'Panel 1' },
     { src: 'https://placehold.co/400x600/8b5cf6/ffffff?text=Panel+2', title: 'Panel 2' },
@@ -13,7 +18,8 @@ export const ImagePanels = ({
   textColor = '#ffffff',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   return (
@@ -36,7 +42,19 @@ export const ImagePanelsSettings = ({ nodeId }) => {
   const props = useEditor((state) => state.nodes[nodeId]?.data?.props ?? {});
   const { actions } = useEditor((state) => state.actions);
   const setProp = (cb) => actions.setProp(nodeId, cb);
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const [mediaTarget, setMediaTarget] = useState(null);
   const { panels = [], height = '400px', gap = '4px' } = props;
+
+  const movePanel = (index, direction) => {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= panels.length) return;
+    setProp((p) => {
+      const arr = [...(p.panels || panels)];
+      [arr[index], arr[newIndex]] = [arr[newIndex], arr[index]];
+      p.panels = arr;
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -48,15 +66,71 @@ export const ImagePanelsSettings = ({ nodeId }) => {
         </div>
       </div>
       <div className="space-y-3">
-        <div className="flex items-center justify-between"><h4 className="text-sm font-medium text-gray-700">Panels</h4><button onClick={() => setProp((p) => { p.panels = [...(p.panels||[]), { src: 'https://placehold.co/400x600/64748b/ffffff?text=New', title: 'New Panel' }]; })} className="text-xs text-blue-600">+ Add</button></div>
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-medium text-gray-700">Panels ({panels.length})</h4>
+          <button onClick={() => setProp((p) => { p.panels = [...(p.panels||[]), { src: '', title: 'New Panel' }]; })} className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600">+ Add</button>
+        </div>
         {panels.map((panel, i) => (
-          <div key={i} className="border border-gray-200 rounded p-2 space-y-1">
-            <div className="flex justify-between"><span className="text-xs text-gray-500">Panel {i+1}</span><button onClick={() => setProp((p) => { p.panels = p.panels.filter((_,idx) => idx !== i); })} className="text-xs text-red-500">Remove</button></div>
-            <input type="text" value={panel.title} onChange={(e) => setProp((p) => { p.panels[i].title = e.target.value; })} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" placeholder="Title" />
-            <input type="text" value={panel.src} onChange={(e) => setProp((p) => { p.panels[i].src = e.target.value; })} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" placeholder="Image URL" />
+          <div key={i} className="p-3 border border-gray-200 rounded-lg space-y-2 bg-gray-50/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <div className="flex flex-col">
+                  <button onClick={() => movePanel(i, -1)} disabled={i === 0}
+                    className="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"><ChevronUp size={12} /></button>
+                  <button onClick={() => movePanel(i, 1)} disabled={i === panels.length - 1}
+                    className="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"><ChevronDown size={12} /></button>
+                </div>
+                <span className="text-sm font-medium text-gray-700">Panel {i+1}</span>
+              </div>
+              {panels.length > 1 && (
+                <button onClick={() => setProp((p) => { p.panels = p.panels.filter((_,idx) => idx !== i); })}
+                  className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Image</label>
+              {panel.src ? (
+                <div className="relative group rounded-md overflow-hidden border border-gray-200 mb-1">
+                  <img src={panel.src} alt={panel.title || ''} className="w-full h-24 object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button onClick={() => { setMediaTarget(i); setMediaOpen(true); }}
+                      className="px-2 py-1 text-xs bg-white text-gray-700 rounded shadow hover:bg-gray-100">Replace</button>
+                    <button onClick={() => setProp((p) => { p.panels[i].src = ''; })}
+                      className="px-2 py-1 text-xs bg-red-500 text-white rounded shadow hover:bg-red-600">Remove</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => { setMediaTarget(i); setMediaOpen(true); }}
+                  className="w-full h-24 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/50 transition-colors cursor-pointer">
+                  <ImageIcon size={20} />
+                  <span className="text-xs">Choose Image</span>
+                </button>
+              )}
+              <input type="text" value={panel.src || ''} onChange={(e) => setProp((p) => { p.panels[i].src = e.target.value; })}
+                className="w-full px-2 py-1 border border-gray-300 rounded text-xs mt-1" placeholder="Or paste image URL" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
+              <input type="text" value={panel.title} onChange={(e) => setProp((p) => { p.panels[i].title = e.target.value; })}
+                className="w-full px-2 py-1 border border-gray-300 rounded text-xs" placeholder="Title" />
+            </div>
           </div>
         ))}
       </div>
+
+      <MediaLibraryModal
+        isOpen={mediaOpen}
+        onClose={() => { setMediaOpen(false); setMediaTarget(null); }}
+        onSelect={(url) => {
+          if (mediaTarget !== null) setProp((p) => { p.panels[mediaTarget].src = url; });
+          setMediaOpen(false);
+          setMediaTarget(null);
+        }}
+      />
     </div>
   );
 };

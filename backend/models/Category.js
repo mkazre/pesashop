@@ -26,6 +26,25 @@ const categorySchema = new mongoose.Schema({
     alt: String
   },
   icon: String,
+  // Category icon (1:1 favicon-style for carousels/grids)
+  iconImage: {
+    url: { type: String, default: '' },
+    alt: { type: String, default: '' },
+  },
+  // Category banner (landscape rectangle for archive page header)
+  bannerImage: {
+    url: { type: String, default: '' },
+    alt: { type: String, default: '' },
+  },
+  // Banner display settings
+  bannerSettings: {
+    overlayColor: { type: String, default: 'rgba(0,0,0,0.45)' },
+    textColor: { type: String, default: '#ffffff' },
+    textAlign: { type: String, enum: ['left', 'center', 'right'], default: 'center' },
+    showTitle: { type: Boolean, default: true },
+    showDescription: { type: Boolean, default: true },
+    showProductCount: { type: Boolean, default: true },
+  },
   displayOrder: {
     type: Number,
     default: 0

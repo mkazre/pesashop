@@ -1,11 +1,15 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const TextBlock = ({
+export const TextBlock = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   content = '<p>This is a text block. You can add multiple paragraphs of content here.</p>',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const {
     connectors: { connect, drag },
     selected,

@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const MiniCart = ({
+export const MiniCart = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = [
     { name: 'Product One', price: '$29.99', qty: 1, image: 'https://placehold.co/60x60/e2e8f0/64748b?text=P1' },
     { name: 'Product Two', price: '$49.99', qty: 2, image: 'https://placehold.co/60x60/e2e8f0/64748b?text=P2' },
@@ -12,7 +15,8 @@ export const MiniCart = ({
   accentColor = '#3b82f6',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   return (

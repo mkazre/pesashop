@@ -1,7 +1,7 @@
 {
   "name": "ecommerce-platform",
   "version": "1.0.0",
-  "description": "Advanced E-commerce Platform with React, Node.js, MongoDB and Flutter API",
+  "description": "Advanced E-commerce Platform with React, Node.js, MongoDB, and React Native Mobile App",
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run backend:dev\" \"npm run admin:dev\"",
@@ -9,14 +9,19 @@
     "admin:dev": "cd admin-panel && npm run dev",
     "backend:start": "cd backend && npm start",
     "admin:start": "cd admin-panel && npm run build && serve -s build",
-    "install:all": "npm install && cd backend && npm install && cd ../admin-panel && npm install"
+    "mobile:dev": "cd mobile && npx expo start",
+    "mobile:ios": "cd mobile && npx expo start --ios",
+    "mobile:android": "cd mobile && npx expo start --android",
+    "install:all": "npm install && cd backend && npm install && cd ../admin-panel && npm install && cd ../mobile && npm install"
   },
   "keywords": [
     "ecommerce",
     "react",
     "nodejs",
     "mongodb",
-    "flutter-api"
+    "react-native",
+    "expo",
+    "mobile"
   ],
   "author": "",
   "license": "MIT",

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const DynamicTabs = ({
+export const DynamicTabs = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   tabs = [
     { label: 'Tab 1', content: 'Dynamic tab content 1' },
     { label: 'Tab 2', content: 'Dynamic tab content 2' },
@@ -13,7 +16,8 @@ export const DynamicTabs = ({
   orientation = 'horizontal',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((node) => ({ selected: node.events.selected, hovered: node.events.hovered }));
   const [active, setActive] = useState(0);
 

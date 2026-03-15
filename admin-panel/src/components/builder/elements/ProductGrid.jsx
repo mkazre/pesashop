@@ -4,8 +4,11 @@ import { productsAPI, categoriesAPI } from '@/services/api';
 import { useResponsiveGridProps } from '@/components/builder/utils/useResponsiveGridProps';
 import { useBreakpoint } from '@/components/builder/context/BreakpointContext';
 import { ShoppingCart, Grid3X3, Loader2 } from 'lucide-react';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductGrid = ({
+export const ProductGrid = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   dataSource = 'products',
   sourceFilter = 'all',
   categoryId = '',
@@ -21,7 +24,8 @@ export const ProductGrid = ({
   responsiveProps = {},
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { effectiveColumns, effectiveGap } = useResponsiveGridProps(columns, gap, responsiveProps);
   const {
     connectors: { connect, drag },

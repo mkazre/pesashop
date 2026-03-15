@@ -1,8 +1,10 @@
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { laybyAPI } from '@/services/api';
+import { useCurrencyStore } from '@/store';
 
 export default function PaymentsPage() {
+  const { formatPrice } = useCurrencyStore();
   const { data: laybyesData, isLoading } = useQuery('myLaybyes', () => laybyAPI.getMyLaybyes());
   const laybyes = laybyesData?.data?.data || [];
 
@@ -41,12 +43,12 @@ export default function PaymentsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
           <p className="text-sm text-gray-500 mb-1">Total Paid</p>
-          <p className="text-2xl font-bold text-green-600">R {totalPaid.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-green-600">{formatPrice(totalPaid)}</p>
           <p className="text-xs text-gray-400 mt-1">{allPayments.filter(p => p.status === 'completed').length} payments</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
           <p className="text-sm text-gray-500 mb-1">Outstanding Balance</p>
-          <p className="text-2xl font-bold text-red-600">R {totalOutstanding.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-red-600">{formatPrice(totalOutstanding)}</p>
           <p className="text-xs text-gray-400 mt-1">{activeLaybyes.length} active laybyes</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
@@ -61,7 +63,7 @@ export default function PaymentsPage() {
             return (
               <>
                 <p className={`text-2xl font-bold ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
-                  R {(next.installmentPlan?.installmentAmount || 0).toFixed(2)}
+                  {formatPrice(next.installmentPlan?.installmentAmount || 0)}
                 </p>
                 <p className={`text-xs mt-1 ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
                   {isOverdue ? 'OVERDUE — ' : ''}{new Date(next.nextPaymentDate).toLocaleDateString('en-ZA')}
@@ -98,7 +100,7 @@ export default function PaymentsPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="font-bold text-gray-900">R {(laybye.installmentPlan?.installmentAmount || 0).toFixed(2)}</p>
+                      <p className="font-bold text-gray-900">{formatPrice(laybye.installmentPlan?.installmentAmount || 0)}</p>
                       <Link
                         to="/account/laybyes"
                         className="px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-colors"
@@ -152,7 +154,7 @@ export default function PaymentsPage() {
                     </td>
                     <td className="px-6 py-3.5 text-sm text-gray-600 capitalize">{payment.paymentMethod || 'N/A'}</td>
                     <td className="px-6 py-3.5 text-sm font-semibold text-gray-900 text-right">
-                      R {(payment.amount || 0).toFixed(2)}
+                      {formatPrice(payment.amount || 0)}
                     </td>
                     <td className="px-6 py-3.5 text-center">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${

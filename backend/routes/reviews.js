@@ -1,11 +1,55 @@
 const express = require('express');
 const router = express.Router();
-const { protect, authorize } = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const Review = require('../models/Review');
 const ReviewSettings = require('../models/ReviewSettings');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const loyaltyService = require('../services/loyaltyService');
+const mongoose = require('mongoose');
+
+// Helper: recalculate and update a product's rating + reviewCount from approved reviews
+async function updateProductRating(productId) {
+  try {
+    const stats = await Review.aggregate([
+      { $match: { product: new mongoose.Types.ObjectId(productId), status: 'approved' } },
+      { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } }
+    ]);
+    if (stats.length) {
+      await Product.findByIdAndUpdate(productId, { rating: Math.round(stats[0].avg * 10) / 10, reviewCount: stats[0].count });
+    } else {
+      await Product.findByIdAndUpdate(productId, { rating: 0, reviewCount: 0 });
+    }
+  } catch (err) {
+    console.error('updateProductRating error:', err);
+  }
+}
+
+// Multer storage for review images
+const reviewImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '../uploads/reviews');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `review-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const uploadReviewImages = multer({
+  storage: reviewImageStorage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB max (validated per-settings in route)
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed'), false);
+  }
+});
 
 // GET all reviews (with filters)
 router.get('/', async (req, res, next) => {
@@ -79,8 +123,8 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// POST create review
-router.post('/', async (req, res, next) => {
+// POST create review (with optional image uploads)
+router.post('/', optionalAuth, uploadReviewImages.array('images', 10), async (req, res, next) => {
   try {
     const settings = await ReviewSettings.getSettings();
     
@@ -98,13 +142,39 @@ router.post('/', async (req, res, next) => {
     }
     
     // Validate rating
-    if (!rating || rating < 1 || rating > 5) {
+    const ratingNum = parseInt(rating);
+    if (!ratingNum || ratingNum < 1 || ratingNum > 5) {
       return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+    }
+    
+    // Validate content length
+    if (settings.minimumContentLength && (!content || content.length < settings.minimumContentLength)) {
+      return res.status(400).json({ success: false, message: `Review must be at least ${settings.minimumContentLength} characters` });
     }
     
     // Validate comment length
     if (comment && comment.length > 60) {
       return res.status(400).json({ success: false, message: 'Comment must be 60 characters or less' });
+    }
+    
+    // Purchase verification: require purchase + delivered
+    if (settings.requirePurchase && req.user) {
+      const orderQuery = {
+        customer: req.user._id,
+        'items.product': product,
+      };
+      if (settings.requireDelivered) {
+        orderQuery.status = { $in: ['delivered', 'completed'] };
+      } else {
+        orderQuery.status = { $nin: ['cancelled', 'refunded'] };
+      }
+      const qualifyingOrder = await Order.findOne(orderQuery);
+      if (!qualifyingOrder) {
+        const msg = settings.requireDelivered 
+          ? 'You can only review products from delivered orders'
+          : 'You must purchase this product before reviewing it';
+        return res.status(403).json({ success: false, message: msg });
+      }
     }
     
     // Check if user already reviewed (if logged in)
@@ -114,7 +184,6 @@ router.post('/', async (req, res, next) => {
         return res.status(400).json({ success: false, message: 'You have already reviewed this product' });
       }
     } else {
-      // For guest reviews, check by email
       if (!guestEmail) {
         return res.status(400).json({ success: false, message: 'Email is required for guest reviews' });
       }
@@ -124,31 +193,60 @@ router.post('/', async (req, res, next) => {
       }
     }
     
-    // Verify purchase if order is provided
+    // Process uploaded images
+    let reviewImages = [];
+    if (req.files && req.files.length > 0) {
+      if (!settings.allowImages) {
+        return res.status(400).json({ success: false, message: 'Image uploads are not allowed' });
+      }
+      if (req.files.length > (settings.maxImages || 5)) {
+        return res.status(400).json({ success: false, message: `Maximum ${settings.maxImages || 5} images allowed` });
+      }
+      // Validate file sizes
+      const maxBytes = (settings.maxFileSizeMB || 5) * 1024 * 1024;
+      for (const file of req.files) {
+        if (file.size > maxBytes) {
+          return res.status(400).json({ success: false, message: `Each image must be under ${settings.maxFileSizeMB || 5}MB` });
+        }
+      }
+      reviewImages = req.files.map(file => ({
+        url: `/uploads/reviews/${file.filename}`,
+        alt: `Review image for ${productDoc.name}`
+      }));
+    }
+    
+    // Verify purchase for badge
     let isVerifiedPurchase = false;
-    if (order && req.user) {
-      const orderDoc = await Order.findOne({
-        _id: order,
+    if (req.user) {
+      const purchaseOrder = await Order.findOne({
         customer: req.user._id,
-        'items.product': product
+        'items.product': product,
+        status: { $in: ['delivered', 'completed', 'processing', 'shipped'] }
       });
-      isVerifiedPurchase = !!orderDoc;
+      isVerifiedPurchase = !!purchaseOrder;
     }
     
     // Determine status based on auto-approval settings
     let status = 'pending';
-    if (settings.autoApproveEnabled && rating >= settings.autoApproveThreshold) {
+    if (settings.autoApproveEnabled && ratingNum >= settings.autoApproveThreshold) {
       status = 'approved';
+    }
+    
+    // Parse categoryRatings if it's a string (from FormData)
+    let parsedCategoryRatings = categoryRatings;
+    if (typeof categoryRatings === 'string') {
+      try { parsedCategoryRatings = JSON.parse(categoryRatings); } catch { parsedCategoryRatings = {}; }
     }
     
     // Create review
     const reviewData = {
       product,
-      rating,
-      categoryRatings: categoryRatings || {},
+      rating: ratingNum,
+      categoryRatings: parsedCategoryRatings || {},
       title,
       content,
       comment: comment || undefined,
+      images: reviewImages,
       status,
       isVerifiedPurchase
     };
@@ -177,10 +275,14 @@ router.post('/', async (req, res, next) => {
         );
       } catch (loyaltyError) {
         console.error('Failed to award PESA Coins for review:', loyaltyError);
-        // Don't fail the review creation if PESA Coins fail
       }
     }
     
+    // Update product rating/reviewCount if auto-approved
+    if (status === 'approved') {
+      await updateProductRating(product);
+    }
+
     // Populate and return
     await review.populate('product', 'name slug images');
     if (review.user) {
@@ -279,6 +381,9 @@ router.post('/:id/approve', protect, authorize('admin', 'shop_manager'), async (
       }
     }
     
+    // Update product rating/reviewCount
+    await updateProductRating(review.product._id || review.product);
+
     res.json({ success: true, data: review, message: 'Review approved' });
   } catch (error) {
     next(error);
@@ -299,6 +404,9 @@ router.post('/:id/reject', protect, authorize('admin', 'shop_manager'), async (r
       return res.status(404).json({ success: false, message: 'Review not found' });
     }
     
+    // Recalculate product rating (review removed from approved pool)
+    await updateProductRating(review.product._id || review.product);
+
     res.json({ success: true, data: review, message: 'Review rejected' });
   } catch (error) {
     next(error);
@@ -343,29 +451,19 @@ router.put('/settings/update', protect, authorize('admin', 'shop_manager'), asyn
   try {
     const settings = await ReviewSettings.getSettings();
     
-    const {
-      autoApproveThreshold,
-      autoApproveEnabled,
-      requireLogin,
-      loyaltyPointsEnabled,
-      loyaltyPointsAmount,
-      emailReminderEnabled,
-      emailReminderDays,
-      emailTemplate,
-      showFirstName,
-      showGuestName
-    } = req.body;
+    const fields = [
+      'autoApproveThreshold', 'autoApproveEnabled', 'requireLogin',
+      'loyaltyPointsEnabled', 'loyaltyPointsAmount',
+      'emailReminderEnabled', 'emailReminderDays', 'emailTemplate',
+      'showFirstName', 'showGuestName',
+      'allowImages', 'maxImages', 'maxFileSizeMB', 'allowedImageTypes',
+      'requirePurchase', 'requireDelivered',
+      'enableProfanityFilter', 'minimumContentLength', 'showCategoryRatings'
+    ];
     
-    if (autoApproveThreshold !== undefined) settings.autoApproveThreshold = autoApproveThreshold;
-    if (autoApproveEnabled !== undefined) settings.autoApproveEnabled = autoApproveEnabled;
-    if (requireLogin !== undefined) settings.requireLogin = requireLogin;
-    if (loyaltyPointsEnabled !== undefined) settings.loyaltyPointsEnabled = loyaltyPointsEnabled;
-    if (loyaltyPointsAmount !== undefined) settings.loyaltyPointsAmount = loyaltyPointsAmount;
-    if (emailReminderEnabled !== undefined) settings.emailReminderEnabled = emailReminderEnabled;
-    if (emailReminderDays !== undefined) settings.emailReminderDays = emailReminderDays;
-    if (emailTemplate !== undefined) settings.emailTemplate = emailTemplate;
-    if (showFirstName !== undefined) settings.showFirstName = showFirstName;
-    if (showGuestName !== undefined) settings.showGuestName = showGuestName;
+    for (const field of fields) {
+      if (req.body[field] !== undefined) settings[field] = req.body[field];
+    }
     
     await settings.save();
     await settings.populate('emailTemplate', 'name subject body');
@@ -376,11 +474,186 @@ router.put('/settings/update', protect, authorize('admin', 'shop_manager'), asyn
   }
 });
 
+// POST bulk approve/reject reviews
+router.post('/bulk-status', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+  try {
+    const { reviewIds, status } = req.body;
+    if (!reviewIds?.length || !['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Provide reviewIds array and status (approved/rejected)' });
+    }
+    const result = await Review.updateMany(
+      { _id: { $in: reviewIds } },
+      { status }
+    );
+
+    // Update product ratings for affected products
+    const reviews = await Review.find({ _id: { $in: reviewIds } }).select('product');
+    const productIds = [...new Set(reviews.map(r => r.product.toString()))];
+    for (const pid of productIds) {
+      await updateProductRating(pid);
+    }
+
+    res.json({ success: true, message: `${result.modifiedCount} reviews ${status}`, data: { modified: result.modifiedCount } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET review summary/stats (admin)
+router.get('/summary/stats', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+  try {
+    const [statusCounts, ratingDist, recentCount, withImages, verifiedCount] = await Promise.all([
+      Review.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]),
+      Review.aggregate([
+        { $match: { status: 'approved' } },
+        { $group: { _id: '$rating', count: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+      ]),
+      Review.countDocuments({ createdAt: { $gte: new Date(Date.now() - 7 * 86400000) } }),
+      Review.countDocuments({ 'images.0': { $exists: true } }),
+      Review.countDocuments({ isVerifiedPurchase: true }),
+    ]);
+
+    const total = statusCounts.reduce((sum, s) => sum + s.count, 0);
+    const byStatus = {};
+    statusCounts.forEach(s => { byStatus[s._id] = s.count; });
+    const avgRating = await Review.aggregate([
+      { $match: { status: 'approved' } },
+      { $group: { _id: null, avg: { $avg: '$rating' } } }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        byStatus,
+        ratingDistribution: ratingDist,
+        averageRating: avgRating[0]?.avg || 0,
+        recentWeek: recentCount,
+        withImages,
+        verifiedPurchases: verifiedCount,
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET public review settings (for frontend review form)
+router.get('/settings/public', async (req, res, next) => {
+  try {
+    const settings = await ReviewSettings.getSettings();
+    res.json({
+      success: true,
+      data: {
+        requireLogin: settings.requireLogin,
+        requirePurchase: settings.requirePurchase,
+        requireDelivered: settings.requireDelivered,
+        allowImages: settings.allowImages,
+        maxImages: settings.maxImages,
+        maxFileSizeMB: settings.maxFileSizeMB,
+        allowedImageTypes: settings.allowedImageTypes,
+        minimumContentLength: settings.minimumContentLength,
+        showCategoryRatings: settings.showCategoryRatings,
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET check if user can review product
 router.get('/can-review/:productId', protect, async (req, res, next) => {
   try {
-    const canReview = await Review.canUserReview(req.user._id, req.params.productId);
-    res.json({ success: true, data: canReview });
+    const settings = await ReviewSettings.getSettings();
+    const userId = req.user._id;
+    const productId = req.params.productId;
+
+    // Check existing review
+    const existingReview = await Review.findOne({ user: userId, product: productId });
+    if (existingReview) {
+      return res.json({ success: true, data: { canReview: false, hasPurchased: true, hasReviewed: true, reason: 'already_reviewed' } });
+    }
+
+    // Check purchase + delivery status
+    if (settings.requirePurchase) {
+      const orderQuery = { customer: userId, 'items.product': productId };
+      if (settings.requireDelivered) {
+        orderQuery.status = { $in: ['delivered', 'completed'] };
+      } else {
+        orderQuery.status = { $nin: ['cancelled', 'refunded'] };
+      }
+      const order = await Order.findOne(orderQuery);
+      if (!order) {
+        return res.json({
+          success: true,
+          data: {
+            canReview: false,
+            hasPurchased: false,
+            hasReviewed: false,
+            reason: settings.requireDelivered ? 'not_delivered' : 'not_purchased'
+          }
+        });
+      }
+    }
+
+    res.json({ success: true, data: { canReview: true, hasPurchased: true, hasReviewed: false } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST vote helpful/unhelpful
+router.post('/:id/vote', protect, async (req, res, next) => {
+  try {
+    const { vote } = req.body; // 'helpful' or 'unhelpful'
+    if (!['helpful', 'unhelpful'].includes(vote)) {
+      return res.status(400).json({ success: false, message: 'Vote must be helpful or unhelpful' });
+    }
+    const review = await Review.findById(req.params.id);
+    if (!review) return res.status(404).json({ success: false, message: 'Review not found' });
+    await review.vote(req.user._id, vote);
+    res.json({ success: true, data: { helpfulCount: review.helpfulCount, unhelpfulCount: review.unhelpfulCount } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST report review
+router.post('/:id/report', protect, async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    const review = await Review.findById(req.params.id);
+    if (!review) return res.status(404).json({ success: false, message: 'Review not found' });
+    
+    const alreadyReported = review.reports.some(r => r.user.toString() === req.user._id.toString());
+    if (alreadyReported) return res.status(400).json({ success: false, message: 'Already reported' });
+    
+    review.reports.push({ user: req.user._id, reason });
+    review.reportedCount = review.reports.length;
+    await review.save();
+    res.json({ success: true, message: 'Review reported' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST admin response to review
+router.post('/:id/admin-response', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+  try {
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ success: false, message: 'Response content required' });
+    
+    const review = await Review.findByIdAndUpdate(
+      req.params.id,
+      { adminResponse: { content, respondedBy: req.user._id, respondedAt: new Date() } },
+      { new: true }
+    ).populate('product', 'name slug images').populate('user', 'firstName lastName email');
+    
+    if (!review) return res.status(404).json({ success: false, message: 'Review not found' });
+    res.json({ success: true, data: review });
   } catch (error) {
     next(error);
   }

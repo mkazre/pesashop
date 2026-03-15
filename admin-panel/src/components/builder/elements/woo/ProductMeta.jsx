@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const ProductMeta = ({
+export const ProductMeta = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   sku = 'SKU-12345',
   categories = ['Electronics', 'Gadgets'],
   tags = ['New', 'Featured', 'Sale'],
@@ -13,7 +16,8 @@ export const ProductMeta = ({
   fontSize = '13px',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   return (

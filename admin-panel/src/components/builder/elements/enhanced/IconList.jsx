@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNode, useEditor } from '@craftjs/core';
+import { useDynamicProps } from '@/components/builder/utils/useDynamicProps';
 
-export const IconList = ({
+export const IconList = (rawProps) => {
+  const resolved = useDynamicProps(rawProps);
+  const {
   items = [
     { icon: '✓', text: 'Feature one included', color: '#22c55e' },
     { icon: '✓', text: 'Feature two included', color: '#22c55e' },
@@ -15,7 +18,8 @@ export const IconList = ({
   layout = 'vertical',
   className = '',
   style = {},
-}) => {
+} = resolved;
+
   const { connectors: { connect, drag }, selected, hovered } = useNode((s) => ({ selected: s.events.selected, hovered: s.events.hovered }));
 
   return (

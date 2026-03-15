@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { IoClose, IoCartOutline } from 'react-icons/io5';
-import { useUIStore, useCartStore } from '@/store';
+import { useUIStore, useCartStore, useCurrencyStore } from '@/store';
 import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
@@ -9,9 +9,16 @@ import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+function getImageSrc(path) {
+  if (!path) return '/placeholder.jpg';
+  return path.startsWith('http') ? path : `${API_URL}${path}`;
+}
+
 export default function QuickViewModal() {
   const { quickViewProduct, closeQuickView } = useUIStore();
   const { addItem, openCartSidebar } = useCartStore();
+  const { formatPrice } = useCurrencyStore();
   
   const [selectedImage, setSelectedImage] = useState(0);
   const { titleLines, shortDescriptionLines } = useProductDisplay('other');
@@ -59,7 +66,7 @@ export default function QuickViewModal() {
               {/* Main Image */}
               <div className="relative bg-gray-100 aspect-square">
                 <img
-                  src={product.images?.[selectedImage] || '/placeholder.jpg'}
+                  src={getImageSrc(product.images?.[selectedImage] || product.featuredImage)}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
@@ -81,7 +88,7 @@ export default function QuickViewModal() {
                         index === selectedImage ? 'border-primary' : 'border-gray-200'
                       }`}
                     >
-                      <img src={image} alt="" className="w-full h-full object-cover" />
+                      <img src={getImageSrc(image)} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -97,12 +104,12 @@ export default function QuickViewModal() {
               {/* Price */}
               <div className="flex items-center gap-3 py-4 border-y border-gray-200">
                 <div className="text-2xl font-bold text-gray-900">
-                  R{product.salePrice || product.regularPrice}
+                  {formatPrice(product.salePrice || product.regularPrice)}
                 </div>
                 {product.salePrice && (
                   <>
                     <div className="text-lg text-gray-400 line-through">
-                      R{product.regularPrice}
+                      {formatPrice(product.regularPrice)}
                     </div>
                     <Badge variant="sale">{discount}% OFF</Badge>
                   </>

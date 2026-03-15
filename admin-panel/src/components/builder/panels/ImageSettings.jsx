@@ -72,17 +72,17 @@ export const ImageSettingsForm = ({ props: nodeProps = {}, setProp, activeTab = 
         />
 
         <div className="grid grid-cols-2 gap-2">
-          <NumberControl
+          <TextControl
             label="Width"
             value={props.width}
-            onChange={(val) => updateProp(setProp, 'width', val ? `${val}px` : '100%')}
-            unit="px"
+            onChange={(val) => updateProp(setProp, 'width', val || '100%')}
+            placeholder="e.g. 100%, 300px, auto"
           />
-          <NumberControl
+          <TextControl
             label="Height"
             value={props.height}
-            onChange={(val) => updateProp(setProp, 'height', val ? `${val}px` : 'auto')}
-            unit="px"
+            onChange={(val) => updateProp(setProp, 'height', val || 'auto')}
+            placeholder="e.g. auto, 200px, 50vh"
           />
         </div>
       </div>
