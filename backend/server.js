@@ -37,6 +37,10 @@ app.use(cors({
     if (/^https?:\/\/([a-z0-9-]+\.)?pesashop\.com$/.test(origin)) {
       return callback(null, true);
     }
+    // Allow Netlify domains
+    if (/^https?:\/\/([a-z0-9-]+\.)?netlify\.app$/.test(origin)) {
+      return callback(null, true);
+    }
     // Also allow explicitly configured origins
     const allowed = [process.env.ADMIN_URL, process.env.FRONTEND_URL].filter(Boolean);
     if (allowed.includes(origin)) return callback(null, true);
