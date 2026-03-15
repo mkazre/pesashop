@@ -70,6 +70,10 @@ plugins/
 # Windsurf
 .windsurf/
 
+# Template/reference folders (not part of the app)
+nest-nextjs-master/
+database-export/
+
 # Uploads (keep structure, ignore content)
 backend/uploads/products/*
 !backend/uploads/products/.gitkeep
