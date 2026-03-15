@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"sentCoupons.user":{"$numberInt":"1"},"sentCoupons.automationType":{"$numberInt":"1"}},"name":"sentCoupons.user_1_sentCoupons.automationType_1","background":true}],"uuid":"ddee62a5e1ed422ea33f041e943ce850","collectionName":"couponemailsettings","type":"collection"}

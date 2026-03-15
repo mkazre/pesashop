@@ -4,6 +4,7 @@
   "description": "Advanced E-commerce Platform with React, Node.js, MongoDB, and React Native Mobile App",
   "main": "index.js",
   "scripts": {
+    "start": "cd backend && npm start",
     "dev": "concurrently \"npm run backend:dev\" \"npm run admin:dev\"",
     "backend:dev": "cd backend && npm run dev",
     "admin:dev": "cd admin-panel && npm run dev",
