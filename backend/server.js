@@ -25,6 +25,7 @@ connectDB();
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// CORS configuration - updated to allow Netlify domains
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (e.g. curl, server-to-server, mobile apps)
