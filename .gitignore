@@ -81,3 +81,6 @@ backend/uploads/watermarks/*
 !backend/uploads/watermarks/.gitkeep
 backend/uploads/temp/*
 !backend/uploads/temp/.gitkeep
+
+# Migration artifacts
+backend/migration-progress.json

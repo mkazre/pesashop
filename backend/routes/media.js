@@ -6,6 +6,9 @@ const fs = require('fs');
 const sharp = require('sharp');
 const { protect, authorize } = require('../middleware/auth');
 const Media = require('../models/Media');
+const { uploadToCloudinary, deleteFromCloudinary, getPublicIdFromUrl } = require('../config/cloudinary');
+
+const useCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
 
 const MEDIA_DIR = path.join(__dirname, '../uploads/media');
 const THUMB_DIR = path.join(__dirname, '../uploads/media/thumbnails');
@@ -72,18 +75,39 @@ router.post('/upload', protect, authorize('admin'), upload.single('file'), async
     if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
 
     const filePath = req.file.path;
-    const { width, height } = await getImageDimensions(filePath);
-    const thumbnailUrl = await generateThumbnail(filePath, req.file.filename);
+    const { width: localWidth, height: localHeight } = await getImageDimensions(filePath);
+    let mediaUrl = `/uploads/media/${req.file.filename}`;
+    let thumbnailUrl = await generateThumbnail(filePath, req.file.filename);
+    let finalWidth = localWidth;
+    let finalHeight = localHeight;
+    let finalSize = req.file.size;
+
+    if (useCloudinary) {
+      try {
+        const cloudResult = await uploadToCloudinary(filePath, { folder: 'media' });
+        mediaUrl = cloudResult.url;
+        finalWidth = cloudResult.width || localWidth;
+        finalHeight = cloudResult.height || localHeight;
+        finalSize = cloudResult.size || req.file.size;
+        thumbnailUrl = null; // Cloudinary handles thumbnails via URL transforms
+        // Clean up local files
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        const thumbPath = path.join(THUMB_DIR, `thumb-${req.file.filename}`);
+        if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
+      } catch (cloudErr) {
+        console.error('Cloudinary upload failed, keeping local file:', cloudErr.message);
+      }
+    }
 
     const media = await Media.create({
       filename: req.file.filename,
       originalName: req.file.originalname,
-      url: `/uploads/media/${req.file.filename}`,
+      url: mediaUrl,
       thumbnailUrl,
       mimeType: req.file.mimetype,
-      size: req.file.size,
-      width,
-      height,
+      size: finalSize,
+      width: finalWidth,
+      height: finalHeight,
       alt: req.body.alt || '',
       title: req.body.title || req.file.originalname.replace(/\.[^/.]+$/, ''),
       caption: req.body.caption || '',
@@ -107,18 +131,38 @@ router.post('/upload-multiple', protect, authorize('admin'), upload.array('files
 
     const mediaItems = [];
     for (const file of req.files) {
-      const { width, height } = await getImageDimensions(file.path);
-      const thumbnailUrl = await generateThumbnail(file.path, file.filename);
+      const { width: localWidth, height: localHeight } = await getImageDimensions(file.path);
+      let mediaUrl = `/uploads/media/${file.filename}`;
+      let thumbnailUrl = await generateThumbnail(file.path, file.filename);
+      let finalWidth = localWidth;
+      let finalHeight = localHeight;
+      let finalSize = file.size;
+
+      if (useCloudinary) {
+        try {
+          const cloudResult = await uploadToCloudinary(file.path, { folder: 'media' });
+          mediaUrl = cloudResult.url;
+          finalWidth = cloudResult.width || localWidth;
+          finalHeight = cloudResult.height || localHeight;
+          finalSize = cloudResult.size || file.size;
+          thumbnailUrl = null;
+          if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+          const thumbPath = path.join(THUMB_DIR, `thumb-${file.filename}`);
+          if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
+        } catch (cloudErr) {
+          console.error('Cloudinary upload failed for', file.filename, cloudErr.message);
+        }
+      }
 
       const media = await Media.create({
         filename: file.filename,
         originalName: file.originalname,
-        url: `/uploads/media/${file.filename}`,
+        url: mediaUrl,
         thumbnailUrl,
         mimeType: file.mimetype,
-        size: file.size,
-        width,
-        height,
+        size: finalSize,
+        width: finalWidth,
+        height: finalHeight,
         title: file.originalname.replace(/\.[^/.]+$/, ''),
         folder: req.body.folder || 'general',
         uploadedBy: req.user._id
@@ -217,9 +261,14 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
     const media = await Media.findById(req.params.id);
     if (!media) return res.status(404).json({ success: false, message: 'Media not found' });
 
-    // Delete files from disk
-    const filePath = path.join(__dirname, '..', media.url);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    // Delete files from Cloudinary or disk
+    if (useCloudinary && media.url && media.url.includes('cloudinary.com')) {
+      const publicId = getPublicIdFromUrl(media.url);
+      if (publicId) await deleteFromCloudinary(publicId).catch(e => console.error('Cloudinary delete failed:', e.message));
+    } else {
+      const filePath = path.join(__dirname, '..', media.url);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
     if (media.thumbnailUrl) {
       const thumbPath = path.join(__dirname, '..', media.thumbnailUrl);
       if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
@@ -241,8 +290,13 @@ router.post('/bulk-delete', protect, authorize('admin'), async (req, res) => {
 
     const mediaItems = await Media.find({ _id: { $in: ids } });
     for (const media of mediaItems) {
-      const filePath = path.join(__dirname, '..', media.url);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      if (useCloudinary && media.url && media.url.includes('cloudinary.com')) {
+        const publicId = getPublicIdFromUrl(media.url);
+        if (publicId) await deleteFromCloudinary(publicId).catch(e => console.error('Cloudinary delete failed:', e.message));
+      } else {
+        const filePath = path.join(__dirname, '..', media.url);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
       if (media.thumbnailUrl) {
         const thumbPath = path.join(__dirname, '..', media.thumbnailUrl);
         if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);

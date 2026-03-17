@@ -7,6 +7,9 @@ const fsSync = require('fs');
 const { protect, authorize } = require('../middleware/auth');
 const imageProcessor = require('../services/imageProcessor');
 const Product = require('../models/Product');
+const { uploadToCloudinary } = require('../config/cloudinary');
+
+const useCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
 
 // Configure multer for memory storage (for processing)
 const memoryStorage = multer.memoryStorage();
@@ -203,7 +206,19 @@ router.post('/process', protect, authorize('admin'), upload.single('image'), asy
       await fs.promises.unlink(tempInputPath);
     }
 
-    const imageUrl = `/uploads/products/${filename}`;
+    let imageUrl = `/uploads/products/${filename}`;
+
+    // Upload to Cloudinary if configured
+    if (useCloudinary) {
+      try {
+        const cloudResult = await uploadToCloudinary(outputPath, { folder: 'products' });
+        imageUrl = cloudResult.url;
+        // Clean up local processed file
+        if (fs.existsSync(outputPath)) await fs.promises.unlink(outputPath);
+      } catch (cloudErr) {
+        console.error('Cloudinary upload failed, keeping local file:', cloudErr.message);
+      }
+    }
 
     res.json({
       success: true,
@@ -286,13 +301,25 @@ router.post('/upload', protect, authorize('admin', 'manager'), upload.single('im
     const filename = `upload-${Date.now()}-${req.file.originalname}`;
     const outputPath = path.join(uploadPath, filename);
 
-    await fs.promises.writeFile(outputPath, req.file.buffer);
+    let imageUrl = `/uploads/general/${filename}`;
+
+    if (useCloudinary) {
+      try {
+        const cloudResult = await uploadToCloudinary(req.file.buffer, { folder: 'general' });
+        imageUrl = cloudResult.url;
+      } catch (cloudErr) {
+        console.error('Cloudinary upload failed, saving locally:', cloudErr.message);
+        await fs.promises.writeFile(outputPath, req.file.buffer);
+      }
+    } else {
+      await fs.promises.writeFile(outputPath, req.file.buffer);
+    }
 
     res.json({
       success: true,
       message: 'Image uploaded successfully',
       data: {
-        url: `/uploads/general/${filename}`,
+        url: imageUrl,
         path: outputPath,
         size: req.file.size
       }
