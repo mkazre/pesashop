@@ -11,6 +11,9 @@ const Order = require('../models/Order');
 const slugify = require('slugify');
 const imageProcessor = require('./imageProcessor');
 const fsPromises = fs.promises;
+const { uploadToCloudinary } = require('../config/cloudinary');
+
+const useCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
 
 const { buildLookupMaps, checkDuplicateFast } = require('./validationHelper');
 
@@ -293,6 +296,19 @@ class WooCommerceImporter extends EventEmitter {
       const outputPath = path.join(this.processedImageDir, filename);
       await imageProcessor.processProductImage(imagePath, outputPath, options);
       try { if (fs.existsSync(imagePath)) await fsPromises.unlink(imagePath); } catch (_) {}
+
+      // Upload to Cloudinary if configured
+      if (useCloudinary) {
+        try {
+          const cloudResult = await uploadToCloudinary(outputPath, { folder: 'products' });
+          // Clean up local processed file
+          try { if (fs.existsSync(outputPath)) await fsPromises.unlink(outputPath); } catch (_) {}
+          return cloudResult.url;
+        } catch (cloudErr) {
+          console.error('Cloudinary upload failed during import, keeping local file:', cloudErr.message);
+        }
+      }
+
       return `/uploads/products/${filename}`;
     } catch (error) {
       try {
@@ -301,6 +317,18 @@ class WooCommerceImporter extends EventEmitter {
         const outputPath = path.join(this.processedImageDir, filename);
         fs.copyFileSync(imagePath, outputPath);
         if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+
+        // Upload fallback to Cloudinary too
+        if (useCloudinary) {
+          try {
+            const cloudResult = await uploadToCloudinary(outputPath, { folder: 'products' });
+            try { if (fs.existsSync(outputPath)) await fsPromises.unlink(outputPath); } catch (_) {}
+            return cloudResult.url;
+          } catch (cloudErr) {
+            console.error('Cloudinary fallback upload failed:', cloudErr.message);
+          }
+        }
+
         return `/uploads/products/${filename}`;
       } catch (_) {
         throw new Error(`Failed to process image: ${error.message}`);
