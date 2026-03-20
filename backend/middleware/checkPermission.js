@@ -15,6 +15,11 @@ const checkPermission = (resource, action) => {
         });
       }
 
+      // Auto-grant access to admin and superadmin roles
+      if (user.role === 'admin' || user.role === 'superadmin' || user.role === 'super_admin') {
+        return next();
+      }
+
       // Find the user's role with permissions
       const role = await Role.findOne({ slug: user.role });
       if (!role) {
