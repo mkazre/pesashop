@@ -158,5 +158,36 @@ module.exports = {
     WHOLESALE: 'wholesale',
     VIP: 'vip',
     DISTRIBUTOR: 'distributor'
+  },
+
+  // Shipping Status
+  SHIPPING_STATUS: {
+    CREATED: 'created',
+    PACKED: 'packed',
+    DISPATCHED_FROM_HUB: 'dispatched_from_hub',
+    OUT_FOR_DELIVERY: 'out_for_delivery',
+    RECEIVED_AT_HUB: 'received_at_hub',
+    WITH_DELIVERY_DRIVER: 'with_delivery_driver',
+    DELIVERED: 'delivered',
+    COLLECTED: 'collected',
+    CANCELLED: 'cancelled'
+  },
+
+  // Shipping Types
+  SHIPPING_TYPES: {
+    DELIVERY: 'delivery',
+    HUB_COLLECTION: 'hub_collection'
+  },
+
+  // Shipping Event Types
+  SHIPPING_EVENT_TYPES: {
+    CREATED: 'created',
+    STATUS_CHANGE: 'status_change',
+    PHOTO_UPLOADED: 'photo_uploaded',
+    SCAN_OUT: 'scan_out',
+    SCAN_IN: 'scan_in',
+    POD_CAPTURED: 'pod_captured',
+    NOTE_ADDED: 'note_added',
+    CANCELLED: 'cancelled'
   }
 };

@@ -21,6 +21,47 @@ import { usePageTemplate } from '@/hooks/usePageTemplate';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
 import WalmartProductPage from '@/components/product/WalmartProductPage';
 import useProductPageSettings from '@/hooks/useProductPageSettings';
+import { useSingleProductBadges } from '@/hooks/useProductBadges';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const BADGE_POS = {
+  'top-left': { top: 0, left: 0 },
+  'top-center': { top: 0, left: '50%', transform: 'translateX(-50%)' },
+  'top-right': { top: 0, right: 0 },
+  'middle-left': { top: '50%', left: 0, transform: 'translateY(-50%)' },
+  'middle-center': { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
+  'middle-right': { top: '50%', right: 0, transform: 'translateY(-50%)' },
+  'bottom-left': { bottom: 0, left: 0 },
+  'bottom-center': { bottom: 0, left: '50%', transform: 'translateX(-50%)' },
+  'bottom-right': { bottom: 0, right: 0 },
+};
+
+function ProductPageBadge({ badge }) {
+  const s = badge.style || {};
+  const pos = s.position || 'top-left';
+  const posStyle = pos === 'custom'
+    ? { top: s.customTop || undefined, right: s.customRight || undefined, bottom: s.customBottom || undefined, left: s.customLeft || undefined }
+    : (BADGE_POS[pos] || BADGE_POS['top-left']);
+  const bg = s.useGradient
+    ? `linear-gradient(${s.gradientDirection || '135deg'}, ${s.gradientFrom || '#ef4444'}, ${s.gradientTo || '#f97316'})`
+    : (s.backgroundColor || '#ef4444');
+  const style = {
+    position: 'absolute', ...posStyle, zIndex: s.zIndex || 10,
+    color: s.textColor || '#fff', background: bg,
+    fontSize: s.fontSize || '12px', fontWeight: s.fontWeight || '700',
+    textTransform: s.textTransform || 'uppercase', letterSpacing: s.letterSpacing || '0.5px',
+    lineHeight: s.lineHeight || '1',
+    padding: `${s.paddingTop || '6px'} ${s.paddingRight || '12px'} ${s.paddingBottom || '6px'} ${s.paddingLeft || '12px'}`,
+    margin: `${s.marginTop || '12px'} ${s.marginRight || '12px'} ${s.marginBottom || '0'} ${s.marginLeft || '12px'}`,
+    borderRadius: s.borderRadius || '4px', opacity: s.opacity || '1',
+  };
+  if (s.badgeType === 'image' && s.imageUrl) {
+    const imgUrl = s.imageUrl.startsWith('http') ? s.imageUrl : `${API_URL}${s.imageUrl}`;
+    return <div style={{ ...style, background: 'transparent', padding: 0 }}><img src={imgUrl} alt={badge.name} style={{ width: s.imageWidth || '80px', height: 'auto' }} /></div>;
+  }
+  return <div style={style}>{s.text || badge.name}</div>;
+}
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
@@ -46,6 +87,10 @@ export default function ProductDetailPage() {
   );
 
   const product = data?.data?.data || data?.data;
+
+  // Fetch evaluated badges for this product
+  const { data: productBadges = [] } = useSingleProductBadges(product?._id, !!product?._id);
+  const pageBadges = productBadges.filter(b => b.displayOn?.productPages !== false);
 
   // Track product view for stats
   useEffect(() => {
@@ -113,8 +158,13 @@ export default function ProductDetailPage() {
 
         {/* Product Main Section */}
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 py-8">
-          {/* Left: Gallery */}
-          <ProductGallery images={product.images || []} />
+          {/* Left: Gallery + Badges */}
+          <div className="relative">
+            <ProductGallery images={product.images || []} />
+            {pageBadges.map(badge => (
+              <ProductPageBadge key={badge._id} badge={badge} />
+            ))}
+          </div>
 
           {/* Right: Product Info & Actions */}
           <div className="space-y-6">

@@ -26,6 +26,13 @@ const RESOURCES = [
   'users',
   'roles',
   'code_snippets',
+  'shipping_waybills',
+  'shipping_photos',
+  'shipping_scanout',
+  'shipping_scanin',
+  'shipping_pod',
+  'shipping_reports',
+  'shipping_hubs',
 ];
 
 const permissionSchema = new mongoose.Schema({

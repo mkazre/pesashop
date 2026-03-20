@@ -211,6 +211,18 @@ export const homePageConfigAPI = {
   getPublic: () => api.get('/api/home-page-config/public'),
 };
 
+// Footer Config API (public)
+export const footerConfigAPI = {
+  getPublic: () => api.get('/api/footer-config/public'),
+};
+
+// Badges API (public)
+export const badgesAPI = {
+  getActive: () => api.get('/api/badges/active/list'),
+  evaluateProducts: (productIds) => api.post('/api/badges/evaluate/products', { productIds }),
+  evaluateProduct: (productId) => api.get(`/api/badges/evaluate/product/${productId}`),
+};
+
 // Stats / Analytics API (public endpoints)
 export const statsAPI = {
   trackEvent: (eventData) => api.post('/api/stats/event', eventData),

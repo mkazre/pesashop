@@ -14,6 +14,7 @@ import Loading from '@/components/common/Loading';
 import { IoFilter, IoClose } from 'react-icons/io5';
 import { usePageTemplate } from '@/hooks/usePageTemplate';
 import { useProductArchiveSettings } from '@/hooks/useProductArchiveSettings';
+import { useProductBadges } from '@/hooks/useProductBadges';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
 
 export default function ShopPage() {
@@ -74,6 +75,9 @@ export default function ShopPage() {
   const products = data?.data?.data || [];
   const totalPages = data?.data?.pagination?.totalPages || 1;
   const totalProducts = data?.data?.pagination?.total || 0;
+
+  // Fetch evaluated badges for current product list
+  const { data: badgeMap = {} } = useProductBadges(products, products.length > 0);
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
@@ -246,7 +250,7 @@ export default function ShopPage() {
             ) : layout === 'list' ? (
               <div className="space-y-3">
                 {products.map((product) => (
-                  <ArchiveProductCard key={product._id} product={product} layout="list" settings={s} />
+                  <ArchiveProductCard key={product._id} product={product} layout="list" settings={s} evaluatedBadges={badgeMap[product._id] || []} />
                 ))}
               </div>
             ) : (
@@ -254,7 +258,7 @@ export default function ShopPage() {
                 <style>{responsiveGridCSS}</style>
                 <div id={gridId} style={gridStyle}>
                   {products.map((product) => (
-                    <ArchiveProductCard key={product._id} product={product} layout="grid" settings={s} />
+                    <ArchiveProductCard key={product._id} product={product} layout="grid" settings={s} evaluatedBadges={badgeMap[product._id] || []} />
                   ))}
                 </div>
               </>

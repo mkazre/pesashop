@@ -30,21 +30,35 @@ const STATUS_STYLES = {
 };
 
 const JOURNEY_STEPS = [
-  { key: 'placed',    label: 'Order Placed',       icon: IoCheckmarkCircleOutline, statusMatch: ['pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed'] },
-  { key: 'confirmed', label: 'Payment Confirmed',  icon: IoCardOutline,            statusMatch: ['processing', 'on-hold', 'completed'] },
-  { key: 'packing',   label: 'Packing',            icon: IoCubeOutline,            statusMatch: ['processing', 'completed'] },
-  { key: 'shipped',   label: 'Shipped',            icon: IoAirplaneOutline,        statusMatch: ['completed'] },
-  { key: 'delivered', label: 'Delivered',           icon: IoHomeOutline,            statusMatch: ['completed'] },
+  { key: 'placed',    label: 'Order Placed',       icon: IoCheckmarkCircleOutline },
+  { key: 'confirmed', label: 'Payment Confirmed',  icon: IoCardOutline },
+  { key: 'packing',   label: 'Packing',            icon: IoCubeOutline },
+  { key: 'shipped',   label: 'Shipped',            icon: IoAirplaneOutline },
+  { key: 'delivered', label: 'Delivered',           icon: IoHomeOutline },
 ];
+
+// Waybill statuses that mean the parcel is in transit or beyond
+const SHIPPED_WAYBILL_STATUSES = ['DISPATCHED_FROM_HUB', 'OUT_FOR_DELIVERY', 'RECEIVED_AT_HUB', 'WITH_DELIVERY_DRIVER', 'DELIVERED', 'COLLECTED'];
+const DELIVERED_WAYBILL_STATUSES = ['DELIVERED', 'COLLECTED'];
 
 function getActiveStepIdx(order) {
   if (!order) return 0;
-  const st = order.status;
   const ps = order.paymentStatus;
-  if (st === 'completed') return 4;
-  if (order.shippedAt || st === 'shipped') return 3;
-  if (st === 'processing' && ps === 'completed') return 2;
+  const wb = order.waybill; // populated waybill object
+
+  // Step 4 — Delivered: only when waybill is DELIVERED/COLLECTED
+  if (wb && DELIVERED_WAYBILL_STATUSES.includes(wb.status)) return 4;
+
+  // Step 3 — Shipped: waybill is dispatched / in transit
+  if (wb && SHIPPED_WAYBILL_STATUSES.includes(wb.status)) return 3;
+
+  // Step 2 — Packing: waybill exists (CREATED or PACKED)
+  if (wb) return 2;
+
+  // Step 1 — Payment confirmed
   if (ps === 'completed' || ps === 'processing') return 1;
+
+  // Step 0 — Order placed
   return 0;
 }
 
@@ -116,7 +130,7 @@ export default function OrderDetailPage() {
           {order.items?.map((item, i) => (
             <div key={i} className="flex items-center gap-4 px-5 py-4">
               {(() => {
-                const imgSrc = resolveImg(item.product?.featuredImage || item.product?.images?.[0]);
+                const imgSrc = resolveImg(item.image || item.product?.featuredImage || item.product?.images?.[0]);
                 return imgSrc ? (
                   <img src={imgSrc} alt={item.name} className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-gray-200" />
                 ) : (

@@ -117,6 +117,7 @@ router.get('/:id', protect, async (req, res, next) => {
       .populate('items.laybyePlan')
       .populate('laybye')
       .populate('laybyes')
+      .populate('waybill', 'waybillNumber status shippingType deliveredAt collectedAt')
       .populate('giftCardsApplied.giftCard', 'code currentBalance initialBalance')
       .populate('couponsApplied.coupon', 'code type value description');
     
@@ -154,6 +155,8 @@ router.post('/', protect, async (req, res, next) => {
       dueNow: clientDueNow,
       deliveryMethod,
       pickupAddress: clientPickupAddress,
+      currency: clientCurrency,
+      exchangeRate: clientExchangeRate,
     } = req.body;
     
     let subtotal = 0;
@@ -170,6 +173,7 @@ router.post('/', protect, async (req, res, next) => {
         product: product._id,
         name: product.name,
         sku: product.sku,
+        image: product.featuredImage || (product.images && product.images[0]) || '',
         quantity: item.quantity,
         price,
         total,
@@ -269,6 +273,8 @@ router.post('/', protect, async (req, res, next) => {
       discount: totalDiscount,
       total: finalTotal,
       dueNow: clientDueNow || finalTotal,
+      currency: clientCurrency || 'ZAR',
+      exchangeRate: clientExchangeRate || 1,
       billingAddress,
       shippingAddress,
       paymentMethod: finalPaymentMethod,
@@ -427,6 +433,73 @@ router.put('/:id/status', protect, authorize('admin', 'shop_manager'), async (re
     } catch (emailErr) { console.error('Email sending error (status change):', emailErr); }
     
     res.json({ success: true, data: order });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// RECORD PAYMENT / UPDATE PAYMENT STATUS
+router.put('/:id/payment', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    
+    const { paymentStatus, method, amount, transactionId, note } = req.body;
+    
+    if (!paymentStatus) {
+      return res.status(400).json({ success: false, message: 'Payment status is required' });
+    }
+    
+    const validStatuses = ['pending', 'processing', 'completed', 'failed', 'refunded'];
+    if (!validStatuses.includes(paymentStatus)) {
+      return res.status(400).json({ success: false, message: 'Invalid payment status' });
+    }
+    
+    const oldPaymentStatus = order.paymentStatus;
+    order.paymentStatus = paymentStatus;
+    
+    // If recording a specific payment (e.g. cash, EFT), add it to the payments array
+    if (method && amount > 0) {
+      order.payments.push({
+        method,
+        amount,
+        transactionId: transactionId || undefined,
+        status: paymentStatus === 'completed' ? 'completed' : 'pending',
+        paidAt: paymentStatus === 'completed' ? new Date() : undefined
+      });
+    }
+    
+    // Update transaction ID if provided and no split payment
+    if (transactionId && (!method || !amount)) {
+      order.transactionId = transactionId;
+    }
+    
+    // Add to status history for audit trail
+    order.addStatusHistory(
+      order.status,
+      `Payment status changed from "${oldPaymentStatus}" to "${paymentStatus}"${method ? ` via ${method}` : ''}${amount ? ` — R${amount.toFixed(2)}` : ''}${note ? ` — ${note}` : ''}`,
+      req.user._id
+    );
+    
+    await order.save();
+    
+    // Handle loyalty points if payment is now completed
+    if (paymentStatus === 'completed' && oldPaymentStatus !== 'completed') {
+      try {
+        await loyaltyService.assignOrderPoints(order._id);
+      } catch (e) {
+        console.error('Loyalty points assignment error:', e);
+      }
+    }
+    
+    // Send email notification for payment confirmation
+    if (paymentStatus === 'completed' && oldPaymentStatus !== 'completed') {
+      try {
+        emailService.sendPaymentConfirmation(order).catch(e => console.error('Payment confirmation email error:', e));
+      } catch (e) { /* non-blocking */ }
+    }
+    
+    res.json({ success: true, data: order, message: 'Payment updated successfully' });
   } catch (error) {
     next(error);
   }

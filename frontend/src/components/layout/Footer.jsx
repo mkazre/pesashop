@@ -13,8 +13,11 @@ import {
 } from 'react-icons/io5';
 import { useState, useMemo } from 'react';
 import { useQuery } from 'react-query';
-import { menusAPI } from '@/services/api';
+import { menusAPI, footerConfigAPI } from '@/services/api';
 import toast from 'react-hot-toast';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const imgSrc = (v) => v ? (v.startsWith('http') ? v : `${API_URL}${v}`) : '';
 
 // ── Helper: get nested setting ───────────────────────────────────────
 const getSetting = (obj, path, fallback = '') => {
@@ -32,6 +35,336 @@ const SOCIAL_ICONS = {
   youtube: IoLogoYoutube,
   tiktok: IoLogoTiktok,
 };
+
+// ══════════════════════════════════════════════════════════════════════
+// ── Builder-based Footer Renderer ─────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+
+const COLUMN_WIDTH_MAP = {
+  'auto': undefined,
+  '1/6': '16.666%',
+  '1/4': '25%',
+  '1/3': '33.333%',
+  '1/2': '50%',
+  '2/3': '66.666%',
+  '3/4': '75%',
+  'full': '100%',
+};
+
+const VALIGN_MAP = { top: 'flex-start', center: 'center', bottom: 'flex-end' };
+
+function BuilderNewsletter({ item, colors }) {
+  const [email, setEmail] = useState('');
+  const { headingColor, headingSize, textColor, fontSize } = colors;
+  const handleSubmit = (e) => { e.preventDefault(); if (email) { toast.success('Subscribed!'); setEmail(''); } };
+  return (
+    <div>
+      {item.newsletterTitle && <h4 className="font-bold mb-2" style={{ color: headingColor, fontSize: headingSize }}>{item.newsletterTitle}</h4>}
+      {item.newsletterText && <p className="mb-4 opacity-70" style={{ color: textColor, fontSize }}>{item.newsletterText}</p>}
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="Enter your email"
+          className="flex-1 px-4 py-2.5 text-sm text-black rounded focus:outline-none"
+          style={{ backgroundColor: item.newsletterInputBg || '#ffffff' }} />
+        <button type="submit" className="px-5 py-2.5 font-medium text-sm rounded transition-opacity hover:opacity-90"
+          style={{ backgroundColor: item.newsletterButtonBg || '#f59e0b', color: item.newsletterButtonColor || '#000' }}>
+          {item.newsletterButtonText || 'Subscribe'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function BuilderContentBlock({ item, colors }) {
+  const { textColor, linkColor, linkHoverColor, headingColor, headingSize, fontSize } = colors;
+
+  if (item.type === 'logo') {
+    return (
+      <div>
+        {item.logoImage ? (
+          <Link to={item.logoLink || '/'}>
+            <img src={imgSrc(item.logoImage)} alt="Logo" className="footer-logo-img" style={{ width: item.logoWidth || '150px', maxWidth: '100%' }} />
+          </Link>
+        ) : null}
+        {item.description && <p className="mt-3 opacity-80" style={{ color: textColor, fontSize }}>{item.description}</p>}
+      </div>
+    );
+  }
+
+  if (item.type === 'links') {
+    return (
+      <div>
+        {item.heading && <h4 className="font-bold mb-4" style={{ color: headingColor, fontSize: headingSize }}>{item.heading}</h4>}
+        <ul className="space-y-2.5">
+          {(item.links || []).map((link, i) => (
+            <li key={i}>
+              <Link
+                to={link.url || '#'}
+                target={link.openInNewTab ? '_blank' : undefined}
+                style={{ color: linkColor, fontSize }}
+                className="transition-opacity hover:opacity-80"
+              >
+                {link.icon && <span className="mr-1.5">{link.icon}</span>}
+                {link.label}
+                {link.badge && (
+                  <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                    style={{ color: link.badgeColor || '#ef4444', backgroundColor: link.badgeBgColor || '#fef2f2' }}>
+                    {link.badge}
+                  </span>
+                )}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  if (item.type === 'text') {
+    return (
+      <div>
+        {item.heading && <h4 className="font-bold mb-3" style={{ color: headingColor, fontSize: headingSize }}>{item.heading}</h4>}
+        <div style={{ color: textColor, fontSize }} className="opacity-80 leading-relaxed">{item.content}</div>
+      </div>
+    );
+  }
+
+  if (item.type === 'contact') {
+    const iconClass = 'flex-shrink-0 mt-0.5 opacity-70';
+    return (
+      <div>
+        {item.heading && <h4 className="font-bold mb-4" style={{ color: headingColor, fontSize: headingSize }}>{item.heading}</h4>}
+        <div className="space-y-3" style={{ color: textColor, fontSize }}>
+          {item.address && (
+            <div className="flex items-start gap-2.5">
+              {item.showIcons !== false && <IoLocationOutline size={18} className={iconClass} />}
+              <span className="opacity-80">{item.address}</span>
+            </div>
+          )}
+          {item.phone && (
+            <div className="flex items-start gap-2.5">
+              {item.showIcons !== false && <IoCallOutline size={18} className={iconClass} />}
+              <a href={`tel:${item.phone}`} style={{ color: linkColor }} className="opacity-80 hover:opacity-100 transition-opacity">{item.phone}</a>
+            </div>
+          )}
+          {item.email && (
+            <div className="flex items-start gap-2.5">
+              {item.showIcons !== false && <IoMailOutline size={18} className={iconClass} />}
+              <a href={`mailto:${item.email}`} style={{ color: linkColor }} className="opacity-80 hover:opacity-100 transition-opacity">{item.email}</a>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (item.type === 'social') {
+    const socColor = item.socialColor || linkColor;
+    return (
+      <div>
+        {item.heading && <h4 className="font-bold mb-4" style={{ color: headingColor, fontSize: headingSize }}>{item.heading}</h4>}
+        <div className="flex items-center gap-3 flex-wrap">
+          {(item.socialLinks || []).filter(sl => sl.url).map((sl, i) => {
+            const Icon = SOCIAL_ICONS[sl.platform];
+            if (!Icon) return null;
+            const isCircle = item.socialStyle === 'circle';
+            const isSquare = item.socialStyle === 'square';
+            return (
+              <a key={i} href={sl.url} target="_blank" rel="noopener noreferrer"
+                className={`transition-opacity hover:opacity-70 ${isCircle ? 'w-10 h-10 rounded-full flex items-center justify-center bg-white/10' : isSquare ? 'w-10 h-10 rounded-md flex items-center justify-center bg-white/10' : ''}`}
+                style={{ color: socColor }}>
+                <Icon size={parseInt(item.socialSize) || 20} />
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (item.type === 'newsletter') {
+    return <BuilderNewsletter item={item} colors={colors} />;
+  }
+
+  if (item.type === 'image') {
+    const img = <img src={imgSrc(item.image)} alt="" style={{ width: item.imageWidth || '100%', maxWidth: '100%' }} />;
+    return item.imageLink ? <Link to={item.imageLink}>{img}</Link> : img;
+  }
+
+  if (item.type === 'html') {
+    return <div dangerouslySetInnerHTML={{ __html: item.content || '' }} />;
+  }
+
+  if (item.type === 'payment-icons') {
+    return (
+      <div>
+        {item.heading && <h4 className="font-bold mb-3" style={{ color: headingColor, fontSize: headingSize }}>{item.heading}</h4>}
+        <div className="flex items-center gap-2 flex-wrap">
+          {(item.paymentIcons || []).map((ic, i) => (
+            ic.image ? (
+              <img key={i} src={imgSrc(ic.image)} alt={ic.label} className="h-8 rounded" />
+            ) : (
+              <div key={i} className="px-3 h-8 flex items-center justify-center rounded text-xs font-bold"
+                style={{ backgroundColor: ic.bgColor || '#fff', color: ic.color || '#1e40af' }}>
+                {ic.label}
+              </div>
+            )
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ── Generate responsive CSS from row config ──────────────────────
+function generateResponsiveCSS(rows) {
+  let css = '';
+  rows.forEach((row, ri) => {
+    const resp = row.responsive || {};
+    const gridId = `footer-row-grid-${ri}`;
+    const rowId = `footer-row-${ri}`;
+
+    // Tablet: 768–1023px
+    const t = resp.tablet || {};
+    if (Object.keys(t).length > 0) {
+      let tabletCSS = '';
+      if (t.stackColumns) {
+        tabletCSS += `#${gridId}{grid-template-columns:1fr !important;}\n`;
+      } else if (t.columnCount) {
+        tabletCSS += `#${gridId}{grid-template-columns:repeat(${t.columnCount},1fr) !important;}\n`;
+      }
+      if (t.columnGap) tabletCSS += `#${gridId}{gap:${t.columnGap} !important;}\n`;
+      if (t.rowGap && t.stackColumns) tabletCSS += `#${gridId}{row-gap:${t.rowGap} !important;}\n`;
+      if (t.paddingTop) tabletCSS += `#${rowId} .footer-row-inner{padding-top:${t.paddingTop} !important;}\n`;
+      if (t.paddingBottom) tabletCSS += `#${rowId} .footer-row-inner{padding-bottom:${t.paddingBottom} !important;}\n`;
+      if (t.headingSize) tabletCSS += `#${rowId} h4{font-size:${t.headingSize} !important;}\n`;
+      if (t.fontSize) tabletCSS += `#${rowId}{font-size:${t.fontSize} !important;}\n`;
+      if (t.textAlign) tabletCSS += `#${rowId}{text-align:${t.textAlign} !important;}\n`;
+      if (t.logoWidth) tabletCSS += `#${rowId} .footer-logo-img{width:${t.logoWidth} !important;}\n`;
+      if (t.hiddenColumns?.length) t.hiddenColumns.forEach(c => { tabletCSS += `#${gridId}>:nth-child(${c}){display:none !important;}\n`; });
+      if (t.columnOrder) {
+        const order = t.columnOrder.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        order.forEach((colNum, idx) => { tabletCSS += `#${gridId}>:nth-child(${colNum}){order:${idx} !important;}\n`; });
+      }
+      if (tabletCSS) css += `@media(min-width:768px) and (max-width:1023px){${tabletCSS}}\n`;
+    }
+
+    // Mobile: <768px
+    const m = resp.mobile || {};
+    if (Object.keys(m).length > 0) {
+      let mobileCss = '';
+      if (m.stackColumns) {
+        mobileCss += `#${gridId}{grid-template-columns:1fr !important;}\n`;
+      } else if (m.columnCount) {
+        mobileCss += `#${gridId}{grid-template-columns:repeat(${m.columnCount},1fr) !important;}\n`;
+      }
+      if (m.columnGap) mobileCss += `#${gridId}{gap:${m.columnGap} !important;}\n`;
+      if (m.rowGap && m.stackColumns) mobileCss += `#${gridId}{row-gap:${m.rowGap} !important;}\n`;
+      if (m.paddingTop) mobileCss += `#${rowId} .footer-row-inner{padding-top:${m.paddingTop} !important;}\n`;
+      if (m.paddingBottom) mobileCss += `#${rowId} .footer-row-inner{padding-bottom:${m.paddingBottom} !important;}\n`;
+      if (m.headingSize) mobileCss += `#${rowId} h4{font-size:${m.headingSize} !important;}\n`;
+      if (m.fontSize) mobileCss += `#${rowId}{font-size:${m.fontSize} !important;}\n`;
+      if (m.textAlign) mobileCss += `#${rowId}{text-align:${m.textAlign} !important;}\n`;
+      if (m.logoWidth) mobileCss += `#${rowId} .footer-logo-img{width:${m.logoWidth} !important;}\n`;
+      if (m.hiddenColumns?.length) m.hiddenColumns.forEach(c => { mobileCss += `#${gridId}>:nth-child(${c}){display:none !important;}\n`; });
+      if (m.columnOrder) {
+        const order = m.columnOrder.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        order.forEach((colNum, idx) => { mobileCss += `#${gridId}>:nth-child(${colNum}){order:${idx} !important;}\n`; });
+      }
+      if (mobileCss) css += `@media(max-width:767px){${mobileCss}}\n`;
+    }
+  });
+  return css;
+}
+
+function BuilderFooter({ config }) {
+  const g = config;
+  const rows = (g.rows || []).filter(r => r.enabled).sort((a, b) => (a.order || 0) - (b.order || 0));
+  const responsiveCSS = useMemo(() => generateResponsiveCSS(rows), [rows]);
+
+  return (
+    <footer style={{ backgroundColor: g.globalBackgroundColor || '#1b5e35', color: g.globalTextColor || '#ffffff', fontFamily: g.globalFontFamily || undefined }}>
+      {responsiveCSS && <style dangerouslySetInnerHTML={{ __html: responsiveCSS }} />}
+      {rows.map((row, ri) => {
+        const colors = {
+          textColor: row.textColor || g.globalTextColor || '#ffffff',
+          linkColor: row.linkColor || g.globalLinkColor || '#d1d5db',
+          linkHoverColor: row.linkHoverColor || g.globalLinkHoverColor || '#ffffff',
+          headingColor: row.headingColor || g.globalHeadingColor || '#ffffff',
+          headingSize: row.headingSize || '18px',
+          fontSize: row.fontSize || '14px',
+        };
+        const columns = row.columns || [];
+
+        const gridCols = columns.map(col => {
+          if (col.width && col.width !== 'auto') {
+            if (col.width === 'custom') return col.customWidth || '1fr';
+            return COLUMN_WIDTH_MAP[col.width] || '1fr';
+          }
+          return '1fr';
+        }).join(' ');
+
+        return (
+          <div key={ri} id={`footer-row-${ri}`} style={{
+            backgroundColor: row.backgroundColor || undefined,
+            color: colors.textColor,
+            borderTop: row.borderTop || undefined,
+            borderBottom: row.borderBottom || undefined,
+          }}>
+            <div className={`footer-row-inner ${row.containerWidth === 'full' ? 'w-full px-4' : 'container-custom'}`}
+              style={{ paddingTop: row.paddingTop || '48px', paddingBottom: row.paddingBottom || '48px' }}>
+              <div id={`footer-row-grid-${ri}`} className="grid" style={{ gridTemplateColumns: gridCols, gap: row.columnGap || '32px' }}>
+                {columns.map((col, ci) => (
+                  <div key={ci} style={{ alignSelf: VALIGN_MAP[col.verticalAlign] || 'flex-start', paddingTop: col.paddingTop, paddingBottom: col.paddingBottom, paddingLeft: col.paddingLeft, paddingRight: col.paddingRight }}>
+                    <div className="space-y-6">
+                      {(col.content || []).map((item, ii) => (
+                        <BuilderContentBlock key={ii} item={item} colors={colors} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Bottom bar */}
+      {g.bottomBarEnabled !== false && (g.copyrightText || g.showPaymentIcons) && (
+        <div style={{
+          backgroundColor: g.bottomBarBackgroundColor || undefined,
+          borderTop: g.bottomBarBorderTop || '1px solid rgba(255,255,255,0.1)',
+          color: g.bottomBarTextColor || g.globalTextColor || '#9ca3af',
+        }}>
+          <div className="container-custom" style={{ paddingTop: g.bottomBarPaddingTop || '24px', paddingBottom: g.bottomBarPaddingBottom || '24px' }}>
+            <div className={`flex flex-col md:flex-row items-center gap-4 ${g.copyrightPosition === 'center' ? 'justify-center' : g.copyrightPosition === 'right' ? 'justify-end' : 'justify-between'}`}>
+              {g.copyrightText && <div className="text-sm opacity-70">{g.copyrightText}</div>}
+              {g.showPaymentIcons && (g.paymentIcons || []).length > 0 && (
+                <div className="flex items-center gap-2">
+                  {g.paymentIcons.map((ic, i) => (
+                    ic.image ? (
+                      <img key={i} src={imgSrc(ic.image)} alt={ic.label} className="h-8 rounded" />
+                    ) : (
+                      <div key={i} className="px-3 h-8 flex items-center justify-center rounded text-xs font-bold"
+                        style={{ backgroundColor: ic.bgColor || '#fff', color: ic.color || '#1e40af' }}>
+                        {ic.label}
+                      </div>
+                    )
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </footer>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ── Legacy footer components (menu-based + hardcoded) ─────────────────
+// ══════════════════════════════════════════════════════════════════════
 
 // ── Footer Column (renders a group of menu items) ────────────────────
 const FooterColumn = ({ item, linkColor, linkHoverClass }) => {
@@ -76,10 +409,23 @@ const FooterColumn = ({ item, linkColor, linkHoverClass }) => {
 export default function Footer() {
   const [email, setEmail] = useState('');
 
-  // Fetch footer menu from API
-  const { data: footerResponse } = useQuery('menu-footer', () => menusAPI.getByLocation('footer'), {
+  // Fetch footer builder config
+  const { data: builderResponse } = useQuery('footer-builder-config', () => footerConfigAPI.getPublic(), {
     staleTime: 5 * 60 * 1000,
   });
+  const builderConfig = builderResponse?.data?.data;
+
+  // Fetch footer menu from API (always called to satisfy React hooks rules)
+  const { data: footerResponse } = useQuery('menu-footer', () => menusAPI.getByLocation('footer'), {
+    staleTime: 5 * 60 * 1000,
+    enabled: !(builderConfig?.isActive && (builderConfig.rows || []).length > 0),
+  });
+
+  // If builder is active and has rows, render it instead of legacy footer
+  if (builderConfig?.isActive && (builderConfig.rows || []).length > 0) {
+    return <BuilderFooter config={builderConfig} />;
+  }
+
   const menu = footerResponse?.data?.data;
   const menuItems = menu?.items || [];
   const settings = menu?.settings || {};

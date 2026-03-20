@@ -52,6 +52,12 @@ import QuestionsPage from './pages/QuestionsPage';
 import UsersPage from './pages/UsersPage';
 import RolesPage from './pages/RolesPage';
 import ProfilePage from './pages/ProfilePage';
+import ShippingPage from './pages/ShippingPage';
+import WaybillDetailPage from './pages/WaybillDetailPage';
+import ShippingHubsPage from './pages/ShippingHubsPage';
+import MobileScannerPage from './pages/MobileScannerPage';
+import PODCapturePage from './pages/PODCapturePage';
+import FooterBuilderPage from './pages/FooterBuilderPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -123,11 +129,19 @@ function App() {
             <Route path="product-page-settings" element={<ProductPageSettingsPage />} />
             <Route path="product-archive-settings" element={<ProductArchiveSettingsPage />} />
             <Route path="home-page-builder" element={<HomePageBuilderPage />} />
+            <Route path="footer-builder" element={<FooterBuilderPage />} />
             <Route path="stats" element={<StatsPage />} />
             <Route path="questions" element={<QuestionsPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="roles" element={<RolesPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="shipping" element={<ShippingPage />} />
+            <Route path="shipping/waybills/:id" element={<WaybillDetailPage />} />
+            <Route path="shipping/hubs" element={<ShippingHubsPage />} />
+            <Route path="shipping/mobile" element={<MobileScannerPage />} />
+            <Route path="shipping/mobile/:action" element={<MobileScannerPage />} />
+            <Route path="shipping/mobile/:action/:waybillNumber" element={<MobileScannerPage />} />
+            <Route path="shipping/pod/:waybillNumber" element={<PODCapturePage />} />
           </Route>
         </Routes>
       </BrowserRouter>

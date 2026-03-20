@@ -91,6 +91,7 @@ export const ordersAPI = {
   getOne: (id) => api.get(`/orders/${id}`),
   create: (data) => api.post('/orders', data),
   updateStatus: (id, data) => api.put(`/orders/${id}/status`, data),
+  updatePayment: (id, data) => api.put(`/orders/${id}/payment`, data),
   updateAdminNote: (id, adminNote) => api.put(`/orders/${id}/admin-note`, { adminNote }),
   // Notes CRUD
   addNote: (id, data) => api.post(`/orders/${id}/notes`, data),
@@ -510,6 +511,13 @@ export const homePageConfigAPI = {
   get: () => api.get('/home-page-config'),
   update: (data) => api.put('/home-page-config', data),
   reset: () => api.post('/home-page-config/reset'),
+};
+
+// Footer Config API
+export const footerConfigAPI = {
+  get: () => api.get('/footer-config'),
+  update: (data) => api.put('/footer-config', data),
+  reset: () => api.post('/footer-config/reset'),
 };
 
 // Stats / Analytics API (admin endpoints)

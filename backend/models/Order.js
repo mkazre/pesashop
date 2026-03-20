@@ -37,6 +37,7 @@ const orderItemSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  image: String,
   variation: mongoose.Schema.Types.Mixed,
   metadata: mongoose.Schema.Types.Mixed,
   // Per-item laybye tracking
@@ -146,6 +147,12 @@ const orderSchema = new mongoose.Schema({
   trackingUrl: String,
   shippedAt: Date,
   deliveredAt: Date,
+  
+  // Waybill reference
+  waybill: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Waybill'
+  },
   
   // Laybye (supports multiple laybyes per order)
   hasLaybye: {

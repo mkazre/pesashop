@@ -81,6 +81,11 @@ backend/uploads/watermarks/*
 !backend/uploads/watermarks/.gitkeep
 backend/uploads/temp/*
 !backend/uploads/temp/.gitkeep
+backend/uploads/logo.png
+backend/uploads/shipping/*
+!backend/uploads/shipping/.gitkeep
+backend/uploads/waybills/*
+!backend/uploads/waybills/.gitkeep
 
 # Migration artifacts
 backend/migration-progress.json

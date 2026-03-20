@@ -139,6 +139,8 @@ const questionRoutes = require('./routes/questions');
 const notificationRoutes = require('./routes/notifications');
 const roleRoutes = require('./routes/roles');
 const userRoutes = require('./routes/users');
+const shippingRoutes = require('./routes/shipping');
+const footerConfigRoutes = require('./routes/footerConfig');
 
 // Mount routes
 app.use('/api/auth', authRoutes);
@@ -179,6 +181,8 @@ app.use('/api/questions', questionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/shipping', shippingRoutes);
+app.use('/api/footer-config', footerConfigRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

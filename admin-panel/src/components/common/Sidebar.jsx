@@ -32,6 +32,7 @@ import {
   IoNotificationsOutline,
   IoShieldCheckmarkOutline,
   IoPersonOutline,
+  IoCarOutline,
 } from 'react-icons/io5';
 import { useUIStore } from '@/store';
 import classNames from 'classnames';
@@ -46,6 +47,7 @@ const Sidebar = () => {
     { path: '/products', icon: IoCubeOutline, label: 'Products' },
     { path: '/categories', icon: IoFolderOutline, label: 'Categories' },
     { path: '/orders', icon: IoReceiptOutline, label: 'Orders' },
+    { path: '/shipping', icon: IoCarOutline, label: 'Shipping' },
     { path: '/customers', icon: IoPeopleOutline, label: 'Customers' },
     { path: '/laybyes', icon: IoWalletOutline, label: 'Laybyes' },
     { path: '/layby-plans', icon: IoCalendarOutline, label: 'Layby Plans' },
@@ -65,6 +67,7 @@ const Sidebar = () => {
     { path: '/product-archive-settings', icon: IoGridOutline, label: 'Product Archive' },
     { path: '/stats', icon: IoAnalyticsOutline, label: 'Stats & Analytics' },
     { path: '/home-page-builder', icon: IoHomeOutline, label: 'Home Page Builder' },
+    { path: '/footer-builder', icon: IoLayersOutline, label: 'Footer Builder' },
     { path: '/page-manager', icon: IoLayersOutline, label: 'Page Manager' },
     { path: '/menu-builder', icon: IoMenu, label: 'Menu Builder' },
     { path: '/menu-assignment', icon: IoMenu, label: 'Menu Assignment' },

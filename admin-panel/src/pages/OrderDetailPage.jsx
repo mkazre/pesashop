@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { ordersAPI, laybyesAPI } from '@/services/api';
-import { useParams, useNavigate } from 'react-router-dom';
+import api from '@/services/api';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
+import CreateWaybillModal from '@/components/shipping/CreateWaybillModal';
 import toast from 'react-hot-toast';
 import { IoArrowBack, IoCreate, IoTrash, IoCheckmark, IoClose, IoAdd } from 'react-icons/io5';
+import { Truck } from 'lucide-react';
 
 const OrderDetailPage = () => {
   const { id } = useParams();
@@ -21,11 +24,44 @@ const OrderDetailPage = () => {
   const [noteModal, setNoteModal] = useState(false);
   const [editingNote, setEditingNote] = useState({ content: '', isCustomerNotified: false });
   const [editingNoteId, setEditingNoteId] = useState(null);
+  const [waybillModal, setWaybillModal] = useState(false);
+  const [paymentModal, setPaymentModal] = useState(false);
+  const [paymentData, setPaymentData] = useState({
+    paymentStatus: '',
+    method: '',
+    amount: '',
+    transactionId: '',
+    note: ''
+  });
 
   const { data, isLoading } = useQuery(
     ['order', id],
     () => ordersAPI.getOne(id),
     { enabled: !!id }
+  );
+
+  // Check shipping eligibility
+  const { data: eligibilityData } = useQuery(
+    ['shipping-eligibility', id],
+    () => api.get(`/shipping/eligibility/${id}`),
+    { enabled: !!id }
+  );
+
+  const updatePaymentMutation = useMutation(
+    (data) => ordersAPI.updatePayment(id, data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['order', id]);
+        queryClient.invalidateQueries('orders');
+        queryClient.invalidateQueries(['shipping-eligibility', id]);
+        toast.success('Payment recorded successfully');
+        setPaymentModal(false);
+        setPaymentData({ paymentStatus: '', method: '', amount: '', transactionId: '', note: '' });
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to update payment');
+      },
+    }
   );
 
   const updateStatusMutation = useMutation(
@@ -155,6 +191,17 @@ const OrderDetailPage = () => {
     if (window.confirm('Are you sure you want to delete this note?')) {
       deleteNoteMutation.mutate(noteId);
     }
+  };
+
+  const handleRecordPayment = () => {
+    if (!paymentData.paymentStatus) {
+      toast.error('Please select a payment status');
+      return;
+    }
+    updatePaymentMutation.mutate({
+      ...paymentData,
+      amount: paymentData.amount ? parseFloat(paymentData.amount) : undefined
+    });
   };
 
   const getStatusColor = (status) => {
@@ -544,10 +591,25 @@ const OrderDetailPage = () => {
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase">Payment Status</label>
-                <div className="mt-1">
+                <div className="mt-1 flex items-center gap-2">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPaymentStatusColor(order.paymentStatus)}`}>
                     {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
                   </span>
+                  <button
+                    onClick={() => {
+                      setPaymentData({
+                        paymentStatus: '',
+                        method: order.paymentMethod || '',
+                        amount: '',
+                        transactionId: '',
+                        note: ''
+                      });
+                      setPaymentModal(true);
+                    }}
+                    className="text-xs text-primary hover:text-primary/80 font-medium underline"
+                  >
+                    Record Payment
+                  </button>
                 </div>
               </div>
               <div>
@@ -927,6 +989,57 @@ const OrderDetailPage = () => {
             </Card>
           )}
 
+          {/* Shipping / Waybill */}
+          <Card title="Shipping">
+            {(() => {
+              const eligibility = eligibilityData?.data;
+              const hasWaybill = eligibility && !eligibility.eligible && eligibility.reason?.includes('waybill already exists');
+              
+              if (hasWaybill) {
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded-lg border border-green-200">
+                      <Truck className="w-5 h-5" />
+                      <span className="text-sm font-medium">Waybill has been created</span>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => navigate('/shipping')}
+                    >
+                      <Truck className="w-4 h-4 mr-2" />
+                      View in Shipping
+                    </Button>
+                  </div>
+                );
+              }
+
+              if (eligibility?.eligible) {
+                return (
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600">{eligibility.reason}</p>
+                    <Button
+                      className="w-full"
+                      onClick={() => setWaybillModal(true)}
+                    >
+                      <Truck className="w-4 h-4 mr-2" />
+                      Create Waybill
+                    </Button>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                    <Truck className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm">{eligibility?.reason || 'Checking eligibility...'}</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </Card>
+
           {/* Pickup Address (if pickup fulfilment) */}
           {order.deliveryMethod === 'pickup' && order.pickupAddress && (order.pickupAddress.label || order.pickupAddress.address) && (
             <Card title="Pickup Location">
@@ -1086,6 +1199,100 @@ const OrderDetailPage = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Record Payment Modal */}
+      <Modal
+        isOpen={paymentModal}
+        onClose={() => {
+          setPaymentModal(false);
+          setPaymentData({ paymentStatus: '', method: '', amount: '', transactionId: '', note: '' });
+        }}
+        title="Record Payment"
+        onConfirm={handleRecordPayment}
+        confirmText="Record Payment"
+        confirmLoading={updatePaymentMutation.isLoading}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Payment Status <span className="text-red-500">*</span></label>
+            <select
+              value={paymentData.paymentStatus}
+              onChange={(e) => setPaymentData({ ...paymentData, paymentStatus: e.target.value })}
+              className="input w-full"
+            >
+              <option value="">Select payment status</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+              <option value="refunded">Refunded</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Payment Method</label>
+            <select
+              value={paymentData.method}
+              onChange={(e) => setPaymentData({ ...paymentData, method: e.target.value })}
+              className="input w-full"
+            >
+              <option value="">Select method (optional)</option>
+              <option value="cash">Cash</option>
+              <option value="card">Credit/Debit Card</option>
+              <option value="eft">EFT / Bank Transfer</option>
+              <option value="ecocash">EcoCash</option>
+              <option value="paypal">PayPal</option>
+              <option value="cod">Cash on Delivery</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Select a method to record a specific payment entry.
+            </p>
+          </div>
+          {paymentData.method && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Amount (R)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={paymentData.amount}
+                onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
+                className="input w-full"
+                placeholder={`Order total: R${order?.total?.toFixed(2) || '0.00'}`}
+              />
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium mb-2">Transaction / Reference ID</label>
+            <input
+              type="text"
+              value={paymentData.transactionId}
+              onChange={(e) => setPaymentData({ ...paymentData, transactionId: e.target.value })}
+              className="input w-full"
+              placeholder="e.g. receipt number, EFT reference..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Note (optional)</label>
+            <textarea
+              value={paymentData.note}
+              onChange={(e) => setPaymentData({ ...paymentData, note: e.target.value })}
+              rows={2}
+              className="input w-full resize-none"
+              placeholder="e.g. Cash received in store by John"
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Create Waybill Modal */}
+      <CreateWaybillModal
+        isOpen={waybillModal}
+        onClose={() => {
+          setWaybillModal(false);
+          queryClient.invalidateQueries(['shipping-eligibility', id]);
+        }}
+        orderId={id}
+      />
     </div>
   );
 };

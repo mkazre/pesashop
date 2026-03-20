@@ -197,6 +197,9 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
       laybyeGroups[planId].totalDeposit += (item.laybye.deposit || 0) * item.quantity;
     });
 
+    const currencyState = useCurrencyStore.getState ? useCurrencyStore.getState() : {};
+    const selCurrency = currencyState.selectedCurrency;
+
     const orderData = {
       items: items.map(i => ({
         product: i.product._id,
@@ -227,6 +230,8 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
       discount: couponDiscount,
       total: grandTotal,
       dueNow,
+      currency: selCurrency?.code || 'ZAR',
+      exchangeRate: selCurrency?.exchangeRate || 1,
       couponCode: couponApplied ? couponCode : undefined,
       hasLaybye: laybyeItems.length > 0,
       laybyeGroups: Object.values(laybyeGroups).map(g => ({

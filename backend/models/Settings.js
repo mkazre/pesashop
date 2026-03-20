@@ -18,6 +18,10 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  storeLogo: {
+    type: String,
+    default: ''
+  },
   
   // Regional Settings
   currency: {

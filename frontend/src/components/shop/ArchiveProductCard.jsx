@@ -49,7 +49,101 @@ const SHADOW_MAP = {
   'xl': 'shadow-xl',
 };
 
-export default function ArchiveProductCard({ product, layout = 'grid', settings = {} }) {
+// ── Position mapping for custom badges ────────────────────────────
+const BADGE_POSITION_STYLES = {
+  'top-left': { top: 0, left: 0 },
+  'top-center': { top: 0, left: '50%', transform: 'translateX(-50%)' },
+  'top-right': { top: 0, right: 0 },
+  'middle-left': { top: '50%', left: 0, transform: 'translateY(-50%)' },
+  'middle-center': { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
+  'middle-right': { top: '50%', right: 0, transform: 'translateY(-50%)' },
+  'bottom-left': { bottom: 0, left: 0 },
+  'bottom-center': { bottom: 0, left: '50%', transform: 'translateX(-50%)' },
+  'bottom-right': { bottom: 0, right: 0 },
+};
+
+const ANIMATION_MAP = {
+  pulse: 'animate-pulse',
+  bounce: 'animate-bounce',
+  // others handled via inline keyframes if needed
+};
+
+function CustomBadge({ badge }) {
+  const s = badge.style || {};
+  const pos = s.position || 'top-right';
+  const posStyle = pos === 'custom'
+    ? { top: s.customTop || undefined, right: s.customRight || undefined, bottom: s.customBottom || undefined, left: s.customLeft || undefined }
+    : (BADGE_POSITION_STYLES[pos] || BADGE_POSITION_STYLES['top-right']);
+
+  const bg = s.useGradient
+    ? `linear-gradient(${s.gradientDirection || '135deg'}, ${s.gradientFrom || '#ef4444'}, ${s.gradientTo || '#f97316'})`
+    : (s.backgroundColor || '#ef4444');
+
+  const baseStyle = {
+    position: 'absolute',
+    ...posStyle,
+    zIndex: s.zIndex || 10,
+    color: s.textColor || '#fff',
+    background: bg,
+    fontSize: s.fontSize || '12px',
+    fontWeight: s.fontWeight || '700',
+    fontFamily: s.fontFamily || undefined,
+    fontStyle: s.fontStyle || undefined,
+    textTransform: s.textTransform || 'uppercase',
+    letterSpacing: s.letterSpacing || '0.5px',
+    lineHeight: s.lineHeight || '1',
+    paddingTop: s.paddingTop || '4px',
+    paddingRight: s.paddingRight || '10px',
+    paddingBottom: s.paddingBottom || '4px',
+    paddingLeft: s.paddingLeft || '10px',
+    marginTop: s.marginTop || '8px',
+    marginRight: s.marginRight || '8px',
+    marginBottom: s.marginBottom || '0px',
+    marginLeft: s.marginLeft || '0px',
+    borderRadius: s.borderRadius || '4px',
+    borderWidth: s.borderWidth || '0px',
+    borderStyle: s.borderStyle || 'solid',
+    borderColor: s.borderColor || 'transparent',
+    boxShadow: s.boxShadow || undefined,
+    opacity: s.opacity || '1',
+    width: s.width !== 'auto' ? s.width : undefined,
+    height: s.height !== 'auto' ? s.height : undefined,
+    minWidth: s.minWidth || undefined,
+    maxWidth: s.maxWidth || undefined,
+    transform: [
+      posStyle.transform || '',
+      s.rotate && s.rotate !== '0deg' ? `rotate(${s.rotate})` : '',
+      s.scale && s.scale !== '1' ? `scale(${s.scale})` : '',
+      s.translateX && s.translateX !== '0px' ? `translateX(${s.translateX})` : '',
+      s.translateY && s.translateY !== '0px' ? `translateY(${s.translateY})` : '',
+    ].filter(Boolean).join(' ') || undefined,
+  };
+
+  // Individual border radii override
+  if (s.borderTopLeftRadius) baseStyle.borderTopLeftRadius = s.borderTopLeftRadius;
+  if (s.borderTopRightRadius) baseStyle.borderTopRightRadius = s.borderTopRightRadius;
+  if (s.borderBottomRightRadius) baseStyle.borderBottomRightRadius = s.borderBottomRightRadius;
+  if (s.borderBottomLeftRadius) baseStyle.borderBottomLeftRadius = s.borderBottomLeftRadius;
+
+  const animClass = ANIMATION_MAP[s.animation] || '';
+
+  if (s.badgeType === 'image' && s.imageUrl) {
+    const imgUrl = s.imageUrl.startsWith('http') ? s.imageUrl : `${API_URL}${s.imageUrl}`;
+    return (
+      <div style={{ ...baseStyle, background: 'transparent', padding: 0 }} className={animClass}>
+        <img src={imgUrl} alt={badge.name} style={{ width: s.imageWidth || '60px', height: s.imageHeight || 'auto', objectFit: s.imageObjectFit || 'contain' }} />
+      </div>
+    );
+  }
+
+  if (s.badgeType === 'html' && s.htmlContent) {
+    return <div style={baseStyle} className={animClass} dangerouslySetInnerHTML={{ __html: s.htmlContent }} />;
+  }
+
+  return <div style={baseStyle} className={animClass}>{s.text || badge.name}</div>;
+}
+
+export default function ArchiveProductCard({ product, layout = 'grid', settings = {}, evaluatedBadges = [] }) {
   const pc = settings?.productCard || {};
   const pg = settings?.productGrid || {};
   const theme = settings?.theme || {};
@@ -148,6 +242,10 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
                 {pc.showOutOfStockBadge !== false && !inStock && <Badge variant="out-of-stock">OUT OF STOCK</Badge>}
               </div>
             )}
+            {/* Custom evaluated badges */}
+            {evaluatedBadges.filter(b => b.displayOn?.productCards !== false).map(badge => (
+              <CustomBadge key={badge._id} badge={badge} />
+            ))}
           </div>
 
           {/* Content */}
@@ -299,6 +397,10 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
               )}
             </div>
           )}
+          {/* Custom evaluated badges */}
+          {evaluatedBadges.filter(b => b.displayOn?.productCards !== false).map(badge => (
+            <CustomBadge key={badge._id} badge={badge} />
+          ))}
 
           {/* Layby badge on image */}
           {pc.showLaybyIndicator !== false && hasLayby && (

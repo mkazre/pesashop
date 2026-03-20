@@ -100,6 +100,9 @@ export default function CheckoutPage() {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
+      const currencyState = useCurrencyStore.getState ? useCurrencyStore.getState() : {};
+      const selCurrency = currencyState.selectedCurrency;
+
       const orderData = {
         items: items.map(item => ({
           product: item.product._id,
@@ -122,6 +125,8 @@ export default function CheckoutPage() {
         shipping,
         tax,
         total,
+        currency: selCurrency?.code || 'ZAR',
+        exchangeRate: selCurrency?.exchangeRate || 1,
         giftCardCode: giftCardCode || undefined,
         giftCardAmount: giftCardAmount || undefined,
         loyaltyPointsUsed: loyaltyPointsUsed || undefined,
