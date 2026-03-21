@@ -1,6 +1,6 @@
 # Advanced E-Commerce Platform
 
-A full-featured e-commerce platform built with React.js, Node.js, MongoDB, and Flutter API support.
+A full-featured e-commerce platform built with React.js, Node.js, MongoDB, and React Native API support.
 
 ## 🚀 Features
 
