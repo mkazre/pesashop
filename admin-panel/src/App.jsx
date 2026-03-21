@@ -58,6 +58,7 @@ import ShippingHubsPage from './pages/ShippingHubsPage';
 import MobileScannerPage from './pages/MobileScannerPage';
 import PODCapturePage from './pages/PODCapturePage';
 import FooterBuilderPage from './pages/FooterBuilderPage';
+import MobileAppSplashPage from './pages/MobileAppSplashPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -130,6 +131,7 @@ function App() {
             <Route path="product-archive-settings" element={<ProductArchiveSettingsPage />} />
             <Route path="home-page-builder" element={<HomePageBuilderPage />} />
             <Route path="footer-builder" element={<FooterBuilderPage />} />
+            <Route path="mobile-app/splash" element={<MobileAppSplashPage />} />
             <Route path="stats" element={<StatsPage />} />
             <Route path="questions" element={<QuestionsPage />} />
             <Route path="users" element={<UsersPage />} />

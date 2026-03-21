@@ -263,6 +263,11 @@ export const pagesAPI = {
   getByType: (type: string) => api.get(`/api/page-templates/type/${type}`),
 };
 
+// ─── Mobile App Config API ──────────────────────────────────────
+export const mobileAppConfigAPI = {
+  getSplash: () => api.get('/api/mobile-app-config/public/splash'),
+};
+
 // ─── AI API ─────────────────────────────────────────────────────
 export const aiAPI = {
   askProductAssistant: (data: {

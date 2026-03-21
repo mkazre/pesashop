@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import Toast from "react-native-toast-message";
 import CartSidebar from "@/components/CartSidebar";
 import CheckoutDrawer from "@/components/CheckoutDrawer";
+import OnboardingScreen from "@/components/OnboardingScreen";
 import { useAuthStore, useCurrencyStore } from "@/store";
 import { currenciesAPI } from "@/services/api";
 import { useExpoPush } from "@/hooks/useExpoPush";
@@ -16,6 +17,7 @@ export default function RootLayout() {
   const hydrate = useAuthStore((s) => s.hydrate);
   const isLoading = useAuthStore((s) => s.isLoading);
   const setCurrencies = useCurrencyStore((s) => s.setCurrencies);
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   useExpoPush();
 
   useEffect(() => {
@@ -27,10 +29,23 @@ export default function RootLayout() {
           setCurrencies(res.data.data);
         }
       } catch {}
+      // Check if onboarding has been completed
+      const completed = await OnboardingScreen.hasCompleted();
+      setShowOnboarding(!completed);
       await SplashScreen.hideAsync();
     };
     init();
   }, []);
+
+  // Show onboarding if not yet completed
+  if (showOnboarding === true) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <OnboardingScreen onComplete={() => setShowOnboarding(false)} />
+      </>
+    );
+  }
 
   return (
     <>

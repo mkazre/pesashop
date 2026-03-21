@@ -141,6 +141,7 @@ const roleRoutes = require('./routes/roles');
 const userRoutes = require('./routes/users');
 const shippingRoutes = require('./routes/shipping');
 const footerConfigRoutes = require('./routes/footerConfig');
+const mobileAppConfigRoutes = require('./routes/mobileAppConfig');
 
 // Mount routes
 app.use('/api/auth', authRoutes);
@@ -183,6 +184,7 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/shipping', shippingRoutes);
 app.use('/api/footer-config', footerConfigRoutes);
+app.use('/api/mobile-app-config', mobileAppConfigRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

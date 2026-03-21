@@ -571,4 +571,11 @@ export const rolesAPI = {
   seed: () => api.post('/roles/seed'),
 };
 
+// Mobile App Config API
+export const mobileAppConfigAPI = {
+  get: () => api.get('/mobile-app-config'),
+  updateSplash: (data) => api.put('/mobile-app-config/splash', data),
+  uploadSplashImage: (formData) => api.post('/mobile-app-config/splash/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+};
+
 export default api;

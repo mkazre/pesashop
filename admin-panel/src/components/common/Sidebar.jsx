@@ -33,6 +33,7 @@ import {
   IoShieldCheckmarkOutline,
   IoPersonOutline,
   IoCarOutline,
+  IoPhonePortraitOutline,
 } from 'react-icons/io5';
 import { useUIStore } from '@/store';
 import classNames from 'classnames';
@@ -68,6 +69,7 @@ const Sidebar = () => {
     { path: '/stats', icon: IoAnalyticsOutline, label: 'Stats & Analytics' },
     { path: '/home-page-builder', icon: IoHomeOutline, label: 'Home Page Builder' },
     { path: '/footer-builder', icon: IoLayersOutline, label: 'Footer Builder' },
+    { path: '/mobile-app/splash', icon: IoPhonePortraitOutline, label: 'Mobile App' },
     { path: '/page-manager', icon: IoLayersOutline, label: 'Page Manager' },
     { path: '/menu-builder', icon: IoMenu, label: 'Menu Builder' },
     { path: '/menu-assignment', icon: IoMenu, label: 'Menu Assignment' },

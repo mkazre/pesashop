@@ -86,6 +86,8 @@ backend/uploads/shipping/*
 !backend/uploads/shipping/.gitkeep
 backend/uploads/waybills/*
 !backend/uploads/waybills/.gitkeep
+backend/uploads/mobile/*
+!backend/uploads/mobile/.gitkeep
 
 # Migration artifacts
 backend/migration-progress.json
