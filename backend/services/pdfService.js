@@ -119,29 +119,53 @@ class PDFService {
     doc.fontSize(10);
 
     // Table header
-    doc.text('Item', 50, yPosition)
-       .text('SKU', 200, yPosition)
-       .text('Qty', 350, yPosition)
-       .text('Price', 400, yPosition)
-       .text('Total', 450, yPosition);
+    const colItem = 50;
+    const colSku = 220;
+    const colQty = 300;
+    const colPrice = 340;
+    const colTotal = 440;
+    const rightEdge = 545;
 
-    yPosition += 20;
+    doc.font('Helvetica-Bold');
+    doc.text('Item', colItem, yPosition)
+       .text('SKU', colSku, yPosition)
+       .text('Qty', colQty, yPosition)
+       .text('Price', colPrice, yPosition)
+       .text('Total', colTotal, yPosition);
+    doc.font('Helvetica');
+
+    yPosition += 5;
+    doc.moveTo(colItem, yPosition + 12).lineTo(rightEdge, yPosition + 12).lineWidth(0.5).stroke();
+    yPosition += 18;
 
     // Table rows
     if (order?.items) {
       order.items.forEach(item => {
-        doc.text(item.name, 50, yPosition, { width: 140, ellipsis: true })
-           .text(item.sku || 'N/A', 200, yPosition)
-           .text(item.quantity.toString(), 350, yPosition)
-           .text(formatPrice(item.price), 400, yPosition)
-           .text(formatPrice(item.total), 450, yPosition);
-        yPosition += 20;
+        // Calculate item name height for multi-line wrapping
+        const itemNameWidth = 160;
+        const nameHeight = doc.heightOfString(item.name, { width: itemNameWidth });
+        const rowHeight = Math.max(nameHeight, 14) + 6;
+
+        doc.text(item.name, colItem, yPosition, { width: itemNameWidth })
+           .text(item.sku || 'N/A', colSku, yPosition, { width: 70 })
+           .text(item.quantity.toString(), colQty, yPosition, { width: 30, align: 'center' })
+           .text(formatPrice(item.price), colPrice, yPosition, { width: 95, align: 'right' })
+           .text(formatPrice(item.total), colTotal, yPosition, { width: 105, align: 'right' });
+        yPosition += rowHeight;
       });
     }
 
+    // Separator line above total
+    yPosition += 4;
+    doc.moveTo(colPrice, yPosition).lineTo(rightEdge, yPosition).lineWidth(0.5).stroke();
+    yPosition += 8;
+
     // Total
     doc.fontSize(12)
-       .text(`Total: ${formatPrice(order?.total)}`, 450, yPosition + 10);
+       .font('Helvetica-Bold')
+       .text('Total:', colPrice, yPosition, { width: 95, align: 'right' })
+       .text(formatPrice(order?.total), colTotal, yPosition, { width: 105, align: 'right' })
+       .font('Helvetica');
 
     // Footer
     const createdByName = waybill.createdBy?.name || 'System';
