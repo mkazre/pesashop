@@ -32,6 +32,7 @@ const emailTemplateSchema = new mongoose.Schema({
       'order_note',
       // Accounts
       'new_account',
+      'new_customer',
       'password_reset',
       // Laybye lifecycle
       'laybye_application_received',

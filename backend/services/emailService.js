@@ -91,8 +91,20 @@ class EmailService {
         throw new Error(`Email template not found: ${templateIdOrType}`);
       }
 
+      // Auto-inject common variables used by all branded templates
+      const Settings = require('../models/Settings');
+      let settings = {};
+      try { settings = await Settings.getSettings() || {}; } catch (_) {}
+      const enriched = {
+        frontendUrl: process.env.FRONTEND_URL || 'https://pesashop.com',
+        logoUrl: settings.logoUrl || `${process.env.FRONTEND_URL || 'https://pesashop.com'}/logo.png`,
+        supportEmail: settings.storeEmail || process.env.EMAIL_FROM || 'support@pesashop.com',
+        year: new Date().getFullYear().toString(),
+        ...variables,
+      };
+
       // Render template with variables
-      const { subject, html, text } = template.render(variables);
+      const { subject, html, text } = template.render(enriched);
 
       // Send email
       return await this.sendEmail({

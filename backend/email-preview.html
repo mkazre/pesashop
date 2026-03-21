@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PesaShop Email Template Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; color: #fff; }
+  .nav { display: flex; flex-wrap: wrap; gap: 8px; padding: 20px 24px; background: #16213e; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #0F604B; }
+  .nav button { padding: 8px 16px; border: 1px solid #334; background: #1a1a2e; color: #ccc; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+  .nav button:hover, .nav button.active { background: #0F604B; color: #fff; border-color: #0F604B; }
+  .preview-wrap { width: 100%; max-width: 700px; margin: 30px auto; }
+  h1 { text-align: center; padding: 16px; font-size: 13px; color: #666; letter-spacing: 1px; text-transform: uppercase; }
+  .preview-frame { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+  .preview-frame iframe { width: 100%; height: 1000px; border: none; }
+</style>
+</head>
+<body>
+<div class="nav" id="nav"></div>
+<div class="preview-wrap">
+  <h1 id="title">Select a template above</h1>
+  <div class="preview-frame">
+    <iframe id="preview" srcdoc="<p style='text-align:center;padding:60px;color:#999;font-family:sans-serif;'>Click a template above to preview</p>"></iframe>
+  </div>
+</div>
+
+<script>
+const templates = [
+  { name: "Welcome Email", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<!-- Hero banner -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td style="background:linear-gradient(135deg,#0F604B 0%,#1a8a6a 100%);padding:50px 40px;text-align:center;">
+    <table border="0" cellpadding="0" cellspacing="0" align="center">
+      <tr><td align="center">
+        <div style="width:80px;height:80px;background:rgba(255,255,255,0.15);border-radius:50%;display:inline-block;line-height:80px;font-size:40px;color:#fff;">&#128075;</div>
+      </td></tr>
+    </table>
+    <h1 style="color:#ffffff;font-size:26px;font-weight:800;margin:20px 0 0;font-family:'Public Sans',Arial,sans-serif;">Welcome to PesaShop!</h1>
+    <p style="color:rgba(255,255,255,0.85);font-size:15px;margin:10px 0 0;font-weight:400;">We're thrilled to have you join our community</p>
+  </td></tr>
+</table>
+
+<!-- Body -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:40px 40px 10px;">
+  <tr><td>
+    <h3 style="font-weight:700;font-size:20px;margin:0 0 8px;color:#222;">Hi Sipho Ndlovu,</h3>
+    <p style="font-size:15px;font-weight:400;line-height:1.7;color:#666;margin:0 0 24px;">
+      Thank you for creating an account with us! You're now part of the PesaShop family. Here's what you can do:
+    </p>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 28px;">
+      <tr><td style="padding:12px 16px;background:#f7f7f7;border-left:4px solid #0F604B;font-size:14px;color:#333;font-weight:500;">&#10003; &nbsp;Track your orders in real time</td></tr>
+      <tr><td style="padding:12px 16px;background:#fff;border-left:4px solid #0F604B;font-size:14px;color:#333;font-weight:500;">&#10003; &nbsp;Save items to your wishlist</td></tr>
+      <tr><td style="padding:12px 16px;background:#f7f7f7;border-left:4px solid #0F604B;font-size:14px;color:#333;font-weight:500;">&#10003; &nbsp;Earn PESA Coins with every purchase</td></tr>
+      <tr><td style="padding:12px 16px;background:#fff;border-left:4px solid #0F604B;font-size:14px;color:#333;font-weight:500;">&#10003; &nbsp;Get exclusive offers &amp; early access</td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<!-- CTA button -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 40px 24px;">
+  <tr><td align="center">
+    <a href="https://pesashop.com/login" style="display:inline-block;background-color:#0F604B;color:#fff;padding:15px 40px;font-size:16px;font-weight:700;text-decoration:none;border-radius:6px;font-family:'Public Sans',Arial,sans-serif;">Start Shopping</a>
+  </td></tr>
+</table>
+
+<!-- Help text -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 40px 36px;">
+  <tr><td>
+    <p style="font-size:14px;color:#939393;line-height:1.6;margin:0;text-align:center;">
+      If you have any questions, email us at <a href="mailto:support@pesashop.com" style="color:#0F604B;font-weight:600;">support@pesashop.com</a>
+    </p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Order Confirmation", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<!-- Success banner -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:30px;">
+  <tr><td align="center">
+    <div style="width:90px;height:90px;background:#e6f7f1;border-radius:50%;display:inline-block;line-height:90px;font-size:48px;color:#0F604B;">&#10004;</div>
+    <h2 style="font-size:22px;font-weight:700;margin:20px 0 6px;color:#222;">Thanks for your Order!</h2>
+    <p style="font-size:14px;color:#939393;font-weight:500;margin:0;max-width:400px;">
+      You'll receive a shipping confirmation email when your items are on the way.
+    </p>
+  </td></tr>
+</table>
+
+<!-- Delivery & Payment info -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 30px;padding:20px 32px;width:calc(100% - 60px);background-color:#f7f7f7;">
+  <tr>
+    <td style="text-align:left;padding-right:24px;border-right:2px solid rgba(217,217,217,0.5);vertical-align:top;width:50%;">
+      <h4 style="font-size:15px;font-weight:700;margin:0 0 8px;color:#222;">Shipping Address</h4>
+      <p style="font-size:13px;margin:0;line-height:1.6;color:#666;font-weight:400;">Sipho Ndlovu<br>42 Long Street<br>Cape Town, Western Cape 8001<br>South Africa</p>
+    </td>
+    <td style="text-align:left;padding-left:24px;vertical-align:top;width:50%;">
+      <h4 style="font-size:15px;font-weight:700;margin:0 0 8px;color:#222;">Order Info</h4>
+      <p style="font-size:13px;margin:0;line-height:1.6;color:#666;">
+        <strong>Order:</strong> #ORD-10045<br>
+        <strong>Date:</strong> 21 Jul 2025<br>
+        <strong>Method:</strong> Standard Delivery
+      </p>
+    </td>
+  </tr>
+</table>
+
+<!-- Order items -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:28px 30px 0;">
+  <tr><th style="font-size:16px;font-weight:700;padding-bottom:10px;border-bottom:1px solid rgba(217,217,217,0.5);text-align:left;">Order Items</th></tr>
+</table>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 30px;">
+  <tr><td>
+    <table border="0" cellpadding="10" cellspacing="0" width="100%" style="font-size:14px;">
+      <tr style="border-bottom:1px solid #eee;">
+        <td style="padding:12px 0;border-bottom:1px solid #eee;"><strong>Nike Air Max 90</strong><br><span style="color:#999;font-size:12px;">Size: 10 | Colour: Black</span></td>
+        <td style="text-align:center;border-bottom:1px solid #eee;">x1</td>
+        <td style="text-align:right;border-bottom:1px solid #eee;font-weight:600;">R 1,299.00</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 0;"><strong>Cotton Crew Socks (3-Pack)</strong><br><span style="color:#999;font-size:12px;">White</span></td>
+        <td style="text-align:center;">x2</td>
+        <td style="text-align:right;font-weight:600;">R 550.00</td>
+      </tr>
+    </table></td></tr>
+</table>
+
+<!-- Order summary -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:20px 30px 0;">
+  <tr><td>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;padding:16px;">
+      <tr>
+        <td style="text-align:left;font-size:14px;font-weight:400;padding:10px 0;border-bottom:1px solid rgba(217,217,217,0.5);">Subtotal</td>
+        <td style="text-align:right;font-size:14px;font-weight:400;padding:10px 0;border-bottom:1px solid rgba(217,217,217,0.5);">R 1,749.00</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;font-size:14px;font-weight:400;padding:10px 0;border-bottom:1px solid rgba(217,217,217,0.5);">Shipping</td>
+        <td style="text-align:right;font-size:14px;font-weight:400;padding:10px 0;border-bottom:1px solid rgba(217,217,217,0.5);">R 100.00</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;font-size:16px;font-weight:700;padding-top:12px;color:#222;">Total</td>
+        <td style="text-align:right;font-size:16px;font-weight:700;padding-top:12px;color:#0F604B;">R 1,849.00</td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+
+<!-- CTA -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:28px 30px 36px;">
+  <tr><td align="center">
+    <a href="#" style="display:inline-block;background-color:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;font-family:'Public Sans',Arial,sans-serif;">Track Your Order</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Password Reset", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<!-- Lock icon -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:44px 40px 0;">
+  <tr><td align="center">
+    <div style="width:80px;height:80px;background:#fff3e0;border-radius:50%;display:inline-block;line-height:80px;font-size:40px;">&#128274;</div>
+  </td></tr>
+</table>
+
+<!-- Content -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:24px 50px 0;">
+  <tr><td align="center">
+    <h2 style="font-weight:700;font-size:22px;margin:0 0 6px;color:#222;">Reset Your Password</h2>
+    <h3 style="font-weight:600;font-size:16px;margin:0 0 16px;color:#939393;">Hi Sipho Ndlovu,</h3>
+    <p style="font-size:15px;font-weight:400;line-height:1.7;color:#666;margin:0 auto;max-width:420px;">
+      We received a request to reset your password. Click the button below to create a new one. This link expires in 24 hours.
+    </p>
+  </td></tr>
+</table>
+
+<!-- CTA Button -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:30px 40px;">
+  <tr><td align="center">
+    <a href="#" style="display:inline-block;background-color:#0F604B;color:#fff;padding:16px 40px;font-size:17px;font-weight:700;text-decoration:none;border-radius:6px;font-family:'Public Sans',Arial,sans-serif;">Set a New Password</a>
+  </td></tr>
+</table>
+
+<!-- Disclaimer -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 50px 40px;">
+  <tr><td align="center">
+    <p style="font-size:14px;font-weight:400;line-height:1.7;color:#939393;margin:0 auto;max-width:420px;">
+      If you didn't request a password reset, you can safely ignore this email. Your password will not be changed.
+    </p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Order Shipped", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<!-- Truck banner -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td style="background:linear-gradient(135deg,#0F604B 0%,#1a8a6a 100%);padding:44px 40px;text-align:center;">
+    <div style="font-size:50px;color:#fff;margin-bottom:10px;">&#128666;</div>
+    <h1 style="color:#ffffff;font-size:24px;font-weight:800;margin:0;font-family:'Public Sans',Arial,sans-serif;">Your Order is On the Way!</h1>
+    <p style="color:rgba(255,255,255,0.85);font-size:14px;margin:10px 0 0;">Order #ORD-10045 has been shipped</p>
+  </td></tr>
+</table>
+
+<!-- Body -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:36px 40px 10px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 20px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 24px;">
+      Great news! Your order has been dispatched and is on its way to you. Here are your tracking details:
+    </p>
+    <table border="0" cellpadding="12" cellspacing="0" width="100%" style="background:#f7f7f7;margin:0 0 24px;">
+      <tr>
+        <td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Tracking Number</td>
+        <td style="font-size:14px;text-align:right;border-bottom:1px solid #e9e9e9;color:#0F604B;font-weight:700;">TRK-SA-20250721-4589</td>
+      </tr>
+      <tr>
+        <td style="font-size:14px;font-weight:600;">Estimated Delivery</td>
+        <td style="font-size:14px;text-align:right;color:#333;">25 Jul 2025</td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+
+<!-- CTA -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 40px 40px;">
+  <tr><td align="center">
+    <a href="#" style="display:inline-block;background-color:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">Track Your Package</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Order Delivered", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td style="background:#e6f7f1;padding:44px 40px;text-align:center;">
+    <div style="font-size:50px;margin-bottom:10px;">&#127881;</div>
+    <h1 style="color:#0F604B;font-size:24px;font-weight:800;margin:0;">Your Order Has Been Delivered!</h1>
+    <p style="color:#666;font-size:14px;margin:10px 0 0;">Order #ORD-10045</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:36px 40px 10px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 16px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 24px;">
+      Your order has been delivered on <strong>25 Jul 2025</strong>. We hope you love your items!
+    </p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 24px;">
+      If you have a moment, we'd love to hear about your experience. Leave a review and help other shoppers make the right choice.
+    </p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 40px 40px;">
+  <tr><td align="center">
+    <a href="https://pesashop.com/account" style="display:inline-block;background-color:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">Leave a Review</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Order Cancelled", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td style="background:#fef2f2;padding:44px 40px;text-align:center;">
+    <div style="font-size:50px;margin-bottom:10px;">&#10060;</div>
+    <h1 style="color:#dc2626;font-size:24px;font-weight:800;margin:0;">Order Cancelled</h1>
+    <p style="color:#666;font-size:14px;margin:10px 0 0;">Order #ORD-10045</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:36px 40px 10px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 16px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 16px;">
+      We're sorry to inform you that your order #ORD-10045 (R 1,849.00) has been cancelled.
+    </p>
+    <table border="0" cellpadding="14" cellspacing="0" width="100%" style="background:#fef2f2;margin:0 0 24px;border-left:4px solid #dc2626;">
+      <tr><td style="font-size:14px;color:#333;"><strong>Reason:</strong> Item out of stock — full refund will be processed within 5 business days.</td></tr>
+    </table>
+    <p style="font-size:14px;color:#939393;line-height:1.7;margin:0;">
+      If you have any questions about this cancellation, please contact us at <a href="mailto:support@pesashop.com" style="color:#0F604B;font-weight:600;">support@pesashop.com</a>.
+    </p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:16px 40px 40px;">
+  <tr><td align="center">
+    <a href="https://pesashop.com" style="display:inline-block;background-color:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">Continue Shopping</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Order Refunded", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td style="background:#eff6ff;padding:44px 40px;text-align:center;">
+    <div style="font-size:50px;margin-bottom:10px;">&#128176;</div>
+    <h1 style="color:#2563eb;font-size:24px;font-weight:800;margin:0;">Refund Processed</h1>
+    <p style="color:#666;font-size:14px;margin:10px 0 0;">Order #ORD-10045</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:36px 40px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 16px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 20px;">
+      A refund of <strong style="color:#0F604B;">R 1,849.00</strong> has been processed for your order #ORD-10045. Please allow 5-10 business days for the refund to appear in your account.
+    </p>
+    <p style="font-size:14px;color:#939393;line-height:1.7;margin:0;">
+      If you have questions, contact us at <a href="mailto:support@pesashop.com" style="color:#0F604B;font-weight:600;">support@pesashop.com</a>.
+    </p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Order Note", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:36px 40px 0;">
+  <tr><td>
+    <h2 style="font-size:20px;font-weight:700;margin:0 0 6px;color:#222;">A Note About Your Order</h2>
+    <p style="font-size:13px;color:#999;margin:0 0 20px;">Order #ORD-10045</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 40px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 16px;">Hi Sipho Ndlovu,</p>
+    <table border="0" cellpadding="18" cellspacing="0" width="100%" style="background:#f7f7f7;border-left:4px solid #0F604B;margin:0 0 24px;">
+      <tr><td style="font-size:14px;color:#444;line-height:1.7;">Hi Sipho, we wanted to let you know that one item in your order has been substituted with an equivalent product due to stock availability. Please contact us if you have any concerns.</td></tr>
+    </table>
+    <p style="font-size:14px;color:#939393;line-height:1.7;margin:0;">
+      If you have questions, reply to this email or contact us at <a href="mailto:support@pesashop.com" style="color:#0F604B;">support@pesashop.com</a>.
+    </p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:28px 40px 40px;">
+  <tr><td align="center">
+    <a href="https://pesashop.com/account" style="display:inline-block;background-color:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">View Your Order</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Laybye Created", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td style="background:linear-gradient(135deg,#0F604B 0%,#1a8a6a 100%);padding:44px 40px;text-align:center;">
+    <div style="font-size:50px;color:#fff;margin-bottom:10px;">&#128179;</div>
+    <h1 style="color:#fff;font-size:24px;font-weight:800;margin:0;">Laybye Plan Created!</h1>
+    <p style="color:rgba(255,255,255,0.85);font-size:14px;margin:10px 0 0;">Order #ORD-10045</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:36px 40px 10px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 20px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 24px;">Your laybye plan has been set up successfully. Here are your payment details:</p>
+    <table border="0" cellpadding="12" cellspacing="0" width="100%" style="background:#f7f7f7;">
+      <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Plan</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">3-Month Layby Plan</td></tr>
+      <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Total Amount</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">R 4,500.00</td></tr>
+      <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Deposit Paid</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;color:#0F604B;font-weight:700;">R 1,500.00</td></tr>
+      <tr><td style="font-size:14px;font-weight:600;">Monthly Instalment</td><td style="text-align:right;font-size:14px;font-weight:700;">R 1,000.00</td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:24px 40px 40px;">
+  <tr><td align="center">
+    <a href="#" style="display:inline-block;background-color:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">View Laybye Details</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Laybye Payment Received", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:44px 40px 0;">
+  <tr><td align="center">
+    <div style="width:80px;height:80px;background:#e6f7f1;border-radius:50%;display:inline-block;line-height:80px;font-size:40px;color:#0F604B;">&#10004;</div>
+    <h2 style="font-size:22px;font-weight:700;margin:16px 0 6px;color:#222;">Payment Received!</h2>
+    <p style="font-size:14px;color:#666;margin:0;">Order #ORD-10045</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:28px 40px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 20px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 24px;">We've received your laybye payment. Here's a summary:</p>
+    <table border="0" cellpadding="12" cellspacing="0" width="100%" style="background:#f7f7f7;">
+      <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Payment Amount</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;color:#0F604B;font-weight:700;">R 1,000.00</td></tr>
+      <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Total Paid</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">R 2,500.00</td></tr>
+      <tr><td style="font-size:14px;font-weight:600;">Remaining Balance</td><td style="text-align:right;font-size:14px;font-weight:700;">R 2,000.00</td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 40px 40px;">
+  <tr><td align="center">
+    <a href="#" style="display:inline-block;background-color:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">View Laybye</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Laybye Completed", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td style="background:linear-gradient(135deg,#0F604B 0%,#1a8a6a 100%);padding:50px 40px;text-align:center;">
+    <div style="font-size:50px;color:#fff;margin-bottom:10px;">&#127881;</div>
+    <h1 style="color:#fff;font-size:24px;font-weight:800;margin:0;">Laybye Complete!</h1>
+    <p style="color:rgba(255,255,255,0.85);font-size:14px;margin:10px 0 0;">All payments received for Order #ORD-10045</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:36px 40px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 16px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 16px;">
+      Congratulations! Your laybye of <strong style="color:#0F604B;">R 4,500.00</strong> has been fully paid. Your order will now be processed for shipping.
+    </p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0;">Thank you for shopping with PesaShop!</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Laybye Payment Reminder", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td style="background:#fff7ed;padding:44px 40px;text-align:center;">
+    <div style="font-size:50px;margin-bottom:10px;">&#9200;</div>
+    <h1 style="color:#ea580c;font-size:24px;font-weight:800;margin:0;">Payment Reminder</h1>
+    <p style="color:#666;font-size:14px;margin:10px 0 0;">Order #ORD-10045</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:36px 40px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 16px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 24px;">Your next laybye payment of R 1,000.00 is due in 3 days. Please ensure payment is made before the due date to avoid late fees.</p>
+    <table border="0" cellpadding="12" cellspacing="0" width="100%" style="background:#f7f7f7;">
+      <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Amount Due</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;color:#ea580c;font-weight:700;">R 1,000.00</td></tr>
+      <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Due Date</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">15 Aug 2025</td></tr>
+      <tr><td style="font-size:14px;font-weight:600;">Remaining Balance</td><td style="text-align:right;font-size:14px;">R 2,000.00</td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 40px 40px;">
+  <tr><td align="center">
+    <a href="#" style="display:inline-block;background-color:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">Make Payment Now</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Laybye Overdue Reminder", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td style="background:#fff7ed;padding:44px 40px;text-align:center;">
+    <div style="font-size:50px;margin-bottom:10px;">&#9200;</div>
+    <h1 style="color:#ea580c;font-size:24px;font-weight:800;margin:0;">Payment Reminder</h1>
+    <p style="color:#666;font-size:14px;margin:10px 0 0;">Order #ORD-10045</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:36px 40px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 16px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 24px;">Your next laybye payment of R 1,000.00 is due in 3 days. Please ensure payment is made before the due date to avoid late fees.</p>
+    <table border="0" cellpadding="12" cellspacing="0" width="100%" style="background:#f7f7f7;">
+      <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Amount Due</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;color:#ea580c;font-weight:700;">R 1,000.00</td></tr>
+      <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Due Date</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">15 Aug 2025</td></tr>
+      <tr><td style="font-size:14px;font-weight:600;">Remaining Balance</td><td style="text-align:right;font-size:14px;">R 2,000.00</td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 40px 40px;">
+  <tr><td align="center">
+    <a href="#" style="display:inline-block;background-color:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">Make Payment Now</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Laybye Expiry Reminder", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td style="background:#fff7ed;padding:44px 40px;text-align:center;">
+    <div style="font-size:50px;margin-bottom:10px;">&#9200;</div>
+    <h1 style="color:#ea580c;font-size:24px;font-weight:800;margin:0;">Payment Reminder</h1>
+    <p style="color:#666;font-size:14px;margin:10px 0 0;">Order #ORD-10045</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:36px 40px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 16px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 24px;">Your next laybye payment of R 1,000.00 is due in 3 days. Please ensure payment is made before the due date to avoid late fees.</p>
+    <table border="0" cellpadding="12" cellspacing="0" width="100%" style="background:#f7f7f7;">
+      <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Amount Due</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;color:#ea580c;font-weight:700;">R 1,000.00</td></tr>
+      <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Due Date</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">15 Aug 2025</td></tr>
+      <tr><td style="font-size:14px;font-weight:600;">Remaining Balance</td><td style="text-align:right;font-size:14px;">R 2,000.00</td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 40px 40px;">
+  <tr><td align="center">
+    <a href="#" style="display:inline-block;background-color:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">Make Payment Now</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Promotional Offer", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<!-- Hero banner -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td style="background:linear-gradient(135deg,#0F604B 0%,#1a8a6a 50%,#f7bd20 100%);padding:50px 40px;text-align:center;">
+    <h1 style="color:#fff;font-size:36px;font-weight:900;margin:0;font-family:'Public Sans',Arial,sans-serif;">WINTER SALE — 30% OFF!</h1>
+    <p style="color:rgba(255,255,255,0.9);font-size:16px;margin:12px 0 0;font-weight:400;">Limited time only — ends this Sunday</p>
+  </td></tr>
+</table>
+
+<!-- Content -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:36px 40px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 16px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 24px;">Get 30% off on all winter essentials including jackets, boots, and accessories. Use the code below at checkout to claim your discount. Hurry — stock is limited!</p>
+  </td></tr>
+</table>
+
+<!-- Coupon Code -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 40px;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" style="border:2px dashed #0F604B;border-radius:50px;padding:14px 48px;margin:0 auto;">
+      <tr><td style="font-size:18px;font-weight:700;color:#0F604B;letter-spacing:2px;font-family:'Public Sans',Arial,sans-serif;">WINTER30</td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<!-- CTA -->
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:28px 40px 40px;">
+  <tr><td align="center">
+    <a href="https://pesashop.com" style="display:inline-block;background-color:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">Shop Now</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` },
+  { name: "Review Reminder", html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tbody><tr><td>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+  <tr>
+    <td style="padding:16px 32px;text-align:left;">
+      <a href="https://pesashop.com" style="display:inline-block;">
+        <img src="https://placehold.co/180x40/0F604B/FFFFFF?text=PESASHOP&font=montserrat" alt="PESASHOP" style="height:40px;width:auto;" />
+      </a>
+    </td>
+    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
+      <a href="https://pesashop.com" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
+      <a href="https://pesashop.com/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
+      <a href="https://pesashop.com/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
+    </td>
+  </tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:44px 40px 0;">
+  <tr><td align="center">
+    <div style="font-size:48px;margin-bottom:10px;">&#11088;</div>
+    <h2 style="font-size:22px;font-weight:700;margin:0 0 6px;color:#222;">How Was Your Purchase?</h2>
+    <p style="font-size:14px;color:#939393;margin:0;">Order #ORD-10045</p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:28px 40px;">
+  <tr><td>
+    <p style="font-size:15px;color:#333;line-height:1.7;margin:0 0 16px;">Hi Sipho Ndlovu,</p>
+    <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 24px;">
+      We hope you're enjoying your recent purchase! Your feedback helps other shoppers and helps us improve. Take a moment to leave a review.
+    </p>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:0 40px 40px;">
+  <tr><td align="center">
+    <a href="#" style="display:inline-block;background-color:#f7bd20;color:#000;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">Write a Review</a>
+  </td></tr>
+</table>
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
+  <tr><td align="center">
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://pesashop.com/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
+        <td><a href="https://pesashop.com/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
+        <td><a href="https://pesashop.com/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
+      </tr>
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
+      <tr>
+        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; 2026 PesaShop. All rights reserved.</p>
+  </td></tr>
+</table>
+</td></tr></tbody>
+</table>
+</body>
+</html>` }
+];
+
+const nav = document.getElementById('nav');
+templates.forEach((t, i) => {
+  const btn = document.createElement('button');
+  btn.textContent = t.name;
+  btn.onclick = () => {
+    document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('title').textContent = t.name;
+    document.getElementById('preview').srcdoc = t.html;
+  };
+  nav.appendChild(btn);
+  if (i === 0) btn.click();
+});
+</script>
+</body>
+</html>
