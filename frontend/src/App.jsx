@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Layout from './components/layout/Layout';
 
 // Pages
@@ -37,12 +38,19 @@ import CheckoutDrawer from './components/product/CheckoutDrawer';
 import { useUIStore } from './store';
 import { useProductPageSettings } from './hooks/useProductPageSettings';
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
 function App() {
   const { quickViewProduct, authModalOpen, cartSidebarOpen, checkoutDrawerOpen, closeCheckoutDrawer } = useUIStore();
   const { settings: pageSettings } = useProductPageSettings();
 
   return (
     <>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
