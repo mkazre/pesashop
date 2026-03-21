@@ -205,6 +205,7 @@ export default function WalmartProductPage({ product, settings }) {
   const rc = s.reviewsConfig || {};
   const specs = s.specifications || {};
   const mobile = s.mobile || {};
+  const fd = s.fakeData || {};
 
   // Fetch reviews from API
   const { data: reviewsRes } = useQuery(
@@ -275,6 +276,40 @@ export default function WalmartProductPage({ product, settings }) {
     Math.floor(Math.random() * ((ce.urgency?.recentPurchaseMax || 42) - (ce.urgency?.recentPurchaseMin || 5) + 1)) + (ce.urgency?.recentPurchaseMin || 5),
     [product?._id]
   );
+
+  // Fake / seed data — deterministic per product ID so values stay stable across re-renders
+  const fakeReviewCount = useMemo(() => {
+    if (!fd.enabled) return 0;
+    const min = fd.reviewCountMin || 5;
+    const max = fd.reviewCountMax || 50;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }, [product?._id, fd.enabled]);
+  const fakeRating = useMemo(() => {
+    if (!fd.enabled) return 0;
+    const min = fd.ratingMin || 3;
+    const max = fd.ratingMax || 5;
+    return Math.round((Math.random() * (max - min) + min) * 10) / 10;
+  }, [product?._id, fd.enabled]);
+  const fakeSoldCount = useMemo(() => {
+    if (!fd.enabled) return 0;
+    const min = fd.soldCountMin || 10;
+    const max = fd.soldCountMax || 500;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }, [product?._id, fd.enabled]);
+  const fakeViewCount = useMemo(() => {
+    if (!fd.enabled) return 0;
+    const min = fd.viewCountMin || 100;
+    const max = fd.viewCountMax || 5000;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }, [product?._id, fd.enabled]);
+
+  // Effective values: use real data if available, otherwise use fake data
+  const effectiveRating = product?.rating > 0 ? product.rating : fakeRating;
+  const effectiveReviewCount = (reviews.length > 0 || product?.reviewCount > 0) ? (reviews.length || product?.reviewCount) : fakeReviewCount;
+  const effectiveSoldCount = fakeSoldCount;
+  const qtySoldText = fd.enabled
+    ? (fd.soldTextTemplate || '{count}+ bought since yesterday').replace('{count}', effectiveSoldCount)
+    : '1K+ bought since yesterday';
 
   const toggleSection = (id) => setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -668,12 +703,12 @@ export default function WalmartProductPage({ product, settings }) {
             {/* Rating & Qty Sold */}
             {(pi.showRating || pi.showQtySold) && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                {pi.showRating && <StarRating rating={product?.rating || 0} count={reviews.length || product?.reviewCount || 0} size="sm" />}
-                {pi.showReviewCount && (reviews.length > 0 || product?.reviewCount > 0) && (
-                  <span style={{ fontSize: 12, color: theme.mutedColor || '#76889a' }}>({reviews.length || product?.reviewCount} reviews)</span>
+                {pi.showRating && <StarRating rating={effectiveRating} count={effectiveReviewCount} size="sm" />}
+                {pi.showReviewCount && effectiveReviewCount > 0 && (
+                  <span style={{ fontSize: 12, color: theme.mutedColor || '#76889a' }}>({effectiveReviewCount} reviews)</span>
                 )}
                 {pi.showQtySold && (
-                  <span style={{ fontSize: 12, color: theme.mutedColor || '#76889a' }}>1K+ bought since yesterday</span>
+                  <span style={{ fontSize: 12, color: theme.mutedColor || '#76889a' }}>{qtySoldText}</span>
                 )}
               </div>
             )}

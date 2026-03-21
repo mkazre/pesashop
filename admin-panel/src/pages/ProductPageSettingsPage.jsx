@@ -891,6 +891,8 @@ export default function ProductPageSettingsPage() {
             <Field label="Viewer Max" type="number" value={s.conversionEnhancers?.urgency?.viewerCountMax} onChange={(v) => updateDeep('conversionEnhancers', 'urgency', 'viewerCountMax', v)} />
             <Toggle label="Recent Purchase Count" checked={s.conversionEnhancers?.urgency?.showRecentPurchaseCount} onChange={(v) => updateDeep('conversionEnhancers', 'urgency', 'showRecentPurchaseCount', v)} />
             <Field label="Purchase Message" type="text" value={s.conversionEnhancers?.urgency?.recentPurchaseMessage} onChange={(v) => updateDeep('conversionEnhancers', 'urgency', 'recentPurchaseMessage', v)} />
+            <Field label="Purchase Min" type="number" value={s.conversionEnhancers?.urgency?.recentPurchaseMin} onChange={(v) => updateDeep('conversionEnhancers', 'urgency', 'recentPurchaseMin', v)} />
+            <Field label="Purchase Max" type="number" value={s.conversionEnhancers?.urgency?.recentPurchaseMax} onChange={(v) => updateDeep('conversionEnhancers', 'urgency', 'recentPurchaseMax', v)} />
           </div>
         </div>
 
@@ -953,6 +955,52 @@ export default function ProductPageSettingsPage() {
           <div className="grid grid-cols-2 gap-3 mt-2">
             <Field label="Text" type="text" value={s.conversionEnhancers?.priceMatchGuarantee?.text} onChange={(v) => updateDeep('conversionEnhancers', 'priceMatchGuarantee', 'text', v)} />
             <Field label="Icon" type="text" value={s.conversionEnhancers?.priceMatchGuarantee?.icon} onChange={(v) => updateDeep('conversionEnhancers', 'priceMatchGuarantee', 'icon', v)} />
+          </div>
+        </div>
+      </Section>
+
+      {/* ═══ FAKE / SEED DATA ═══ */}
+      <Section title="Fake / Seed Data" description="Generate randomized display data for new stores with little real activity">
+        <p className="text-xs text-gray-500 mb-3">These settings generate random numbers within the min/max range for each product. This is display-only and does not modify the database. When real stats data exists, it takes priority.</p>
+        <Toggle label="Enable Fake Data" sublabel="Show simulated views, reviews, and sold counts when real data is unavailable" checked={s.fakeData?.enabled} onChange={(v) => update('fakeData', 'enabled', v)} />
+
+        <div className="p-4 border border-gray-200 bg-gray-50 mt-3">
+          <h4 className="text-sm font-bold text-gray-800 mb-3">Simulated Review Count</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Min Reviews" type="number" value={s.fakeData?.reviewCountMin} onChange={(v) => update('fakeData', 'reviewCountMin', v)} min={0} max={500} />
+            <Field label="Max Reviews" type="number" value={s.fakeData?.reviewCountMax} onChange={(v) => update('fakeData', 'reviewCountMax', v)} min={0} max={2000} />
+          </div>
+        </div>
+
+        <div className="p-4 border border-gray-200 bg-gray-50 mt-3">
+          <h4 className="text-sm font-bold text-gray-800 mb-3">Simulated Rating</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Min Rating (1-5)" type="number" value={s.fakeData?.ratingMin} onChange={(v) => update('fakeData', 'ratingMin', v)} min={1} max={5} />
+            <Field label="Max Rating (1-5)" type="number" value={s.fakeData?.ratingMax} onChange={(v) => update('fakeData', 'ratingMax', v)} min={1} max={5} />
+          </div>
+        </div>
+
+        <div className="p-4 border border-gray-200 bg-gray-50 mt-3">
+          <h4 className="text-sm font-bold text-gray-800 mb-3">Simulated View Count</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Min Views" type="number" value={s.fakeData?.viewCountMin} onChange={(v) => update('fakeData', 'viewCountMin', v)} min={0} max={5000} />
+            <Field label="Max Views" type="number" value={s.fakeData?.viewCountMax} onChange={(v) => update('fakeData', 'viewCountMax', v)} min={0} max={50000} />
+          </div>
+        </div>
+
+        <div className="p-4 border border-gray-200 bg-gray-50 mt-3">
+          <h4 className="text-sm font-bold text-gray-800 mb-3">Simulated Sold Count</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Min Sold" type="number" value={s.fakeData?.soldCountMin} onChange={(v) => update('fakeData', 'soldCountMin', v)} min={0} max={1000} />
+            <Field label="Max Sold" type="number" value={s.fakeData?.soldCountMax} onChange={(v) => update('fakeData', 'soldCountMax', v)} min={0} max={10000} />
+          </div>
+        </div>
+
+        <div className="p-4 border border-gray-200 bg-gray-50 mt-3">
+          <h4 className="text-sm font-bold text-gray-800 mb-3">Display Format</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Sold Text Template" type="text" value={s.fakeData?.soldTextTemplate} onChange={(v) => update('fakeData', 'soldTextTemplate', v)} placeholder="{count}+ bought since yesterday" />
+            <Field label="View Text Template" type="text" value={s.fakeData?.viewTextTemplate} onChange={(v) => update('fakeData', 'viewTextTemplate', v)} placeholder="{count} people viewed this" />
           </div>
         </div>
       </Section>

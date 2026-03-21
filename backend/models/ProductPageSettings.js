@@ -410,8 +410,22 @@ const productPageSettingsSchema = new mongoose.Schema({
     // Estimated savings per year
     annualSavingsCalculator: {
       enabled: { type: Boolean, default: false },
-      label: { type: String, default: 'Estimated annual savings' },
     },
+  },
+
+  // ─── FAKE / SEED DATA ──────────────────────────────────────────────
+  fakeData: {
+    enabled: { type: Boolean, default: false },
+    reviewCountMin: { type: Number, default: 5 },
+    reviewCountMax: { type: Number, default: 50 },
+    ratingMin: { type: Number, default: 3 },
+    ratingMax: { type: Number, default: 5 },
+    viewCountMin: { type: Number, default: 100 },
+    viewCountMax: { type: Number, default: 5000 },
+    soldCountMin: { type: Number, default: 10 },
+    soldCountMax: { type: Number, default: 500 },
+    soldTextTemplate: { type: String, default: '{count}+ bought since yesterday' },
+    viewTextTemplate: { type: String, default: '{count} people viewed this' },
   },
 
   // ─── REVIEWS SECTION CONFIG ──────────────────────────────────────────

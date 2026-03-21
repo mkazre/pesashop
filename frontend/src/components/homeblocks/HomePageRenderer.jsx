@@ -15,6 +15,15 @@ import SpacerBlock from './SpacerBlock';
 import RichTextBlock from './RichTextBlock';
 import CustomHtmlBlock from './CustomHtmlBlock';
 import CustomTemplateBlock from './CustomTemplateBlock';
+import BannerSliderCarousel from './BannerSliderCarousel';
+import CouponCarousel from './CouponCarousel';
+import ProductWithDealSidebar from './ProductWithDealSidebar';
+import OfferStrip from './OfferStrip';
+import BlogCarousel from './BlogCarousel';
+import NewsletterBlock from './NewsletterBlock';
+import CategoryGrid from './CategoryGrid';
+import ProductVerticalTabs from './ProductVerticalTabs';
+import ImageTextCta from './ImageTextCta';
 
 const BLOCK_COMPONENTS = {
   'hero-slider-full': HeroSliderFull,
@@ -32,6 +41,15 @@ const BLOCK_COMPONENTS = {
   'rich-text': RichTextBlock,
   'custom-html': CustomHtmlBlock,
   'custom-template': CustomTemplateBlock,
+  'banner-slider-carousel': BannerSliderCarousel,
+  'coupon-carousel': CouponCarousel,
+  'product-with-deal-sidebar': ProductWithDealSidebar,
+  'offer-strip': OfferStrip,
+  'blog-carousel': BlogCarousel,
+  'newsletter': NewsletterBlock,
+  'category-grid': CategoryGrid,
+  'product-vertical-tabs': ProductVerticalTabs,
+  'image-text-cta': ImageTextCta,
 };
 
 export default function HomePageRenderer() {

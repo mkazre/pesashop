@@ -28,9 +28,18 @@ const BLOCK_TYPES = [
   { type: 'rich-text', label: 'Rich Text', icon: '📝', category: 'Other' },
   { type: 'custom-html', label: 'Custom HTML', icon: '🧩', category: 'Other' },
   { type: 'custom-template', label: 'Page Builder Template', icon: '🎨', category: 'Templates' },
+  { type: 'banner-slider-carousel', label: 'Banner Slider Carousel', icon: '🎞️', category: 'Banners' },
+  { type: 'coupon-carousel', label: 'Coupon / Offer Carousel', icon: '🎟️', category: 'Promotions' },
+  { type: 'product-with-deal-sidebar', label: 'Products + Deal Sidebar', icon: '🔥', category: 'Products' },
+  { type: 'offer-strip', label: 'Offer Strip / Marquee', icon: '📢', category: 'Promotions' },
+  { type: 'blog-carousel', label: 'Blog / Articles Carousel', icon: '📰', category: 'Content' },
+  { type: 'newsletter', label: 'Newsletter Subscribe', icon: '✉️', category: 'Content' },
+  { type: 'category-grid', label: 'Category Grid (Image Cards)', icon: '🗂️', category: 'Categories' },
+  { type: 'product-vertical-tabs', label: 'Product Vertical List (Tabs)', icon: '📋', category: 'Products' },
+  { type: 'image-text-cta', label: 'Image + Text CTA Banner', icon: '🖼️', category: 'Banners' },
 ];
 
-const BLOCK_CATEGORIES = ['Hero', 'Banners', 'Products', 'Categories', 'Templates', 'Other'];
+const BLOCK_CATEGORIES = ['Hero', 'Banners', 'Products', 'Categories', 'Promotions', 'Content', 'Templates', 'Other'];
 
 // ── Default block settings ──────────────────────────────────────────
 function getDefaultBlock(blockType) {
@@ -201,6 +210,137 @@ function getDefaultBlock(blockType) {
       return { ...base, showSectionTitle: false, content: '' };
     case 'custom-template':
       return { ...base, showSectionTitle: false, templateId: '' };
+    case 'banner-slider-carousel':
+      return {
+        ...base,
+        sectionTitle: '',
+        showSectionTitle: false,
+        banners: [
+          { image: '', heading: '50% Discount', label: 'Summer Sale', buttonText: 'Shop Now', buttonLink: '/shop', textColor: '#333333' },
+          { image: '', heading: 'Today Special', label: 'Fresh Arrivals', buttonText: 'Shop Now', buttonLink: '/shop', textColor: '#333333' },
+          { image: '', heading: 'Combo Offer', label: 'Save More', buttonText: 'Shop Now', buttonLink: '/shop', textColor: '#333333' },
+          { image: '', heading: 'Amazing Deals', label: 'Limited Time', buttonText: 'Shop Now', buttonLink: '/shop', textColor: '#333333' },
+        ],
+        slidesToShow: 4,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        bannerHeight: '200px',
+        bannerBorderRadius: '12px',
+      };
+    case 'coupon-carousel':
+      return {
+        ...base,
+        sectionTitle: 'Coupons & Offers',
+        coupons: [
+          { title: 'GET 10% OFF', description: 'When you spend R500', validText: 'Valid for 30 days', code: 'PESA10', bgColor: '#0F604B', textColor: '#ffffff' },
+          { title: 'GET 15% OFF', description: 'First order discount', validText: 'Valid for 7 days', code: 'WELCOME15', bgColor: '#e8a317', textColor: '#ffffff' },
+          { title: 'FREE DELIVERY', description: 'On orders over R300', validText: 'This weekend only', code: 'FREEDELIVERY', bgColor: '#d32f2f', textColor: '#ffffff' },
+        ],
+        slidesToShow: 3,
+        autoplay: true,
+      };
+    case 'product-with-deal-sidebar':
+      return {
+        ...base,
+        sectionTitle: 'Top Selling Items',
+        productSource: 'best-selling',
+        productLimit: 10,
+        showAddToCart: true,
+        showWishlist: true,
+        showRating: true,
+        dealEnabled: true,
+        dealTitle: 'Special Offer',
+        dealBadgeText: 'Hot Deal',
+        dealProductSource: 'featured',
+        showCountdown: true,
+        dealsEndDate: '',
+        dealPosition: 'right',
+      };
+    case 'offer-strip':
+      return {
+        ...base,
+        showSectionTitle: false,
+        stripText: 'FREE GIFT ON EVERY ORDER',
+        highlightText: '70% OFF',
+        stripBgColor: '#0F604B',
+        stripTextColor: '#ffffff',
+        stripHighlightColor: '#f7bd20',
+        stripFontSize: '18px',
+        stripLink: '/shop',
+        enableMarquee: false,
+        marqueeSpeed: 30,
+      };
+    case 'blog-carousel':
+      return {
+        ...base,
+        sectionTitle: 'Latest Articles',
+        sectionSubtitle: 'From our blog',
+        blogSource: 'latest',
+        blogLimit: 6,
+        slidesToShow: 3,
+        showDate: true,
+        showExcerpt: true,
+        showReadMore: true,
+        cardBorderRadius: '12px',
+      };
+    case 'newsletter':
+      return {
+        ...base,
+        showSectionTitle: false,
+        heading: 'Join Our Newsletter',
+        subtitle: 'Subscribe to get special offers, free giveaways, and amazing deals.',
+        placeholder: 'Enter your email address',
+        buttonText: 'Subscribe',
+        bgColor: '#0F604B',
+        textColor: '#ffffff',
+        buttonBgColor: '#f7bd20',
+        buttonTextColor: '#333333',
+        bgImage: '',
+        showIcon: true,
+      };
+    case 'category-grid':
+      return {
+        ...base,
+        sectionTitle: 'Shop By Categories',
+        categorySource: 'all',
+        categoryLimit: 8,
+        columns: 4,
+        showProductCount: true,
+        showImage: true,
+        cardStyle: 'card',
+        cardBorderRadius: '12px',
+        imageHeight: '180px',
+      };
+    case 'product-vertical-tabs':
+      return {
+        ...base,
+        sectionTitle: 'Browse Products',
+        tabs: [
+          { label: 'Best Selling', source: 'best-selling', categoryId: '' },
+          { label: 'Trending', source: 'trending', categoryId: '' },
+          { label: 'Recently Added', source: 'newest', categoryId: '' },
+        ],
+        productLimit: 4,
+        showPrice: true,
+        showRating: true,
+        showImage: true,
+        layout: 'horizontal',
+      };
+    case 'image-text-cta':
+      return {
+        ...base,
+        showSectionTitle: false,
+        mainImage: '',
+        sideImage: '',
+        heading: 'Safe Delivery to Your Door',
+        description: 'Fast, reliable and safe delivery right to your doorstep.',
+        bulletPoints: ['Get live order tracking', 'Fast & secure checkout', 'Easy returns & refunds'],
+        buttonText: 'Learn More',
+        buttonLink: '/about',
+        layout: '8-4',
+        textPosition: 'right',
+        textColor: '#333333',
+      };
     default:
       return base;
   }
@@ -384,6 +524,7 @@ function TabItemEditor({ tab, index, onChange, onRemove, showRemove }) {
         <option value="sale">On Sale</option>
         <option value="newest">Newest</option>
         <option value="best-selling">Best Selling</option>
+        <option value="most-viewed">Most Viewed</option>
         <option value="top-rated">Top Rated</option>
         <option value="trending">Trending</option>
         <option value="category">Category</option>
@@ -419,6 +560,7 @@ function ColumnEditor({ column, index, onChange, onRemove }) {
       <select value={column.source || 'newest'} onChange={(e) => update('source', e.target.value)} className="text-sm px-2 py-1 border rounded">
         <option value="best-selling">Best Selling</option>
         <option value="trending">Trending</option>
+        <option value="most-viewed">Most Viewed</option>
         <option value="newest">Newest</option>
         <option value="top-rated">Top Rated</option>
         <option value="featured">Featured</option>
@@ -855,6 +997,7 @@ function BlockSettingsPanel({ block, onChange }) {
               <option value="featured">Featured</option>
               <option value="all">All</option>
               <option value="best-selling">Best Selling</option>
+              <option value="most-viewed">Most Viewed</option>
             </select>
           </div>
           <div>
@@ -950,6 +1093,346 @@ function BlockSettingsPanel({ block, onChange }) {
             rows={8}
             placeholder={block.blockType === 'rich-text' ? 'Enter HTML content...' : 'Enter custom HTML...'}
           />
+        </div>
+      )}
+
+      {/* Banner Slider Carousel */}
+      {block.blockType === 'banner-slider-carousel' && (
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="text-sm font-semibold text-gray-700">Banner Cards</h4>
+          <div className="space-y-2">
+            {(block.banners || []).map((b, i) => (
+              <BannerItemEditor key={i} banner={b} index={i} onChange={(b2) => updateBanner(i, b2)} onRemove={() => removeBanner(i)} showRemove={(block.banners || []).length > 1} />
+            ))}
+          </div>
+          <button onClick={addBanner} className="flex items-center gap-1 text-sm text-primary hover:underline"><IoAdd size={16} /> Add Banner</button>
+          <div className="grid grid-cols-2 gap-2 pt-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Slides to Show</label>
+              <input type="number" min={1} max={6} value={block.slidesToShow || 4} onChange={(e) => update('slidesToShow', parseInt(e.target.value))} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Autoplay Speed (ms)</label>
+              <input type="number" min={1000} max={10000} step={500} value={block.autoplaySpeed || 4000} onChange={(e) => update('autoplaySpeed', parseInt(e.target.value))} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Banner Height</label>
+              <input type="text" value={block.bannerHeight || '200px'} onChange={(e) => update('bannerHeight', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Border Radius</label>
+              <input type="text" value={block.bannerBorderRadius || '12px'} onChange={(e) => update('bannerBorderRadius', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.autoplay !== false} onChange={(e) => update('autoplay', e.target.checked)} /> Autoplay</label>
+        </div>
+      )}
+
+      {/* Coupon / Offer Carousel */}
+      {block.blockType === 'coupon-carousel' && (
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="text-sm font-semibold text-gray-700">Coupon Cards</h4>
+          <div className="space-y-3">
+            {(block.coupons || []).map((coupon, i) => (
+              <div key={i} className="border rounded-lg p-3 bg-gray-50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Coupon {i + 1}</span>
+                  {(block.coupons || []).length > 1 && (
+                    <button onClick={() => { const c = [...(block.coupons || [])]; c.splice(i, 1); update('coupons', c); }} className="text-red-500 hover:text-red-700"><IoTrash size={14} /></button>
+                  )}
+                </div>
+                <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Title (e.g. GET 10% OFF)" value={coupon.title || ''} onChange={(e) => { const c = [...(block.coupons || [])]; c[i] = { ...c[i], title: e.target.value }; update('coupons', c); }} />
+                <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Description" value={coupon.description || ''} onChange={(e) => { const c = [...(block.coupons || [])]; c[i] = { ...c[i], description: e.target.value }; update('coupons', c); }} />
+                <div className="grid grid-cols-2 gap-2">
+                  <input className="text-sm px-3 py-2 border rounded" placeholder="Valid text" value={coupon.validText || ''} onChange={(e) => { const c = [...(block.coupons || [])]; c[i] = { ...c[i], validText: e.target.value }; update('coupons', c); }} />
+                  <input className="text-sm px-3 py-2 border rounded" placeholder="Coupon code" value={coupon.code || ''} onChange={(e) => { const c = [...(block.coupons || [])]; c[i] = { ...c[i], code: e.target.value }; update('coupons', c); }} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-gray-500">BG Color</label>
+                    <input type="color" value={coupon.bgColor || '#0F604B'} onChange={(e) => { const c = [...(block.coupons || [])]; c[i] = { ...c[i], bgColor: e.target.value }; update('coupons', c); }} className="w-full h-8 rounded" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Text Color</label>
+                    <input type="color" value={coupon.textColor || '#ffffff'} onChange={(e) => { const c = [...(block.coupons || [])]; c[i] = { ...c[i], textColor: e.target.value }; update('coupons', c); }} className="w-full h-8 rounded" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => update('coupons', [...(block.coupons || []), { title: 'NEW OFFER', description: '', validText: '', code: 'CODE', bgColor: '#0F604B', textColor: '#ffffff' }])} className="flex items-center gap-1 text-sm text-primary hover:underline"><IoAdd size={16} /> Add Coupon</button>
+          <div className="grid grid-cols-2 gap-2 pt-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Slides to Show</label>
+              <input type="number" min={1} max={5} value={block.slidesToShow || 3} onChange={(e) => update('slidesToShow', parseInt(e.target.value))} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.autoplay !== false} onChange={(e) => update('autoplay', e.target.checked)} /> Autoplay</label>
+        </div>
+      )}
+
+      {/* Products + Deal Sidebar */}
+      {block.blockType === 'product-with-deal-sidebar' && (
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="text-sm font-semibold text-gray-700">Product Carousel</h4>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Product Source</label>
+            <select value={block.productSource || 'best-selling'} onChange={(e) => update('productSource', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded">
+              <option value="best-selling">Best Selling</option>
+              <option value="featured">Featured</option>
+              <option value="newest">Newest</option>
+              <option value="sale">On Sale</option>
+              <option value="trending">Trending</option>
+              <option value="most-viewed">Most Viewed</option>
+              <option value="top-rated">Top Rated</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Products to show</label>
+            <input type="number" min={2} max={20} value={block.productLimit || 10} onChange={(e) => update('productLimit', parseInt(e.target.value))} className="w-full text-sm px-2 py-1.5 border rounded" />
+          </div>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showAddToCart !== false} onChange={(e) => update('showAddToCart', e.target.checked)} /> Add to Cart</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showWishlist !== false} onChange={(e) => update('showWishlist', e.target.checked)} /> Wishlist</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showRating !== false} onChange={(e) => update('showRating', e.target.checked)} /> Rating</label>
+          </div>
+
+          <h4 className="text-sm font-semibold text-gray-700 pt-3">Deal Sidebar</h4>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.dealEnabled !== false} onChange={(e) => update('dealEnabled', e.target.checked)} /> Enable Deal Sidebar</label>
+          {block.dealEnabled !== false && (
+            <>
+              <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Deal Title" value={block.dealTitle || ''} onChange={(e) => update('dealTitle', e.target.value)} />
+              <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Badge Text (e.g. Hot Deal)" value={block.dealBadgeText || ''} onChange={(e) => update('dealBadgeText', e.target.value)} />
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Deal Product Source</label>
+                <select value={block.dealProductSource || 'featured'} onChange={(e) => update('dealProductSource', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded">
+                  <option value="featured">Featured</option>
+                  <option value="sale">On Sale</option>
+                  <option value="best-selling">Best Selling</option>
+                  <option value="trending">Trending</option>
+                  <option value="most-viewed">Most Viewed</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Deal Position</label>
+                <select value={block.dealPosition || 'right'} onChange={(e) => update('dealPosition', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded">
+                  <option value="right">Right</option>
+                  <option value="left">Left</option>
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showCountdown !== false} onChange={(e) => update('showCountdown', e.target.checked)} /> Show Countdown</label>
+              {block.showCountdown !== false && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">End Date</label>
+                  <input type="datetime-local" value={block.dealsEndDate || ''} onChange={(e) => update('dealsEndDate', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded" />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Offer Strip / Marquee */}
+      {block.blockType === 'offer-strip' && (
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="text-sm font-semibold text-gray-700">Offer Strip</h4>
+          <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Main text" value={block.stripText || ''} onChange={(e) => update('stripText', e.target.value)} />
+          <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Highlight text (e.g. 70% OFF)" value={block.highlightText || ''} onChange={(e) => update('highlightText', e.target.value)} />
+          <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Link URL" value={block.stripLink || ''} onChange={(e) => update('stripLink', e.target.value)} />
+          <div className="grid grid-cols-3 gap-2">
+            <ColorField label="BG Color" value={block.stripBgColor} onChange={(v) => update('stripBgColor', v)} placeholder="#0F604B" />
+            <ColorField label="Text Color" value={block.stripTextColor} onChange={(v) => update('stripTextColor', v)} placeholder="#ffffff" />
+            <ColorField label="Highlight" value={block.stripHighlightColor} onChange={(v) => update('stripHighlightColor', v)} placeholder="#f7bd20" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Font Size</label>
+            <input type="text" value={block.stripFontSize || '18px'} onChange={(e) => update('stripFontSize', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded" />
+          </div>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.enableMarquee || false} onChange={(e) => update('enableMarquee', e.target.checked)} /> Enable Marquee (scrolling text)</label>
+          {block.enableMarquee && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Marquee Speed (px/s)</label>
+              <input type="number" min={10} max={200} value={block.marqueeSpeed || 30} onChange={(e) => update('marqueeSpeed', parseInt(e.target.value))} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Blog / Articles Carousel */}
+      {block.blockType === 'blog-carousel' && (
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="text-sm font-semibold text-gray-700">Blog Settings</h4>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Source</label>
+            <select value={block.blogSource || 'latest'} onChange={(e) => update('blogSource', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded">
+              <option value="latest">Latest</option>
+              <option value="featured">Featured</option>
+              <option value="popular">Popular</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Posts to show</label>
+              <input type="number" min={1} max={12} value={block.blogLimit || 6} onChange={(e) => update('blogLimit', parseInt(e.target.value))} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Slides visible</label>
+              <input type="number" min={1} max={5} value={block.slidesToShow || 3} onChange={(e) => update('slidesToShow', parseInt(e.target.value))} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Card Border Radius</label>
+            <input type="text" value={block.cardBorderRadius || '12px'} onChange={(e) => update('cardBorderRadius', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded" />
+          </div>
+          <div className="flex gap-4 flex-wrap">
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showDate !== false} onChange={(e) => update('showDate', e.target.checked)} /> Show Date</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showExcerpt !== false} onChange={(e) => update('showExcerpt', e.target.checked)} /> Show Excerpt</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showReadMore !== false} onChange={(e) => update('showReadMore', e.target.checked)} /> Read More</label>
+          </div>
+        </div>
+      )}
+
+      {/* Newsletter Subscribe */}
+      {block.blockType === 'newsletter' && (
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="text-sm font-semibold text-gray-700">Newsletter Settings</h4>
+          <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Heading" value={block.heading || ''} onChange={(e) => update('heading', e.target.value)} />
+          <textarea className="w-full text-sm px-3 py-2 border rounded" placeholder="Subtitle / description" value={block.subtitle || ''} onChange={(e) => update('subtitle', e.target.value)} rows={2} />
+          <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Input placeholder text" value={block.placeholder || ''} onChange={(e) => update('placeholder', e.target.value)} />
+          <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Button text" value={block.buttonText || ''} onChange={(e) => update('buttonText', e.target.value)} />
+          <ImageUploadField label="Background Image (optional)" value={block.bgImage || ''} onChange={(v) => update('bgImage', v)} />
+          <div className="grid grid-cols-2 gap-2">
+            <ColorField label="BG Color" value={block.bgColor} onChange={(v) => update('bgColor', v)} placeholder="#0F604B" />
+            <ColorField label="Text Color" value={block.textColor} onChange={(v) => update('textColor', v)} placeholder="#ffffff" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <ColorField label="Button BG" value={block.buttonBgColor} onChange={(v) => update('buttonBgColor', v)} placeholder="#f7bd20" />
+            <ColorField label="Button Text" value={block.buttonTextColor} onChange={(v) => update('buttonTextColor', v)} placeholder="#333333" />
+          </div>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showIcon !== false} onChange={(e) => update('showIcon', e.target.checked)} /> Show mail icon</label>
+        </div>
+      )}
+
+      {/* Category Grid (Image Cards) */}
+      {block.blockType === 'category-grid' && (
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="text-sm font-semibold text-gray-700">Category Grid Settings</h4>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Source</label>
+            <select value={block.categorySource || 'all'} onChange={(e) => update('categorySource', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded">
+              <option value="all">All Categories</option>
+              <option value="top">Top Categories</option>
+              <option value="manual">Manual Selection</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Limit</label>
+              <input type="number" min={2} max={16} value={block.categoryLimit || 8} onChange={(e) => update('categoryLimit', parseInt(e.target.value))} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Columns</label>
+              <input type="number" min={2} max={6} value={block.columns || 4} onChange={(e) => update('columns', parseInt(e.target.value))} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Card Style</label>
+            <select value={block.cardStyle || 'card'} onChange={(e) => update('cardStyle', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded">
+              <option value="card">Card</option>
+              <option value="circle">Circle</option>
+              <option value="minimal">Minimal</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Border Radius</label>
+              <input type="text" value={block.cardBorderRadius || '12px'} onChange={(e) => update('cardBorderRadius', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Image Height</label>
+              <input type="text" value={block.imageHeight || '180px'} onChange={(e) => update('imageHeight', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded" />
+            </div>
+          </div>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showProductCount !== false} onChange={(e) => update('showProductCount', e.target.checked)} /> Show count</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showImage !== false} onChange={(e) => update('showImage', e.target.checked)} /> Show image</label>
+          </div>
+        </div>
+      )}
+
+      {/* Product Vertical List (Tabs) */}
+      {block.blockType === 'product-vertical-tabs' && (
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="text-sm font-semibold text-gray-700">Tabs</h4>
+          <div className="space-y-2">
+            {(block.tabs || []).map((tab, i) => (
+              <TabItemEditor key={i} tab={tab} index={i} onChange={(t) => updateTab(i, t)} onRemove={() => removeTab(i)} showRemove={(block.tabs || []).length > 1} />
+            ))}
+          </div>
+          <button onClick={addTab} className="flex items-center gap-1 text-sm text-primary hover:underline"><IoAdd size={16} /> Add Tab</button>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Products per tab</label>
+            <input type="number" min={1} max={10} value={block.productLimit || 4} onChange={(e) => update('productLimit', parseInt(e.target.value))} className="w-full text-sm px-2 py-1.5 border rounded" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Layout</label>
+            <select value={block.layout || 'horizontal'} onChange={(e) => update('layout', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded">
+              <option value="horizontal">Horizontal (thumbnail + details)</option>
+              <option value="vertical">Vertical (stacked)</option>
+            </select>
+          </div>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showPrice !== false} onChange={(e) => update('showPrice', e.target.checked)} /> Price</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showRating !== false} onChange={(e) => update('showRating', e.target.checked)} /> Rating</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={block.showImage !== false} onChange={(e) => update('showImage', e.target.checked)} /> Image</label>
+          </div>
+        </div>
+      )}
+
+      {/* Image + Text CTA Banner */}
+      {block.blockType === 'image-text-cta' && (
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="text-sm font-semibold text-gray-700">CTA Banner</h4>
+          <ImageUploadField label="Main Image" value={block.mainImage || ''} onChange={(v) => update('mainImage', v)} />
+          <ImageUploadField label="Side Image (optional)" value={block.sideImage || ''} onChange={(v) => update('sideImage', v)} />
+          <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Heading" value={block.heading || ''} onChange={(e) => update('heading', e.target.value)} />
+          <textarea className="w-full text-sm px-3 py-2 border rounded" placeholder="Description" value={block.description || ''} onChange={(e) => update('description', e.target.value)} rows={2} />
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Bullet Points (one per line)</label>
+            <textarea
+              className="w-full text-sm px-3 py-2 border rounded font-mono"
+              rows={3}
+              value={(block.bulletPoints || []).join('\n')}
+              onChange={(e) => update('bulletPoints', e.target.value.split('\n').filter(Boolean))}
+              placeholder="Get live order tracking&#10;Fast & secure checkout&#10;Easy returns & refunds"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input className="text-sm px-3 py-2 border rounded" placeholder="Button Text" value={block.buttonText || ''} onChange={(e) => update('buttonText', e.target.value)} />
+            <input className="text-sm px-3 py-2 border rounded" placeholder="Button Link" value={block.buttonLink || ''} onChange={(e) => update('buttonLink', e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Layout</label>
+              <select value={block.layout || '8-4'} onChange={(e) => update('layout', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded">
+                <option value="8-4">8/4 (wide + narrow)</option>
+                <option value="6-6">6/6 (equal)</option>
+                <option value="4-8">4/8 (narrow + wide)</option>
+                <option value="full">Full width (no side image)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Text Position</label>
+              <select value={block.textPosition || 'right'} onChange={(e) => update('textPosition', e.target.value)} className="w-full text-sm px-2 py-1.5 border rounded">
+                <option value="right">Right (overlay)</option>
+                <option value="left">Left (overlay)</option>
+                <option value="center">Center</option>
+              </select>
+            </div>
+          </div>
+          <ColorField label="Text Color" value={block.textColor} onChange={(v) => update('textColor', v)} placeholder="#333333" />
         </div>
       )}
     </div>

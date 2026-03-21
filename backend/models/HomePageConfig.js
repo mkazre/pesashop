@@ -50,6 +50,16 @@ const tabItemSchema = new mongoose.Schema({
   categoryId: { type: String, default: '' },
 }, { _id: true });
 
+// ── Coupon item schema ─────────────────────────────────────────────
+const couponItemSchema = new mongoose.Schema({
+  title: { type: String, default: '' },
+  description: { type: String, default: '' },
+  validText: { type: String, default: '' },
+  code: { type: String, default: '' },
+  bgColor: { type: String, default: '#0F604B' },
+  textColor: { type: String, default: '#ffffff' },
+}, { _id: true });
+
 // ── Block schema ───────────────────────────────────────────────────
 const blockSchema = new mongoose.Schema({
   blockType: {
@@ -73,6 +83,15 @@ const blockSchema = new mongoose.Schema({
       'rich-text',
       'custom-html',
       'custom-template',
+      'banner-slider-carousel',
+      'coupon-carousel',
+      'product-with-deal-sidebar',
+      'offer-strip',
+      'blog-carousel',
+      'newsletter',
+      'category-grid',
+      'product-vertical-tabs',
+      'image-text-cta',
     ],
   },
   enabled: { type: Boolean, default: true },
@@ -178,6 +197,69 @@ const blockSchema = new mongoose.Schema({
 
   // ── Rich Text / Custom HTML ──
   content: { type: String, default: '' },
+
+  // ── Banner Slider Carousel ──
+  slidesToShow: { type: Number, default: 4 },
+  autoplay: { type: Boolean, default: true },
+  autoplaySpeed: { type: Number, default: 4000 },
+  bannerHeight: { type: String, default: '200px' },
+  bannerBorderRadius: { type: String, default: '12px' },
+
+  // ── Coupon / Offer Carousel ──
+  coupons: [couponItemSchema],
+
+  // ── Product with Deal Sidebar ──
+  dealEnabled: { type: Boolean, default: true },
+  dealTitle: { type: String, default: 'Special Offer' },
+  dealBadgeText: { type: String, default: 'Hot Deal' },
+  dealProductSource: { type: String, enum: ['featured', 'sale', 'best-selling', 'newest', 'trending', 'all'], default: 'featured' },
+  dealPosition: { type: String, enum: ['left', 'right'], default: 'right' },
+
+  // ── Offer Strip / Marquee ──
+  stripText: { type: String, default: '' },
+  highlightText: { type: String, default: '' },
+  stripBgColor: { type: String, default: '#0F604B' },
+  stripTextColor: { type: String, default: '#ffffff' },
+  stripHighlightColor: { type: String, default: '#f7bd20' },
+  stripFontSize: { type: String, default: '18px' },
+  stripLink: { type: String, default: '' },
+  enableMarquee: { type: Boolean, default: false },
+  marqueeSpeed: { type: Number, default: 30 },
+
+  // ── Blog / Articles Carousel ──
+  blogSource: { type: String, enum: ['latest', 'featured', 'popular'], default: 'latest' },
+  blogLimit: { type: Number, default: 6 },
+  showDate: { type: Boolean, default: true },
+  showExcerpt: { type: Boolean, default: true },
+  showReadMore: { type: Boolean, default: true },
+  cardBorderRadius: { type: String, default: '12px' },
+
+  // ── Newsletter Subscribe ──
+  heading: { type: String, default: '' },
+  subtitle: { type: String, default: '' },
+  placeholder: { type: String, default: '' },
+  buttonText: { type: String, default: '' },
+  bgColor: { type: String, default: '' },
+  bgImage: { type: String, default: '' },
+  showIcon: { type: Boolean, default: true },
+
+  // ── Category Grid ──
+  showProductCount: { type: Boolean, default: true },
+  showImage: { type: Boolean, default: true },
+  cardStyle: { type: String, enum: ['card', 'circle', 'minimal'], default: 'card' },
+  imageHeight: { type: String, default: '180px' },
+
+  // ── Product Vertical Tabs ──
+  showPrice: { type: Boolean, default: true },
+  layout: { type: String, default: 'horizontal' },
+
+  // ── Image + Text CTA Banner ──
+  mainImage: { type: String, default: '' },
+  sideImage: { type: String, default: '' },
+  description: { type: String, default: '' },
+  bulletPoints: [{ type: String }],
+  buttonLink: { type: String, default: '' },
+  textPosition: { type: String, enum: ['left', 'right', 'center'], default: 'right' },
 
 }, { _id: true });
 
