@@ -527,7 +527,7 @@ MIT License
 
 ## 👥 Support
 
-For support, email support@yourcompany.com or create an issue in the repository.
+For support, email support@pesashop.com or create an issue in the repository.
 
 ## 🎯 Roadmap
 
