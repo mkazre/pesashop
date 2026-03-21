@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { giftCardsAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 export default function MyGiftCardsPage() {
   const [purchased, setPurchased] = useState([]);

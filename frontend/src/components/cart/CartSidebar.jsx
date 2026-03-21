@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { calculateBatchB2BPrices, getDisplayPrice } from '@/utils/pricing';
 import Button from '../common/Button';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 function getImageSrc(path) {

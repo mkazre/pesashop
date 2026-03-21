@@ -4,7 +4,7 @@ import { loyaltyAPI } from '@/services/api';
 import Card from '@/components/common/Card';
 import Table from '@/components/common/Table';
 import Button from '@/components/common/Button';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoTrophy, IoRefresh } from 'react-icons/io5';
 
 const LoyaltyRankingPage = () => {

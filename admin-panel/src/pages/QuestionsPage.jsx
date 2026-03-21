@@ -4,7 +4,7 @@ import { questionsAPI } from '@/services/api';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Modal from '@/components/common/Modal';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoTrash, IoChatbubble, IoEyeOff, IoEye, IoPin, IoCheckmarkCircle, IoSearch } from 'react-icons/io5';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';

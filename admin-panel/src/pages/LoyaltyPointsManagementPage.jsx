@@ -6,7 +6,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import Table from '@/components/common/Table';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoAdd, IoPeople, IoPerson } from 'react-icons/io5';
 
 const LoyaltyPointsManagementPage = () => {

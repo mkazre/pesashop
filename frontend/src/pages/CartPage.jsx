@@ -5,7 +5,7 @@ import { CartItem, CartSummary } from '@/components/cart/CartComponents';
 import TrustBadges from '@/components/product/TrustBadges';
 import CartLoyaltyPoints from '@/components/loyalty/CartLoyaltyPoints';
 import CouponWidget from '@/components/coupon/CouponWidget';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { usePageTemplate } from '@/hooks/usePageTemplate';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { authAPI } from '@/services/api';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 const EMPTY_ADDRESS = {
   type: 'billing',

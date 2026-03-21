@@ -6,7 +6,7 @@ import Table from '@/components/common/Table';
 import Button from '@/components/common/Button';
 import Modal from '@/components/common/Modal';
 import Input from '@/components/common/Input';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoWallet, IoCheckmark, IoClose, IoCalendar, IoEye } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 

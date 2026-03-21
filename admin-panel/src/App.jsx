@@ -148,10 +148,14 @@ function App() {
       
       <Toaster
         position="top-right"
+        containerStyle={{ top: 20, right: 20 }}
         toastOptions={{
+          duration: 4000,
           style: {
-            borderRadius: '0px',
-            border: '2px solid #e5e7eb',
+            background: 'transparent',
+            boxShadow: 'none',
+            padding: 0,
+            maxWidth: '440px',
           },
         }}
       />

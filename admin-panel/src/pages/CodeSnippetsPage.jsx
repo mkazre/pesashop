@@ -7,7 +7,7 @@ import Table from '@/components/common/Table';
 import Modal from '@/components/common/Modal';
 import Input from '@/components/common/Input';
 import Select from '@/components/common/Select';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { 
   IoCodeSlash, 
   IoAdd, 

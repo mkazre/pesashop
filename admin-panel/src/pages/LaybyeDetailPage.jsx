@@ -6,7 +6,7 @@ import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoArrowBack, IoWallet, IoCheckmark, IoClose, IoCalendar, IoReceipt } from 'react-icons/io5';
 
 const LaybyeDetailPage = () => {

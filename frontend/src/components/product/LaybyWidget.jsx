@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import { laybyAPI } from '@/services/api';
 import { useAuthStore, useUIStore, useCartStore, useCurrencyStore } from '@/store';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 /**
  * LaybyWidget — Handles the full layby application flow:

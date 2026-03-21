@@ -13,7 +13,7 @@ import Badge from '../common/Badge';
 import Button from '../common/Button';
 import { useCartStore, useWishlistStore, useCompareStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 

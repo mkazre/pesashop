@@ -7,7 +7,7 @@ import { useAuthStore, useCurrencyStore } from '@/store';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoGift } from 'react-icons/io5';
 
 export default function GiftCardPurchasePage() {

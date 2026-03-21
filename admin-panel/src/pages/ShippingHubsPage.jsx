@@ -10,7 +10,7 @@ import {
   Mail,
   Building
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import api from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Button from '../components/common/Button';

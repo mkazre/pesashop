@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { laybyAPI, settingsAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 export default function LaybyesPage() {
   const { formatPrice } = useCurrencyStore();

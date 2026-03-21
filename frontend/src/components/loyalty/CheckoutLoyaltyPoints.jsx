@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { loyaltyAPI } from '@/services/api';
 import { useCartStore, useAuthStore, useCurrencyStore } from '@/store';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 export default function CheckoutLoyaltyPoints({ orderTotal, onRedemptionChange }) {
   const [earnData, setEarnData] = useState(null);

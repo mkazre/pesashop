@@ -4,7 +4,7 @@ import { reviewsAPI, emailsAPI } from '@/services/api';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoSave, IoArrowBack } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 

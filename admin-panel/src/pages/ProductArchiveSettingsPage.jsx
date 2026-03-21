@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { productArchiveSettingsAPI, imagesAPI } from '../services/api';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import {
   IoChevronDown,
   IoChevronUp,

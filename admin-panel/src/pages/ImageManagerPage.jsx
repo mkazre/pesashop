@@ -8,7 +8,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Checkbox from '@/components/common/Checkbox';
 import Select from '@/components/common/Select';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { 
   IoImages, 
   IoCloudUpload, 

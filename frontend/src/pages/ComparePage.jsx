@@ -5,7 +5,7 @@ import Button from '@/components/common/Button';
 import { useCompareStore, useCartStore, useUIStore, useCurrencyStore } from '@/store';
 import { useProductArchiveSettings } from '@/hooks/useProductArchiveSettings';
 import { IoTrashOutline, IoCartOutline, IoArrowBack } from 'react-icons/io5';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 

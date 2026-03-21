@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import {
   IoClose, IoSave, IoTrash, IoAdd, IoImage, IoText, IoCode,
   IoChevronDown, IoChevronUp, IoInformationCircle

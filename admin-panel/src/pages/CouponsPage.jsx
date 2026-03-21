@@ -7,7 +7,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Table from '@/components/common/Table';
 import Modal from '@/components/common/Modal';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoAdd, IoTrash, IoCreate, IoPricetag, IoSettings, IoMail } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { pageTemplatesAPI } from '@/services/api';
 import Button from '@/components/common/Button';
 import Modal from '@/components/common/Modal';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { History, RotateCcw, Eye, X } from 'lucide-react';
 
 const VersionHistory = ({ pageId, onClose, onRestore }) => {

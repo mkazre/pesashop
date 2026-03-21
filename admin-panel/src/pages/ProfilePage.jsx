@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation } from 'react-query';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import {
   IoPersonCircle, IoShieldCheckmark, IoKey, IoSave,
   IoEye, IoEyeOff, IoMail, IoCall, IoCalendar,

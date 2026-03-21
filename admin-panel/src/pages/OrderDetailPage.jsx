@@ -8,7 +8,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import CreateWaybillModal from '@/components/shipping/CreateWaybillModal';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoArrowBack, IoCreate, IoTrash, IoCheckmark, IoClose, IoAdd } from 'react-icons/io5';
 import { Truck } from 'lucide-react';
 

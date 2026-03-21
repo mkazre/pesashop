@@ -6,7 +6,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Editor, Frame, Element, useEditor } from '@craftjs/core';
 import { pageTemplatesAPI } from '@/services/api';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { ChevronLeft, Save, ChevronDown, ChevronUp, Undo2, Redo2, Layers, Monitor, Tablet, Smartphone, Plus, X } from 'lucide-react';
 
 import { RenderNode } from '@/components/builder/utils/RenderNode';

@@ -5,7 +5,7 @@ import { settingsAPI } from '@/services/api';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoSave, IoSparkles, IoEye, IoEyeOff, IoAdd, IoTrash, IoMail, IoSend } from 'react-icons/io5';
 
 const EMPTY_BANK = { bankName: '', accountName: '', accountNumber: '', branchCode: '', accountType: '', reference: '' };

@@ -6,7 +6,7 @@ import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Table from '@/components/common/Table';
 import Modal from '@/components/common/Modal';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoStar, IoCheckmark, IoClose, IoTrash, IoSettings, IoImage, IoShieldCheckmark, IoChatbubble } from 'react-icons/io5';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';

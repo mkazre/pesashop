@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { mediaAPI } from '@/services/api';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoCloudUpload, IoSearch, IoGrid, IoList, IoImage, IoTrash, IoCheckmarkCircle, IoFolderOpen, IoChevronBack, IoChevronForward, IoClose } from 'react-icons/io5';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';

@@ -8,7 +8,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import Table from '@/components/common/Table';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoAdd, IoTrash, IoCreate, IoChevronDown, IoChevronForward, IoCubeOutline, IoSwapHorizontal, IoRemoveCircleOutline, IoCheckbox, IoSquareOutline, IoClose } from 'react-icons/io5';
 
 const CategoriesPage = () => {

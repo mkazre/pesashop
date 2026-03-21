@@ -17,7 +17,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { format } from 'date-fns';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import api from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Button from '../components/common/Button';

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useCartStore, useCurrencyStore } from '@/store';
 import { giftCardsAPI } from '@/services/api';
 import Button from '../common/Button';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 // CartItem Component
 export function CartItem({ item, index, onUpdateQuantity, onRemove, onMoveToWishlist }) {

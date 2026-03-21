@@ -14,7 +14,7 @@ import {
 import { useState, useMemo } from 'react';
 import { useQuery } from 'react-query';
 import { menusAPI, footerConfigAPI } from '@/services/api';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const imgSrc = (v) => v ? (v.startsWith('http') ? v : `${API_URL}${v}`) : '';

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { mediaAPI } from '@/services/api';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import {
   IoClose, IoCloudUpload, IoSearch, IoGrid, IoList,
   IoImage, IoTrash, IoCheckmarkCircle, IoFolderOpen,

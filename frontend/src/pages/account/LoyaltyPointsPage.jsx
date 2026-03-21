@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { loyaltyAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 export default function LoyaltyPointsPage() {
   const [overview, setOverview] = useState(null);

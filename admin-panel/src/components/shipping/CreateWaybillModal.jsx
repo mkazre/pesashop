@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { Package, Truck, MapPin } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import api from '../../services/api';
 import Modal from '../common/Modal';
 import Button from '../common/Button';

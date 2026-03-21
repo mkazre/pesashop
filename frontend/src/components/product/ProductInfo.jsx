@@ -4,7 +4,7 @@ import { IoHeart, IoHeartOutline, IoShareSocialOutline } from 'react-icons/io5';
 import { useWishlistStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 export default function ProductInfo({ product, selectedVariation = null, quantity = 1 }) {
   const { items: wishlistItems, addItem, removeItem } = useWishlistStore();

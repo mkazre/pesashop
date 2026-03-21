@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { authAPI, menusAPI } from '@/services/api';
 import Button from '../common/Button';
 import Input from '../common/Input';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import pesaLogo from '@/assets/pesashop-logo.png';
 
 // Load Google Identity Services script

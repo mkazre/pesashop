@@ -8,7 +8,7 @@ import Button from '@/components/common/Button';
 import Table from '@/components/common/Table';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoAdd, IoTrash, IoCreate, IoSearch, IoSparkles, IoCheckbox, IoCheckboxOutline } from 'react-icons/io5';
 
 const ProductsPage = () => {

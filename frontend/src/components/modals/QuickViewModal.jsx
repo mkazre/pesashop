@@ -5,7 +5,7 @@ import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
 import { VariantSelector, QuantitySelector } from '../product/ProductVariants';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { Link } from 'react-router-dom';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
 

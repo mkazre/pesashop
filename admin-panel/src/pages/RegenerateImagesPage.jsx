@@ -5,7 +5,7 @@ import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Checkbox from '@/components/common/Checkbox';
 import Select from '@/components/common/Select';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoRefresh, IoCheckmarkCircle, IoCloseCircle, IoImage, IoChevronBack, IoChevronForward } from 'react-icons/io5';
 
 const ITEMS_PER_PAGE = 20;

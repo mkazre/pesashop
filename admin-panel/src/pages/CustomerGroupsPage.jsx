@@ -8,7 +8,7 @@ import Input from '@/components/common/Input';
 import Select from '@/components/common/Select';
 import Table from '@/components/common/Table';
 import Modal from '@/components/common/Modal';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoAdd, IoTrash, IoCreate, IoPeople, IoSearch } from 'react-icons/io5';
 
 const CustomerGroupsPage = () => {

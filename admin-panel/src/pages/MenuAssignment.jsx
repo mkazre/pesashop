@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { menusAPI, pageTemplatesAPI } from '@/services/api';
 import Button from '@/components/common/Button';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import {
   Link, Save, Globe, ChevronDown, ChevronRight, Info, AlertCircle,
   Monitor, Smartphone, Layout, PanelLeft, Menu as MenuIcon, LayoutGrid,

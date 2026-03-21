@@ -11,7 +11,7 @@ import {
   Camera,
   ArrowLeft
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import api from '../services/api';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';

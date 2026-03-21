@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { couponsAPI } from '@/services/api';
 import { useCartStore, useAuthStore, useCurrencyStore } from '@/store';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 export default function CouponWidget({ onCouponApplied, onCouponRemoved, compact = false }) {
   const [code, setCode] = useState('');

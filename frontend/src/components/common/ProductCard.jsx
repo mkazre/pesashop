@@ -6,7 +6,7 @@ import Button from './Button';
 import { useCartStore, useWishlistStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 export default function ProductCard({ product, layout = 'grid' }) {
   const { addItem } = useCartStore();

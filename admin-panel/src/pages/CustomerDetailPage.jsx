@@ -6,7 +6,7 @@ import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { IoArrowBack, IoCreate, IoTrash, IoPerson, IoStar, IoCart, IoGift, IoCard, IoChatbubble, IoCalendar, IoMail, IoCall, IoLocation, IoAdd, IoWallet, IoClose, IoDownload, IoDocument } from 'react-icons/io5';
 
 const CustomerDetailPage = () => {

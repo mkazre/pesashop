@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEditor, ROOT_NODE } from '@craftjs/core';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 import { useUndoRedo } from '@/components/builder/utils/UndoRedo';
 import {
   Square,

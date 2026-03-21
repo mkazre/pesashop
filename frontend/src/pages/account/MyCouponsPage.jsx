@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { couponsAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
-import toast from 'react-hot-toast';
+import toast from '@/utils/toast';
 
 export default function MyCouponsPage() {
   const [available, setAvailable] = useState([]);
