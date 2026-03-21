@@ -1,6 +1,6 @@
 # Advanced E-Commerce Platform
 
-A full-featured e-commerce platform built with React.js, Node.js, MongoDB, and Flutter API support.
+A full-featured e-commerce platform built with React.js, Node.js, MongoDB, and React Native API support.
 
 ## 🚀 Features
 
@@ -527,7 +527,7 @@ MIT License
 
 ## 👥 Support
 
-For support, email support@yourcompany.com or create an issue in the repository.
+For support, email support@pesashop.com or create an issue in the repository.
 
 ## 🎯 Roadmap
 
