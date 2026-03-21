@@ -13,7 +13,9 @@
       "backgroundColor": "#0F604B"
     },
     "newArchEnabled": true,
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pesashop.mobile"
@@ -23,7 +25,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F604B"
       },
-      "package": "com.pesashop.mobile"
+      "package": "com.pesashop.mobile",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -49,14 +54,15 @@
         "origin": false
       },
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
+        "projectId": "a547ffd4-858c-45bb-b527-495e2264a8da"
       }
     },
     "updates": {
-      "url": "https://u.expo.dev/YOUR_EAS_PROJECT_ID"
+      "url": "https://u.expo.dev/a547ffd4-858c-45bb-b527-495e2264a8da"
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    }
+    },
+    "owner": "mkazre"
   }
 }
