@@ -17,6 +17,19 @@ try {
   // expo-notifications not installed yet or running on web
 }
 
+// ─── IMPORTANT: Set notification handler at module level (outside component) ───
+// This tells the OS to show push notifications even when the app is in the foreground
+// with sound, alert popup, and badge update — like WhatsApp does.
+if (Notifications && Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }),
+  });
+}
+
 export function useExpoPush() {
   const router = useRouter();
   const { token } = useAuthStore();
@@ -35,6 +48,20 @@ export function useExpoPush() {
           return;
         }
 
+        // Configure Android notification channel FIRST (before requesting token)
+        // This ensures the channel exists so push notifications play sound & vibrate
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'Default',
+            importance: Notifications.AndroidImportance?.MAX,
+            sound: 'default',
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#0F604B',
+            enableVibrate: true,
+            showBadge: true,
+          });
+        }
+
         // Check/request permission
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
@@ -45,8 +72,9 @@ export function useExpoPush() {
         if (finalStatus !== 'granted') return;
 
         // Get Expo push token
-        const projectId = Constants?.expiConfig?.extra?.eas?.projectId
-          || Constants?.default?.expoConfig?.extra?.eas?.projectId;
+        const projectId = Constants?.expoConfig?.extra?.eas?.projectId
+          || Constants?.default?.expoConfig?.extra?.eas?.projectId
+          || 'a547ffd4-858c-45bb-b527-495e2264a8da';
 
         const tokenData = await Notifications.getExpoPushTokenAsync(
           projectId ? { projectId } : undefined
@@ -64,16 +92,7 @@ export function useExpoPush() {
         });
 
         registered.current = true;
-
-        // Configure Android notification channel
-        if (Platform.OS === 'android') {
-          await Notifications.setNotificationChannelAsync('default', {
-            name: 'Default',
-            importance: Notifications.AndroidImportance?.MAX,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#0F604B',
-          });
-        }
+        console.log('Push notifications registered:', expoPushToken.slice(0, 20) + '...');
       } catch (err: any) {
         console.debug('Push registration skipped:', err.message);
       }
