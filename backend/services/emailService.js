@@ -176,10 +176,16 @@ class EmailService {
    * Send order confirmation email
    */
   async sendOrderConfirmation(order) {
-    const user = await order.populate('customer');
+    if (!(await this.isEnabled('orderConfirmation'))) return;
+    await order.populate('customer');
+    const customer = order.customer;
+    if (!customer?.email) {
+      console.warn('sendOrderConfirmation: No customer email for order', order.orderNumber);
+      return;
+    }
     
     const variables = {
-      customer_name: user.customer.getFullName(),
+      customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
       order_date: order.createdAt.toLocaleDateString(),
       order_total: `R ${order.total.toFixed(2)}`,
@@ -194,7 +200,7 @@ class EmailService {
     };
 
     return await this.sendTemplatedEmail(
-      user.customer.email,
+      customer.email,
       'order_confirmation',
       variables
     );
@@ -204,10 +210,16 @@ class EmailService {
    * Send order shipped notification
    */
   async sendOrderShipped(order) {
-    const user = await order.populate('customer');
-    
+    if (!(await this.isEnabled('orderShipped'))) return;
+    await order.populate('customer');
+    const customer = order.customer;
+    if (!customer?.email) {
+      console.warn('sendOrderShipped: No customer email for order', order.orderNumber);
+      return;
+    }
+
     const variables = {
-      customer_name: user.customer.getFullName(),
+      customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
       tracking_number: order.trackingNumber,
       tracking_url: order.trackingUrl,
@@ -215,7 +227,7 @@ class EmailService {
     };
 
     return await this.sendTemplatedEmail(
-      user.customer.email,
+      customer.email,
       'order_shipped',
       variables
     );
@@ -226,9 +238,11 @@ class EmailService {
    */
   async sendOrderDelivered(order) {
     if (!(await this.isEnabled('orderDelivered'))) return;
-    const user = await order.populate('customer');
-    return await this.sendTemplatedEmail(user.customer.email, 'order_delivered', {
-      customer_name: user.customer.getFullName?.() || user.customer.firstName || 'Customer',
+    await order.populate('customer');
+    const customer = order.customer;
+    if (!customer?.email) return;
+    return await this.sendTemplatedEmail(customer.email, 'order_delivered', {
+      customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
       order_total: `R ${order.total.toFixed(2)}`,
       delivery_date: new Date().toLocaleDateString('en-ZA'),
@@ -240,9 +254,11 @@ class EmailService {
    */
   async sendOrderCancelled(order, reason = '') {
     if (!(await this.isEnabled('orderCancelled'))) return;
-    const user = await order.populate('customer');
-    return await this.sendTemplatedEmail(user.customer.email, 'order_cancelled', {
-      customer_name: user.customer.getFullName?.() || user.customer.firstName || 'Customer',
+    await order.populate('customer');
+    const customer = order.customer;
+    if (!customer?.email) return;
+    return await this.sendTemplatedEmail(customer.email, 'order_cancelled', {
+      customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
       order_total: `R ${order.total.toFixed(2)}`,
       cancellation_reason: reason || 'No reason provided',
@@ -254,9 +270,11 @@ class EmailService {
    */
   async sendOrderRefunded(order, refundAmount) {
     if (!(await this.isEnabled('orderRefunded'))) return;
-    const user = await order.populate('customer');
-    return await this.sendTemplatedEmail(user.customer.email, 'order_refunded', {
-      customer_name: user.customer.getFullName?.() || user.customer.firstName || 'Customer',
+    await order.populate('customer');
+    const customer = order.customer;
+    if (!customer?.email) return;
+    return await this.sendTemplatedEmail(customer.email, 'order_refunded', {
+      customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
       refund_amount: `R ${(refundAmount || order.total).toFixed(2)}`,
       order_total: `R ${order.total.toFixed(2)}`,
@@ -268,9 +286,11 @@ class EmailService {
    */
   async sendOrderNote(order, note) {
     if (!(await this.isEnabled('orderNote'))) return;
-    const user = await order.populate('customer');
-    return await this.sendTemplatedEmail(user.customer.email, 'order_note', {
-      customer_name: user.customer.getFullName?.() || user.customer.firstName || 'Customer',
+    await order.populate('customer');
+    const customer = order.customer;
+    if (!customer?.email) return;
+    return await this.sendTemplatedEmail(customer.email, 'order_note', {
+      customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
       note_content: note,
     });
@@ -450,11 +470,11 @@ class EmailService {
           <p>Thank you for your business.</p>
         `;
 
-        return await this.sendEmail(
-          customer.email,
+        return await this.sendEmail({
+          to: customer.email,
           subject,
-          emailBody
-        );
+          html: emailBody,
+        });
       }
     } catch (error) {
       console.error('Error sending laybye reminder email:', error);
@@ -466,8 +486,10 @@ class EmailService {
    * Send welcome email to new customer
    */
   async sendWelcomeEmail(user) {
+    if (!(await this.isEnabled('newAccount'))) return;
+    if (!user?.email) return;
     const variables = {
-      customer_name: user.getFullName(),
+      customer_name: user.getFullName?.() || user.firstName || 'Customer',
       login_url: `${process.env.FRONTEND_URL}/login`,
       shop_url: process.env.FRONTEND_URL
     };
@@ -483,8 +505,9 @@ class EmailService {
    * Send password reset email
    */
   async sendPasswordReset(user, resetToken) {
+    if (!user?.email) return;
     const variables = {
-      customer_name: user.getFullName(),
+      customer_name: user.getFullName?.() || user.firstName || 'Customer',
       reset_url: `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`,
       expiry_hours: 24
     };
@@ -494,6 +517,31 @@ class EmailService {
       'password_reset',
       variables
     );
+  }
+
+  /**
+   * Send payment confirmation email
+   */
+  async sendPaymentConfirmation(order) {
+    if (!(await this.isEnabled('orderConfirmation'))) return;
+    await order.populate('customer');
+    const customer = order.customer;
+    if (!customer?.email) return;
+    try {
+      return await this.sendTemplatedEmail(customer.email, 'payment_confirmation', {
+        customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
+        order_number: order.orderNumber,
+        order_total: `R ${order.total.toFixed(2)}`,
+        payment_method: order.paymentMethod || 'N/A',
+      });
+    } catch (templateErr) {
+      // Fallback to simple email if no payment_confirmation template exists
+      return await this.sendEmail({
+        to: customer.email,
+        subject: `Payment Confirmed - Order #${order.orderNumber}`,
+        html: `<h2>Payment Confirmed</h2><p>Dear ${customer.getFullName?.() || customer.firstName || 'Customer'},</p><p>Your payment for order <strong>#${order.orderNumber}</strong> has been confirmed.</p><p><strong>Total:</strong> R ${order.total.toFixed(2)}</p><p>Thank you for your purchase!</p>`,
+      });
+    }
   }
 
   /**
@@ -552,8 +600,12 @@ class EmailService {
    */
   async testConnection() {
     try {
+      await this.ensureInitialized();
+      if (!this.transporter) {
+        return { success: false, message: 'No SMTP transporter configured. Please set SMTP settings in admin Settings or .env' };
+      }
       await this.transporter.verify();
-      return { success: true, message: 'Email configuration is valid' };
+      return { success: true, message: 'SMTP connection successful' };
     } catch (error) {
       return { success: false, message: error.message };
     }

@@ -927,14 +927,27 @@ const defaultTemplates = [
   },
 ];
 
-async function seedEmailTemplates() {
+async function seedEmailTemplates({ force = false } = {}) {
   try {
-    await EmailTemplate.deleteMany({});
-    await EmailTemplate.insertMany(defaultTemplates);
-    console.log(`✅ Email templates seeded successfully (${defaultTemplates.length} templates)`);
+    if (force) {
+      await EmailTemplate.deleteMany({});
+      await EmailTemplate.insertMany(defaultTemplates);
+      console.log(`✅ Email templates seeded (force) — ${defaultTemplates.length} templates`);
+      return;
+    }
+    // Only insert templates whose type doesn't already exist
+    const existing = await EmailTemplate.find({}).select('type');
+    const existingTypes = new Set(existing.map(t => t.type));
+    const missing = defaultTemplates.filter(t => !existingTypes.has(t.type));
+    if (missing.length === 0) {
+      console.log(`✅ Email templates OK — all ${defaultTemplates.length} templates present`);
+      return;
+    }
+    await EmailTemplate.insertMany(missing);
+    console.log(`✅ Email templates seeded — ${missing.length} new templates added (${existing.length} already existed)`);
   } catch (error) {
     console.error('Error seeding email templates:', error);
-    throw error;
+    // Don't throw — this shouldn't prevent server startup
   }
 }
 

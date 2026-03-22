@@ -236,6 +236,10 @@ app.use(errorHandler);
 // Start currency auto-update
 currencyUpdater.startAutoUpdate();
 
+// Seed missing email templates on startup
+const seedEmailTemplates = require('./seeders/emailTemplates');
+seedEmailTemplates();
+
 // Initialize laybye cron jobs
 initLaybyeCronJobs();
 

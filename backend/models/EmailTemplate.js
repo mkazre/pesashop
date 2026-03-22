@@ -54,6 +54,8 @@ const emailTemplateSchema = new mongoose.Schema({
       'coupon_birthday',
       // Reviews
       'review_reminder',
+      // Payments
+      'payment_confirmation',
       // Other
       'promotional',
       'custom'

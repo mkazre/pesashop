@@ -45,19 +45,23 @@ router.put('/', protect, authorize('admin'), async (req, res) => {
       settings = await Settings.create(req.body);
     } else {
       // Strip masked sensitive values so we don't overwrite with the mask
+      const payload = { ...req.body };
+      delete payload._id;
+      delete payload.__v;
+      delete payload.createdAt;
+      delete payload.updatedAt;
       SENSITIVE_KEYS.forEach(k => {
-        if (req.body[k] === MASK || req.body[k] === '') delete req.body[k];
+        if (payload[k] === MASK || payload[k] === '') delete payload[k];
       });
-      if (req.body.socialLogin?.google?.clientSecret === MASK) delete req.body.socialLogin.google.clientSecret;
-      if (req.body.socialLogin?.facebook?.appSecret === MASK) delete req.body.socialLogin.facebook.appSecret;
+      if (payload.socialLogin?.google?.clientSecret === MASK) delete payload.socialLogin.google.clientSecret;
+      if (payload.socialLogin?.facebook?.appSecret === MASK) delete payload.socialLogin.facebook.appSecret;
       
-      Object.keys(req.body).forEach(key => {
-        if (req.body[key] !== undefined) {
-          settings[key] = req.body[key];
-        }
-      });
-      
-      await settings.save();
+      // Use findOneAndUpdate with $set for reliable nested object persistence
+      settings = await Settings.findOneAndUpdate(
+        { _id: settings._id },
+        { $set: payload },
+        { new: true, runValidators: true }
+      );
     }
 
     // Re-initialize email transporter if SMTP settings changed
