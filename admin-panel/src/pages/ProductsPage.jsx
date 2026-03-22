@@ -9,7 +9,7 @@ import Table from '@/components/common/Table';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import toast from '@/utils/toast';
-import { IoAdd, IoTrash, IoCreate, IoSearch, IoSparkles, IoCheckbox, IoCheckboxOutline } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoCreate, IoSearch, IoSparkles, IoCheckbox, IoCheckboxOutline, IoArrowUp, IoArrowDown, IoFunnel } from 'react-icons/io5';
 
 const ProductsPage = () => {
   const navigate = useNavigate();
@@ -28,18 +28,31 @@ const ProductsPage = () => {
   });
   const [aiGenerationType, setAiGenerationType] = useState('selected'); // 'selected', 'category', 'all'
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [sortKey, setSortKey] = useState('date-desc');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
 
   const { data, isLoading } = useQuery(
-    ['products', page, search],
-    () => productsAPI.getAll({ page, limit: 20, search: search.length >= 3 ? search : undefined }),
+    ['products', page, search, sortKey, filterStatus, filterCategory],
+    () => productsAPI.getAll({
+      page,
+      limit: 20,
+      search: search.length >= 3 ? search : undefined,
+      sort: sortKey || undefined,
+      status: filterStatus || undefined,
+      category: filterCategory || undefined,
+    }),
     { keepPreviousData: true }
   );
 
   const { data: categoriesData } = useQuery(
     ['categories'],
     () => categoriesAPI.getAll(),
-    { enabled: bulkEditModal || aiModal }
   );
+  const allCategories = useMemo(() => {
+    const d = categoriesData?.data?.data || categoriesData?.data || [];
+    return Array.isArray(d) ? d : [];
+  }, [categoriesData]);
 
   const deleteMutation = useMutation(
     (id) => productsAPI.delete(id),
@@ -178,6 +191,7 @@ const ProductsPage = () => {
     {
       key: 'images',
       title: 'Image',
+      sortable: false,
       width: '80px',
       render: (images, row) => {
         const imageUrl = row.featuredImage || (images && images.length > 0 ? (typeof images[0] === 'string' ? images[0] : images[0]?.url) : null);
@@ -218,10 +232,12 @@ const ProductsPage = () => {
       key: 'sku',
       title: 'SKU',
       width: '120px',
+      sortable: false,
     },
     {
       key: 'name',
       title: 'Name',
+      sortKey: 'name',
     },
     {
       key: 'categories',
@@ -241,6 +257,7 @@ const ProductsPage = () => {
       key: 'regularPrice',
       title: 'Price',
       width: '100px',
+      sortKey: 'price',
       render: (price, row) => (
         <div>
           <p className="font-medium">R {price?.toFixed(2) || '0.00'}</p>
@@ -255,6 +272,7 @@ const ProductsPage = () => {
       title: 'Stock',
       width: '80px',
       align: 'center',
+      sortable: false,
       render: (stock, row) => (
         <span className={stock < (row.lowStockThreshold || 5) ? 'text-red-600 font-medium' : ''}>
           {stock || 0}
@@ -265,6 +283,7 @@ const ProductsPage = () => {
       key: 'status',
       title: 'Status',
       width: '120px',
+      sortable: false,
       render: (status) => (
         <span className={`badge ${
           status === 'active' ? 'badge-success' :
@@ -279,6 +298,7 @@ const ProductsPage = () => {
       key: 'actions',
       title: 'Actions',
       width: '120px',
+      sortable: false,
       render: (_, row) => (
         <div className="flex items-center gap-2">
           <button
@@ -352,14 +372,14 @@ const ProductsPage = () => {
 
       <Card>
         {/* Search and Filters */}
-        <div className="mb-6 flex items-center gap-4">
+        <div className="mb-4 flex items-center gap-4">
           <div className="flex-1 relative">
             <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
               placeholder="Search products... (min 3 characters)"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="input pl-10 w-full"
             />
             {search.length > 0 && search.length < 3 && (
@@ -370,6 +390,55 @@ const ProductsPage = () => {
             <IoSparkles size={18} />
             AI Generate All
           </Button>
+        </div>
+
+        {/* Filter Bar */}
+        <div className="mb-4 flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 text-sm text-gray-500">
+            <IoFunnel size={14} />
+            <span>Filters:</span>
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="draft">Draft</option>
+            <option value="trash">Trash</option>
+          </select>
+          <select
+            value={filterCategory}
+            onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            <option value="">All Categories</option>
+            {allCategories.map(cat => (
+              <option key={cat._id} value={cat._id}>{cat.name}</option>
+            ))}
+          </select>
+          <select
+            value={sortKey}
+            onChange={(e) => { setSortKey(e.target.value); setPage(1); }}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            <option value="date-desc">Newest First</option>
+            <option value="date-asc">Oldest First</option>
+            <option value="name-asc">Name A-Z</option>
+            <option value="name-desc">Name Z-A</option>
+            <option value="price-asc">Price Low-High</option>
+            <option value="price-desc">Price High-Low</option>
+            <option value="rating-desc">Top Rated</option>
+          </select>
+          {(filterStatus || filterCategory || sortKey !== 'date-desc') && (
+            <button
+              onClick={() => { setFilterStatus(''); setFilterCategory(''); setSortKey('date-desc'); setPage(1); }}
+              className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
 
         {/* Products Table */}
@@ -470,7 +539,7 @@ const ProductsPage = () => {
               className="input w-full"
             >
               <option value="">No change</option>
-              {(categoriesData?.data?.data || categoriesData?.data || []).map(cat => (
+              {allCategories.map(cat => (
                 <option key={cat._id} value={cat._id}>{cat.name}</option>
               ))}
             </select>
@@ -537,7 +606,7 @@ const ProductsPage = () => {
                 className="input w-full"
               >
                 <option value="">Select a category</option>
-                {(categoriesData?.data?.data || categoriesData?.data || []).map(cat => (
+                {allCategories.map(cat => (
                   <option key={cat._id} value={cat._id}>{cat.name}</option>
                 ))}
               </select>

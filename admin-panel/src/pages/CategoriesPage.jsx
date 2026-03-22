@@ -9,7 +9,7 @@ import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import Table from '@/components/common/Table';
 import toast from '@/utils/toast';
-import { IoAdd, IoTrash, IoCreate, IoChevronDown, IoChevronForward, IoCubeOutline, IoSwapHorizontal, IoRemoveCircleOutline, IoCheckbox, IoSquareOutline, IoClose } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoCreate, IoChevronDown, IoChevronForward, IoCubeOutline, IoSwapHorizontal, IoRemoveCircleOutline, IoCheckbox, IoSquareOutline, IoClose, IoEyeOutline, IoSearchOutline, IoArrowUp, IoArrowDown } from 'react-icons/io5';
 
 const CategoriesPage = () => {
   const queryClient = useQueryClient();
@@ -22,6 +22,8 @@ const CategoriesPage = () => {
   const [productsModal, setProductsModal] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState(new Set());
   const [reassignTarget, setReassignTarget] = useState('');
+  const [productSort, setProductSort] = useState({ key: 'name', dir: 'asc' });
+  const [productSearch, setProductSearch] = useState('');
 
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const getImageSrc = (url) => {
@@ -98,10 +100,34 @@ const CategoriesPage = () => {
     () => categoriesAPI.getProducts(productsModal._id),
     { enabled: !!productsModal?._id }
   );
-  const categoryProducts = useMemo(() => {
+  const categoryProductsRaw = useMemo(() => {
     const d = categoryProductsData?.data?.data;
     return Array.isArray(d) ? d : [];
   }, [categoryProductsData]);
+
+  const categoryProducts = useMemo(() => {
+    let filtered = categoryProductsRaw;
+    if (productSearch.trim()) {
+      const q = productSearch.toLowerCase();
+      filtered = filtered.filter(p =>
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.sku || '').toLowerCase().includes(q)
+      );
+    }
+    const sorted = [...filtered].sort((a, b) => {
+      const { key, dir } = productSort;
+      let av, bv;
+      if (key === 'name') { av = (a.name || '').toLowerCase(); bv = (b.name || '').toLowerCase(); }
+      else if (key === 'sku') { av = (a.sku || '').toLowerCase(); bv = (b.sku || '').toLowerCase(); }
+      else if (key === 'price') { av = a.salePrice || a.regularPrice || 0; bv = b.salePrice || b.regularPrice || 0; }
+      else if (key === 'stock') { av = a.stock || 0; bv = b.stock || 0; }
+      else { av = a[key]; bv = b[key]; }
+      if (av < bv) return dir === 'asc' ? -1 : 1;
+      if (av > bv) return dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [categoryProductsRaw, productSearch, productSort]);
 
   const removeProductsMutation = useMutation(
     ({ categoryId, productIds }) => categoriesAPI.removeProducts(categoryId, productIds),
@@ -219,7 +245,15 @@ const CategoriesPage = () => {
                 {category.isActive ? 'Active' : 'Inactive'}
               </span>
             </td>
-            <td className="py-3">{category.productCount || 0}</td>
+            <td className="py-3">
+              <button
+                onClick={() => { setProductsModal(category); setSelectedProducts(new Set()); setReassignTarget(''); setProductSearch(''); setProductSort({ key: 'name', dir: 'asc' }); }}
+                className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                title="View products in this category"
+              >
+                {category.productCount || 0}
+              </button>
+            </td>
             <td className="py-3">{category.displayOrder || 0}</td>
             <td className="py-3">
               <div className="flex items-center gap-2">
@@ -230,11 +264,12 @@ const CategoriesPage = () => {
                   <IoCreate size={18} className="text-primary" />
                 </button>
                 <button
-                  onClick={() => { setProductsModal(category); setSelectedProducts(new Set()); setReassignTarget(''); }}
-                  className="p-2 hover:bg-gray-100 transition-colors"
-                  title="Manage Products"
+                  onClick={() => { setProductsModal(category); setSelectedProducts(new Set()); setReassignTarget(''); setProductSearch(''); setProductSort({ key: 'name', dir: 'asc' }); }}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+                  title="View Products"
                 >
-                  <IoCubeOutline size={18} className="text-blue-600" />
+                  <IoEyeOutline size={14} />
+                  Products
                 </button>
                 <button
                   onClick={() => setDeleteModal(category)}
@@ -584,12 +619,26 @@ const CategoriesPage = () => {
               </div>
             )}
 
+            {/* Search Bar */}
+            <div className="px-6 py-3 border-b border-gray-200 bg-white">
+              <div className="relative">
+                <IoSearchOutline size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={productSearch}
+                  onChange={e => setProductSearch(e.target.value)}
+                  placeholder="Search by name or SKU..."
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                />
+              </div>
+            </div>
+
             {/* Products List */}
             <div className="flex-1 overflow-y-auto">
               {productsLoading ? (
                 <div className="p-8 text-center text-gray-500">Loading products...</div>
               ) : categoryProducts.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">No products linked to this category.</div>
+                <div className="p-8 text-center text-gray-500">{productSearch ? 'No products match your search.' : 'No products linked to this category.'}</div>
               ) : (
                 <table className="w-full">
                   <thead className="bg-gray-50 sticky top-0">
@@ -599,9 +648,21 @@ const CategoriesPage = () => {
                           {selectedProducts.size === categoryProducts.length ? <IoCheckbox size={20} className="text-primary" /> : <IoSquareOutline size={20} className="text-gray-400" />}
                         </button>
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Product</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">SKU</th>
-                      <th className="text-right py-3 px-4 font-medium text-sm">Price</th>
+                      {[{ key: 'name', label: 'Product', align: 'left' }, { key: 'sku', label: 'SKU', align: 'left' }, { key: 'price', label: 'Price', align: 'right' }, { key: 'stock', label: 'Stock', align: 'center' }].map(col => (
+                        <th key={col.key} className={`text-${col.align} py-3 px-4 font-medium text-sm select-none`}>
+                          <button
+                            onClick={() => setProductSort(prev => ({ key: col.key, dir: prev.key === col.key && prev.dir === 'asc' ? 'desc' : 'asc' }))}
+                            className="inline-flex items-center gap-1 hover:text-blue-600 transition-colors"
+                          >
+                            {col.label}
+                            {productSort.key === col.key ? (
+                              productSort.dir === 'asc' ? <IoArrowUp size={12} /> : <IoArrowDown size={12} />
+                            ) : (
+                              <span className="w-3" />
+                            )}
+                          </button>
+                        </th>
+                      ))}
                       <th className="text-left py-3 px-4 font-medium text-sm">Categories</th>
                     </tr>
                   </thead>
@@ -631,6 +692,7 @@ const CategoriesPage = () => {
                             <span>${product.regularPrice?.toFixed(2) || '—'}</span>
                           )}
                         </td>
+                        <td className="py-3 px-4 text-sm text-center">{product.stock ?? '—'}</td>
                         <td className="py-3 px-4">
                           <div className="flex flex-wrap gap-1">
                             {(product.categories || []).map(c => (

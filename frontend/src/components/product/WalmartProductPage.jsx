@@ -277,36 +277,50 @@ export default function WalmartProductPage({ product, settings }) {
     [product?._id]
   );
 
-  // Fake / seed data — deterministic per product ID so values stay stable across re-renders
+  // Fake / seed data — deterministic per product ID using simple hash
+  const seedHash = useMemo(() => {
+    const id = product?._id || 'default';
+    let h = 0;
+    for (let i = 0; i < id.length; i++) {
+      h = ((h << 5) - h + id.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
+  }, [product?._id]);
+
   const fakeReviewCount = useMemo(() => {
     if (!fd.enabled) return 0;
-    const min = fd.reviewCountMin || 5;
-    const max = fd.reviewCountMax || 50;
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }, [product?._id, fd.enabled]);
+    const min = fd.reviewCountMin ?? 5;
+    const max = fd.reviewCountMax ?? 50;
+    return min + (seedHash % (max - min + 1));
+  }, [product?._id, fd.enabled, fd.reviewCountMin, fd.reviewCountMax, seedHash]);
+
   const fakeRating = useMemo(() => {
     if (!fd.enabled) return 0;
-    const min = fd.ratingMin || 3;
-    const max = fd.ratingMax || 5;
-    return Math.round((Math.random() * (max - min) + min) * 10) / 10;
-  }, [product?._id, fd.enabled]);
+    const min = fd.ratingMin ?? 3;
+    const max = fd.ratingMax ?? 5;
+    return Math.round((min + ((seedHash * 7) % 100) / 100 * (max - min)) * 10) / 10;
+  }, [product?._id, fd.enabled, fd.ratingMin, fd.ratingMax, seedHash]);
+
   const fakeSoldCount = useMemo(() => {
     if (!fd.enabled) return 0;
-    const min = fd.soldCountMin || 10;
-    const max = fd.soldCountMax || 500;
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }, [product?._id, fd.enabled]);
+    const min = fd.soldCountMin ?? 10;
+    const max = fd.soldCountMax ?? 500;
+    return min + ((seedHash * 13) % (max - min + 1));
+  }, [product?._id, fd.enabled, fd.soldCountMin, fd.soldCountMax, seedHash]);
+
   const fakeViewCount = useMemo(() => {
     if (!fd.enabled) return 0;
-    const min = fd.viewCountMin || 100;
-    const max = fd.viewCountMax || 5000;
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }, [product?._id, fd.enabled]);
+    const min = fd.viewCountMin ?? 100;
+    const max = fd.viewCountMax ?? 5000;
+    return min + ((seedHash * 17) % (max - min + 1));
+  }, [product?._id, fd.enabled, fd.viewCountMin, fd.viewCountMax, seedHash]);
 
   // Effective values: use real data if available, otherwise use fake data
-  const effectiveRating = product?.rating > 0 ? product.rating : fakeRating;
-  const effectiveReviewCount = (reviews.length > 0 || product?.reviewCount > 0) ? (reviews.length || product?.reviewCount) : fakeReviewCount;
-  const effectiveSoldCount = fakeSoldCount;
+  const effectiveRating = product?.rating > 0 ? product.rating : (fd.enabled ? fakeRating : (product?.rating || 0));
+  const effectiveReviewCount = (reviews.length > 0 || product?.reviewCount > 0)
+    ? (reviews.length || product?.reviewCount)
+    : (fd.enabled ? fakeReviewCount : 0);
+  const effectiveSoldCount = fd.enabled ? fakeSoldCount : 0;
   const qtySoldText = fd.enabled
     ? (fd.soldTextTemplate || '{count}+ bought since yesterday').replace('{count}', effectiveSoldCount)
     : '1K+ bought since yesterday';
@@ -701,13 +715,13 @@ export default function WalmartProductPage({ product, settings }) {
             )}
 
             {/* Rating & Qty Sold */}
-            {(pi.showRating || pi.showQtySold) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                {pi.showRating && <StarRating rating={effectiveRating} count={effectiveReviewCount} size="sm" />}
-                {pi.showReviewCount && effectiveReviewCount > 0 && (
+            {(pi.showRating || pi.showQtySold || fd.enabled) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                {(pi.showRating || fd.enabled) && <StarRating rating={effectiveRating} count={effectiveReviewCount} size="sm" />}
+                {(pi.showReviewCount || fd.enabled) && effectiveReviewCount > 0 && (
                   <span style={{ fontSize: 12, color: theme.mutedColor || '#76889a' }}>({effectiveReviewCount} reviews)</span>
                 )}
-                {pi.showQtySold && (
+                {(pi.showQtySold || fd.enabled) && effectiveSoldCount > 0 && (
                   <span style={{ fontSize: 12, color: theme.mutedColor || '#76889a' }}>{qtySoldText}</span>
                 )}
               </div>
