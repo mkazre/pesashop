@@ -12,10 +12,22 @@ import { BannerFullWidth, BannerGrid2Col, BannerGrid3Col } from "./BannerBlocks"
 import FeatureIconsRow from "./FeatureIconsRow";
 import SpacerBlock from "./SpacerBlock";
 import RichTextBlock from "./RichTextBlock";
+import BannerSliderCarousel from "./BannerSliderCarousel";
+import CouponCarousel from "./CouponCarousel";
+import ProductWithDealSidebar from "./ProductWithDealSidebar";
+import OfferStrip from "./OfferStrip";
+import BlogCarousel from "./BlogCarousel";
+import NewsletterBlock from "./NewsletterBlock";
+import CategoryGrid from "./CategoryGrid";
+import ProductVerticalTabs from "./ProductVerticalTabs";
+import ImageTextCta from "./ImageTextCta";
+import ProductColumnsGrid from "./ProductColumnsGrid";
+import CustomHtmlBlock from "./CustomHtmlBlock";
 
 const BLOCK_COMPONENTS: Record<string, React.ComponentType<{ block: any }>> = {
   "hero-slider-full": HeroSlider,
   "hero-slider-with-side-banner": HeroSlider,
+  "hero-slider-with-sidebar": HeroSlider,
   "banner-grid-3col": BannerGrid3Col,
   "banner-full-width": BannerFullWidth,
   "banner-grid-2col": BannerGrid2Col,
@@ -26,6 +38,17 @@ const BLOCK_COMPONENTS: Record<string, React.ComponentType<{ block: any }>> = {
   "feature-icons-row": FeatureIconsRow,
   spacer: SpacerBlock,
   "rich-text": RichTextBlock,
+  "custom-html": CustomHtmlBlock,
+  "banner-slider-carousel": BannerSliderCarousel,
+  "coupon-carousel": CouponCarousel,
+  "product-with-deal-sidebar": ProductWithDealSidebar,
+  "offer-strip": OfferStrip,
+  "blog-carousel": BlogCarousel,
+  newsletter: NewsletterBlock,
+  "category-grid": CategoryGrid,
+  "product-vertical-tabs": ProductVerticalTabs,
+  "image-text-cta": ImageTextCta,
+  "product-columns-grid": ProductColumnsGrid,
 };
 
 interface HomePageRendererProps {
@@ -62,9 +85,19 @@ export default function HomePageRenderer({ onConfigLoaded }: HomePageRendererPro
 
   if (!blocks.length) return null;
 
+  // Filter blocks: only show enabled blocks whose platform includes mobileApp
+  const visibleBlocks = blocks.filter((block: any) => {
+    if (!block.enabled) return false;
+    // If platform settings exist and mobileApp is explicitly false, hide it
+    if (block.platform && block.platform.mobileApp === false) return false;
+    return true;
+  });
+
+  if (!visibleBlocks.length) return null;
+
   return (
     <View>
-      {blocks.map((block: any, i: number) => {
+      {visibleBlocks.map((block: any, i: number) => {
         const Component = BLOCK_COMPONENTS[block.blockType];
         if (!Component) return null;
         return <Component key={block._id || `block-${i}`} block={block} />;

@@ -52,6 +52,37 @@ const BLOCK_COMPONENTS = {
   'image-text-cta': ImageTextCta,
 };
 
+/**
+ * Build a CSS class string that hides the block on specific device breakpoints.
+ * desktop: ≥1024px, tablet: 768–1023px, mobile: <768px
+ */
+function getVisibilityClasses(block) {
+  const vis = block.visibility;
+  if (!vis) return '';
+  const classes = [];
+  // Hide on mobile (<768px)
+  if (vis.mobile === false) classes.push('max-[767px]:hidden');
+  // Hide on tablet (768–1023px)
+  if (vis.tablet === false) classes.push('min-[768px]:max-[1023px]:hidden');
+  // Hide on desktop (≥1024px)
+  if (vis.desktop === false) classes.push('min-[1024px]:hidden');
+  return classes.join(' ');
+}
+
+/**
+ * Build responsive grid column overrides from block.responsive settings.
+ * Returns a Tailwind class string if overrides are set.
+ */
+function getResponsiveColumnStyle(block) {
+  const resp = block.responsive;
+  if (!resp) return null;
+  const styles = {};
+  if (resp.mobileColumns > 0) styles['--resp-cols-mobile'] = resp.mobileColumns;
+  if (resp.tabletColumns > 0) styles['--resp-cols-tablet'] = resp.tabletColumns;
+  if (resp.desktopColumns > 0) styles['--resp-cols-desktop'] = resp.desktopColumns;
+  return Object.keys(styles).length ? styles : null;
+}
+
 export default function HomePageRenderer() {
   const { data, isLoading, isError } = useHomePageConfig();
 
@@ -73,12 +104,27 @@ export default function HomePageRenderer() {
     return null;
   }
 
+  // Filter: only show enabled blocks where platform.web is not explicitly false
+  const visibleBlocks = blocks.filter((block) => {
+    if (!block.enabled) return false;
+    if (block.platform && block.platform.web === false) return false;
+    return true;
+  });
+
+  if (!visibleBlocks.length) return null;
+
   return (
     <div>
-      {blocks.map((block, i) => {
+      {visibleBlocks.map((block, i) => {
         const Component = BLOCK_COMPONENTS[block.blockType];
         if (!Component) return null;
-        return <Component key={block._id || `block-${i}`} block={block} />;
+        const visClasses = getVisibilityClasses(block);
+        const respStyle = getResponsiveColumnStyle(block);
+        return (
+          <div key={block._id || `block-${i}`} className={visClasses || undefined} style={respStyle || undefined}>
+            <Component block={block} />
+          </div>
+        );
       })}
     </div>
   );

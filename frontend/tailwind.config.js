@@ -4,6 +4,16 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  safelist: [
+    // Dynamic grid columns used by homepage builder responsive settings
+    { pattern: /^grid-cols-[1-6]$/ },
+    { pattern: /^md:grid-cols-[1-6]$/ },
+    { pattern: /^lg:grid-cols-[1-6]$/ },
+    // Device visibility classes used by homepage blocks
+    'max-[767px]:hidden',
+    'min-[768px]:max-[1023px]:hidden',
+    'min-[1024px]:hidden',
+  ],
   theme: {
     extend: {
       colors: {

@@ -19,14 +19,12 @@ export default function ProductGridTabs({ block }) {
 
   const { data: badges = [] } = useBlockBadges(block.badgeIds || [], block.showBadges !== false);
 
+  const resp = block.responsive || {};
   const columns = block.productColumns || 5;
-  const gridCols = {
-    2: 'grid-cols-2',
-    3: 'grid-cols-2 md:grid-cols-3',
-    4: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
-    5: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5',
-    6: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6',
-  }[columns] || 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5';
+  const mobileCol = resp.mobileColumns || 2;
+  const tabletCol = resp.tabletColumns || Math.min(columns, 3);
+  const desktopCol = resp.desktopColumns || columns;
+  const gridCols = `grid-cols-${mobileCol} md:grid-cols-${tabletCol} lg:grid-cols-${desktopCol}`;
 
   return (
     <BlockWrapper block={block}>

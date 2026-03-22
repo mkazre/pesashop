@@ -97,6 +97,22 @@ const blockSchema = new mongoose.Schema({
   enabled: { type: Boolean, default: true },
   order: { type: Number, default: 0 },
 
+  // ── Visibility & Responsive ──
+  visibility: {
+    desktop: { type: Boolean, default: true },
+    tablet: { type: Boolean, default: true },
+    mobile: { type: Boolean, default: true },
+  },
+  platform: {
+    web: { type: Boolean, default: true },
+    mobileApp: { type: Boolean, default: true },
+  },
+  responsive: {
+    desktopColumns: { type: Number, default: 0 },   // 0 = use block default
+    tabletColumns: { type: Number, default: 0 },
+    mobileColumns: { type: Number, default: 0 },
+  },
+
   // ── Custom Template (Page Builder) ──
   templateId: { type: String, default: '' },
 

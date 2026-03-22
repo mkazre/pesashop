@@ -4,7 +4,8 @@ import toast from '@/utils/toast';
 import {
   IoAdd, IoTrash, IoChevronUp, IoChevronDown, IoEye, IoEyeOff,
   IoSettings, IoClose, IoSave, IoRefresh, IoCopy, IoImage,
-  IoReorderThree, IoChevronForward, IoHome, IoLayers
+  IoReorderThree, IoChevronForward, IoHome, IoLayers,
+  IoDesktop, IoTabletPortrait, IoPhonePortrait, IoGlobe, IoApps
 } from 'react-icons/io5';
 import { homePageConfigAPI, imagesAPI, pageTemplatesAPI } from '../services/api';
 import { useAuthStore } from '@/store';
@@ -751,8 +752,93 @@ function BlockSettingsPanel({ block, onChange }) {
     update('columns', [...(block.columns || []), { title: 'New Column', source: 'newest', categoryId: '', limit: 3 }]);
   };
 
+  const vis = block.visibility || { desktop: true, tablet: true, mobile: true };
+  const plat = block.platform || { web: true, mobileApp: true };
+  const resp = block.responsive || { desktopColumns: 0, tabletColumns: 0, mobileColumns: 0 };
+
+  const updateVis = (key, val) => update('visibility', { ...vis, [key]: val });
+  const updatePlat = (key, val) => update('platform', { ...plat, [key]: val });
+  const updateResp = (key, val) => update('responsive', { ...resp, [key]: val });
+
   return (
     <div className="space-y-4 p-4 max-h-[70vh] overflow-y-auto">
+      {/* Visibility & Platform */}
+      <div className="space-y-3 pb-4 border-b">
+        <h4 className="text-sm font-semibold text-gray-700">Visibility & Platform</h4>
+        <div>
+          <label className="block text-xs text-gray-500 mb-2">Show on Devices</label>
+          <div className="flex gap-2">
+            {[
+              { key: 'desktop', icon: IoDesktop, label: 'Desktop' },
+              { key: 'tablet', icon: IoTabletPortrait, label: 'Tablet' },
+              { key: 'mobile', icon: IoPhonePortrait, label: 'Mobile' },
+            ].map(({ key, icon: Icon, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => updateVis(key, !vis[key])}
+                className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-lg border-2 transition-all text-xs font-medium ${
+                  vis[key]
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    : 'border-gray-200 bg-gray-50 text-gray-400'
+                }`}
+              >
+                <Icon size={18} />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-2">Show on Platform</label>
+          <div className="flex gap-2">
+            {[
+              { key: 'web', icon: IoGlobe, label: 'Web App' },
+              { key: 'mobileApp', icon: IoApps, label: 'Mobile App' },
+            ].map(({ key, icon: Icon, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => updatePlat(key, !plat[key])}
+                className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-lg border-2 transition-all text-xs font-medium ${
+                  plat[key]
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    : 'border-gray-200 bg-gray-50 text-gray-400'
+                }`}
+              >
+                <Icon size={18} />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-2">Responsive Columns <span className="text-gray-400">(0 = use block default)</span></label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { key: 'desktopColumns', icon: IoDesktop, label: 'Desktop' },
+              { key: 'tabletColumns', icon: IoTabletPortrait, label: 'Tablet' },
+              { key: 'mobileColumns', icon: IoPhonePortrait, label: 'Mobile' },
+            ].map(({ key, icon: Icon, label }) => (
+              <div key={key}>
+                <div className="flex items-center gap-1 mb-1">
+                  <Icon size={12} className="text-gray-400" />
+                  <span className="text-[10px] text-gray-500">{label}</span>
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  max={6}
+                  value={resp[key] || 0}
+                  onChange={(e) => updateResp(key, parseInt(e.target.value) || 0)}
+                  className="w-full text-sm px-2 py-1.5 border rounded"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Common section settings */}
       <div className="space-y-3 pb-4 border-b">
         <h4 className="text-sm font-semibold text-gray-700">Section Settings</h4>
@@ -1461,6 +1547,24 @@ function BlockCard({ block, index, isSelected, onSelect, onMove, onToggle, onDup
             {block.blockType === 'custom-template' && block.templateId && (
               <div className="text-xs text-emerald-600 mt-0.5">Template: {block.templateId}</div>
             )}
+            {/* Visibility badges */}
+            <div className="flex items-center gap-1 mt-1 flex-wrap">
+              {block.visibility && (!block.visibility.desktop || !block.visibility.tablet || !block.visibility.mobile) && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">
+                  {block.visibility.desktop && <IoDesktop size={10} />}
+                  {block.visibility.tablet && <IoTabletPortrait size={10} />}
+                  {block.visibility.mobile && <IoPhonePortrait size={10} />}
+                  {!block.visibility.desktop && !block.visibility.tablet && !block.visibility.mobile && 'Hidden'}
+                </span>
+              )}
+              {block.platform && (!block.platform.web || !block.platform.mobileApp) && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 border border-purple-200">
+                  {block.platform.web && !block.platform.mobileApp && <>Web only</>}
+                  {!block.platform.web && block.platform.mobileApp && <>App only</>}
+                  {!block.platform.web && !block.platform.mobileApp && <>No platform</>}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1">
