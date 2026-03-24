@@ -537,8 +537,8 @@ export default function LaybyeApplicationModal({
 
 const ms = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  modal: { backgroundColor: "#fff", maxHeight: "90%", borderTopLeftRadius: 0, borderTopRightRadius: 0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14 },
+  modal: { backgroundColor: "#fff", height: "85%", maxHeight: "90%", borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14, borderTopLeftRadius: 16, borderTopRightRadius: 16 },
   headerTitle: { fontSize: 18, fontWeight: "700", color: "#fff" },
   headerSub: { fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 2 },
   headerClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },

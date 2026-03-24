@@ -176,6 +176,7 @@ router.get('/', async (req, res) => {
     const skip = (page - 1) * limit;
     
     const products = await Product.find(query)
+      .select('-backendPrice')
       .populate('categories', 'name slug')
       .sort(sortBy)
       .limit(limit)
@@ -317,9 +318,9 @@ router.get('/:id', async (req, res) => {
     let product;
     
     if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-      product = await Product.findById(req.params.id).populate('categories', 'name slug');
+      product = await Product.findById(req.params.id).select('-backendPrice').populate('categories', 'name slug');
     } else {
-      product = await Product.findOne({ slug: req.params.id }).populate('categories', 'name slug');
+      product = await Product.findOne({ slug: req.params.id }).select('-backendPrice').populate('categories', 'name slug');
     }
     
     if (!product) {

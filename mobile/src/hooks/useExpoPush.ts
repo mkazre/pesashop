@@ -38,7 +38,9 @@ export function useExpoPush() {
   const responseListener = useRef<any>();
 
   useEffect(() => {
-    if (!token || registered.current || !Notifications || Platform.OS === 'web') return;
+    if (registered.current || !Notifications || Platform.OS === 'web') return;
+
+    const isLoggedIn = !!token;
 
     const registerForPush = async () => {
       try {
@@ -83,13 +85,19 @@ export function useExpoPush() {
 
         if (!expoPushToken) return;
 
-        // Register with backend
-        await notificationsAPI.subscribe({
+        // Register with backend (authenticated or anonymous)
+        const payload = {
           platform: Platform.OS === 'ios' ? 'ios' : 'android',
           expoPushToken,
           deviceId: `${Platform.OS}-${expoPushToken.slice(-16)}`,
           deviceName: Device?.modelName || Platform.OS,
-        });
+        };
+
+        if (isLoggedIn) {
+          await notificationsAPI.subscribe(payload);
+        } else {
+          await notificationsAPI.subscribeAnonymous(payload);
+        }
 
         registered.current = true;
         console.log('Push notifications registered:', expoPushToken.slice(0, 20) + '...');

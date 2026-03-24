@@ -88,9 +88,9 @@ const CategoryMegaMenu = ({ categories, onClose, formatPrice }) => {
   const hasTrending = trending.length > 0;
 
   return (
-    <div className="absolute left-0 top-full w-full z-50"
-      style={{ animation: 'megaSlideDown 0.22s ease-out' }}>
-      {/* White background container with shadow */}
+    <div className="absolute top-full z-50"
+      style={{ animation: 'megaSlideDown 0.22s ease-out', left: '50%', transform: 'translateX(-50%)', width: '100vw' }}>
+      {/* White background container with shadow - full width solid white */}
       <div style={{ backgroundColor: '#ffffff', borderTop: '2px solid #1b5e35' }}
         className="shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
         <div className="container-custom py-8">
@@ -441,8 +441,8 @@ export default function DefaultHeader() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { items: cartItems } = useCartStore();
-  const { items: wishlistItems } = useWishlistStore();
+  const { items: cartItems, clearCart } = useCartStore();
+  const { items: wishlistItems, clearWishlist } = useWishlistStore();
   const { isAuthenticated, user, clearAuth } = useAuthStore();
   const { openAuthModal, openCartSidebar, cartBadgeBounce } = useUIStore();
   const { formatPrice } = useCurrencyStore();
@@ -487,7 +487,11 @@ export default function DefaultHeader() {
   ];
 
   const handleLogout = () => {
+    clearCart();
+    clearWishlist();
     clearAuth();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     navigate('/');
   };
 
@@ -517,13 +521,16 @@ export default function DefaultHeader() {
         .animate-fade-in-up { animation: fadeInUp 0.2s ease-out; }
         .pesa-default-header-top {
           transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
-          overflow: hidden;
+          overflow: visible;
+          position: relative;
+          z-index: 100;
         }
         .pesa-default-header-top.collapsed {
           max-height: 0 !important;
           opacity: 0;
           padding-top: 0 !important;
           padding-bottom: 0 !important;
+          overflow: hidden;
         }
       `}</style>
 

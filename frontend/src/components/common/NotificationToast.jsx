@@ -112,7 +112,7 @@ const NotificationToast = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none" style={{ maxWidth: 400 }}>
+    <div className="fixed top-4 right-4 left-4 sm:left-auto z-[9999] flex flex-col gap-3 pointer-events-none" style={{ maxWidth: 400 }}>
       {toasts.map((toast, index) => {
         const typeInfo = TYPE_ICONS[toast.type] || TYPE_ICONS.custom;
         const TypeIcon = typeInfo.icon;

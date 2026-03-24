@@ -80,6 +80,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<LoginPage />} />
           
           <Route path="/emergency-disable" element={<EmergencyDisablePage />} />
           <Route

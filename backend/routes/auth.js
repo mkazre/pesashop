@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { protect, generateToken, sendTokenResponse } = require('../middleware/auth');
 const User = require('../models/User');
+const emailService = require('../services/emailService');
 
 // @route   POST /api/auth/register
 router.post('/register', async (req, res, next) => {
@@ -358,6 +360,91 @@ router.delete('/wishlist/:productId', protect, async (req, res, next) => {
     await user.save();
     const updated = await User.findById(req.user._id).populate('wishlist', 'name slug featuredImage images regularPrice salePrice stock');
     res.json({ success: true, data: updated.wishlist });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   POST /api/auth/forgot-password
+router.post('/forgot-password', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Please provide an email address' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      // Don't reveal whether email exists
+      return res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+    await user.save({ validateBeforeSave: false });
+
+    // Build reset URL (works for both frontend and admin panel)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const adminUrl = process.env.ADMIN_URL || 'http://localhost:3001';
+    const isAdmin = ['admin', 'manager', 'shop_manager'].includes(user.role);
+    const baseUrl = isAdmin ? adminUrl : frontendUrl;
+    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+    // Send email
+    try {
+      await emailService.sendEmail({
+        to: user.email,
+        subject: 'Password Reset Request',
+        html: `
+          <h2>Password Reset</h2>
+          <p>Hi ${user.firstName || user.name || 'there'},</p>
+          <p>You requested a password reset. Click the link below to reset your password:</p>
+          <p><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#1b5e35;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold;">Reset Password</a></p>
+          <p>This link will expire in 30 minutes.</p>
+          <p>If you didn't request this, please ignore this email.</p>
+        `,
+      });
+    } catch (emailErr) {
+      console.error('Error sending reset email:', emailErr);
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+      return res.status(500).json({ success: false, message: 'Email could not be sent. Please try again later.' });
+    }
+
+    res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   POST /api/auth/reset-password
+router.post('/reset-password', async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ success: false, message: 'Please provide token and new password' });
+    }
+
+    const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+    }
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    res.json({ success: true, message: 'Password reset successful. You can now log in with your new password.' });
   } catch (error) {
     next(error);
   }

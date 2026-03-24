@@ -17,9 +17,10 @@ export function useWebPush() {
 
   useEffect(() => {
     if (registered.current) return;
-    const token = localStorage.getItem('token');
-    if (!token) return;
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const token = localStorage.getItem('token');
+    const isLoggedIn = !!token;
 
     const register = async () => {
       try {
@@ -47,9 +48,9 @@ export function useWebPush() {
           });
         }
 
-        // Send subscription to backend
+        // Send subscription to backend (authenticated or anonymous)
         const subJson = subscription.toJSON();
-        await notificationsAPI.subscribe({
+        const payload = {
           platform: 'web',
           webPush: {
             endpoint: subJson.endpoint,
@@ -60,7 +61,13 @@ export function useWebPush() {
           },
           deviceId: `web-${subJson.endpoint.slice(-32)}`,
           userAgent: navigator.userAgent,
-        });
+        };
+
+        if (isLoggedIn) {
+          await notificationsAPI.subscribe(payload);
+        } else {
+          await notificationsAPI.subscribeAnonymous(payload);
+        }
 
         registered.current = true;
       } catch (err) {

@@ -469,12 +469,12 @@ export default function AuthModal() {
   const FormComponent = currentMode.component;
 
   return (
-    <div className="modal-overlay" onClick={closeAuthModal}>
+    <div className="modal-overlay" style={{ zIndex: 9998 }} onClick={closeAuthModal}>
       <div 
-        className="modal-content max-w-md w-full"
+        className="modal-content max-w-md w-full mx-4 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative bg-white p-8">
+        <div className="relative bg-white p-6 sm:p-8">
           {/* Close Button */}
           <button
             onClick={closeAuthModal}

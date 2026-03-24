@@ -82,7 +82,14 @@ Format the response as JSON:
       }
     );
     
-    const generatedContent = JSON.parse(response.data.choices[0].message.content);
+    const rawContent = response.data.choices[0].message.content.trim();
+    // Handle potential markdown code blocks in response
+    let jsonStr = rawContent;
+    const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0];
+    }
+    const generatedContent = JSON.parse(jsonStr);
     
     res.json({
       success: true,
@@ -231,7 +238,13 @@ Format the response as JSON:
           }
         );
         
-        const generatedContent = JSON.parse(response.data.choices[0].message.content);
+        const rawBulkContent = response.data.choices[0].message.content.trim();
+        let bulkJsonStr = rawBulkContent;
+        const bulkJsonMatch = rawBulkContent.match(/\{[\s\S]*\}/);
+        if (bulkJsonMatch) {
+          bulkJsonStr = bulkJsonMatch[0];
+        }
+        const generatedContent = JSON.parse(bulkJsonStr);
         
         // Update product
         await Product.findByIdAndUpdate(

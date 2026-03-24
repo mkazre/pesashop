@@ -386,6 +386,11 @@ export default function WalmartProductPage({ product, settings }) {
   };
 
   const handleWishlist = () => {
+    if (!isAuthenticated) {
+      openAuthModal('login');
+      toast.info('Please sign in to add items to your wishlist');
+      return;
+    }
     if (isInWishlist) { removeWish(product._id); toast.success('Removed from wishlist'); }
     else { addWish(product); toast.success('Added to wishlist!'); }
   };

@@ -293,6 +293,7 @@ export const notificationsAPI = {
   recordClick: (id: string) => api.post(`/api/notifications/my/${id}/click`),
   dismiss: (id: string) => api.delete(`/api/notifications/my/${id}`),
   subscribe: (data: any) => api.post('/api/notifications/subscribe', data),
+  subscribeAnonymous: (data: any) => api.post('/api/notifications/subscribe-anonymous', data),
   unsubscribe: (data: any) => api.delete('/api/notifications/subscribe', { data }),
 };
 

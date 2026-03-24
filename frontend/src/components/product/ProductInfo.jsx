@@ -1,13 +1,15 @@
 import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
 import { IoHeart, IoHeartOutline, IoShareSocialOutline } from 'react-icons/io5';
-import { useWishlistStore, useCurrencyStore } from '@/store';
+import { useWishlistStore, useAuthStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
 import toast from '@/utils/toast';
 
 export default function ProductInfo({ product, selectedVariation = null, quantity = 1 }) {
   const { items: wishlistItems, addItem, removeItem } = useWishlistStore();
+  const { isAuthenticated } = useAuthStore();
+  const { openAuthModal } = useUIStore();
   const isInWishlist = wishlistItems.some(item => item._id === product._id);
   const { displayPrice } = useB2BPricing(product, selectedVariation?._id, quantity);
   const { formatPrice } = useCurrencyStore();
@@ -16,6 +18,11 @@ export default function ProductInfo({ product, selectedVariation = null, quantit
   const discount = displayPrice.discount || 0;
 
   const handleWishlistToggle = () => {
+    if (!isAuthenticated) {
+      openAuthModal('login');
+      toast.info('Please sign in to add items to your wishlist');
+      return;
+    }
     if (isInWishlist) {
       removeItem(product._id);
       toast.success('Removed from wishlist');

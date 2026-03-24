@@ -11,7 +11,7 @@ import {
 import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
-import { useCartStore, useWishlistStore, useCompareStore, useUIStore, useCurrencyStore } from '@/store';
+import { useCartStore, useWishlistStore, useCompareStore, useAuthStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import toast from '@/utils/toast';
 
@@ -152,7 +152,8 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
   const { addItem } = useCartStore();
   const { items: wishlistItems, addItem: addToWishlist, removeItem: removeFromWishlist } = useWishlistStore();
   const { items: compareItems, addItem: addToCompare, removeItem: removeFromCompare } = useCompareStore();
-  const { openQuickView, openCartSidebar } = useUIStore();
+  const { isAuthenticated } = useAuthStore();
+  const { openQuickView, openCartSidebar, openAuthModal } = useUIStore();
   const { displayPrice } = useB2BPricing(product);
   const { formatPrice } = useCurrencyStore();
 
@@ -171,6 +172,11 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
   const handleWishlistToggle = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isAuthenticated) {
+      openAuthModal('login');
+      toast.info('Please sign in to add items to your wishlist');
+      return;
+    }
     if (isInWishlist) {
       removeFromWishlist(product._id);
       toast.success('Removed from wishlist');

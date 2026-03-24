@@ -54,23 +54,30 @@ export default function CurrencyPicker({ variant = 'header', className = '' }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[180px] animate-fadeIn">
-          {currencies.map((c) => (
-            <button
-              key={c._id || c.code}
-              onClick={() => { setSelectedCurrency(c); setOpen(false); window.location.reload(); }}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
-                selectedCurrency?.code === c.code ? 'bg-primary/5 text-primary font-semibold' : 'text-gray-700'
-              }`}
-            >
-              <span className="w-8 text-center text-base">{c.symbol}</span>
-              <span className="flex-1 text-left">{c.name}</span>
-              <span className="text-xs text-gray-400 font-mono">{c.code}</span>
-              {selectedCurrency?.code === c.code && (
-                <span className="text-primary text-xs">✓</span>
-              )}
-            </button>
-          ))}
+        <div className="absolute right-0 top-full mt-2 z-[9999] bg-white rounded-xl shadow-2xl border border-gray-100 py-1.5 min-w-[130px] overflow-hidden"
+          style={{ animation: 'fadeInUp 0.15s ease-out' }}>
+          {currencies.map((c) => {
+            const isActive = selectedCurrency?.code === c.code;
+            return (
+              <button
+                key={c._id || c.code}
+                onClick={() => { setSelectedCurrency(c); setOpen(false); window.location.reload(); }}
+                className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] transition-all ${
+                  isActive
+                    ? 'bg-primary/8 text-primary font-semibold'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <span className={`text-base leading-none ${isActive ? 'text-primary' : 'text-gray-400'}`}>{c.symbol}</span>
+                <span className="font-mono font-medium tracking-wide">{c.code}</span>
+                {isActive && (
+                  <span className="ml-auto text-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

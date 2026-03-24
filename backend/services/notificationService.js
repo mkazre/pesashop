@@ -112,6 +112,13 @@ class NotificationService {
         }
       }
 
+      // Also send push to anonymous subscriptions (users not logged in but have app installed)
+      if ((notification.channels.webPush || notification.channels.mobilePush) && notification.targetAudience === 'all') {
+        const anonResults = await this._sendPushToAnonymousSubscriptions(notification);
+        totalSent += anonResults.sent;
+        totalFailed += anonResults.failed;
+      }
+
       notification.stats.sent = totalSent;
       notification.stats.failed = totalFailed;
       notification.status = 'sent';
@@ -195,6 +202,8 @@ class NotificationService {
       ] : [],
       tag: notification._id.toString(),
       renotify: true,
+      requireInteraction: true,
+      silent: false,
     });
 
     try {
@@ -273,6 +282,114 @@ class NotificationService {
         { 'channels.mobilePush': { sent: false, error: error.message } }
       );
       throw error;
+    }
+  }
+
+  // ─── Send Push to Anonymous Subscriptions (no user linked) ───
+  async _sendPushToAnonymousSubscriptions(notification) {
+    let sent = 0;
+    let failed = 0;
+
+    // Find active subscriptions that have no user (anonymous/not-logged-in installs)
+    const anonSubs = await PushSubscription.find({
+      user: null,
+      active: true
+    }).lean();
+
+    const pushPromises = [];
+
+    for (const sub of anonSubs) {
+      if (sub.platform === 'web' && notification.channels.webPush && sub.webPush?.endpoint) {
+        pushPromises.push(
+          this._sendWebPushDirect(sub, notification)
+            .then(() => { sent++; })
+            .catch(() => { failed++; })
+        );
+      }
+      if (['ios', 'android', 'expo'].includes(sub.platform) && notification.channels.mobilePush && sub.expoPushToken) {
+        pushPromises.push(
+          this._sendExpoPushDirect(sub, notification)
+            .then(() => { sent++; })
+            .catch(() => { failed++; })
+        );
+      }
+    }
+
+    await Promise.allSettled(pushPromises);
+    return { sent, failed };
+  }
+
+  // ─── Direct Web Push (no user notification record) ───
+  async _sendWebPushDirect(subscription, notification) {
+    if (!webpush) throw new Error('web-push not available');
+    await this.ensureVapidConfigured();
+    if (!this.vapidConfigured) throw new Error('VAPID not configured');
+
+    const payload = JSON.stringify({
+      title: notification.title,
+      body: notification.body,
+      icon: notification.icon || '/logo192.png',
+      image: notification.image || undefined,
+      badge: '/badge.png',
+      data: {
+        notificationId: notification._id.toString(),
+        actionUrl: notification.actionUrl || '/',
+        type: notification.type,
+      },
+      tag: notification._id.toString(),
+      renotify: true,
+      requireInteraction: true,
+    });
+
+    try {
+      await webpush.sendNotification({
+        endpoint: subscription.webPush.endpoint,
+        keys: subscription.webPush.keys
+      }, payload);
+    } catch (error) {
+      if (error.statusCode === 410 || error.statusCode === 404) {
+        await PushSubscription.findByIdAndUpdate(subscription._id, { active: false });
+      }
+      throw error;
+    }
+  }
+
+  // ─── Direct Expo Push (no user notification record) ───
+  async _sendExpoPushDirect(subscription, notification) {
+    const message = {
+      to: subscription.expoPushToken,
+      sound: 'default',
+      title: notification.title,
+      body: notification.body,
+      data: {
+        notificationId: notification._id.toString(),
+        actionUrl: notification.actionUrl || '/',
+        type: notification.type,
+      },
+      priority: 'high',
+      channelId: 'default',
+    };
+
+    if (notification.image) {
+      message.richContent = { image: notification.image };
+    }
+
+    const response = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    });
+
+    const result = await response.json();
+    if (result.data?.status === 'error') {
+      if (result.data.details?.error === 'DeviceNotRegistered') {
+        await PushSubscription.findByIdAndUpdate(subscription._id, { active: false });
+      }
+      throw new Error(result.data.message || 'Expo push failed');
     }
   }
 

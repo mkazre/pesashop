@@ -266,6 +266,7 @@ export const notificationsAPI = {
   recordClick: (id) => api.post(`/api/notifications/my/${id}/click`),
   dismiss: (id) => api.delete(`/api/notifications/my/${id}`),
   subscribe: (data) => api.post('/api/notifications/subscribe', data),
+  subscribeAnonymous: (data) => api.post('/api/notifications/subscribe-anonymous', data),
   unsubscribe: (data) => api.delete('/api/notifications/subscribe', { data }),
   getVapidPublicKey: () => api.get('/api/notifications/vapid-public-key'),
 };

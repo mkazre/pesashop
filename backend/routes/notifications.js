@@ -125,6 +125,49 @@ router.post('/subscribe', protect, async (req, res) => {
   }
 });
 
+// POST register anonymous push subscription (no auth required - for non-logged-in users)
+router.post('/subscribe-anonymous', async (req, res) => {
+  try {
+    const { platform, webPush, expoPushToken, deviceName, deviceId, userAgent, appVersion } = req.body;
+
+    if (!platform) {
+      return res.status(400).json({ success: false, message: 'Platform is required' });
+    }
+
+    // Build filter to find existing anonymous subscription for this device
+    const filter = { user: null };
+    if (deviceId) {
+      filter.deviceId = deviceId;
+    } else if (platform === 'web' && webPush?.endpoint) {
+      filter['webPush.endpoint'] = webPush.endpoint;
+    } else if (expoPushToken) {
+      filter.expoPushToken = expoPushToken;
+    }
+
+    const update = {
+      user: null,
+      platform,
+      active: true,
+      lastUsed: new Date(),
+      ...(webPush && { webPush }),
+      ...(expoPushToken && { expoPushToken }),
+      ...(deviceName && { deviceName }),
+      ...(deviceId && { deviceId }),
+      ...(userAgent && { userAgent }),
+      ...(appVersion && { appVersion }),
+    };
+
+    const sub = await PushSubscription.findOneAndUpdate(filter, update, { upsert: true, new: true });
+    res.json({ success: true, data: sub });
+  } catch (error) {
+    if (error.code === 11000) {
+      res.json({ success: true, message: 'Subscription already exists' });
+    } else {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+});
+
 // DELETE unsubscribe
 router.delete('/subscribe', protect, async (req, res) => {
   try {

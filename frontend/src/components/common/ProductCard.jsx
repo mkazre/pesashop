@@ -3,7 +3,7 @@ import { IoHeartOutline, IoHeart, IoEyeOutline, IoCartOutline } from 'react-icon
 import StarRating from './StarRating';
 import Badge from './Badge';
 import Button from './Button';
-import { useCartStore, useWishlistStore, useUIStore, useCurrencyStore } from '@/store';
+import { useCartStore, useWishlistStore, useAuthStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
 import toast from '@/utils/toast';
@@ -11,7 +11,8 @@ import toast from '@/utils/toast';
 export default function ProductCard({ product, layout = 'grid' }) {
   const { addItem } = useCartStore();
   const { items: wishlistItems, addItem: addToWishlist, removeItem: removeFromWishlist } = useWishlistStore();
-  const { openQuickView, openCartSidebar } = useUIStore();
+  const { isAuthenticated } = useAuthStore();
+  const { openQuickView, openCartSidebar, openAuthModal } = useUIStore();
   const { displayPrice } = useB2BPricing(product);
   const { formatPrice } = useCurrencyStore();
   const { titleLines, descriptionLines } = useProductDisplay('other');
@@ -28,6 +29,11 @@ export default function ProductCard({ product, layout = 'grid' }) {
 
   const handleWishlistToggle = (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      openAuthModal('login');
+      toast.info('Please sign in to add items to your wishlist');
+      return;
+    }
     if (isInWishlist) {
       removeFromWishlist(product._id);
       toast.success('Removed from wishlist');
