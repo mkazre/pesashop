@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 
@@ -101,8 +101,9 @@ router.post('/upload-image', protect, authorize('admin', 'manager'), upload.sing
  * @desc    Get all products with filtering, sorting, pagination
  * @access  Public
  */
-router.get('/', async (req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
   try {
+    const isAdmin = req.user && ['admin', 'manager'].includes(req.user.role);
     let query = {};
     
     if (req.query.search) {
@@ -175,8 +176,9 @@ router.get('/', async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
     
-    const products = await Product.find(query)
-      .select('-backendPrice')
+    const productQuery = Product.find(query);
+    if (!isAdmin) productQuery.select('-backendPrice');
+    const products = await productQuery
       .populate('categories', 'name slug')
       .sort(sortBy)
       .limit(limit)
@@ -313,14 +315,19 @@ router.get('/filters', async (req, res) => {
  * @desc    Get single product by ID or slug
  * @access  Public
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', optionalAuth, async (req, res) => {
   try {
+    const isAdmin = req.user && ['admin', 'manager'].includes(req.user.role);
     let product;
     
     if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-      product = await Product.findById(req.params.id).select('-backendPrice').populate('categories', 'name slug');
+      const q = Product.findById(req.params.id);
+      if (!isAdmin) q.select('-backendPrice');
+      product = await q.populate('categories', 'name slug');
     } else {
-      product = await Product.findOne({ slug: req.params.id }).select('-backendPrice').populate('categories', 'name slug');
+      const q = Product.findOne({ slug: req.params.id });
+      if (!isAdmin) q.select('-backendPrice');
+      product = await q.populate('categories', 'name slug');
     }
     
     if (!product) {
