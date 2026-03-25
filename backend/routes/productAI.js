@@ -148,7 +148,7 @@ router.post('/bulk-generate', protect, authorize('admin', 'manager'), async (req
       });
     }
     
-    const { productIds, categoryId } = req.body;
+    const { productIds, categoryId, includeSpecifications } = req.body;
     
     let query = { status: { $ne: 'trash' } };
     
@@ -163,7 +163,7 @@ router.post('/bulk-generate', protect, authorize('admin', 'manager'), async (req
       });
     }
     
-    const products = await Product.find(query).select('_id name description shortDescription');
+    const products = await Product.find(query).select('_id name description shortDescription categories').populate('categories', 'name');
     
     if (products.length === 0) {
       return res.status(404).json({
@@ -175,10 +175,15 @@ router.post('/bulk-generate', protect, authorize('admin', 'manager'), async (req
     // Generate descriptions for each product
     let successCount = 0;
     let errorCount = 0;
+    let specsCount = 0;
     const errors = [];
     
     for (const product of products) {
       try {
+        const specsInstruction = includeSpecifications
+          ? `\n- A "specifications" array of 8-15 objects with "key" and "value" fields (e.g. {"key":"Material","value":"Stainless Steel"})\n\nReturn ONLY valid JSON, no markdown code blocks:\n{"shortDescription": "...", "longDescription": "...", "specifications": [{"key":"...","value":"..."}]}`
+          : `\n\nReturn ONLY valid JSON, no markdown code blocks:\n{"shortDescription": "...", "longDescription": "..."}`;
+
         const prompt = `Generate a compelling product description for: "${product.name}"
 
 Include:
@@ -186,14 +191,11 @@ Include:
 - A detailed long description (3-4 paragraphs, max 300 words)
 - Key features and benefits
 - Do NOT include pricing information
-- Make it engaging and SEO-friendly
-
-Return ONLY valid JSON, no markdown code blocks:
-{"shortDescription": "...", "longDescription": "..."}`;
+- Make it engaging and SEO-friendly${specsInstruction}`;
 
         const aiResponse = await aiAssistant.rawGenerate(prompt, {
-          systemPrompt: 'You are a professional product copywriter. Generate compelling, SEO-friendly product descriptions. Always return valid JSON only, never wrap in markdown code blocks.',
-          maxTokens: 1500,
+          systemPrompt: 'You are a professional product copywriter and specifications expert. Generate compelling, SEO-friendly product descriptions. Always return valid JSON only, never wrap in markdown code blocks.',
+          maxTokens: includeSpecifications ? 2500 : 1500,
         });
         
         const rawBulkContent = (aiResponse.answer || '').trim();
@@ -205,14 +207,21 @@ Return ONLY valid JSON, no markdown code blocks:
         const generatedContent = JSON.parse(bulkJsonStr);
         
         // Update product — replace existing descriptions
+        const updateData = {
+          shortDescription: generatedContent.shortDescription,
+          description: generatedContent.longDescription,
+          'aiGenerated.shortDescription': true,
+          'aiGenerated.description': true
+        };
+
+        if (includeSpecifications && Array.isArray(generatedContent.specifications) && generatedContent.specifications.every(s => s.key && s.value)) {
+          updateData.specifications = generatedContent.specifications;
+          specsCount++;
+        }
+
         await Product.findByIdAndUpdate(
           product._id,
-          {
-            shortDescription: generatedContent.shortDescription,
-            description: generatedContent.longDescription,
-            'aiGenerated.shortDescription': true,
-            'aiGenerated.description': true
-          },
+          updateData,
           { new: true, runValidators: true }
         );
         
@@ -229,10 +238,11 @@ Return ONLY valid JSON, no markdown code blocks:
     
     res.json({
       success: true,
-      message: `AI descriptions generated: ${successCount} successful, ${errorCount} failed`,
+      message: `AI descriptions generated: ${successCount} successful, ${errorCount} failed${includeSpecifications ? `, ${specsCount} specs generated` : ''}`,
       data: {
         count: successCount,
         total: products.length,
+        specsCount: includeSpecifications ? specsCount : undefined,
         errors: errors.length > 0 ? errors : undefined
       }
     });

@@ -28,6 +28,7 @@ const ProductsPage = () => {
   });
   const [aiGenerationType, setAiGenerationType] = useState('selected'); // 'selected', 'category', 'all'
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [includeSpecifications, setIncludeSpecifications] = useState(false);
   const [sortKey, setSortKey] = useState('date-desc');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
@@ -89,11 +90,14 @@ const ProductsPage = () => {
     {
       onSuccess: (response) => {
         queryClient.invalidateQueries('products');
-        toast.success(`AI descriptions generated for ${response.data.data?.count || 0} products`);
+        const d = response.data.data;
+        const specMsg = d?.specsCount ? ` (${d.specsCount} specs generated)` : '';
+        toast.success(`AI descriptions generated for ${d?.count || 0} products${specMsg}`);
         setAiModal(false);
         setSelectedProducts(new Set());
         setAiGenerationType('selected');
         setSelectedCategory('');
+        setIncludeSpecifications(false);
       },
       onError: (error) => {
         toast.error(error.response?.data?.message || 'Failed to generate AI descriptions');
@@ -161,6 +165,10 @@ const ProductsPage = () => {
     } else if (aiGenerationType === 'all') {
       // Generate for all products
       requestData.productIds = extractData(data).map(p => p._id);
+    }
+
+    if (includeSpecifications) {
+      requestData.includeSpecifications = true;
     }
 
     aiGenerateMutation.mutate(requestData);
@@ -613,12 +621,26 @@ const ProductsPage = () => {
             </div>
           )}
 
+          <div className="mt-2 border-t pt-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeSpecifications}
+                onChange={(e) => setIncludeSpecifications(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium">Include product specifications</span>
+            </label>
+            <p className="text-xs text-gray-500 mt-1 ml-6">Generate technical specifications (dimensions, materials, etc.) alongside descriptions</p>
+          </div>
+
           <div className="bg-blue-50 p-3 rounded text-sm text-blue-800">
             <p className="font-medium mb-1">What will be generated:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>Short Description (2-3 sentences)</li>
               <li>Long Description (3-4 paragraphs)</li>
               <li>SEO-friendly content</li>
+              {includeSpecifications && <li>Product Specifications (8-15 key/value pairs)</li>}
             </ul>
           </div>
         </div>
