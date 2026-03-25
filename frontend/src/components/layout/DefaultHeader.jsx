@@ -455,6 +455,8 @@ export default function DefaultHeader() {
   const activePages = menuData.pages || [];
   const categories = menuData.categories || [];
   const trendingProducts = menuData.trendingProducts || [];
+  const ms = menuData.menuSettings || {};
+  const topBar = ms.topBar || {};
 
   // Scroll handler for sticky mini-bar
   useEffect(() => {
@@ -537,26 +539,38 @@ export default function DefaultHeader() {
       {/* ═══ FULL HEADER (visible when not scrolled) ═══ */}
       <header className={`sticky top-0 z-40 bg-white transition-shadow duration-300 ${isCollapsed ? 'shadow-lg' : 'shadow-sm'}`}>
         {/* Top Bar */}
-        <div className={`pesa-default-header-top bg-primary text-white ${isCollapsed ? 'collapsed' : ''}`}
-          style={{ maxHeight: isCollapsed ? 0 : '50px' }}>
+        {topBar.enabled !== false && (
+        <div
+          className={`pesa-default-header-top ${!topBar.backgroundColor ? 'bg-primary' : ''} ${!topBar.textColor ? 'text-white' : ''} ${isCollapsed ? 'collapsed' : ''}`}
+          style={{ maxHeight: isCollapsed ? 0 : '50px', backgroundColor: topBar.backgroundColor || undefined, color: topBar.textColor || undefined, padding: topBar.padding || undefined, fontSize: topBar.fontSize || undefined }}>
           <div className="container-custom py-2">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-1.5">
-                  <IoCallOutline size={14} />
-                  <span>Need Support? <strong>(480) 555-0103</strong></span>
-                </div>
-                <div className="hidden md:flex items-center gap-1.5">
-                  <IoLocationOutline size={14} />
-                  <span>Johannesburg, South Africa</span>
-                </div>
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <div className="flex items-center gap-3 sm:gap-6 min-w-0 overflow-hidden">
+                {(topBar.phone) && (
+                  <a href={`tel:${topBar.phone}`} className="flex items-center gap-1 sm:gap-1.5 shrink-0 hover:opacity-80">
+                    <IoCallOutline size={14} />
+                    <span className="truncate">{topBar.phoneLabel || 'Call Us:'} <strong>{topBar.phone}</strong></span>
+                  </a>
+                )}
+                {(topBar.location) && (
+                  <div className="hidden md:flex items-center gap-1.5">
+                    <IoLocationOutline size={14} />
+                    <span>{topBar.location}</span>
+                  </div>
+                )}
+                {(topBar.announcement) && (
+                  <div className="hidden lg:flex items-center">
+                    <span>{topBar.announcement}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-4">
-                <CurrencyPicker variant="topbar" />
+              <div className="flex items-center gap-4 shrink-0">
+                {topBar.showCurrency !== false && <CurrencyPicker variant="topbar" />}
               </div>
             </div>
           </div>
         </div>
+        )}
 
         {/* Main Row: Logo + Search + Icons */}
         <div className={`border-b border-gray-100 transition-all duration-300 ${isCollapsed ? 'py-2' : 'py-3'}`}>

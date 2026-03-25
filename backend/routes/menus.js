@@ -188,12 +188,16 @@ router.get('/default-menu-data', async (req, res) => {
       .sort({ isFeatured: -1, createdAt: -1 })
       .limit(8);
 
+    // Fetch header menu settings (top bar config etc.)
+    const headerMenu = await Menu.findOne({ location: 'header', isActive: true }).select('settings').sort({ updatedAt: -1 });
+
     res.json({
       success: true,
       data: {
         pages: pages.filter(p => !['single-product', 'product'].includes(p.templateType)),
         categories,
         trendingProducts,
+        menuSettings: headerMenu?.settings || {},
       },
     });
   } catch (error) {

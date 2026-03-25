@@ -5,9 +5,9 @@ import { IoNotifications, IoClose, IoChevronForward, IoMegaphone, IoCart, IoPric
 
 const TYPE_ICONS = {
   promotion: { icon: IoPricetag, color: '#F97316', bg: '#FFF7ED' },
-  product: { icon: IoCart, color: '#3B82F6', bg: '#EFF6FF' },
+  product: { icon: IoCart, color: '#16a34a', bg: '#f0fdf4' },
   order_update: { icon: IoCheckmarkCircle, color: '#22C55E', bg: '#F0FDF4' },
-  announcement: { icon: IoMegaphone, color: '#A855F7', bg: '#FAF5FF' },
+  announcement: { icon: IoMegaphone, color: '#F97316', bg: '#FFF7ED' },
   coupon: { icon: IoPricetag, color: '#EC4899', bg: '#FDF2F8' },
   reminder: { icon: IoTime, color: '#EAB308', bg: '#FEFCE8' },
   custom: { icon: IoNotifications, color: '#6B7280', bg: '#F9FAFB' },
@@ -112,7 +112,7 @@ const NotificationToast = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 left-4 sm:left-auto z-[9999] flex flex-col gap-3 pointer-events-none" style={{ maxWidth: 400 }}>
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-3 pointer-events-none w-[calc(100%-2rem)] sm:w-auto" style={{ maxWidth: 380 }}>
       {toasts.map((toast, index) => {
         const typeInfo = TYPE_ICONS[toast.type] || TYPE_ICONS.custom;
         const TypeIcon = typeInfo.icon;
@@ -129,10 +129,11 @@ const NotificationToast = () => {
             }}
           >
             {/* Progress bar */}
-            <div className="h-0.5 bg-gray-100 relative overflow-hidden">
+            <div className="h-[3px] bg-gray-100 relative overflow-hidden rounded-t-2xl">
               <div
-                className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                className="h-full"
                 style={{
+                  background: `linear-gradient(90deg, ${typeInfo.color}, ${typeInfo.color}cc)`,
                   animation: `shrink ${TOAST_DURATION}ms linear forwards`,
                 }}
               />
@@ -172,10 +173,10 @@ const NotificationToast = () => {
                 <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">{toast.body}</p>
                 {toast.actionUrl && (
                   <div className="flex items-center gap-1 mt-2">
-                    <span className="text-xs font-medium text-blue-600 hover:text-blue-800">
+                    <span className="text-xs font-medium" style={{ color: typeInfo.color }}>
                       {toast.actionLabel || 'View Details'}
                     </span>
-                    <IoChevronForward size={12} className="text-blue-500" />
+                    <IoChevronForward size={12} style={{ color: typeInfo.color }} />
                   </div>
                 )}
               </div>
@@ -188,11 +189,11 @@ const NotificationToast = () => {
         @keyframes slideInRight {
           from {
             opacity: 0;
-            transform: translateX(100%) scale(0.95);
+            transform: translateY(-20px) scale(0.95);
           }
           to {
             opacity: 1;
-            transform: translateX(0) scale(1);
+            transform: translateY(0) scale(1);
           }
         }
         @keyframes shrink {

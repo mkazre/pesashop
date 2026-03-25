@@ -16,7 +16,7 @@ export function SortDropdown({ value, onChange }) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none bg-white border-2 border-gray-300 px-4 py-2 pr-10 focus:border-primary focus:outline-none cursor-pointer"
+        className="appearance-none bg-white border border-gray-300 rounded px-2 sm:px-4 py-1.5 sm:py-2 pr-7 sm:pr-10 text-xs sm:text-sm focus:border-primary focus:outline-none cursor-pointer"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -24,35 +24,35 @@ export function SortDropdown({ value, onChange }) {
           </option>
         ))}
       </select>
-      <IoChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" />
+      <IoChevronDown className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" size={12} />
     </div>
   );
 }
 
 export function ViewToggle({ value, onChange }) {
   return (
-    <div className="flex items-center gap-2 border-2 border-gray-300">
+    <div className="flex items-center border border-gray-300 rounded overflow-hidden">
       <button
         onClick={() => onChange('grid')}
-        className={`p-2 transition-colors ${
+        className={`p-1.5 sm:p-2 transition-colors ${
           value === 'grid'
             ? 'bg-primary text-white'
             : 'bg-white text-gray-600 hover:bg-gray-100'
         }`}
         title="Grid View"
       >
-        <IoGrid size={20} />
+        <IoGrid size={16} className="sm:w-5 sm:h-5" />
       </button>
       <button
         onClick={() => onChange('list')}
-        className={`p-2 transition-colors ${
+        className={`p-1.5 sm:p-2 transition-colors ${
           value === 'list'
             ? 'bg-primary text-white'
             : 'bg-white text-gray-600 hover:bg-gray-100'
         }`}
         title="List View"
       >
-        <IoList size={20} />
+        <IoList size={16} className="sm:w-5 sm:h-5" />
       </button>
     </div>
   );

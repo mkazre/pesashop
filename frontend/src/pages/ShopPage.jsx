@@ -11,7 +11,7 @@ import FloatingCompareBar from '@/components/shop/FloatingCompareBar';
 import { SortDropdown, ViewToggle } from '@/components/shop/ShopControls';
 import Pagination from '@/components/common/Pagination';
 import Loading from '@/components/common/Loading';
-import { IoFilter, IoClose } from 'react-icons/io5';
+import { IoFilter, IoClose, IoChevronDown } from 'react-icons/io5';
 import { usePageTemplate } from '@/hooks/usePageTemplate';
 import { useProductArchiveSettings } from '@/hooks/useProductArchiveSettings';
 import { useProductBadges } from '@/hooks/useProductBadges';
@@ -210,17 +210,20 @@ export default function ShopPage() {
                   </div>
 
                   {/* Right: Per page + Sort + View */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     {tb.showPerPageSelector !== false && (
-                      <select
-                        value={perPage}
-                        onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
-                        className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:border-primary focus:outline-none"
-                      >
-                        {(tb.perPageOptions || [12, 24, 36, 48]).map(n => (
-                          <option key={n} value={n}>Show {n}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={perPage}
+                          onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+                          className="appearance-none bg-white border border-gray-300 rounded px-2 sm:px-4 py-1.5 sm:py-2 pr-7 sm:pr-10 text-xs sm:text-sm focus:border-primary focus:outline-none cursor-pointer"
+                        >
+                          {(tb.perPageOptions || [12, 24, 36, 48]).map(n => (
+                            <option key={n} value={n}>Show {n}</option>
+                          ))}
+                        </select>
+                        <IoChevronDown className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" size={12} />
+                      </div>
                     )}
                     {tb.showSortDropdown !== false && (
                       <SortDropdown value={sortBy} onChange={setSortBy} />
