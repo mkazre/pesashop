@@ -20,6 +20,8 @@ import pesaLogo from '@/assets/pesashop-logo.png';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const getImg = (src) => {
   if (!src) return '/placeholder.jpg';
+  if (typeof src === 'object') src = src.url || src.src || '';
+  if (!src || typeof src !== 'string') return '/placeholder.jpg';
   return src.startsWith('http') ? src : `${API_URL}${src}`;
 };
 

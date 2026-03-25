@@ -7,6 +7,8 @@ import { useCurrencyStore } from '@/store';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 function getImageSrc(path) {
   if (!path) return '/placeholder.jpg';
+  if (typeof path === 'object') path = path.url || path.src || '';
+  if (!path || typeof path !== 'string') return '/placeholder.jpg';
   return path.startsWith('http') ? path : `${API_URL}${path}`;
 }
 

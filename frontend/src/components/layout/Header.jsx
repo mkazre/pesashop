@@ -23,6 +23,8 @@ const PageRenderer = React.lazy(() => import('@/components/pagebuilder/PageRende
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const resolveImgSrc = (src) => {
   if (!src) return '';
+  if (typeof src === 'object') src = src.url || src.src || '';
+  if (!src || typeof src !== 'string') return '';
   if (src.startsWith('http')) return src;
   return `${API_URL}${src}`;
 };
