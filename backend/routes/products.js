@@ -116,11 +116,13 @@ router.get('/', optionalAuth, async (req, res) => {
     }
     
     // Status filter - show all non-trash products by default
+    // Note: $text and $or cannot coexist at the top level in MongoDB,
+    // so when searching use a simple $ne filter instead of $or.
     if (req.query.status) {
       query.status = req.query.status;
+    } else if (query.$text) {
+      query.status = { $ne: 'trash' };
     } else {
-      // Show all products that are not explicitly trashed
-      // This includes products with no status field (legacy/seeded products)
       query.$or = [
         { status: { $exists: false } },
         { status: { $ne: 'trash' } },
