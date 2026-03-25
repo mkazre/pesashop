@@ -87,7 +87,7 @@ class AIAssistant {
     }
   }
 
-  async callOpenAI(prompt, apiKey) {
+  async callOpenAI(prompt, apiKey, options = {}) {
     const response = await fetch(`${this.providers.openai.baseURL}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -99,27 +99,28 @@ class AIAssistant {
         messages: [
           {
             role: 'system',
-            content: SYSTEM_PROMPT
+            content: options.systemPrompt || SYSTEM_PROMPT
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: this.providers.openai.maxTokens,
-        temperature: 0.7,
+        max_tokens: options.maxTokens || this.providers.openai.maxTokens,
+        temperature: options.temperature ?? 0.7,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      const errBody = await response.text().catch(() => '');
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errBody}`);
     }
 
     const data = await response.json();
     return data.choices[0].message.content;
   }
 
-  async callDeepSeek(prompt, apiKey) {
+  async callDeepSeek(prompt, apiKey, options = {}) {
     const response = await fetch(`${this.providers.deepseek.baseURL}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -131,27 +132,29 @@ class AIAssistant {
         messages: [
           {
             role: 'system',
-            content: SYSTEM_PROMPT
+            content: options.systemPrompt || SYSTEM_PROMPT
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: this.providers.deepseek.maxTokens,
-        temperature: 0.7,
+        max_tokens: options.maxTokens || this.providers.deepseek.maxTokens,
+        temperature: options.temperature ?? 0.7,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${response.status} ${response.statusText}`);
+      const errBody = await response.text().catch(() => '');
+      throw new Error(`DeepSeek API error: ${response.status} ${response.statusText} - ${errBody}`);
     }
 
     const data = await response.json();
     return data.choices[0].message.content;
   }
 
-  async callAnthropic(prompt, apiKey) {
+  async callAnthropic(prompt, apiKey, options = {}) {
+    const sysPrompt = options.systemPrompt || SYSTEM_PROMPT;
     const response = await fetch(`${this.providers.anthropic.baseURL}/messages`, {
       method: 'POST',
       headers: {
@@ -161,22 +164,54 @@ class AIAssistant {
       },
       body: JSON.stringify({
         model: this.providers.anthropic.model,
-        max_tokens: this.providers.anthropic.maxTokens,
+        max_tokens: options.maxTokens || this.providers.anthropic.maxTokens,
         messages: [
           {
             role: 'user',
-            content: `${SYSTEM_PROMPT}\n\n${prompt}`
+            content: `${sysPrompt}\n\n${prompt}`
           }
         ],
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status} ${response.statusText}`);
+      const errBody = await response.text().catch(() => '');
+      throw new Error(`Anthropic API error: ${response.status} ${response.statusText} - ${errBody}`);
     }
 
     const data = await response.json();
     return data.content[0].text;
+  }
+
+  async rawGenerate(prompt, options = {}) {
+    const settings = await this.getSettings();
+    const providers = ['openai', 'deepseek', 'anthropic'];
+
+    for (const providerName of providers) {
+      const provider = this.providers[providerName];
+      const setting = settings[providerName];
+      if (!setting.enabled) continue;
+
+      try {
+        let response;
+        switch (providerName) {
+          case 'openai':
+            response = await this.callOpenAI(prompt, setting.apiKey, options);
+            break;
+          case 'deepseek':
+            response = await this.callDeepSeek(prompt, setting.apiKey, options);
+            break;
+          case 'anthropic':
+            response = await this.callAnthropic(prompt, setting.apiKey, options);
+            break;
+        }
+        return { answer: response, provider: provider.name };
+      } catch (error) {
+        console.error(`${provider.name} API error:`, error.message);
+        continue;
+      }
+    }
+    throw new Error('All AI providers are unavailable or failed. Please check your API keys and try again.');
   }
 
   async generateResponse(question, productInfo, webResults) {

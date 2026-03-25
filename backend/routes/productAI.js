@@ -4,6 +4,7 @@ const { protect, authorize } = require('../middleware/auth');
 const Product = require('../models/Product');
 const Settings = require('../models/Settings');
 const axios = require('axios');
+const aiAssistant = require('../services/aiAssistant');
 
 // Helper function to get OpenAI API key
 async function getOpenAIApiKey() {
@@ -33,16 +34,18 @@ router.post('/generate-description/:id', protect, authorize('admin', 'manager'),
       product = { name: req.body.productName || 'Product' };
     }
     
-    const apiKey = await getOpenAIApiKey();
-    if (!apiKey) {
+    // Check if any AI provider is configured
+    const aiSettings = await aiAssistant.getSettings();
+    const hasProvider = Object.values(aiSettings).some(s => s && s.enabled && s.apiKey);
+    if (!hasProvider) {
       return res.status(500).json({
         success: false,
-        message: 'OpenAI API key not configured. Please configure it in Settings > AI Configuration.'
+        message: 'No AI provider configured. Please set up OpenAI, DeepSeek, or Anthropic in Settings > AI Configuration.'
       });
     }
     
-    // Generate description using OpenAI
-    const prompt = `Generate a compelling product description for: ${product.name}
+    // Generate description using whichever AI provider is configured
+    const prompt = `Generate a compelling product description for: "${product.name}"
 
 Include:
 - A short description (2-3 sentences, max 150 words)
@@ -51,38 +54,15 @@ Include:
 - Do NOT include pricing information
 - Make it engaging and SEO-friendly
 
-Format the response as JSON:
-{
-  "shortDescription": "...",
-  "longDescription": "..."
-}`;
+Return ONLY valid JSON, no markdown code blocks:
+{"shortDescription": "...", "longDescription": "..."}`;
 
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional product copywriter. Generate compelling, SEO-friendly product descriptions without pricing information.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    const aiResponse = await aiAssistant.rawGenerate(prompt, {
+      systemPrompt: 'You are a professional product copywriter. Generate compelling, SEO-friendly product descriptions. Always return valid JSON only, never wrap in markdown code blocks.',
+      maxTokens: 1500,
+    });
     
-    const rawContent = response.data.choices[0].message.content.trim();
+    const rawContent = (aiResponse.answer || '').trim();
     // Handle potential markdown code blocks in response
     let jsonStr = rawContent;
     const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
@@ -105,7 +85,7 @@ Format the response as JSON:
     res.status(500).json({
       success: false,
       message: 'Error generating AI description',
-      error: error.response?.data?.error?.message || error.message
+      error: error.message
     });
   }
 });
@@ -157,13 +137,14 @@ router.post('/apply-description/:id', protect, authorize('admin', 'manager'), as
  * @desc    Generate descriptions for multiple products
  * @access  Private/Admin
  */
-router.post('/bulk-generate', protect, authorize('admin'), async (req, res) => {
+router.post('/bulk-generate', protect, authorize('admin', 'manager'), async (req, res) => {
   try {
-    const apiKey = await getOpenAIApiKey();
-    if (!apiKey) {
+    const aiSettings = await aiAssistant.getSettings();
+    const hasProvider = Object.values(aiSettings).some(s => s && s.enabled && s.apiKey);
+    if (!hasProvider) {
       return res.status(500).json({
         success: false,
-        message: 'OpenAI API key not configured. Please configure it in Settings > AI Configuration.'
+        message: 'No AI provider configured. Please set up OpenAI, DeepSeek, or Anthropic in Settings > AI Configuration.'
       });
     }
     
@@ -198,7 +179,7 @@ router.post('/bulk-generate', protect, authorize('admin'), async (req, res) => {
     
     for (const product of products) {
       try {
-        const prompt = `Generate a compelling product description for: ${product.name}
+        const prompt = `Generate a compelling product description for: "${product.name}"
 
 Include:
 - A short description (2-3 sentences, max 150 words)
@@ -207,38 +188,15 @@ Include:
 - Do NOT include pricing information
 - Make it engaging and SEO-friendly
 
-Format the response as JSON:
-{
-  "shortDescription": "...",
-  "longDescription": "..."
-}`;
+Return ONLY valid JSON, no markdown code blocks:
+{"shortDescription": "...", "longDescription": "..."}`;
 
-        const response = await axios.post(
-          'https://api.openai.com/v1/chat/completions',
-          {
-            model: 'gpt-4',
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a professional product copywriter. Generate compelling, SEO-friendly product descriptions without pricing information.'
-              },
-              {
-                role: 'user',
-                content: prompt
-              }
-            ],
-            temperature: 0.7,
-            max_tokens: 1000
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+        const aiResponse = await aiAssistant.rawGenerate(prompt, {
+          systemPrompt: 'You are a professional product copywriter. Generate compelling, SEO-friendly product descriptions. Always return valid JSON only, never wrap in markdown code blocks.',
+          maxTokens: 1500,
+        });
         
-        const rawBulkContent = response.data.choices[0].message.content.trim();
+        const rawBulkContent = (aiResponse.answer || '').trim();
         let bulkJsonStr = rawBulkContent;
         const bulkJsonMatch = rawBulkContent.match(/\{[\s\S]*\}/);
         if (bulkJsonMatch) {
@@ -246,7 +204,7 @@ Format the response as JSON:
         }
         const generatedContent = JSON.parse(bulkJsonStr);
         
-        // Update product
+        // Update product — replace existing descriptions
         await Product.findByIdAndUpdate(
           product._id,
           {
@@ -264,7 +222,7 @@ Format the response as JSON:
         errors.push({
           productId: product._id,
           productName: product.name,
-          error: error.response?.data?.error?.message || error.message
+          error: error.message
         });
       }
     }
