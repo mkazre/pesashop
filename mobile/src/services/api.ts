@@ -167,6 +167,10 @@ export const laybyPlansAPI = {
   getActive: () => api.get('/api/layby-plans/active/list'),
   getForProduct: (productId: string) =>
     api.get('/api/layby-plans/active/list', { params: { productId } }),
+  checkProduct: (productId: string) =>
+    api.get(`/api/layby-plans/check-product/${productId}`),
+  checkProducts: (productIds: string[]) =>
+    api.post('/api/layby-plans/check-products', { productIds }),
 };
 
 export const laybyAPI = {

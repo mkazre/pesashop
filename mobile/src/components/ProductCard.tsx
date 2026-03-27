@@ -6,6 +6,7 @@ import { useCurrencyStore, useWishlistStore, useCartStore, useUIStore } from "@/
 import { colors, resolveImageUrl } from "@/theme";
 import Toast from "react-native-toast-message";
 import ProductBadges from "./ProductBadges";
+import { useLaybyEligibility } from "@/hooks/useLaybyEligibility";
 
 interface ProductCardProps {
   product: any;
@@ -28,7 +29,8 @@ export default function ProductCard({ product, compact }: ProductCardProps) {
     : 0;
   const inStock = product.stock === undefined || product.stock > 0;
   const isLowStock = product.stock !== undefined && product.stock > 0 && product.stock <= 5;
-  const hasLayby = product.laybyAvailable !== false;
+  const laybyEligible = useLaybyEligibility(product?._id);
+  const hasLayby = laybyEligible === true;
   const categoryName = product.categories?.[0]?.name || product.category?.name || "";
 
   const imageUrl = resolveImageUrl(product.images?.[0]) || resolveImageUrl(product.image);

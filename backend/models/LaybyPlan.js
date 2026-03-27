@@ -237,11 +237,21 @@ laybyPlanSchema.methods.isProductEligible = function(product, customerGroup = 'r
     return { eligible: false, reason: `Product value (R ${productPrice}) exceeds maximum (R ${this.maximumProductValue})` };
   }
   
+  // If plan is NOT assigned to all products, it must have explicit allowedProducts
+  if (this.assignedToAllProducts === false) {
+    if (this.allowedProducts.length === 0) {
+      return { eligible: false, reason: 'Plan is not assigned to any products' };
+    }
+    if (!this.allowedProducts.some(id => id.toString() === product._id.toString())) {
+      return { eligible: false, reason: 'Product is not assigned to this plan' };
+    }
+  }
+  
   // Check product restrictions
   if (this.excludedProducts.length > 0 && this.excludedProducts.some(id => id.toString() === product._id.toString())) {
     return { eligible: false, reason: 'Product is excluded from this plan' };
   }
-  if (this.allowedProducts.length > 0 && !this.allowedProducts.some(id => id.toString() === product._id.toString())) {
+  if (this.assignedToAllProducts !== false && this.allowedProducts.length > 0 && !this.allowedProducts.some(id => id.toString() === product._id.toString())) {
     return { eligible: false, reason: 'Product is not allowed for this plan' };
   }
   

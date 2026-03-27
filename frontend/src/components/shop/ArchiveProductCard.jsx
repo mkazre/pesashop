@@ -13,6 +13,7 @@ import Badge from '../common/Badge';
 import Button from '../common/Button';
 import { useCartStore, useWishlistStore, useCompareStore, useAuthStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
+import { useLaybyEligibility } from '@/hooks/useLaybyEligibility';
 import toast from '@/utils/toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -206,7 +207,8 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
 
   // Determine category name
   const categoryName = product.category?.name || '';
-  const hasLayby = product.laybyAvailable !== false;
+  const laybyEligible = useLaybyEligibility(product?._id);
+  const hasLayby = laybyEligible === true;
   const inStock = product.stock === undefined || product.stock > 0;
   const isLowStock = product.stock !== undefined && product.stock > 0 && product.stock <= (pc.lowStockThreshold || 5);
 

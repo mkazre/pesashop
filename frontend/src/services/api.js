@@ -185,6 +185,8 @@ export const productArchiveSettingsAPI = {
 export const laybyPlansAPI = {
   getActive: () => api.get('/api/layby-plans/active/list'),
   getForProduct: (productId) => api.get('/api/layby-plans/active/list', { params: { productId } }),
+  checkProduct: (productId) => api.get(`/api/layby-plans/check-product/${productId}`),
+  checkProducts: (productIds) => api.post('/api/layby-plans/check-products', { productIds }),
 };
 
 // Layby API (customer-facing)
