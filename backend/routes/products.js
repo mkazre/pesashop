@@ -149,6 +149,10 @@ router.get('/', optionalAuth, async (req, res) => {
     if (req.query.featured === 'true') {
       query.isFeatured = true;
     }
+
+    if (req.query.onSale === 'true') {
+      query.salePrice = { $gt: 0, $exists: true };
+    }
     
     if (req.query.isActive !== undefined) {
       query.isActive = req.query.isActive === 'true';
@@ -169,7 +173,10 @@ router.get('/', optionalAuth, async (req, res) => {
         'name-desc': '-name',
         'date-desc': '-createdAt',
         'date-asc': 'createdAt',
-        'rating-desc': '-rating'
+        'rating-desc': '-rating',
+        'top-selling': '-totalSold',
+        'trending': '-viewCount',
+        'popularity': '-totalSold -viewCount',
       };
       sortBy = sortMap[req.query.sort] || sortBy;
     }
@@ -337,6 +344,11 @@ router.get('/:id', optionalAuth, async (req, res) => {
         success: false,
         message: 'Product not found'
       });
+    }
+
+    // Increment view count (fire-and-forget)
+    if (!isAdmin) {
+      Product.updateOne({ _id: product._id }, { $inc: { viewCount: 1 } }).catch(() => {});
     }
     
     res.json({

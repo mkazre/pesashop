@@ -186,6 +186,8 @@ router.post('/', protect, async (req, res, next) => {
       
       subtotal += total;
       await product.updateStock(item.quantity);
+      // Increment totalSold for trending/top-selling sort
+      Product.updateOne({ _id: product._id }, { $inc: { totalSold: item.quantity } }).catch(() => {});
     }
     
     // Use provided subtotal if available (from frontend calculation), otherwise use calculated

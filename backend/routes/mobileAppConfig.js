@@ -54,7 +54,22 @@ router.get('/', protect, async (req, res) => {
 router.put('/splash', protect, async (req, res) => {
   try {
     const config = await getConfig();
-    config.splashScreen = { ...config.splashScreen.toObject(), ...req.body };
+    const existing = config.splashScreen && typeof config.splashScreen.toObject === 'function'
+      ? config.splashScreen.toObject()
+      : (config.splashScreen || {});
+    // Merge, but let req.body.slides fully replace existing slides (don't merge per-slide)
+    const merged = { ...existing, ...req.body };
+    // Strip Mongoose _id from slides to let Mongoose generate fresh ones
+    if (Array.isArray(merged.slides)) {
+      merged.slides = merged.slides.map((s, i) => ({
+        image: s.image || '',
+        heading: s.heading || '',
+        text: s.text || '',
+        order: s.order ?? i,
+      }));
+    }
+    config.splashScreen = merged;
+    config.markModified('splashScreen');
     await config.save();
     res.json({ success: true, data: config.splashScreen });
   } catch (error) {

@@ -33,8 +33,12 @@ export const ProductGrid = ({
       try {
         const params = { limit, sort: sortBy, order: sortOrder };
         if (sourceFilter === 'featured') params.featured = true;
-        if (sourceFilter === 'new') params.sort = 'createdAt';
+        if (sourceFilter === 'new') params.sort = 'date-desc';
         if (sourceFilter === 'sale') params.onSale = true;
+        if (sourceFilter === 'top-selling') params.sort = 'top-selling';
+        if (sourceFilter === 'trending') params.sort = 'trending';
+        if (sourceFilter === 'popular') params.sort = 'popularity';
+        if (sourceFilter === 'top-rated') params.sort = 'rating-desc';
         if (sourceFilter === 'category' && categoryId) params.category = categoryId;
         const response = await productsAPI.getAll(params);
         if (!cancelled) {

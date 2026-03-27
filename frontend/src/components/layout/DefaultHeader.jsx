@@ -692,10 +692,12 @@ export default function DefaultHeader() {
                 ))}
               </div>
               {/* Support in nav */}
+              {topBar.phone && (
               <div className="hidden lg:flex items-center gap-2 text-sm text-gray-600">
                 <IoCallOutline className="text-primary" size={18} />
-                <span>24/7 Support: <strong className="text-gray-900">888-777-999</strong></span>
+                <span>{topBar.phoneLabel || 'Need Support? Call Us:'} <strong className="text-gray-900">{topBar.phone}</strong></span>
               </div>
+              )}
             </div>
           </div>
         </nav>

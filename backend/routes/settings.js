@@ -148,6 +148,32 @@ router.get('/bank-details', async (req, res) => {
 });
 
 /**
+ * @route   GET /api/settings/public
+ * @desc    Get public store settings (store name, contacts, timezone, logo etc.)
+ * @access  Public
+ */
+router.get('/public', async (req, res) => {
+  try {
+    const settings = await Settings.getSettings();
+    res.json({
+      success: true,
+      data: {
+        storeName: settings.storeName || '',
+        storeEmail: settings.storeEmail || settings.fromEmail || '',
+        storePhone: settings.storePhone || '',
+        storeAddress: settings.storeAddress || '',
+        timezone: settings.timezone || 'Africa/Johannesburg',
+        currency: settings.currency || 'ZAR',
+        logo: settings.logo || '',
+        favicon: settings.favicon || '',
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error fetching public settings' });
+  }
+});
+
+/**
  * @route   POST /api/settings/test-email
  * @desc    Send a test email to verify SMTP configuration
  * @access  Private/Admin

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { ordersAPI } from '@/services/api';
@@ -8,6 +9,8 @@ import {
   IoCubeOutline,
   IoAirplaneOutline,
   IoHomeOutline,
+  IoCopyOutline,
+  IoCheckmark,
 } from 'react-icons/io5';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -65,6 +68,15 @@ function getActiveStepIdx(order) {
 export default function OrderDetailPage() {
   const { id } = useParams();
   const { formatPrice } = useCurrencyStore();
+  const [copied, setCopied] = useState(false);
+
+  const copyOrderNumber = () => {
+    if (!order?.orderNumber) return;
+    navigator.clipboard.writeText(order.orderNumber).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const { data, isLoading, error } = useQuery(
     ['order', id],
@@ -107,7 +119,12 @@ export default function OrderDetailPage() {
         </Link>
         <div className="flex items-center justify-between flex-wrap gap-3 mt-2">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Order #{order.orderNumber}</h1>
+            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              Order #{order.orderNumber}
+              <button onClick={copyOrderNumber} className="text-gray-400 hover:text-gray-600 transition-colors p-0.5" title="Copy order number">
+                {copied ? <IoCheckmark size={16} className="text-green-500" /> : <IoCopyOutline size={16} />}
+              </button>
+            </h1>
             <p className="text-sm text-gray-500 mt-0.5">Placed on {formatDate(order.createdAt)}</p>
           </div>
           <div className="flex items-center gap-2">

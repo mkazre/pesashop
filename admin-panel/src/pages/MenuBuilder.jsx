@@ -1146,19 +1146,15 @@ const MenuItemProperties = ({ item, onUpdate, onOpenMegaMenu }) => {
   const pages = pagesResponse?.data?.data || [];
   const categories = categoriesResponse?.data?.data || [];
 
-  const prevItemIdRef = useRef(null);
   const formDataRef = useRef(item);
 
   useEffect(() => { formDataRef.current = formData; }, [formData]);
 
+  // Sync formData whenever a different item is selected (by _id)
   useEffect(() => {
-    const currentItemId = item._id ? String(item._id) : null;
-    if (prevItemIdRef.current !== currentItemId) {
-      prevItemIdRef.current = currentItemId;
-      const newFormData = { ...item };
-      setFormData(newFormData);
-      formDataRef.current = newFormData;
-    }
+    const newFormData = { ...item };
+    setFormData(newFormData);
+    formDataRef.current = newFormData;
   }, [item._id]);
 
   const handleChange = (field, value) => {
@@ -1201,8 +1197,14 @@ const MenuItemProperties = ({ item, onUpdate, onOpenMegaMenu }) => {
           <LabeledInput label="Description / Subtitle" value={formData.description || ''} onChange={(e) => handleChange('description', e.target.value)} placeholder="Optional subtitle text" />
 
           <LabeledSelect label="Link Type" value={formData.linkType || 'manual'} onChange={(e) => {
-            handleChange('linkType', e.target.value);
-            if (e.target.value === 'manual') handleChange('link', '#');
+            const newType = e.target.value;
+            const updates = { linkType: newType };
+            if (newType === 'manual') { updates.link = '#'; updates.linkId = ''; }
+            if (newType === 'none') { updates.link = ''; updates.linkId = ''; }
+            const updated = { ...formDataRef.current, ...updates };
+            setFormData(updated);
+            formDataRef.current = updated;
+            onUpdate(updated);
           }} options={[
             { value: 'manual', label: 'Manual URL' }, { value: 'page', label: 'Page' },
             { value: 'category', label: 'Category' }, { value: 'product', label: 'Product' }, { value: 'none', label: 'Non-clickable' },

@@ -6,7 +6,16 @@ import Button from './Button';
 import { useCartStore, useWishlistStore, useAuthStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
+import { useSingleProductBadges } from '@/hooks/useProductBadges';
 import toast from '@/utils/toast';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const resolveImg = (src) => {
+  if (!src) return '';
+  if (typeof src === 'object') src = src.url || src.src || '';
+  if (!src || typeof src !== 'string') return '';
+  return src.startsWith('http') ? src : `${API_URL}${src}`;
+};
 
 export default function ProductCard({ product, layout = 'grid' }) {
   const { addItem } = useCartStore();
@@ -16,6 +25,8 @@ export default function ProductCard({ product, layout = 'grid' }) {
   const { displayPrice } = useB2BPricing(product);
   const { formatPrice } = useCurrencyStore();
   const { titleLines, descriptionLines } = useProductDisplay('other');
+  const { data: customBadges = [] } = useSingleProductBadges(product._id);
+  const cardBadges = customBadges.filter(b => b.displayOn?.productCards !== false);
 
   const isInWishlist = wishlistItems.some(item => item._id === product._id);
   const discount = displayPrice.discount || 0;
@@ -168,6 +179,19 @@ export default function ProductCard({ product, layout = 'grid' }) {
               <Badge variant="out-of-stock">OUT OF STOCK</Badge>
             )}
           </div>
+          {/* Admin-configured badges */}
+          {cardBadges.map(badge => {
+            const s = badge.style || {};
+            if (s.badgeType === 'image' && s.imageUrl) {
+              return <img key={badge._id} src={resolveImg(s.imageUrl)} alt={badge.name} className="absolute z-10" style={{ top: 8, right: 8, width: s.imageWidth || '48px', height: s.imageHeight || 'auto', objectFit: 'contain' }} />;
+            }
+            return (
+              <span key={badge._id} className="absolute z-10 font-bold uppercase" style={{ top: 8, right: 8, color: s.textColor || '#fff', backgroundColor: s.backgroundColor || '#ef4444', fontSize: s.fontSize || '10px', padding: '2px 8px', borderRadius: s.borderRadius || '4px' }}>
+                {s.text || badge.name}
+              </span>
+            );
+          })
+          }
 
           {/* Quick Actions */}
           <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

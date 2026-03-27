@@ -1,7 +1,7 @@
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { useAuthStore, useCurrencyStore } from '@/store';
-import { ordersAPI, laybyAPI } from '@/services/api';
+import { ordersAPI, laybyAPI, loyaltyAPI } from '@/services/api';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -10,6 +10,8 @@ export default function DashboardPage() {
   const { data: ordersData } = useQuery('myOrders', () => ordersAPI.getAll(), { retry: 1 });
   const { data: laybyesData } = useQuery('myLaybyes', () => laybyAPI.getMyLaybyes(), { retry: 1 });
   const { data: applicationsData } = useQuery('myApplications', () => laybyAPI.getMyApplications(), { retry: 1 });
+  const { data: loyaltyData } = useQuery('myLoyaltyOverview', () => loyaltyAPI.getMyOverview(), { retry: 1, staleTime: 60 * 1000 });
+  const loyaltyBalance = loyaltyData?.data?.data?.balance ?? user?.loyaltyPoints ?? 0;
 
   const orders = ordersData?.data?.data || ordersData?.data || [];
   const laybyes = laybyesData?.data?.data || [];
@@ -73,7 +75,7 @@ export default function DashboardPage() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             </div>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{user?.loyaltyPoints || 0}</p>
+          <p className="text-2xl font-bold text-gray-900">{loyaltyBalance.toLocaleString()}</p>
           <p className="text-sm text-gray-500">PESA Coins</p>
         </div>
       </div>

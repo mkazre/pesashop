@@ -85,15 +85,21 @@ export default function LaybyeApplicationModal({
     setStep("checking");
     setEligibility(null);
 
-    // Fetch settings and check eligibility
+    // Fetch settings and check eligibility with timeout
     const init = async () => {
       try {
-        const settRes = await laybyAPI.getSettings().catch(() => null);
-        setSettings(settRes?.data?.data || null);
+        const settRes = await Promise.race([
+          laybyAPI.getSettings(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+        ]).catch(() => null);
+        setSettings((settRes as any)?.data?.data || null);
       } catch {}
 
       try {
-        const eligRes = await laybyAPI.checkEligibility();
+        const eligRes = await Promise.race([
+          laybyAPI.checkEligibility(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+        ]) as any;
         const data = eligRes?.data;
         setEligibility(data);
 
@@ -104,8 +110,9 @@ export default function LaybyeApplicationModal({
         } else {
           setStep("terms");
         }
-      } catch {
-        // If eligibility check fails (network, auth), fall back to normal flow
+      } catch (err: any) {
+        // If eligibility check fails (network, auth, timeout), fall back to normal flow
+        console.warn("Laybye eligibility check failed:", err?.message);
         setStep("terms");
       }
     };

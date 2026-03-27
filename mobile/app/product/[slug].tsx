@@ -297,7 +297,7 @@ export default function ProductDetailScreen() {
           )}
 
           {/* ── Urgency: Viewer Count & Recent Purchases ── */}
-          {urgency.enabled !== false && (
+          {urgency.enabled === true && (
             <View style={{ gap: 4, marginBottom: 12 }}>
               {urgency.showViewerCount !== false && (
                 <View style={ps.urgencyRow}>

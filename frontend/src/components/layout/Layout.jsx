@@ -5,7 +5,7 @@ import Footer from './Footer';
 import MobileBottomNav from './MobileBottomNav';
 import CodeSnippetInjector from '@/components/common/CodeSnippetInjector';
 import { useCurrencyStore } from '@/store';
-import { loyaltyAPI } from '@/services/api';
+import { loyaltyAPI, settingsAPI } from '@/services/api';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useWebPush } from '@/hooks/useWebPush';
 import NotificationToast from '@/components/common/NotificationToast';
@@ -20,6 +20,15 @@ export default function Layout() {
       .then(res => {
         if (res.data?.success && res.data.data?.length > 0) {
           setCurrencies(res.data.data);
+        }
+      })
+      .catch(() => {});
+
+    settingsAPI.getPublic()
+      .then(res => {
+        const storeName = res.data?.data?.storeName;
+        if (storeName) {
+          document.title = storeName;
         }
       })
       .catch(() => {});

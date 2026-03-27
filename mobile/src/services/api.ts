@@ -151,6 +151,7 @@ export const homePageConfigAPI = {
 // ─── Settings APIs ───────────────────────────────────────────────
 export const settingsAPI = {
   getBankDetails: () => api.get('/api/settings/bank-details'),
+  getPublic: () => api.get('/api/settings/public'),
 };
 
 export const productPageSettingsAPI = {

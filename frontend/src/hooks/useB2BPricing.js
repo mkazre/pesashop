@@ -11,12 +11,14 @@ import { calculateB2BPrice, getDisplayPrice } from '@/utils/pricing';
  */
 export function useB2BPricing(product, variationId = null, quantity = 1) {
   const { user } = useAuthStore();
+  const isB2BUser = !!(user?.customerGroup || user?.b2bEnabled);
   const [pricing, setPricing] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!product?._id) {
+    if (!product?._id || !isB2BUser) {
       setPricing(null);
+      setIsLoading(false);
       return;
     }
 
@@ -36,7 +38,7 @@ export function useB2BPricing(product, variationId = null, quantity = 1) {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [product?._id, variationId, quantity, user?._id]);
+  }, [product?._id, variationId, quantity, user?._id, isB2BUser]);
 
   const displayPrice = getDisplayPrice(product, pricing);
 

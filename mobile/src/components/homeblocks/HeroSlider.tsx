@@ -66,7 +66,7 @@ export default function HeroSlider({ block }: { block: any }) {
         : "flex-start";
 
     return (
-      <View style={{ width: SCREEN_WIDTH - 32, height }}>
+      <View style={{ width: SCREEN_WIDTH, height }}>
         {imgUrl ? (
           <Image
             source={{ uri: imgUrl }}
@@ -137,16 +137,16 @@ export default function HeroSlider({ block }: { block: any }) {
           renderItem={renderSlide}
           onMomentumScrollEnd={(e) => {
             const index = Math.round(
-              e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 32)
+              e.nativeEvent.contentOffset.x / SCREEN_WIDTH
             );
             setCurrent(index);
           }}
           getItemLayout={(_, index) => ({
-            length: SCREEN_WIDTH - 32,
-            offset: (SCREEN_WIDTH - 32) * index,
+            length: SCREEN_WIDTH,
+            offset: SCREEN_WIDTH * index,
             index,
           })}
-          snapToInterval={SCREEN_WIDTH - 32}
+          snapToInterval={SCREEN_WIDTH}
           decelerationRate="fast"
         />
         {block.showDots !== false && slides.length > 1 ? (

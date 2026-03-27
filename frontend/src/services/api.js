@@ -168,6 +168,7 @@ export const loyaltyAPI = {
 // Public Settings API
 export const settingsAPI = {
   getBankDetails: () => api.get('/api/settings/bank-details'),
+  getPublic: () => api.get('/api/settings/public'),
 };
 
 // Product Page Settings API (public)

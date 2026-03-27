@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
+import { IoCopyOutline, IoCheckmark } from 'react-icons/io5';
 import { ordersAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
 
@@ -24,7 +25,17 @@ const PAYMENT_STYLES = {
 
 export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('');
+  const [copiedId, setCopiedId] = useState(null);
   const { formatPrice } = useCurrencyStore();
+
+  const copyOrderNumber = (e, orderNumber) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(orderNumber).then(() => {
+      setCopiedId(orderNumber);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
 
   const { data, isLoading } = useQuery(
     ['myOrders', statusFilter],
@@ -85,8 +96,15 @@ export default function OrdersPage() {
                 {/* Top row */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-gray-900 flex items-center gap-1.5">
                       #{order.orderNumber}
+                      <button
+                        onClick={(e) => copyOrderNumber(e, order.orderNumber)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-0.5"
+                        title="Copy order number"
+                      >
+                        {copiedId === order.orderNumber ? <IoCheckmark size={14} className="text-green-500" /> : <IoCopyOutline size={14} />}
+                      </button>
                     </span>
                     <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[order.status] || 'bg-gray-100 text-gray-800'}`}>
                       {order.status?.replace('-', ' ')}

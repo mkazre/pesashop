@@ -51,6 +51,7 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
   }, [visible]);
 
   useEffect(() => {
+    if (!visible) return;
     // Fetch published custom pages
     pagesAPI.getPublished()
       .then((res) => {
@@ -61,14 +62,17 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
       })
       .catch(() => {});
 
-    // Fetch mobile menu from admin
-    menusAPI.getByLocation("mobile")
-      .then((res) => {
-        const menu = res.data?.data;
-        if (menu?.items?.length) setMenuItems(menu.items);
-      })
-      .catch(() => {});
-  }, []);
+    // Fetch mobile menu from admin — also try 'mobile-menu' location
+    Promise.all([
+      menusAPI.getByLocation("mobile").catch(() => null),
+      menusAPI.getByLocation("mobile-menu").catch(() => null),
+    ]).then(([mobileRes, mobileMenuRes]) => {
+      const menu = mobileRes?.data?.data || mobileMenuRes?.data?.data;
+      if (menu?.items?.length) {
+        setMenuItems(menu.items);
+      }
+    }).catch(() => {});
+  }, [visible]);
 
   const handleClose = () => {
     Animated.timing(slideAnim, {
@@ -143,24 +147,56 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
             {menuItems.length > 0 && (
               <View style={s.section}>
                 <Text style={s.sectionTitle}>Menu</Text>
-                {menuItems.map((item: any, i: number) => (
-                  <Pressable
-                    key={item._id || i}
-                    onPress={() => {
-                      if (item.url?.startsWith("/")) {
-                        navigate(item.url);
-                      } else if (item.page?.slug) {
-                        navigate(`/page/${item.page.slug}`);
-                      } else if (item.url) {
-                        navigate(item.url);
-                      }
-                    }}
-                    style={s.menuItem}
-                  >
-                    <Ionicons name="link-outline" size={18} color={colors.gray700} />
-                    <Text style={s.menuLabel}>{item.label || item.title}</Text>
-                  </Pressable>
-                ))}
+                {menuItems.map((item: any, i: number) => {
+                  const itemLink = item.link || item.url || '#';
+                  const hasChildren = item.children?.length > 0;
+                  return (
+                    <View key={item._id || i}>
+                      <Pressable
+                        onPress={() => {
+                          if (itemLink && itemLink !== '#' && itemLink !== 'none') {
+                            if (itemLink.startsWith('/category/')) {
+                              navigate(`/(tabs)/shop?category=${itemLink.replace('/category/', '')}`);
+                            } else if (itemLink.startsWith('/product/')) {
+                              navigate(`/product/${itemLink.replace('/product/', '')}`);
+                            } else if (itemLink.startsWith('/')) {
+                              navigate(itemLink);
+                            } else if (item.linkType === 'page' && item.linkId) {
+                              navigate(`/page/${item.linkId}`);
+                            } else if (item.linkType === 'category' && item.linkId) {
+                              navigate(`/(tabs)/shop?category=${item.linkId}`);
+                            }
+                          }
+                        }}
+                        style={s.menuItem}
+                      >
+                        <Ionicons name={hasChildren ? "chevron-down-outline" : "link-outline"} size={18} color={colors.gray700} />
+                        <Text style={s.menuLabel}>{item.label || item.title}</Text>
+                      </Pressable>
+                      {hasChildren && item.children.map((child: any, j: number) => (
+                        <Pressable
+                          key={child._id || j}
+                          onPress={() => {
+                            const childLink = child.link || child.url || '#';
+                            if (childLink && childLink !== '#') {
+                              if (childLink.startsWith('/category/')) {
+                                navigate(`/(tabs)/shop?category=${childLink.replace('/category/', '')}`);
+                              } else if (childLink.startsWith('/product/')) {
+                                navigate(`/product/${childLink.replace('/product/', '')}`);
+                              } else if (childLink.startsWith('/')) {
+                                navigate(childLink);
+                              }
+                            }
+                          }}
+                          style={[s.menuItem, { paddingLeft: 44 }]}
+                        >
+                          <Ionicons name="chevron-forward-outline" size={14} color={colors.gray500} />
+                          <Text style={[s.menuLabel, { fontSize: 13, color: colors.gray600 }]}>{child.label}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  );
+                })}
               </View>
             )}
 

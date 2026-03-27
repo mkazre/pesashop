@@ -70,8 +70,12 @@ const MegaMenuBody = ({ item, hasChildren, onClose }) => {
 
   // Fallback: render child menu items as links in a grid
   if (!hasChildren) return null;
+  const colWidths = item.megaMenu?.columnWidths;
+  const gridCols = colWidths
+    ? colWidths.split(',').map(w => w.trim()).join(' ')
+    : `repeat(${item.megaMenu?.columns || 4}, 1fr)`;
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${item.megaMenu?.columns || 4}, 1fr)` }}>
+    <div className="grid gap-4" style={{ gridTemplateColumns: gridCols }}>
       {item.children.map((child, i) => (
         <div key={child._id || i} className="space-y-2">
           <Link to={child.link || '#'} className="font-semibold text-sm hover:text-primary transition-colors block"
@@ -221,23 +225,33 @@ const MenuItemLink = ({ item, settings, isActive, onClose, level = 0 }) => {
       </LinkOrSpan>
 
       {/* Mega Menu Panel */}
-      {hasMega && (
-        <div className={`absolute left-0 top-full z-50 transition-all ${animClass}`}
-          style={{
-            transitionDuration: ddDuration,
-            width: item.megaMenu.width === 'full-width' ? '100vw' : item.megaMenu.width === 'custom' ? (item.megaMenu.customWidth || '800px') : '100%',
-            minWidth: '600px',
-            backgroundColor: item.megaMenu.backgroundColor || ddBg,
-            borderRadius: item.megaMenu.borderRadius || ddRadius,
-            boxShadow: item.megaMenu.boxShadow || '0 10px 40px rgba(0,0,0,0.12)',
-            padding: item.megaMenu.padding || '24px',
-            backgroundImage: item.megaMenu.backgroundImage ? `url(${item.megaMenu.backgroundImage})` : undefined,
-            backgroundSize: item.megaMenu.backgroundSize || 'cover',
-            backgroundPosition: item.megaMenu.backgroundPosition || 'center',
-          }}>
-          <MegaMenuBody item={item} hasChildren={hasChildren} onClose={onClose} />
-        </div>
-      )}
+      {hasMega && (() => {
+        const megaW = item.megaMenu.width;
+        const megaPos = item.megaMenu.position || 'below-item';
+        const posStyle = megaW === 'full-width'
+          ? { left: '50%', transform: 'translateX(-50%)', width: '100vw' }
+          : megaPos === 'center'
+            ? { left: '50%', transform: 'translateX(-50%)', width: megaW === 'custom' ? (item.megaMenu.customWidth || '800px') : undefined, minWidth: '600px' }
+            : { left: 0, width: megaW === 'custom' ? (item.megaMenu.customWidth || '800px') : '100%', minWidth: '600px' };
+        const colWidths = item.megaMenu.columnWidths;
+        return (
+          <div className={`absolute top-full z-50 transition-all ${animClass}`}
+            style={{
+              transitionDuration: ddDuration,
+              ...posStyle,
+              backgroundColor: item.megaMenu.backgroundColor || ddBg,
+              borderRadius: item.megaMenu.borderRadius || ddRadius,
+              boxShadow: item.megaMenu.boxShadow || '0 10px 40px rgba(0,0,0,0.12)',
+              padding: item.megaMenu.padding || '24px',
+              backgroundImage: item.megaMenu.backgroundImage ? `url(${item.megaMenu.backgroundImage})` : undefined,
+              backgroundSize: item.megaMenu.backgroundSize || 'cover',
+              backgroundPosition: item.megaMenu.backgroundPosition || 'center',
+              ...(colWidths ? { '--mega-col-widths': colWidths } : {}),
+            }}>
+            <MegaMenuBody item={item} hasChildren={hasChildren} onClose={onClose} />
+          </div>
+        );
+      })()}
 
       {/* Standard Dropdown */}
       {hasChildren && !hasMega && (
@@ -391,6 +405,7 @@ export default function Header() {
   const hamburgerStyle = getSetting(settings, 'mobile.hamburgerStyle', 'default');
   const hamburgerColor = getSetting(settings, 'mobile.hamburgerColor', '#374151');
   const mobileSubmenuAnim = getSetting(settings, 'mobile.submenuAnimation', 'slide');
+  const menuFullWidth = getSetting(settings, 'fullWidth', false);
 
   // Dynamic responsive CSS injection
   useEffect(() => {
@@ -618,7 +633,7 @@ export default function Header() {
         {/* Navigation Menu */}
         <div className="pesa-desktop-nav border-b border-gray-200"
           style={{ backgroundColor: menuBg, color: menuTextColor }}>
-          <div className="container-custom">
+          <div className={menuFullWidth ? 'px-4' : 'container-custom'}>
             <div className="flex items-center" style={{ gap: menuItemGap }}>
               {/* Dynamic Menu Items */}
               <nav className="flex items-center flex-1" style={{ gap: menuItemGap, fontSize: menuFontSize, fontWeight: menuFontWeight }}>
