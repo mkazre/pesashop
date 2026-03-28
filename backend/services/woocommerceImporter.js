@@ -704,7 +704,7 @@ class WooCommerceImporter extends EventEmitter {
   // ─── Import Products (100K+ capable, streaming + batched) ──────
 
   async importProducts(filePath, options = {}) {
-    const { processImages = true, duplicateResolution = {} } = options;
+    const { processImages = true, duplicateResolution = {}, updateExisting = false } = options;
     const results = { created: [], updated: [], merged: [], skipped: [], errors: [] };
 
     this._categoryCache.clear();
@@ -736,8 +736,8 @@ class WooCommerceImporter extends EventEmitter {
           const resolution = duplicateResolution[rowNumber];
 
           if (duplicate) {
-            // Default to 'update' when no resolution specified — ensures re-imports always work
-            const effectiveResolution = resolution || 'update';
+            // If updateExisting mode is on, always update; otherwise use per-row resolution or default to 'update'
+            const effectiveResolution = updateExisting ? 'update' : (resolution || 'update');
             if (effectiveResolution === 'ignore') {
               results.skipped.push({ row: rowNumber, sku: row.sku || row.SKU, name: row.post_title || row.Name, reason: 'Duplicate - ignored' });
             } else if (effectiveResolution === 'merge') {
@@ -969,7 +969,7 @@ class WooCommerceImporter extends EventEmitter {
   // ─── Import Categories ────────────────────────────────────────
 
   async importCategories(filePath, options = {}) {
-    const { duplicateResolution = {} } = options;
+    const { duplicateResolution = {}, updateExisting = false } = options;
     const results = { created: [], updated: [], merged: [], skipped: [], errors: [] };
     const rows = await this.readCSVStream(filePath);
 
@@ -982,7 +982,8 @@ class WooCommerceImporter extends EventEmitter {
         const resolution = duplicateResolution[rowNumber];
 
         if (duplicate) {
-          if (resolution === 'ignore' || !resolution) {
+          const effectiveResolution = updateExisting ? 'update' : (resolution || null);
+          if (effectiveResolution === 'ignore' || !effectiveResolution) {
             results.skipped.push({ row: rowNumber, name: row.Name || row.name, reason: 'Duplicate' });
             continue;
           }
@@ -995,10 +996,10 @@ class WooCommerceImporter extends EventEmitter {
             const parent = await Category.findOne({ name: row.Parent || row.parent });
             if (parent) categoryData.parent = parent._id;
           }
-          if (resolution === 'update') {
+          if (effectiveResolution === 'update') {
             await Category.findByIdAndUpdate(duplicate._id, categoryData);
             results.updated.push({ row: rowNumber, name: categoryData.name, id: duplicate._id.toString() });
-          } else if (resolution === 'merge') {
+          } else if (effectiveResolution === 'merge') {
             const existing = duplicate.toObject();
             const merged = { ...existing, ...categoryData, description: existing.description || categoryData.description };
             await Category.findByIdAndUpdate(duplicate._id, merged);
@@ -1032,7 +1033,7 @@ class WooCommerceImporter extends EventEmitter {
   // ─── Import Customers ─────────────────────────────────────────
 
   async importCustomers(filePath, options = {}) {
-    const { duplicateResolution = {} } = options;
+    const { duplicateResolution = {}, updateExisting = false } = options;
     const results = { created: [], updated: [], merged: [], skipped: [], errors: [] };
     const rows = await this.readCSVStream(filePath);
 
@@ -1049,7 +1050,8 @@ class WooCommerceImporter extends EventEmitter {
         const lastName = row['Last Name'] || row.last_name || row.billing_last_name || '';
 
         if (duplicate) {
-          if (resolution === 'ignore' || !resolution) {
+          const effectiveResolution = updateExisting ? 'update' : (resolution || null);
+          if (effectiveResolution === 'ignore' || !effectiveResolution) {
             results.skipped.push({ row: rowNumber, email, reason: 'Duplicate' });
             continue;
           }
@@ -1059,10 +1061,10 @@ class WooCommerceImporter extends EventEmitter {
             lastName,
             phone: row.Phone || row.phone || row.billing_phone || '',
           };
-          if (resolution === 'update') {
+          if (effectiveResolution === 'update') {
             await User.findByIdAndUpdate(duplicate._id, customerData);
             results.updated.push({ row: rowNumber, email, id: duplicate._id.toString() });
-          } else if (resolution === 'merge') {
+          } else if (effectiveResolution === 'merge') {
             const existing = duplicate.toObject();
             const merged = { ...existing, ...customerData };
             await User.findByIdAndUpdate(duplicate._id, merged);
@@ -1095,7 +1097,7 @@ class WooCommerceImporter extends EventEmitter {
   // ─── Import Orders ────────────────────────────────────────────
 
   async importOrders(filePath, options = {}) {
-    const { duplicateResolution = {} } = options;
+    const { duplicateResolution = {}, updateExisting = false } = options;
     const results = { created: [], updated: [], merged: [], skipped: [], errors: [] };
     const rows = await this.readCSVStream(filePath);
 
@@ -1108,12 +1110,13 @@ class WooCommerceImporter extends EventEmitter {
         const resolution = duplicateResolution[rowNumber];
 
         if (duplicate) {
-          if (resolution === 'ignore' || !resolution) {
+          const effectiveResolution = updateExisting ? 'update' : (resolution || null);
+          if (effectiveResolution === 'ignore' || !effectiveResolution) {
             results.skipped.push({ row: rowNumber, orderNumber: row.order_number || row['Order Number'], reason: 'Duplicate' });
             continue;
           }
           // For orders, update is the only sensible resolution
-          if (resolution === 'update' || resolution === 'merge') {
+          if (effectiveResolution === 'update' || effectiveResolution === 'merge') {
             const orderData = await this.mapOrderData(row);
             await Order.findByIdAndUpdate(duplicate._id, orderData);
             results.updated.push({ row: rowNumber, orderNumber: orderData.orderNumber, id: duplicate._id.toString() });

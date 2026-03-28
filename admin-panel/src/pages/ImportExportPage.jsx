@@ -8,6 +8,7 @@ import { IoCloudUpload, IoCloudDownload, IoCheckmarkCircle, IoCloseCircle, IoWar
 
 const ImportExportPage = () => {
   const [importType, setImportType] = useState('products');
+  const [importMode, setImportMode] = useState('add');
   const [exportType, setExportType] = useState('products');
   const [exportFormat, setExportFormat] = useState('woocommerce');
   const [file, setFile] = useState(null);
@@ -259,9 +260,13 @@ const ImportExportPage = () => {
 
   const handleImport = () => {
     if (!file) { toast.error('Please select a file'); return; }
-    if (validationResults?.duplicates > 0 && Object.keys(duplicateResolutions).length < validationResults.duplicates) {
+    // In 'add' mode, require duplicate resolution if duplicates exist
+    if (importMode === 'add' && validationResults?.duplicates > 0 && Object.keys(duplicateResolutions).length < validationResults.duplicates) {
       toast.error('Please resolve all duplicates before importing');
       return;
+    }
+    if (importMode === 'replace') {
+      if (!confirm(`⚠️ REPLACE ALL will DELETE all existing ${importType} and import the CSV as a fresh set. This cannot be undone. Continue?`)) return;
     }
     importMutation.mutate({
       type: importType,
@@ -269,7 +274,9 @@ const ImportExportPage = () => {
       options: {
         processImages,
         imageProcessingType: processImages ? imageProcessingType : undefined,
-        duplicateResolution: duplicateResolutions,
+        duplicateResolution: importMode === 'add' ? duplicateResolutions : undefined,
+        updateExisting: importMode === 'update',
+        replaceAll: importMode === 'replace',
         stripHtml,
       },
     });
@@ -318,6 +325,24 @@ const ImportExportPage = () => {
                 <option value="orders">Orders</option>
                 <option value="tags">Tags</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Import Mode</label>
+              <select
+                value={importMode}
+                onChange={(e) => setImportMode(e.target.value)}
+                className="input w-full"
+              >
+                <option value="add">Add New Only (skip duplicates)</option>
+                <option value="update">Update Existing + Add New</option>
+                <option value="replace">Replace All (delete existing, import fresh)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {importMode === 'add' && 'New items are created. Duplicates (by SKU) are flagged for you to resolve individually.'}
+                {importMode === 'update' && 'Matching SKUs are updated with CSV data. New SKUs are created. No data is deleted.'}
+                {importMode === 'replace' && '⚠️ ALL existing items of this type will be DELETED first, then the CSV is imported as a fresh set.'}
+              </p>
             </div>
 
             <div>
@@ -409,7 +434,7 @@ const ImportExportPage = () => {
                 variant="primary"
                 onClick={handleImport}
                 loading={importMutation.isLoading}
-                disabled={!file || !validationResults || jobPolling || (validationResults.duplicates > 0 && Object.keys(duplicateResolutions).length < validationResults.duplicates)}
+                disabled={!file || !validationResults || jobPolling || (importMode === 'add' && validationResults.duplicates > 0 && Object.keys(duplicateResolutions).length < validationResults.duplicates)}
                 fullWidth
               >
                 <IoCheckmarkCircle size={20} className="mr-2" />
@@ -491,6 +516,15 @@ const ImportExportPage = () => {
                     <strong>Errors:</strong> {validationResults.errors}
                   </p>
                   {validationResults.valid && validationResults.duplicates === 0 && (
+                    <p className="text-green-600 font-semibold">✓ Ready to import</p>
+                  )}
+                  {validationResults.duplicates > 0 && importMode === 'update' && (
+                    <p className="text-blue-600 font-semibold">✓ {validationResults.duplicates} existing record(s) will be updated automatically</p>
+                  )}
+                  {validationResults.duplicates > 0 && importMode === 'replace' && (
+                    <p className="text-red-600 font-semibold">⚠ All existing {importType} will be deleted before import</p>
+                  )}
+                  {validationResults.valid && validationResults.duplicates > 0 && importMode !== 'add' && (
                     <p className="text-green-600 font-semibold">✓ Ready to import</p>
                   )}
                 </div>
@@ -672,8 +706,8 @@ const ImportExportPage = () => {
         </Card>
       </div>
 
-      {/* Duplicate Resolution */}
-      {showDuplicateResolution && validationResults?.duplicatesList && validationResults.duplicatesList.length > 0 && (
+      {/* Duplicate Resolution — only show in 'add' mode */}
+      {importMode === 'add' && showDuplicateResolution && validationResults?.duplicatesList && validationResults.duplicatesList.length > 0 && (
         <Card title="Resolve Duplicates" subtitle={`Found ${validationResults.duplicates} duplicate(s). Choose how to handle each:`}>
           <div className="space-y-4">
             <div className="flex gap-2 p-3 bg-gray-50 rounded-lg">

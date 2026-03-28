@@ -319,6 +319,8 @@ export const importAPI = {
     }
     formData.append('duplicateResolution', JSON.stringify(options.duplicateResolution || {}));
     formData.append('stripHtml', options.stripHtml !== false ? 'true' : 'false');
+    formData.append('updateExisting', options.updateExisting ? 'true' : 'false');
+    formData.append('replaceAll', options.replaceAll ? 'true' : 'false');
     formData.append('useJob', 'true'); // always use job-based import
     
     const endpoint = `/import/${type}`;

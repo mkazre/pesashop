@@ -47,16 +47,26 @@ router.post('/products', protect, authorize('admin'), upload.single('file'), asy
       imageProcessingType = 'all',
       duplicateResolution = '{}',
       stripHtml = 'true',
+      updateExisting = 'false',
+      replaceAll = 'false',
       useJob = 'true' // default to job-based for all imports
     } = req.body;
 
     let resolutionMap = {};
     try { resolutionMap = JSON.parse(duplicateResolution); } catch (e) {}
 
+    // Handle "Replace All" mode — delete all existing products first
+    if (replaceAll === 'true') {
+      const deletedCount = await Product.countDocuments({});
+      await Product.deleteMany({});
+      console.log(`[Import] Replace All: deleted ${deletedCount} existing products`);
+    }
+
     const options = {
       processImages: processImages === 'true',
       imageProcessingType: processImages === 'true' ? imageProcessingType : undefined,
       duplicateResolution: resolutionMap,
+      updateExisting: updateExisting === 'true' || replaceAll === 'true',
       stripHtml: stripHtml === 'true'
     };
 
@@ -221,11 +231,18 @@ router.post('/deduplicate-products', protect, authorize('admin'), async (req, re
 router.post('/categories', protect, authorize('admin'), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'Please upload a CSV file' });
-    const { duplicateResolution = '{}' } = req.body;
+    const { duplicateResolution = '{}', updateExisting = 'false', replaceAll = 'false' } = req.body;
     let resolutionMap = {};
     try { resolutionMap = JSON.parse(duplicateResolution); } catch (e) {}
 
-    const results = await woocommerceImporter.importCategories(req.file.path, { duplicateResolution: resolutionMap });
+    if (replaceAll === 'true') {
+      const Category = require('../models/Category');
+      const count = await Category.countDocuments({});
+      await Category.deleteMany({});
+      console.log(`[Import] Replace All: deleted ${count} existing categories`);
+    }
+
+    const results = await woocommerceImporter.importCategories(req.file.path, { duplicateResolution: resolutionMap, updateExisting: updateExisting === 'true' || replaceAll === 'true' });
     if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
     res.json({
@@ -245,11 +262,18 @@ router.post('/categories', protect, authorize('admin'), upload.single('file'), a
 router.post('/customers', protect, authorize('admin'), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'Please upload a CSV file' });
-    const { duplicateResolution = '{}' } = req.body;
+    const { duplicateResolution = '{}', updateExisting = 'false', replaceAll = 'false' } = req.body;
     let resolutionMap = {};
     try { resolutionMap = JSON.parse(duplicateResolution); } catch (e) {}
 
-    const results = await woocommerceImporter.importCustomers(req.file.path, { duplicateResolution: resolutionMap });
+    if (replaceAll === 'true') {
+      const User = require('../models/User');
+      const count = await User.countDocuments({ role: 'customer' });
+      await User.deleteMany({ role: 'customer' });
+      console.log(`[Import] Replace All: deleted ${count} existing customers (admins preserved)`);
+    }
+
+    const results = await woocommerceImporter.importCustomers(req.file.path, { duplicateResolution: resolutionMap, updateExisting: updateExisting === 'true' || replaceAll === 'true' });
     if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
     res.json({
@@ -269,11 +293,18 @@ router.post('/customers', protect, authorize('admin'), upload.single('file'), as
 router.post('/orders', protect, authorize('admin'), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'Please upload a CSV file' });
-    const { duplicateResolution = '{}' } = req.body;
+    const { duplicateResolution = '{}', updateExisting = 'false', replaceAll = 'false' } = req.body;
     let resolutionMap = {};
     try { resolutionMap = JSON.parse(duplicateResolution); } catch (e) {}
 
-    const results = await woocommerceImporter.importOrders(req.file.path, { duplicateResolution: resolutionMap });
+    if (replaceAll === 'true') {
+      const Order = require('../models/Order');
+      const count = await Order.countDocuments({});
+      await Order.deleteMany({});
+      console.log(`[Import] Replace All: deleted ${count} existing orders`);
+    }
+
+    const results = await woocommerceImporter.importOrders(req.file.path, { duplicateResolution: resolutionMap, updateExisting: updateExisting === 'true' || replaceAll === 'true' });
     if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
     res.json({
