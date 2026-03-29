@@ -246,8 +246,26 @@ class PricingService {
     console.log(`[calculatePrice] Found ${rules.length} potential rules for product ${productId}`);
     console.log(`[calculatePrice] Rule query:`, JSON.stringify(ruleQuery, null, 2));
 
+    // Detect if markup rules have already been applied to this product
+    // If backendPrice exists and regularPrice is significantly higher, markup was already applied by productPriceUpdater
+    let markupAlreadyApplied = false;
+    if (product.backendPrice > 0 && product.regularPrice > 0) {
+      const priceRatio = product.regularPrice / product.backendPrice;
+      // If ratio is > 1.5, assume markup has been applied (allowing for various markup percentages)
+      if (priceRatio > 1.5) {
+        markupAlreadyApplied = true;
+        console.log(`[calculatePrice] Detected existing markup: regularPrice(${product.regularPrice}) / backendPrice(${product.backendPrice}) = ${priceRatio.toFixed(2)}x - will skip markup rules`);
+      }
+    }
+
     // Apply pricing rules
     for (const rule of rules) {
+      // Skip markup rules if markup has already been applied to this product
+      if (markupAlreadyApplied && (rule.action === 'markup_percentage' || rule.action === 'markup_fixed')) {
+        console.log(`[calculatePrice] Skipping markup rule "${rule.name}" - markup already applied to product`);
+        continue;
+      }
+
       const applies = this.ruleApplies(rule, { customerId, customerGroupId, productId, quantity, orderValue });
       console.log(`[calculatePrice] Rule "${rule.name}" (${rule.ruleType}): applies=${applies}`);
       if (!applies) {
