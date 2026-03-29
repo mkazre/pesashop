@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'react-query';
-import { ordersAPI, couponsAPI, laybyPlansAPI, loyaltyAPI, giftCardsAPI } from '@/services/api';
-import { useAuthStore, useCartStore, useCurrencyStore } from '@/store';
+import { ordersAPI, couponsAPI, laybyPlansAPI, loyaltyAPI, giftCardsAPI, laybyAPI } from '@/services/api';
+import { useAuthStore, useCartStore, useCurrencyStore, useUIStore } from '@/store';
 import toast from '@/utils/toast';
+import LaybyWidget from './LaybyWidget';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -20,6 +21,7 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
   const { user, isAuthenticated } = useAuthStore();
   const cart = useCartStore();
   const { formatPrice } = useCurrencyStore();
+  const { openAuthModal } = useUIStore();
   const navigate = useNavigate();
 
   const [fulfilment, setFulfilment] = useState('delivery');
@@ -33,6 +35,11 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
   const [splitPayment, setSplitPayment] = useState(false);
   const [splitAmounts, setSplitAmounts] = useState({});
   const [selectedPickupAddress, setSelectedPickupAddress] = useState(null);
+  
+  // ── Laybye eligibility flow ──
+  const [pendingLaybyeItem, setPendingLaybyeItem] = useState(null); // { idx, plan, price }
+  const [showLaybyeWidget, setShowLaybyeWidget] = useState(false);
+  const [laybyeEligibility, setLaybyeEligibility] = useState(null);
 
   // ── Pesa Coins (Loyalty Points) ──
   const [loyaltyBalance, setLoyaltyBalance] = useState(0);
@@ -332,6 +339,72 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
     return `${API_URL}${img}`;
   };
 
+  // Handle laybye checkbox click - checks auth and eligibility
+  const handleLaybyeToggle = async (e, idx, plans, price) => {
+    if (e.target.checked) {
+      // Check if user is logged in first
+      if (!isAuthenticated) {
+        openAuthModal('login');
+        toast('Please sign in or register to use laybye', { icon: '🔐' });
+        return;
+      }
+
+      // Store pending laybye item
+      const plan = plans[0];
+      setPendingLaybyeItem({ idx, plan, price, plans });
+
+      // Check eligibility
+      try {
+        const res = await laybyAPI.checkEligibility();
+        const data = res.data;
+        setLaybyeEligibility(data);
+
+        if (data.eligible) {
+          // Auto-approved - apply laybye directly
+          const dep = calcDeposit(plan, price);
+          const inst = calcInstallment(plan, price);
+          cart.setItemLaybye(idx, { plan, deposit: dep, installment: inst });
+          toast.success('You\'re approved for laybye!');
+          setPendingLaybyeItem(null);
+        } else if (data.pending) {
+          // Pending review - show message
+          toast('Your laybye application is under review', { icon: '⏳' });
+          setPendingLaybyeItem(null);
+        } else {
+          // Not eligible - show application modal
+          setShowLaybyeWidget(true);
+        }
+      } catch {
+        // If check fails, show application modal
+        setShowLaybyeWidget(true);
+      }
+    } else {
+      // Unchecking - clear laybye
+      cart.clearItemLaybye(idx);
+      setPendingLaybyeItem(null);
+    }
+  };
+
+  // Handle successful laybye application from widget
+  const handleLaybyeWidgetClose = () => {
+    setShowLaybyeWidget(false);
+    // Re-check eligibility after application
+    if (pendingLaybyeItem) {
+      laybyAPI.checkEligibility().then((res) => {
+        if (res.data?.eligible) {
+          const { idx, plan, price } = pendingLaybyeItem;
+          const dep = calcDeposit(plan, price);
+          const inst = calcInstallment(plan, price);
+          cart.setItemLaybye(idx, { plan, deposit: dep, installment: inst });
+          toast.success('Laybye approved!');
+        }
+        setPendingLaybyeItem(null);
+      }).catch(() => {
+        setPendingLaybyeItem(null);
+      });
+    }
+  };
+
   if (!open) return null;
 
   const drawerWidth = cd.width || '520px';
@@ -452,16 +525,7 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
                               <input
                                 type="checkbox"
                                 checked={hasLaybye}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    const plan = plans[0];
-                                    const dep = calcDeposit(plan, price);
-                                    const inst = calcInstallment(plan, price);
-                                    cart.setItemLaybye(idx, { plan, deposit: dep, installment: inst });
-                                  } else {
-                                    cart.clearItemLaybye(idx);
-                                  }
-                                }}
+                                onChange={(e) => handleLaybyeToggle(e, idx, plans, price)}
                                 style={{ width: 14, height: 14, accentColor: ac }}
                               />
                               {hasLaybye ? '✅ On Laybye' : '💳 Get it on Laybye'}
@@ -823,6 +887,21 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
           </div>
         )}
       </div>
+
+      {/* Laybye Application Modal */}
+      {showLaybyeWidget && pendingLaybyeItem && (
+        <LaybyWidget
+          product={items[pendingLaybyeItem.idx]?.product}
+          selectedPlan={{
+            plan: pendingLaybyeItem.plan,
+            deposit: calcDeposit(pendingLaybyeItem.plan, pendingLaybyeItem.price),
+            installment: calcInstallment(pendingLaybyeItem.plan, pendingLaybyeItem.price)
+          }}
+          showButton={false}
+          isOpen={showLaybyeWidget}
+          onClose={handleLaybyeWidgetClose}
+        />
+      )}
 
       <style>{`
         @keyframes cdFadeIn { from { opacity: 0; } to { opacity: 1; } }
