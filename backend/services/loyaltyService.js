@@ -555,14 +555,17 @@ class LoyaltyService {
       
       // Calculate value
       let value = 0;
+      console.log('[DEBUG] Calculating value:', { redemptionType: settings.redemptionType, redemptionRate, points, orderTotal });
       if (settings.redemptionType === 'percentage') {
         // For percentage type: redemptionRate is points per $1
         // e.g., 100 points = $1 when redemptionRate = 100
         value = points / redemptionRate;
+        console.log('[DEBUG] Percentage calculation:', { value, formula: `${points} / ${redemptionRate}` });
       } else {
         // For fixed type: redemptionRate is currency per point
         // e.g., $0.005 per point when redemptionRate = 0.005
         value = points * redemptionRate;
+        console.log('[DEBUG] Fixed calculation:', { value, formula: `${points} * ${redemptionRate}` });
       }
       
       // Apply max points limit

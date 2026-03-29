@@ -819,7 +819,12 @@ router.post('/redemption/calculate', protect, async (req, res, next) => {
     const { points, orderTotal } = req.body;
     const user = await User.findById(req.user._id);
     
+    console.log('[DEBUG] Redemption calculate:', { points, orderTotal, redemptionType: settings?.redemptionType, redemptionRate: settings?.redemptionRate });
+    
     const result = await loyaltyService.calculateRedemptionValue(points, user, orderTotal);
+    
+    console.log('[DEBUG] Redemption result:', result);
+    
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
