@@ -33,6 +33,10 @@ const RESOURCES = [
   'shipping_pod',
   'shipping_reports',
   'shipping_hubs',
+  'pricing_rules',
+  'price_lists',
+  'customer_groups',
+  'b2bking',
 ];
 
 const permissionSchema = new mongoose.Schema({

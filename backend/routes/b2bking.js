@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
+const { checkPermission } = require('../middleware/checkPermission');
 const CustomerGroup = require('../models/CustomerGroup');
 const PriceList = require('../models/PriceList');
 const PricingRule = require('../models/PricingRule');
@@ -11,7 +12,7 @@ const pricingService = require('../services/pricingService');
 // ==================== CUSTOMER GROUPS ====================
 
 // GET all customer groups
-router.get('/customer-groups', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+router.get('/customer-groups', protect, authorize('admin', 'shop_manager'), checkPermission('customer_groups', 'read'), async (req, res, next) => {
   try {
     const { page = 1, limit = 20, search, isActive } = req.query;
     const query = {};
@@ -60,7 +61,7 @@ router.get('/customer-groups', protect, authorize('admin', 'shop_manager'), asyn
 });
 
 // GET single customer group
-router.get('/customer-groups/:id', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+router.get('/customer-groups/:id', protect, authorize('admin', 'shop_manager'), checkPermission('customer_groups', 'read'), async (req, res, next) => {
   try {
     const group = await CustomerGroup.findById(req.params.id);
     if (!group) {
@@ -78,7 +79,7 @@ router.get('/customer-groups/:id', protect, authorize('admin', 'shop_manager'), 
 });
 
 // POST create customer group
-router.post('/customer-groups', protect, authorize('shop_manager'), async (req, res, next) => {
+router.post('/customer-groups', protect, authorize('shop_manager'), checkPermission('customer_groups', 'create'), async (req, res, next) => {
   try {
     const group = await CustomerGroup.create(req.body);
     res.status(201).json({ success: true, data: group });
@@ -91,7 +92,7 @@ router.post('/customer-groups', protect, authorize('shop_manager'), async (req, 
 });
 
 // PUT update customer group
-router.put('/customer-groups/:id', protect, authorize('shop_manager'), async (req, res, next) => {
+router.put('/customer-groups/:id', protect, authorize('shop_manager'), checkPermission('customer_groups', 'update'), async (req, res, next) => {
   try {
     const group = await CustomerGroup.findByIdAndUpdate(
       req.params.id,
@@ -111,7 +112,7 @@ router.put('/customer-groups/:id', protect, authorize('shop_manager'), async (re
 });
 
 // DELETE customer group
-router.delete('/customer-groups/:id', protect, authorize('shop_manager'), async (req, res, next) => {
+router.delete('/customer-groups/:id', protect, authorize('shop_manager'), checkPermission('customer_groups', 'delete'), async (req, res, next) => {
   try {
     const group = await CustomerGroup.findById(req.params.id);
     if (!group) {
@@ -137,7 +138,7 @@ router.delete('/customer-groups/:id', protect, authorize('shop_manager'), async 
 // ==================== PRICE LISTS ====================
 
 // GET all price lists
-router.get('/price-lists', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+router.get('/price-lists', protect, authorize('admin', 'shop_manager'), checkPermission('price_lists', 'read'), async (req, res, next) => {
   try {
     const { page = 1, limit = 20, search, isActive } = req.query;
     const query = {};
@@ -181,7 +182,7 @@ router.get('/price-lists', protect, authorize('admin', 'shop_manager'), async (r
 });
 
 // GET single price list
-router.get('/price-lists/:id', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+router.get('/price-lists/:id', protect, authorize('admin', 'shop_manager'), checkPermission('price_lists', 'read'), async (req, res, next) => {
   try {
     const priceList = await PriceList.findById(req.params.id)
       .populate('customerGroups', 'name slug')
@@ -201,7 +202,7 @@ router.get('/price-lists/:id', protect, authorize('admin', 'shop_manager'), asyn
 });
 
 // POST create price list
-router.post('/price-lists', protect, authorize('shop_manager'), async (req, res, next) => {
+router.post('/price-lists', protect, authorize('shop_manager'), checkPermission('price_lists', 'create'), async (req, res, next) => {
   try {
     const priceList = await PriceList.create(req.body);
     await priceList.populate('customerGroups products categories');
@@ -212,7 +213,7 @@ router.post('/price-lists', protect, authorize('shop_manager'), async (req, res,
 });
 
 // PUT update price list
-router.put('/price-lists/:id', protect, authorize('shop_manager'), async (req, res, next) => {
+router.put('/price-lists/:id', protect, authorize('shop_manager'), checkPermission('price_lists', 'update'), async (req, res, next) => {
   try {
     const priceList = await PriceList.findByIdAndUpdate(
       req.params.id,
@@ -231,7 +232,7 @@ router.put('/price-lists/:id', protect, authorize('shop_manager'), async (req, r
 });
 
 // DELETE price list
-router.delete('/price-lists/:id', protect, authorize('shop_manager'), async (req, res, next) => {
+router.delete('/price-lists/:id', protect, authorize('shop_manager'), checkPermission('price_lists', 'delete'), async (req, res, next) => {
   try {
     const priceList = await PriceList.findById(req.params.id);
     if (!priceList) {
@@ -306,7 +307,7 @@ router.delete('/price-lists/:id/items/:itemId', protect, authorize('shop_manager
 // ==================== PRICING RULES ====================
 
 // GET all pricing rules
-router.get('/pricing-rules', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+router.get('/pricing-rules', protect, authorize('admin', 'shop_manager'), checkPermission('pricing_rules', 'read'), async (req, res, next) => {
   try {
     const { page = 1, limit = 20, search, isActive, ruleType } = req.query;
     const query = {};
@@ -375,7 +376,7 @@ router.get('/pricing-rules', protect, authorize('admin', 'shop_manager'), async 
 });
 
 // GET single pricing rule
-router.get('/pricing-rules/:id', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+router.get('/pricing-rules/:id', protect, authorize('admin', 'shop_manager'), checkPermission('pricing_rules', 'read'), async (req, res, next) => {
   try {
     const rule = await PricingRule.findById(req.params.id)
       .populate('customerGroups', 'name slug')
@@ -394,7 +395,7 @@ router.get('/pricing-rules/:id', protect, authorize('admin', 'shop_manager'), as
 });
 
 // POST create pricing rule
-router.post('/pricing-rules', protect, authorize('shop_manager'), async (req, res, next) => {
+router.post('/pricing-rules', protect, authorize('shop_manager'), checkPermission('pricing_rules', 'create'), async (req, res, next) => {
   try {
     // Clean up empty arrays and null values, but keep them if they have values
     const cleanData = { ...req.body };
@@ -509,7 +510,7 @@ router.post('/pricing-rules', protect, authorize('shop_manager'), async (req, re
 // PUT update pricing rule
 // Query params:
 //   ?updateProducts=true  — re-apply the updated rule to all affected products (default: false)
-router.put('/pricing-rules/:id', protect, authorize('shop_manager'), async (req, res, next) => {
+router.put('/pricing-rules/:id', protect, authorize('shop_manager'), checkPermission('pricing_rules', 'update'), async (req, res, next) => {
   try {
     // Clean data similar to POST
     const cleanData = { ...req.body };
@@ -583,7 +584,7 @@ router.put('/pricing-rules/:id', protect, authorize('shop_manager'), async (req,
 });
 
 // GET affected products count for a pricing rule (preview before delete/update)
-router.get('/pricing-rules/:id/affected-products', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+router.get('/pricing-rules/:id/affected-products', protect, authorize('admin', 'shop_manager'), checkPermission('pricing_rules', 'read'), async (req, res, next) => {
   try {
     const rule = await PricingRule.findById(req.params.id);
     if (!rule) {
@@ -614,7 +615,7 @@ router.get('/pricing-rules/:id/affected-products', protect, authorize('admin', '
 //   ?priceAction=clear       — delete rule AND clear the target price field on affected products
 //   ?priceAction=clearBoth   — delete rule AND clear both regularPrice and salePrice
 //   ?priceAction=recalculate — (default) delete rule AND recalculate remaining rules on affected products
-router.delete('/pricing-rules/:id', protect, authorize('shop_manager'), async (req, res, next) => {
+router.delete('/pricing-rules/:id', protect, authorize('shop_manager'), checkPermission('pricing_rules', 'delete'), async (req, res, next) => {
   try {
     const rule = await PricingRule.findById(req.params.id);
     if (!rule) {
