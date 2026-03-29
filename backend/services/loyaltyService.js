@@ -548,9 +548,13 @@ class LoyaltyService {
         }
       }
       
-      // Apply level multiplier
+      // Apply level multiplier (capped between 0.5x and 5x)
       if (userLevel && userLevel.redemptionMultiplier) {
-        redemptionRate *= userLevel.redemptionMultiplier;
+        const cappedMultiplier = Math.max(0.5, Math.min(5, userLevel.redemptionMultiplier));
+        if (cappedMultiplier !== userLevel.redemptionMultiplier) {
+          console.log(`[DEBUG] Capping redemptionMultiplier from ${userLevel.redemptionMultiplier} to ${cappedMultiplier}`);
+        }
+        redemptionRate *= cappedMultiplier;
       }
       
       // Calculate value
