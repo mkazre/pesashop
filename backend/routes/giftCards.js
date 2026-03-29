@@ -426,11 +426,11 @@ router.get('/presets/list', async (req, res, next) => {
     // Get presets from settings or return default presets
     // For now, return common preset amounts
     const presets = [
-      { amount: 50, label: 'R50 Gift Card' },
-      { amount: 100, label: 'R100 Gift Card' },
-      { amount: 200, label: 'R200 Gift Card' },
-      { amount: 500, label: 'R500 Gift Card' },
-      { amount: 1000, label: 'R1000 Gift Card' },
+      { amount: 50 },
+      { amount: 100 },
+      { amount: 200 },
+      { amount: 500 },
+      { amount: 1000 },
     ];
     
     res.json({
@@ -451,11 +451,11 @@ router.post('/purchase', protect, async (req, res, next) => {
     const { amount, recipientEmail, recipientName, senderName, senderMessage, expiryDays } = req.body;
     
     if (!amount || amount < 10) {
-      return res.status(400).json({ success: false, message: 'Minimum gift card amount is R10' });
+      return res.status(400).json({ success: false, message: 'Minimum gift card amount is 10' });
     }
     
     if (amount > 10000) {
-      return res.status(400).json({ success: false, message: 'Maximum gift card amount is R10,000' });
+      return res.status(400).json({ success: false, message: 'Maximum gift card amount is 10,000' });
     }
     
     // Generate unique code

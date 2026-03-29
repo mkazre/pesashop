@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import { ordersAPI, productsAPI } from '@/services/api';
+import { ordersAPI, productsAPI, settingsAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
 import { useProductPageSettings } from '@/hooks/useProductPageSettings';
 import {
@@ -49,6 +49,9 @@ export default function OrderSuccessPage() {
   );
 
   const order = data?.data?.data || data?.data;
+
+  const { data: bankDetailsData } = useQuery('bankDetails', () => settingsAPI.getBankDetails(), { staleTime: 10 * 60 * 1000 });
+  const bankDetails = bankDetailsData?.data?.data || [];
 
   const { data: recData } = useQuery(
     'recommendedProducts',
@@ -251,6 +254,32 @@ export default function OrderSuccessPage() {
             <span className="font-bold text-gray-900 capitalize">{isPickup ? 'Collect' : 'Deliver'}</span>
           </div>
         </div>
+
+        {/* ═══ BANK DETAILS ═══ */}
+        {bankDetails.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8 mb-6">
+            <h2 className="text-center font-bold text-gray-900 mb-1">Payment Details</h2>
+            <div className="w-16 h-0.5 bg-[#0F604B] mx-auto mb-4" />
+            <p className="text-sm text-gray-600 text-center mb-6">If you selected EFT / Bank Transfer, please use the banking details below to complete your payment. Use your order number <strong>#{order.orderNumber || order._id?.slice(-8)}</strong> as the payment reference.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {bankDetails.map((bank, idx) => (
+                <div key={idx} className="border border-gray-200 rounded-lg p-5 bg-gray-50">
+                  <p className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wider">{bank.bankName}</p>
+                  <div className="grid grid-cols-2 gap-y-2 text-sm">
+                    {bank.accountName && <><p className="text-gray-500">Account Name</p><p className="font-semibold text-gray-900">{bank.accountName}</p></>}
+                    {bank.accountNumber && <><p className="text-gray-500">Account No.</p><p className="font-semibold text-gray-900">{bank.accountNumber}</p></>}
+                    {bank.branchCode && <><p className="text-gray-500">Branch Code</p><p className="font-semibold text-gray-900">{bank.branchCode}</p></>}
+                    {bank.accountType && <><p className="text-gray-500">Account Type</p><p className="font-semibold text-gray-900">{bank.accountType}</p></>}
+                    {bank.reference && <><p className="text-gray-500">Reference</p><p className="font-semibold text-gray-900">{bank.reference}</p></>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+              <p className="text-xs text-amber-700">Your order will be processed once payment has been confirmed. Please allow 1-2 business days for EFT verification.</p>
+            </div>
+          </div>
+        )}
 
         {/* ═══ SECTION 4: Your Order Journey ═══ */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8 mb-6">
