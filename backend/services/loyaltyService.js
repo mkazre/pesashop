@@ -504,7 +504,7 @@ class LoyaltyService {
         isActive: true
       }).sort({ priority: -1 });
       
-      let redemptionRate = settings.redemptionRate;
+      let redemptionRate = settings.redemptionRate || 0.1;
       let maxPoints = settings.maxRedemptionPoints;
       let maxPercentage = settings.maxRedemptionPercentage;
       
@@ -558,7 +558,7 @@ class LoyaltyService {
       if (settings.redemptionType === 'percentage') {
         value = (orderTotal * redemptionRate) / 100;
         // Convert value back to points needed
-        points = Math.floor(value / (settings.redemptionRate || 0.1));
+        points = Math.floor(value / redemptionRate);
       } else {
         value = points * redemptionRate;
       }
