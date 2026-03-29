@@ -100,6 +100,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   }
 }));
 
+// Serve React frontend static files
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
@@ -224,12 +227,18 @@ app.get('/api', (req, res) => {
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
-  });
+// 404 handler - Serve React app for non-API routes (SPA support)
+app.use((req, res, next) => {
+  // If it's an API route, return JSON 404
+  if (req.path.startsWith('/api/') || req.path.startsWith('/health')) {
+    return res.status(404).json({
+      success: false,
+      message: 'Route not found'
+    });
+  }
+  
+  // For all other routes, serve the React app
+  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
 });
 
 // Error handler
