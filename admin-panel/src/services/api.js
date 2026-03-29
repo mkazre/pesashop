@@ -243,6 +243,7 @@ export const giftCardsAPI = {
   update: (id, data) => api.put(`/gift-cards/${id}`, data),
   delete: (id) => api.delete(`/gift-cards/${id}`),
   validate: (code) => api.get(`/gift-cards/validate/${code}`),
+  confirmPayment: (id) => api.put(`/gift-cards/${id}/confirm-payment`),
 };
 
 // Reviews API

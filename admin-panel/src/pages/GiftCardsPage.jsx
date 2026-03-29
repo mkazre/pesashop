@@ -8,7 +8,7 @@ import Input from '@/components/common/Input';
 import Table from '@/components/common/Table';
 import Modal from '@/components/common/Modal';
 import toast from '@/utils/toast';
-import { IoAdd, IoGift, IoTrash, IoBan, IoCreate } from 'react-icons/io5';
+import { IoAdd, IoGift, IoTrash, IoBan, IoCreate, IoCheckmarkCircle } from 'react-icons/io5';
 
 const GiftCardsPage = () => {
   const queryClient = useQueryClient();
@@ -24,6 +24,7 @@ const GiftCardsPage = () => {
   const [editingCard, setEditingCard] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
   const [revokeModal, setRevokeModal] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null);
 
   const createMutation = useMutation(
     (data) => giftCardsAPI.create(data),
@@ -70,6 +71,20 @@ const GiftCardsPage = () => {
       onError: (error) => {
         const errorMessage = error.response?.data?.message || error.message || 'Failed to delete gift card';
         toast.error(errorMessage);
+      },
+    }
+  );
+
+  const confirmPaymentMutation = useMutation(
+    (id) => giftCardsAPI.confirmPayment(id),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('gift-cards');
+        toast.success('Gift card payment confirmed and activated!');
+        setConfirmModal(null);
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to confirm payment');
       },
     }
   );
@@ -145,14 +160,15 @@ const GiftCardsPage = () => {
     {
       key: 'isActive',
       title: 'Status',
-      width: '100px',
+      width: '140px',
       render: (active, row) => (
         <span className={`badge ${
+          row.paymentStatus === 'pending_payment' ? 'badge-warning' :
           row.isRedeemed ? 'badge-success' :
           active ? 'badge-info' :
           'badge-error'
         }`}>
-          {row.isRedeemed ? 'Redeemed' : active ? 'Active' : 'Inactive'}
+          {row.paymentStatus === 'pending_payment' ? '⏳ Pending Payment' : row.isRedeemed ? 'Redeemed' : active ? 'Active' : 'Inactive'}
         </span>
       ),
     },
@@ -174,6 +190,15 @@ const GiftCardsPage = () => {
       width: '150px',
       render: (_, row) => (
         <div className="flex items-center gap-2">
+          {row.paymentStatus === 'pending_payment' && (
+            <button
+              onClick={() => setConfirmModal(row)}
+              className="p-2 text-green-600 hover:bg-green-50 rounded"
+              title="Confirm Payment"
+            >
+              <IoCheckmarkCircle size={18} />
+            </button>
+          )}
           <button
             onClick={() => handleEdit(row)}
             className="p-2 text-blue-600 hover:bg-blue-50 rounded"
@@ -235,9 +260,9 @@ const GiftCardsPage = () => {
           </p>
         </Card>
         <Card>
-          <p className="text-sm text-gray-600">Redeemed</p>
-          <p className="text-2xl font-bold text-gray-600">
-            {data?.data?.data?.filter(g => g.isRedeemed).length || 0}
+          <p className="text-sm text-gray-600">Pending Payment</p>
+          <p className="text-2xl font-bold text-amber-600">
+            {data?.data?.data?.filter(g => g.paymentStatus === 'pending_payment').length || 0}
           </p>
         </Card>
       </div>
@@ -300,6 +325,28 @@ const GiftCardsPage = () => {
           <Button variant="ghost" onClick={() => setRevokeModal(null)}>Cancel</Button>
           <Button variant="danger" onClick={() => revokeMutation.mutate(revokeModal._id)} loading={revokeMutation.isLoading}>
             Revoke Gift Card
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={!!confirmModal}
+        onClose={() => setConfirmModal(null)}
+        title="Confirm Gift Card Payment"
+        size="sm"
+      >
+        <p className="mb-2">Confirm that payment has been received for this gift card?</p>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+          <p className="text-sm"><strong>Code:</strong> <span className="font-mono">{confirmModal?.code}</span></p>
+          <p className="text-sm"><strong>Amount:</strong> R {confirmModal?.initialBalance?.toFixed(2)}</p>
+          <p className="text-sm"><strong>Recipient:</strong> {confirmModal?.recipientEmail}</p>
+          <p className="text-sm"><strong>Purchased by:</strong> {confirmModal?.purchasedBy?.name || confirmModal?.purchasedBy?.email || 'N/A'}</p>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">This will activate the gift card and reveal the code to the customer.</p>
+        <div className="flex justify-end gap-4">
+          <Button variant="ghost" onClick={() => setConfirmModal(null)}>Cancel</Button>
+          <Button onClick={() => confirmPaymentMutation.mutate(confirmModal._id)} loading={confirmPaymentMutation.isLoading}>
+            <IoCheckmarkCircle size={18} className="mr-1" /> Confirm Payment
           </Button>
         </div>
       </Modal>

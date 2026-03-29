@@ -590,7 +590,12 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
 
                   {/* ── Gift Card ── */}
                   <div style={{ marginTop: 12, padding: 10, background: '#f0f9ff', border: '1px solid #7dd3fc', borderRadius: 6 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0369a1', marginBottom: 6 }}>🎁 Gift Card</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0369a1', marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>🎁 Gift Card</span>
+                      <a href="/gift-cards" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 600, color: '#7c3aed', textDecoration: 'none', background: '#f5f3ff', border: '1px solid #c4b5fd', padding: '3px 8px', borderRadius: 4 }}>
+                        🛒 Buy a Gift Card
+                      </a>
+                    </div>
                     {giftCardApplied ? (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 4, padding: '6px 8px' }}>
                         <span style={{ fontSize: 11, fontWeight: 600, color: '#166534' }}>Gift card: -{formatPrice(giftCardDiscount)} (bal: {formatPrice(giftCardBalance)})</span>

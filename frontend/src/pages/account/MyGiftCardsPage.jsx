@@ -104,22 +104,36 @@ export default function MyGiftCardsPage() {
   const GiftCardItem = ({ card, type }) => {
     const isExpired = card.expiryDate && new Date(card.expiryDate) < new Date();
     const hasBalance = card.currentBalance > 0;
+    const isPending = card.paymentStatus === 'pending_payment';
 
     return (
-      <div className={`border-2 rounded-xl overflow-hidden ${isExpired ? 'border-red-200 opacity-70' : hasBalance ? 'border-gray-200' : 'border-gray-200 opacity-70'}`}>
-        <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-5 py-4 text-white">
+      <div className={`border-2 rounded-xl overflow-hidden ${isPending ? 'border-amber-300' : isExpired ? 'border-red-200 opacity-70' : hasBalance ? 'border-gray-200' : 'border-gray-200 opacity-70'}`}>
+        <div className={`px-5 py-4 text-white ${isPending ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-gradient-to-r from-purple-500 to-pink-500'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-purple-100 uppercase tracking-wider">Gift Card</p>
-              <p className="font-mono text-lg font-bold tracking-wider mt-1">{card.code}</p>
+              <p className="text-xs uppercase tracking-wider" style={{ opacity: 0.8 }}>Gift Card</p>
+              {isPending ? (
+                <p className="font-mono text-lg font-bold tracking-wider mt-1 opacity-60">****-****-****-****</p>
+              ) : (
+                <p className="font-mono text-lg font-bold tracking-wider mt-1">{card.code}</p>
+              )}
             </div>
             <div className="text-right">
-              <p className="text-xs text-purple-100">Balance</p>
-              <p className="text-2xl font-bold">{formatPrice(card.currentBalance)}</p>
+              <p className="text-xs" style={{ opacity: 0.8 }}>{isPending ? 'Value' : 'Balance'}</p>
+              <p className="text-2xl font-bold">{formatPrice(isPending ? card.initialBalance : card.currentBalance)}</p>
             </div>
           </div>
         </div>
         <div className="px-5 py-3 space-y-2">
+          {isPending && (
+            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <div>
+                <p className="text-sm font-semibold text-amber-800">Awaiting Payment Confirmation</p>
+                <p className="text-xs text-amber-600 mt-0.5">Your gift card purchase is being reviewed. The voucher code will be revealed once payment has been confirmed by the store.</p>
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
             <span>Initial: {formatPrice(card.initialBalance)}</span>
             {type === 'purchased' && card.recipientEmail && (
@@ -128,7 +142,7 @@ export default function MyGiftCardsPage() {
             {type === 'received' && card.senderName && (
               <span>From: {card.senderName}</span>
             )}
-            {card.expiryDate && (
+            {card.expiryDate && !isPending && (
               <span className={isExpired ? 'text-red-500' : ''}>
                 {isExpired ? 'Expired' : 'Expires'}: {new Date(card.expiryDate).toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric' })}
               </span>
@@ -138,7 +152,7 @@ export default function MyGiftCardsPage() {
           {card.senderMessage && (
             <p className="text-sm text-gray-600 italic">"{card.senderMessage}"</p>
           )}
-          {hasBalance && !isExpired && (
+          {hasBalance && !isExpired && !isPending && (
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => {
@@ -157,10 +171,10 @@ export default function MyGiftCardsPage() {
               </button>
             </div>
           )}
-          {!hasBalance && (
+          {!hasBalance && !isPending && (
             <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">Fully Redeemed</span>
           )}
-          {isExpired && (
+          {isExpired && !isPending && (
             <span className="inline-block px-2 py-0.5 bg-red-100 text-red-600 rounded text-xs">Expired</span>
           )}
         </div>

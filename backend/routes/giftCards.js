@@ -43,21 +43,33 @@ router.get('/my-gift-cards', protect, async (req, res, next) => {
     const user = req.user;
 
     // Gift cards purchased by this user
-    const purchased = await GiftCard.find({ purchasedBy: user._id })
+    const purchasedRaw = await GiftCard.find({ purchasedBy: user._id })
       .sort({ createdAt: -1 })
-      .select('code initialBalance currentBalance currency recipientEmail recipientName senderMessage isActive isRedeemed expiryDate createdAt');
+      .select('code initialBalance currentBalance currency recipientEmail recipientName senderMessage isActive isRedeemed expiryDate paymentStatus createdAt');
 
     // Gift cards received by this user (by email)
-    const received = await GiftCard.find({
+    const receivedRaw = await GiftCard.find({
       recipientEmail: { $regex: new RegExp(`^${user.email}$`, 'i') },
       purchasedBy: { $ne: user._id }
     })
       .sort({ createdAt: -1 })
-      .select('code initialBalance currentBalance currency senderName senderMessage isActive isRedeemed expiryDate createdAt');
+      .select('code initialBalance currentBalance currency senderName senderMessage isActive isRedeemed expiryDate paymentStatus createdAt');
+
+    // Hide code for pending_payment gift cards
+    const maskCard = (gc) => {
+      const obj = gc.toObject();
+      if (obj.paymentStatus === 'pending_payment') {
+        obj.code = '****-****-****-****';
+      }
+      return obj;
+    };
 
     res.json({
       success: true,
-      data: { purchased, received }
+      data: {
+        purchased: purchasedRaw.map(maskCard),
+        received: receivedRaw.map(maskCard),
+      }
     });
   } catch (error) {
     next(error);
@@ -317,6 +329,37 @@ router.put('/:id', protect, authorize('admin', 'shop_manager'), async (req, res,
   }
 });
 
+// PUT confirm gift card payment (admin activates a pending gift card)
+router.put('/:id/confirm-payment', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+  try {
+    const giftCard = await GiftCard.findById(req.params.id);
+    if (!giftCard) {
+      return res.status(404).json({ success: false, message: 'Gift card not found' });
+    }
+
+    if (giftCard.paymentStatus === 'confirmed') {
+      return res.status(400).json({ success: false, message: 'Gift card payment is already confirmed' });
+    }
+
+    giftCard.paymentStatus = 'confirmed';
+    giftCard.isActive = true;
+    giftCard.activationDate = new Date();
+    giftCard.paymentConfirmedAt = new Date();
+    giftCard.paymentConfirmedBy = req.user._id;
+    await giftCard.save();
+
+    // TODO: Send email notification to recipient that gift card is now active
+
+    res.json({
+      success: true,
+      data: giftCard,
+      message: 'Gift card payment confirmed and activated'
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // DELETE gift card
 router.delete('/:id', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
   try {
@@ -423,7 +466,7 @@ router.post('/purchase', protect, async (req, res, next) => {
       ? new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000)
       : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year default
     
-    // Create gift card
+    // Create gift card as pending (inactive until admin confirms payment)
     const giftCard = await GiftCard.create({
       code,
       initialBalance: parseFloat(amount),
@@ -433,16 +476,24 @@ router.post('/purchase', protect, async (req, res, next) => {
       senderName: senderName || req.user.name,
       senderMessage,
       purchasedBy: req.user._id,
-      activationDate: new Date(),
+      activationDate: null,
       expiryDate,
-      isActive: true,
-      isRedeemed: false
+      isActive: false,
+      isRedeemed: false,
+      paymentStatus: 'pending_payment',
     });
     
     res.status(201).json({
       success: true,
-      data: giftCard,
-      message: 'Gift card purchased successfully'
+      data: {
+        _id: giftCard._id,
+        initialBalance: giftCard.initialBalance,
+        recipientEmail: giftCard.recipientEmail,
+        recipientName: giftCard.recipientName,
+        paymentStatus: giftCard.paymentStatus,
+        createdAt: giftCard.createdAt,
+      },
+      message: 'Gift card purchase submitted! It will be activated once payment is confirmed by the store.'
     });
   } catch (error) {
     if (error.code === 11000) {

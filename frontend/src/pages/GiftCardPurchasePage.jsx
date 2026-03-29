@@ -32,12 +32,14 @@ export default function GiftCardPurchasePage() {
     }
   });
 
+  const [purchaseComplete, setPurchaseComplete] = useState(false);
+
   const purchaseMutation = useMutation(
     (data) => giftCardsAPI.purchase(data),
     {
       onSuccess: (response) => {
-        toast.success('Gift card purchased successfully!');
-        navigate(`/account/orders`);
+        toast.success(response.data?.message || 'Gift card purchase submitted!');
+        setPurchaseComplete(true);
       },
       onError: (error) => {
         toast.error(error.response?.data?.message || 'Failed to purchase gift card');
@@ -84,6 +86,53 @@ export default function GiftCardPurchasePage() {
   };
 
   const selectedAmount = selectedPreset || parseFloat(customAmount) || 0;
+
+  if (purchaseComplete) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container-custom py-6">
+          <Breadcrumbs items={[
+            { label: 'Home', href: '/' },
+            { label: 'Gift Cards' }
+          ]} />
+          <div className="max-w-lg mx-auto mt-12 text-center">
+            <div className="bg-white border-2 border-amber-300 rounded-2xl p-8 shadow-sm">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Purchase Submitted!</h2>
+              <p className="text-gray-600 mb-4">
+                Your gift card of <strong>{formatPrice(selectedAmount)}</strong> has been submitted and is awaiting payment confirmation.
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+                <p className="text-sm font-semibold text-amber-800 mb-1">What happens next?</p>
+                <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
+                  <li>Complete your payment via EFT or the payment method provided</li>
+                  <li>The store will review and confirm your payment</li>
+                  <li>Once confirmed, the gift card code will be revealed in your account</li>
+                  <li>The recipient will also receive an email notification</li>
+                </ul>
+              </div>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => navigate('/account/gift-cards')}
+                  className="px-6 py-2.5 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                >
+                  View My Gift Cards
+                </button>
+                <button
+                  onClick={() => { setPurchaseComplete(false); setSelectedPreset(null); setCustomAmount(''); }}
+                  className="px-6 py-2.5 border-2 border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Buy Another
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -335,6 +335,16 @@ const giftCardSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  paymentStatus: {
+    type: String,
+    enum: ['confirmed', 'pending_payment'],
+    default: 'confirmed'
+  },
+  paymentConfirmedAt: Date,
+  paymentConfirmedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   
   // Dates
   expiryDate: Date,
@@ -375,6 +385,7 @@ giftCardSchema.index({ recipientEmail: 1 });
 
 // Method to check if valid
 giftCardSchema.methods.isValid = function() {
+  if (this.paymentStatus === 'pending_payment') return { valid: false, message: 'Gift card is awaiting payment confirmation' };
   if (!this.isActive) return { valid: false, message: 'Gift card is not active' };
   
   if (this.currentBalance <= 0) {
