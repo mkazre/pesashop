@@ -46,8 +46,8 @@ function checkDuplicateFast(row, type, maps) {
     if (sku && maps.bySku && maps.bySku.has(sku.toUpperCase())) return maps.bySku.get(sku.toUpperCase());
     const slug = row.post_name || row.slug;
     if (slug && maps.bySlug && maps.bySlug.has(slug)) return maps.bySlug.get(slug);
-    const name = row.post_title || row.Name || row.name;
-    if (name && maps.byName && maps.byName.has(name)) return maps.byName.get(name);
+    // Note: name-based matching removed — too aggressive, causes false duplicate
+    // detection for genuinely new products that happen to share a name.
   } else if (type === 'categories') {
     const catName = row.Name || row.name;
     if (catName) {

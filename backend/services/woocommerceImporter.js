@@ -543,7 +543,11 @@ class WooCommerceImporter extends EventEmitter {
     const tagString = row['tax:product_tag'] || row.Tags || row.tags;
     if (tagString) tags = tagString.split(',').map(t => t.trim()).filter(t => t);
 
-    const slug = row.post_name || slugify(row.post_title || row.Name || row.name || 'product', { lower: true, strict: true });
+    let slug = row.post_name || row.slug;
+    if (!slug) {
+      const baseSlug = slugify(row.post_title || row.Name || row.name || 'product', { lower: true, strict: true });
+      slug = `${baseSlug}-${Date.now().toString(36)}${Math.random().toString(36).substr(2, 4)}`;
+    }
 
     let sku = row.sku || row.SKU;
     if (!sku) {
@@ -626,7 +630,11 @@ class WooCommerceImporter extends EventEmitter {
     const tagString = row['tax:product_tag'] || row.Tags || row.tags;
     if (tagString) tags = tagString.split(',').map(t => t.trim()).filter(t => t);
 
-    const slug = row.post_name || slugify(row.post_title || row.Name || row.name || 'product', { lower: true, strict: true });
+    let slug = row.post_name || row.slug;
+    if (!slug) {
+      const baseSlug = slugify(row.post_title || row.Name || row.name || 'product', { lower: true, strict: true });
+      slug = `${baseSlug}-${Date.now().toString(36)}${Math.random().toString(36).substr(2, 4)}`;
+    }
 
     let sku = row.sku || row.SKU;
     if (!sku) {
@@ -769,7 +777,6 @@ class WooCommerceImporter extends EventEmitter {
             // Update lookup maps to prevent duplicates within the same import
             if (productData.sku && lookupMaps.bySku) lookupMaps.bySku.set(productData.sku.toUpperCase(), productData);
             if (productData.slug && lookupMaps.bySlug) lookupMaps.bySlug.set(productData.slug, productData);
-            if (productData.name && lookupMaps.byName) lookupMaps.byName.set(productData.name, productData);
           }
         } catch (error) {
           results.errors.push({ row: rowNumber, error: error.message, data: this.extractKeyFields(row, 'products') });
