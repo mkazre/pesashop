@@ -21,6 +21,9 @@ class EmailService {
         port,
         secure: port === 465,
         auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
       });
     }
   }
@@ -42,6 +45,9 @@ class EmailService {
         port,
         secure: settings.smtpSecure || port === 465,
         auth: { user, pass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
       });
     }
     this._dbInitialized = true;

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import BlockWrapper from './BlockWrapper';
 import ProductCard from './ProductCard';
-import { useBlockProducts } from './useBlockProducts';
-import { useBlockBadges } from './useBlockBadges';
+import { useBlockProducts, useProductBadges } from './useBlockProducts';
 import { getCardStyleProps } from './blockStyles';
 
 export default function ProductGridTabs({ block }) {
@@ -17,7 +16,7 @@ export default function ProductGridTabs({ block }) {
     limit: block.productLimit || 10,
   });
 
-  const { data: badges = [] } = useBlockBadges(block.badgeIds || [], block.showBadges !== false);
+  const { data: badgeMap = {} } = useProductBadges(products);
 
   const resp = block.responsive || {};
   const columns = block.productColumns || 5;
@@ -63,7 +62,7 @@ export default function ProductGridTabs({ block }) {
               showAddToCart={block.showAddToCart !== false}
               showWishlist={block.showWishlist !== false}
               showRating={block.showRating !== false}
-              badges={badges}
+              badges={badgeMap[product._id] || []}
               {...cardProps}
             />
           ))}

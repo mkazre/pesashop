@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'react-query';
-import { ordersAPI, couponsAPI, laybyPlansAPI } from '@/services/api';
+import { ordersAPI, couponsAPI, laybyPlansAPI, loyaltyAPI, giftCardsAPI } from '@/services/api';
 import { useAuthStore, useCartStore, useCurrencyStore } from '@/store';
 import toast from '@/utils/toast';
 
@@ -33,6 +33,20 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
   const [splitPayment, setSplitPayment] = useState(false);
   const [splitAmounts, setSplitAmounts] = useState({});
   const [selectedPickupAddress, setSelectedPickupAddress] = useState(null);
+
+  // ── Pesa Coins (Loyalty Points) ──
+  const [loyaltyBalance, setLoyaltyBalance] = useState(0);
+  const [loyaltySettings, setLoyaltySettings] = useState(null);
+  const [loyaltyPoints, setLoyaltyPoints] = useState('');
+  const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
+  const [loyaltyApplied, setLoyaltyApplied] = useState(false);
+
+  // ── Gift Card ──
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [giftCardDiscount, setGiftCardDiscount] = useState(0);
+  const [giftCardBalance, setGiftCardBalance] = useState(0);
+  const [giftCardApplied, setGiftCardApplied] = useState(false);
+  const [giftCardLoading, setGiftCardLoading] = useState(false);
 
   // Dynamic payment methods from settings (with fallback)
   const PAYMENT_METHODS = useMemo(() => {
@@ -105,8 +119,47 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
       setSplitAmounts({});
       setSelectedPickupAddress(null);
       setFulfilment('delivery');
+      setLoyaltyPoints(''); setLoyaltyDiscount(0); setLoyaltyApplied(false);
+      setGiftCardCode(''); setGiftCardDiscount(0); setGiftCardBalance(0); setGiftCardApplied(false);
     }
   }, [open, user]);
+
+  // Fetch Pesa Coins balance & settings when drawer opens
+  useEffect(() => {
+    if (open && isAuthenticated) {
+      loyaltyAPI.getBalance().then(r => { if (r.data?.success) setLoyaltyBalance(r.data.data.balance || 0); }).catch(() => {});
+      loyaltyAPI.getPublicSettings().then(r => { if (r.data?.success) setLoyaltySettings(r.data.data); }).catch(() => {});
+    }
+  }, [open, isAuthenticated]);
+
+  const handleApplyLoyalty = async () => {
+    const pts = parseInt(loyaltyPoints);
+    if (!pts || pts <= 0) { toast.error('Enter a valid points amount'); return; }
+    if (pts > loyaltyBalance) { toast.error(`You only have ${loyaltyBalance} points`); return; }
+    try {
+      const res = await loyaltyAPI.calculateRedemption(pts, grandSubtotal);
+      if (res.data?.success) {
+        setLoyaltyDiscount(res.data.data.value || 0);
+        setLoyaltyApplied(true);
+        toast.success(`${res.data.data.points} PESA Coins applied: -${formatPrice(res.data.data.value)}`);
+      }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to apply PESA Coins'); }
+  };
+
+  const handleApplyGiftCard = async () => {
+    if (!giftCardCode.trim()) { toast.error('Enter a gift card code'); return; }
+    setGiftCardLoading(true);
+    try {
+      const res = await giftCardsAPI.validate(giftCardCode.trim().toUpperCase().replace(/-/g, ''));
+      const gc = res.data?.data;
+      const bal = gc?.balance ?? gc?.giftCard?.balance ?? 0;
+      if (bal <= 0) { toast.error('This gift card has no remaining balance'); return; }
+      const disc = Math.min(bal, grandSubtotal);
+      setGiftCardDiscount(disc); setGiftCardBalance(bal); setGiftCardApplied(true);
+      toast.success(`Gift card applied! -${formatPrice(disc)}`);
+    } catch (err) { toast.error(err.response?.data?.message || 'Invalid or expired gift card'); }
+    finally { setGiftCardLoading(false); }
+  };
 
   const items = cart.items;
   const cashItems = items.filter(i => !i.laybye);
@@ -116,8 +169,9 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
   const laybyeSubtotal = laybyeItems.reduce((t, i) => t + (i.product.salePrice || i.product.regularPrice || 0) * i.quantity, 0);
   const laybyeDepositTotal = laybyeItems.reduce((t, i) => t + (i.laybye?.deposit || 0) * i.quantity, 0);
   const grandSubtotal = cashSubtotal + laybyeSubtotal;
-  const grandTotal = Math.max(0, grandSubtotal - couponDiscount);
-  const dueNow = Math.max(0, cashSubtotal - couponDiscount) + laybyeDepositTotal;
+  const totalDiscounts = couponDiscount + loyaltyDiscount + giftCardDiscount;
+  const grandTotal = Math.max(0, grandSubtotal - totalDiscounts);
+  const dueNow = Math.max(0, cashSubtotal - totalDiscounts) + laybyeDepositTotal;
 
   const fields = useMemo(() =>
     (cd.fields || []).filter(f => f.enabled).sort((a, b) => a.order - b.order),
@@ -182,7 +236,7 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
         if (amount > 0) payments.push({ method, amount: parseFloat(amount) });
       });
     } else {
-      if (cashSubtotal > 0) payments.push({ method: paymentMethods.cash, amount: cashSubtotal - couponDiscount });
+      if (cashSubtotal > 0) payments.push({ method: paymentMethods.cash, amount: Math.max(0, cashSubtotal - totalDiscounts) });
       if (laybyeDepositTotal > 0) payments.push({ method: paymentMethods.laybye, amount: laybyeDepositTotal });
     }
 
@@ -227,7 +281,12 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
       pickupAddress: fulfilment === 'pickup' && selectedPickupAddress ? { label: selectedPickupAddress.label, address: selectedPickupAddress.address } : undefined,
       orderNotes: formData.notes || '',
       subtotal: grandSubtotal,
-      discount: couponDiscount,
+      discount: totalDiscounts,
+      couponDiscount: couponDiscount || 0,
+      loyaltyDiscount: loyaltyDiscount || 0,
+      loyaltyPointsUsed: loyaltyApplied ? parseInt(loyaltyPoints) : 0,
+      giftCardDiscount: giftCardDiscount || 0,
+      giftCardCode: giftCardApplied ? giftCardCode : undefined,
       total: grandTotal,
       dueNow,
       currency: selCurrency?.code || 'ZAR',
@@ -465,8 +524,20 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
                     )}
                     {couponDiscount > 0 && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#16a34a', marginBottom: 4 }}>
-                        <span>Discount</span>
+                        <span>Coupon</span>
                         <span>-{formatPrice(couponDiscount)}</span>
+                      </div>
+                    )}
+                    {loyaltyDiscount > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#d97706', marginBottom: 4 }}>
+                        <span>⭐ PESA Coins</span>
+                        <span>-{formatPrice(loyaltyDiscount)}</span>
+                      </div>
+                    )}
+                    {giftCardDiscount > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#0284c7', marginBottom: 4 }}>
+                        <span>🎁 Gift Card</span>
+                        <span>-{formatPrice(giftCardDiscount)}</span>
                       </div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 800, borderTop: '1px solid #e5eae6', paddingTop: 8, marginTop: 6 }}>
@@ -498,6 +569,40 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
                       </div>
                     </div>
                   )}
+
+                  {/* ── PESA Coins ── */}
+                  {isAuthenticated && loyaltyBalance > 0 && loyaltySettings?.enabled && (
+                    <div style={{ marginTop: 12, padding: 10, background: '#fffbeb', border: '1px solid #fbbf24', borderRadius: 6 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>⭐ PESA Coins — <span style={{ fontWeight: 800 }}>{loyaltyBalance}</span> available (worth {formatPrice(loyaltyBalance * (loyaltySettings.redemptionRate || 0))})</div>
+                      {loyaltyApplied ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 4, padding: '6px 8px' }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: '#166534' }}>{loyaltyPoints} coins = -{formatPrice(loyaltyDiscount)}</span>
+                          <button onClick={() => { setLoyaltyApplied(false); setLoyaltyDiscount(0); setLoyaltyPoints(''); }} style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Remove</button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <input type="number" min="1" max={loyaltyBalance} value={loyaltyPoints} onChange={(e) => setLoyaltyPoints(e.target.value)} placeholder="Points to use" style={{ flex: 1, padding: '6px 8px', border: '1px solid #fbbf24', fontSize: 11, borderRadius: 4, outline: 'none' }} />
+                          <button onClick={handleApplyLoyalty} style={{ padding: '6px 12px', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer', borderRadius: 4, background: '#f59e0b', color: '#fff' }}>Apply</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Gift Card ── */}
+                  <div style={{ marginTop: 12, padding: 10, background: '#f0f9ff', border: '1px solid #7dd3fc', borderRadius: 6 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0369a1', marginBottom: 6 }}>🎁 Gift Card</div>
+                    {giftCardApplied ? (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 4, padding: '6px 8px' }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#166534' }}>Gift card: -{formatPrice(giftCardDiscount)} (bal: {formatPrice(giftCardBalance)})</span>
+                        <button onClick={() => { setGiftCardApplied(false); setGiftCardDiscount(0); setGiftCardBalance(0); setGiftCardCode(''); }} style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Remove</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <input type="text" value={giftCardCode} onChange={(e) => setGiftCardCode(e.target.value)} placeholder="Gift card code" style={{ flex: 1, padding: '6px 8px', border: '1px solid #7dd3fc', fontSize: 11, borderRadius: 4, outline: 'none' }} />
+                        <button onClick={handleApplyGiftCard} disabled={giftCardLoading} style={{ padding: '6px 12px', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer', borderRadius: 4, background: '#0ea5e9', color: '#fff', opacity: giftCardLoading ? 0.6 : 1 }}>{giftCardLoading ? '...' : 'Apply'}</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </>

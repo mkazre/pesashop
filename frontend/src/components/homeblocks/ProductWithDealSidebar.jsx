@@ -114,10 +114,10 @@ export default function ProductWithDealSidebar({ block }) {
           <h4 className="font-semibold text-gray-800 text-center mb-2">{dealProduct.name}</h4>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl font-bold" style={{ color: block.priceColor || block.primaryColor || '#0F604B' }}>
-              R{(dealProduct.salePrice || dealProduct.price || 0).toFixed(2)}
+              R{(dealProduct.salePrice || dealProduct.regularPrice || 0).toFixed(2)}
             </span>
-            {dealProduct.salePrice && dealProduct.price > dealProduct.salePrice && (
-              <del className="text-gray-400 text-sm">R{dealProduct.price.toFixed(2)}</del>
+            {dealProduct.salePrice && dealProduct.regularPrice > dealProduct.salePrice && (
+              <del className="text-gray-400 text-sm">R{dealProduct.regularPrice.toFixed(2)}</del>
             )}
           </div>
           {block.showCountdown !== false && block.dealsEndDate && (

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import BlockWrapper from './BlockWrapper';
 import ProductCard from './ProductCard';
-import { useBlockProducts } from './useBlockProducts';
-import { useBlockBadges } from './useBlockBadges';
+import { useBlockProducts, useProductBadges } from './useBlockProducts';
 import { getCardStyleProps } from './blockStyles';
 
 function CountdownTimer({ endDate, primaryColor = '#0F604B' }) {
@@ -52,7 +51,7 @@ export default function DealsOfTheDay({ block }) {
   const { data: products = [], isLoading } = useBlockProducts(block.productSource || 'sale', {
     limit: block.productLimit || 4,
   });
-  const { data: badges = [] } = useBlockBadges(block.badgeIds || [], block.showBadges !== false);
+  const { data: badgeMap = {} } = useProductBadges(products);
 
   return (
     <BlockWrapper block={block}>
@@ -78,7 +77,7 @@ export default function DealsOfTheDay({ block }) {
               product={product}
               showAddToCart={block.showAddToCart !== false}
               showRating={block.showRating !== false}
-              badges={badges}
+              badges={badgeMap[product._id] || []}
               {...cardProps}
             />
           ))}

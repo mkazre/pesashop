@@ -1,5 +1,5 @@
 import { useQuery } from 'react-query';
-import { productsAPI } from '../../services/api';
+import { productsAPI, badgesAPI } from '../../services/api';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -97,6 +97,27 @@ export function useBlockProducts(source, { categoryId = '', limit = 10, enabled 
     {
       enabled,
       staleTime: 60 * 1000,
+      cacheTime: 5 * 60 * 1000,
+    }
+  );
+}
+
+/**
+ * Fetch badges for a list of products from the Badges module.
+ * Returns a map: { productId: [badge, badge, ...] }
+ */
+export function useProductBadges(products) {
+  const productIds = (products || []).map(p => p._id).filter(Boolean);
+  return useQuery(
+    ['productBadges', productIds.join(',')],
+    async () => {
+      if (!productIds.length) return {};
+      const res = await badgesAPI.evaluateProducts(productIds);
+      return res.data?.data || {};
+    },
+    {
+      enabled: productIds.length > 0,
+      staleTime: 2 * 60 * 1000,
       cacheTime: 5 * 60 * 1000,
     }
   );

@@ -18,6 +18,8 @@ const SettingsPage = () => {
   const [bankDetails, setBankDetails] = useState([]);
   const [testEmailAddress, setTestEmailAddress] = useState('');
   const [testingEmail, setTestingEmail] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [emailConfigStatus, setEmailConfigStatus] = useState(null);
   
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm({
     defaultValues: {
@@ -216,6 +218,17 @@ const SettingsPage = () => {
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to send test email');
     } finally { setTestingEmail(false); }
+  };
+
+  const handleVerifyEmailConfig = async () => {
+    setVerifyingEmail(true);
+    setEmailConfigStatus(null);
+    try {
+      const res = await settingsAPI.verifyEmailConfig();
+      setEmailConfigStatus(res.data?.data || { status: 'unknown', issues: ['Unexpected response'] });
+    } catch (err) {
+      setEmailConfigStatus({ status: 'error', issues: [err.response?.data?.message || 'Failed to verify'] });
+    } finally { setVerifyingEmail(false); }
   };
 
   const onSubmit = (data) => {
@@ -449,6 +462,30 @@ const SettingsPage = () => {
                 </Button>
               </div>
               <p className="text-xs text-gray-500 mt-1">Save your settings first, then send a test email to verify the SMTP configuration works.</p>
+            </div>
+
+            <div className="border-t pt-4 mt-4">
+              <h4 className="text-sm font-semibold mb-3">Verify Email Configuration</h4>
+              <div className="flex items-center gap-3">
+                <Button type="button" variant="secondary" onClick={handleVerifyEmailConfig} loading={verifyingEmail}>
+                  <IoMail size={16} className="mr-1" />
+                  Verify Config
+                </Button>
+                {emailConfigStatus && (
+                  <div className={`flex-1 p-3 rounded text-sm ${emailConfigStatus.status === 'ok' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
+                    {emailConfigStatus.status === 'ok' ? (
+                      <span>✅ SMTP connection successful — Host: {emailConfigStatus.config?.host}:{emailConfigStatus.config?.port}</span>
+                    ) : (
+                      <div>
+                        <span className="font-semibold">❌ Issues found:</span>
+                        <ul className="list-disc ml-5 mt-1">
+                          {emailConfigStatus.issues?.map((issue, i) => <li key={i}>{issue}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </Card>

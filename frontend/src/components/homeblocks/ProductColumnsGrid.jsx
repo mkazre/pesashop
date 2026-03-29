@@ -1,7 +1,7 @@
 import React from 'react';
 import BlockWrapper from './BlockWrapper';
 import ProductCard from './ProductCard';
-import { useBlockProducts } from './useBlockProducts';
+import { useBlockProducts, useProductBadges } from './useBlockProducts';
 import { getCardStyleProps } from './blockStyles';
 
 function ProductColumn({ column, cardProps }) {
@@ -9,6 +9,7 @@ function ProductColumn({ column, cardProps }) {
     categoryId: column.categoryId,
     limit: column.limit || 3,
   });
+  const { data: badgeMap = {} } = useProductBadges(products);
 
   return (
     <div>
@@ -24,7 +25,7 @@ function ProductColumn({ column, cardProps }) {
       ) : (
         <div>
           {products.map(product => (
-            <ProductCard key={product._id} product={product} compact showRating {...cardProps} />
+            <ProductCard key={product._id} product={product} compact showRating badges={badgeMap[product._id] || []} {...cardProps} />
           ))}
           {!products.length && <p className="text-sm text-gray-400 py-4">No products</p>}
         </div>

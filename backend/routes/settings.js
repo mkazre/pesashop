@@ -174,6 +174,49 @@ router.get('/public', async (req, res) => {
 });
 
 /**
+ * @route   POST /api/settings/verify-email-config
+ * @desc    Verify SMTP configuration without sending an email
+ * @access  Private/Admin
+ */
+router.post('/verify-email-config', protect, authorize('admin'), async (req, res) => {
+  try {
+    const emailService = require('../services/emailService');
+    const settings = await Settings.getSettings();
+    emailService.reinitialize(settings);
+
+    const config = {
+      host: settings.smtpHost || process.env.EMAIL_HOST || null,
+      port: settings.smtpPort || process.env.EMAIL_PORT || null,
+      user: settings.smtpUser || process.env.EMAIL_USER || null,
+      from: settings.fromEmail || process.env.EMAIL_FROM || null,
+      secure: settings.smtpSecure || false,
+      hasPassword: !!(settings.smtpPassword || process.env.EMAIL_PASSWORD),
+    };
+
+    const issues = [];
+    if (!config.host) issues.push('SMTP Host is not configured');
+    if (!config.port) issues.push('SMTP Port is not configured');
+    if (!config.user) issues.push('SMTP Username is not configured');
+    if (!config.hasPassword) issues.push('SMTP Password is not configured');
+    if (!config.from) issues.push('From Email is not configured');
+
+    if (issues.length > 0) {
+      return res.json({ success: true, data: { status: 'incomplete', config, issues } });
+    }
+
+    const verify = await emailService.testConnection();
+    if (!verify.success) {
+      return res.json({ success: true, data: { status: 'failed', config, issues: [`Connection failed: ${verify.message}`] } });
+    }
+
+    res.json({ success: true, data: { status: 'ok', config, issues: [] } });
+  } catch (error) {
+    console.error('Verify email config error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * @route   POST /api/settings/test-email
  * @desc    Send a test email to verify SMTP configuration
  * @access  Private/Admin

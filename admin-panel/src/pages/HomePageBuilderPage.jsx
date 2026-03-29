@@ -556,20 +556,28 @@ function FeatureItemEditor({ feature, index, onChange, onRemove }) {
 function ColumnEditor({ column, index, onChange, onRemove }) {
   const update = (key, val) => onChange({ ...column, [key]: val });
   return (
-    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
-      <input className="flex-1 text-sm px-2 py-1 border rounded" placeholder="Column Title" value={column.title || ''} onChange={(e) => update('title', e.target.value)} />
-      <select value={column.source || 'newest'} onChange={(e) => update('source', e.target.value)} className="text-sm px-2 py-1 border rounded">
-        <option value="best-selling">Best Selling</option>
-        <option value="trending">Trending</option>
-        <option value="most-viewed">Most Viewed</option>
-        <option value="newest">Newest</option>
-        <option value="top-rated">Top Rated</option>
-        <option value="featured">Featured</option>
-        <option value="sale">On Sale</option>
-        <option value="category">Category</option>
-      </select>
-      <input type="number" min={1} max={6} className="w-16 text-sm px-2 py-1 border rounded" value={column.limit || 3} onChange={(e) => update('limit', parseInt(e.target.value) || 3)} />
-      <button onClick={onRemove} className="text-red-500 hover:text-red-700"><IoTrash size={14} /></button>
+    <div className="p-2 bg-gray-50 rounded border space-y-2">
+      <div className="flex items-center gap-2">
+        <input className="flex-1 text-sm px-2 py-1 border rounded" placeholder="Column Title" value={column.title || ''} onChange={(e) => update('title', e.target.value)} />
+        <select value={column.source || 'newest'} onChange={(e) => update('source', e.target.value)} className="text-sm px-2 py-1 border rounded">
+          <option value="all">All Products</option>
+          <option value="best-selling">Best Selling</option>
+          <option value="trending">Trending</option>
+          <option value="most-viewed">Most Viewed</option>
+          <option value="newest">Newest</option>
+          <option value="top-rated">Top Rated</option>
+          <option value="featured">Featured</option>
+          <option value="sale">On Sale</option>
+          <option value="category">Specific Category</option>
+        </select>
+        <input type="number" min={1} max={20} className="w-16 text-sm px-2 py-1 border rounded" placeholder="Limit" value={column.limit || 3} onChange={(e) => update('limit', parseInt(e.target.value) || 3)} />
+        <button onClick={onRemove} className="text-red-500 hover:text-red-700"><IoTrash size={14} /></button>
+      </div>
+      {column.source === 'category' && (
+        <div>
+          <input className="w-full text-sm px-2 py-1 border rounded" placeholder="Category ID (from Categories page)" value={column.categoryId || ''} onChange={(e) => update('categoryId', e.target.value)} />
+        </div>
+      )}
     </div>
   );
 }

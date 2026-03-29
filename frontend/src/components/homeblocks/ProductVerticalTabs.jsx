@@ -41,10 +41,10 @@ function MiniProductCard({ product, block, resolveImg }) {
         {block.showPrice !== false && (
           <div className="flex items-center gap-2 mt-1">
             <span className="text-sm font-bold" style={{ color: block.priceColor || block.primaryColor || '#0F604B' }}>
-              R{(product.salePrice || product.price || 0).toFixed(2)}
+              R{(product.salePrice || product.regularPrice || 0).toFixed(2)}
             </span>
-            {product.salePrice && product.price > product.salePrice && (
-              <del className="text-xs text-gray-400">R{product.price.toFixed(2)}</del>
+            {product.salePrice && product.regularPrice > product.salePrice && (
+              <del className="text-xs text-gray-400">R{product.regularPrice.toFixed(2)}</del>
             )}
           </div>
         )}
