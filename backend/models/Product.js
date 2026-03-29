@@ -95,6 +95,10 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 5
   },
+  outOfStock: {
+    type: Boolean,
+    default: false
+  },
   isActive: {
     type: Boolean,
     default: true

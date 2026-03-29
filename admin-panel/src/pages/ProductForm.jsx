@@ -497,6 +497,17 @@ const ProductForm = () => {
               fullWidth
             />
           </div>
+          <div className="mt-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                {...register('outOfStock')}
+                className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Mark as Out of Stock</span>
+            </label>
+            <p className="text-xs text-gray-500 mt-1 ml-6">When checked, this product will be shown as out of stock to customers regardless of stock quantity</p>
+          </div>
         </Card>
 
         {/* Categories & Tags */}

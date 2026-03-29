@@ -24,7 +24,8 @@ const ProductsPage = () => {
     status: '',
     isActive: '',
     isFeatured: '',
-    category: ''
+    category: '',
+    stock: '',
   });
   const [aiGenerationType, setAiGenerationType] = useState('selected'); // 'selected', 'category', 'all'
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -137,6 +138,7 @@ const ProductsPage = () => {
     if (bulkEditData.isActive !== '') updates.isActive = bulkEditData.isActive === 'true';
     if (bulkEditData.isFeatured !== '') updates.isFeatured = bulkEditData.isFeatured === 'true';
     if (bulkEditData.category) updates.categories = [bulkEditData.category];
+    if (bulkEditData.stock !== '' && bulkEditData.stock !== null) updates.stock = parseInt(bulkEditData.stock) || 0;
 
     if (Object.keys(updates).length === 0) {
       toast.error('Please select at least one field to update');
@@ -498,7 +500,7 @@ const ProductsPage = () => {
         isOpen={bulkEditModal}
         onClose={() => {
           setBulkEditModal(false);
-          setBulkEditData({ status: '', isActive: '', isFeatured: '', category: '' });
+          setBulkEditData({ status: '', isActive: '', isFeatured: '', category: '', stock: '' });
         }}
         title={`Bulk Edit ${selectedProducts.size} Products`}
         onConfirm={handleBulkEdit}
@@ -558,6 +560,18 @@ const ProductsPage = () => {
                 <option key={cat._id} value={cat._id}>{cat.name}</option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Stock Quantity</label>
+            <input
+              type="number"
+              value={bulkEditData.stock}
+              onChange={(e) => setBulkEditData({ ...bulkEditData, stock: e.target.value })}
+              placeholder="Leave empty for no change"
+              className="input w-full"
+            />
+            <p className="text-xs text-gray-500 mt-1">Set to 0 to mark as out of stock</p>
           </div>
         </div>
       </Modal>
