@@ -1,10 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from 'react-query';
 import { laybyPlansAPI } from '@/services/api';
-import { useCurrencyStore } from '@/store';
+import { useCurrencyStore, useAuthStore, useUIStore } from '@/store';
+import toast from '@/utils/toast';
 
 export default function InlineLaybyePlans({ product, settings, onLaybyeSelect }) {
   const { formatPrice } = useCurrencyStore();
+  const { isAuthenticated } = useAuthStore();
+  const { openAuthModal } = useUIStore();
   const [enabled, setEnabled] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
 
@@ -47,6 +50,11 @@ export default function InlineLaybyePlans({ product, settings, onLaybyeSelect })
   const totalPayable = deposit + installment * (selectedPlan?.numberOfPayments || 0);
 
   const handleToggle = (val) => {
+    if (val && !isAuthenticated) {
+      openAuthModal('login');
+      toast('Please sign in or register to use laybye', { icon: '🔐' });
+      return;
+    }
     setEnabled(val);
     if (val && selectedPlan) {
       if (!selectedPlanId) setSelectedPlanId(selectedPlan._id);

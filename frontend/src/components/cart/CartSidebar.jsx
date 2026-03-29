@@ -225,10 +225,6 @@ export default function CartSidebar() {
               </button>
             </div>
 
-            {/* Free Shipping Message */}
-            <div className="text-center text-sm text-gray-600">
-              <span className="text-green-600 font-medium">Free Shipping</span> on orders over R500
-            </div>
           </div>
         )}
       </div>

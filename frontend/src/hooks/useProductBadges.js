@@ -6,20 +6,25 @@ import { badgesAPI } from '@/services/api';
  * Returns a map: { [productId]: Badge[] }
  */
 export function useProductBadges(products = [], enabled = true) {
-  const productIds = products.map(p => p._id).filter(Boolean);
+  const productIds = (Array.isArray(products) ? products : []).map(p => p._id).filter(Boolean);
   const idsKey = productIds.join(',');
 
   return useQuery(
     ['productBadges', idsKey],
     async () => {
       if (!productIds.length) return {};
-      const res = await badgesAPI.evaluateProducts(productIds);
-      return res.data?.data || {};
+      try {
+        const res = await badgesAPI.evaluateProducts(productIds);
+        return res.data?.data || {};
+      } catch {
+        return {};
+      }
     },
     {
       enabled: enabled && productIds.length > 0,
       staleTime: 2 * 60 * 1000,
       cacheTime: 5 * 60 * 1000,
+      placeholderData: {},
     }
   );
 }
@@ -33,13 +38,19 @@ export function useSingleProductBadges(productId, enabled = true) {
     ['productBadges', productId],
     async () => {
       if (!productId) return [];
-      const res = await badgesAPI.evaluateProduct(productId);
-      return res.data?.data || [];
+      try {
+        const res = await badgesAPI.evaluateProduct(productId);
+        const data = res.data?.data;
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
     },
     {
       enabled: enabled && !!productId,
       staleTime: 2 * 60 * 1000,
       cacheTime: 5 * 60 * 1000,
+      placeholderData: [],
     }
   );
 }

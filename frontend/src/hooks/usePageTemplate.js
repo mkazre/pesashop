@@ -10,7 +10,13 @@ import { pageTemplatesAPI } from '@/services/api';
 export function usePageTemplate(templateType) {
   const { data, isLoading, isError } = useQuery(
     ['page-template', templateType],
-    () => pageTemplatesAPI.getByType(templateType),
+    async () => {
+      try {
+        return await pageTemplatesAPI.getByType(templateType);
+      } catch {
+        return null;
+      }
+    },
     {
       retry: false,
       staleTime: 10 * 60 * 1000,

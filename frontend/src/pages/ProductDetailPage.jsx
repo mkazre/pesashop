@@ -89,7 +89,8 @@ export default function ProductDetailPage() {
   const product = data?.data?.data || data?.data;
 
   // Fetch evaluated badges for this product
-  const { data: productBadges = [] } = useSingleProductBadges(product?._id, !!product?._id);
+  const { data: productBadgesRaw = [] } = useSingleProductBadges(product?._id, !!product?._id);
+  const productBadges = Array.isArray(productBadgesRaw) ? productBadgesRaw : [];
   const pageBadges = productBadges.filter(b => b.displayOn?.productPages !== false);
 
   // Track product view for stats
