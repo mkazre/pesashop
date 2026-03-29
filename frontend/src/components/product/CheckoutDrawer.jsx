@@ -639,9 +639,14 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
                     <div style={{ marginTop: 12, padding: 10, background: '#fffbeb', border: '1px solid #fbbf24', borderRadius: 6 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>⭐ PESA Coins — <span style={{ fontWeight: 800 }}>{loyaltyBalance}</span> available (worth {formatPrice(loyaltyBalance * (loyaltySettings.redemptionRate || 0))})</div>
                       {loyaltyApplied ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 4, padding: '6px 8px' }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: '#166534' }}>{loyaltyPoints} coins = -{formatPrice(loyaltyDiscount)}</span>
-                          <button onClick={() => { setLoyaltyApplied(false); setLoyaltyDiscount(0); setLoyaltyPoints(''); }} style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Remove</button>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 4, padding: '6px 8px' }}>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: '#166534' }}>{loyaltyPoints} coins = -{formatPrice(loyaltyDiscount)}</span>
+                            <button onClick={() => { setLoyaltyApplied(false); setLoyaltyDiscount(0); setLoyaltyPoints(''); }} style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Remove</button>
+                          </div>
+                          <div style={{ fontSize: 10, color: '#92400e', marginTop: 4, textAlign: 'right' }}>
+                            Balance left: {loyaltyBalance - parseInt(loyaltyPoints || 0)} coins (worth {formatPrice((loyaltyBalance - parseInt(loyaltyPoints || 0)) * (loyaltySettings.redemptionRate || 0))})
+                          </div>
                         </div>
                       ) : (
                         <div style={{ display: 'flex', gap: 6 }}>

@@ -556,10 +556,12 @@ class LoyaltyService {
       // Calculate value
       let value = 0;
       if (settings.redemptionType === 'percentage') {
-        value = (orderTotal * redemptionRate) / 100;
-        // Convert value back to points needed
-        points = Math.floor(value / redemptionRate);
+        // For percentage type: redemptionRate is points per $1
+        // e.g., 100 points = $1 when redemptionRate = 100
+        value = points / redemptionRate;
       } else {
+        // For fixed type: redemptionRate is currency per point
+        // e.g., $0.005 per point when redemptionRate = 0.005
         value = points * redemptionRate;
       }
       
