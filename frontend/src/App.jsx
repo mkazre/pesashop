@@ -54,6 +54,9 @@ function App() {
     <>
       <ScrollToTop />
       <Routes>
+        {/* Chat Admin - separate login route (outside Layout) - MUST be before catch-all */}
+        <Route path="/chat-admin" element={<ChatAdmin />} />
+        
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path="shop" element={<ShopPage />} />
@@ -81,8 +84,6 @@ function App() {
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="compare" element={<ComparePage />} />
           <Route path="page/:slug" element={<DynamicPage />} />
-          {/* Chat Admin - separate login route */}
-          <Route path="chat-admin" element={<ChatAdmin />} />
           {/* Catch-all: try to render as a dynamic page by slug */}
           <Route path=":slug" element={<DynamicPage />} />
         </Route>
