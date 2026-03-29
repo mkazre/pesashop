@@ -101,7 +101,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 }));
 
 // Serve React frontend static files
-app.use(express.static(path.join(__dirname, '../frontend/build')));
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -238,7 +238,7 @@ app.use((req, res, next) => {
   }
   
   // For all other routes, serve the React app
-  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
 });
 
 // Error handler
