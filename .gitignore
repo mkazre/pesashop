@@ -3,6 +3,9 @@ node_modules/
 package-lock.json
 
 # Build outputs
+# Allow frontend dist for deployment
+!frontend/dist/
+# Ignore other build outputs
 dist/
 build/
 *.log
@@ -30,7 +33,6 @@ backend/uploads/temp/
 backend/config/imageProcessorConfig.json
 
 # Frontend/Admin specific
-!frontend/dist/
 admin-panel/dist/
 
 # Logs
