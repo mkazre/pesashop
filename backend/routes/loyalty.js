@@ -819,7 +819,15 @@ router.post('/redemption/calculate', protect, async (req, res, next) => {
     const { points, orderTotal } = req.body;
     const user = await User.findById(req.user._id);
     
-    console.log('[DEBUG] Redemption calculate:', { points, orderTotal, redemptionType: settings?.redemptionType, redemptionRate: settings?.redemptionRate });
+    // Load settings for debug
+    const settings = await LoyaltySetting.findOne();
+    console.log('[DEBUG] Redemption calculate:', { 
+      points, 
+      orderTotal, 
+      redemptionType: settings?.redemptionType, 
+      redemptionRate: settings?.redemptionRate,
+      rawSettings: settings?.toObject?.() || settings
+    });
     
     const result = await loyaltyService.calculateRedemptionValue(points, user, orderTotal);
     

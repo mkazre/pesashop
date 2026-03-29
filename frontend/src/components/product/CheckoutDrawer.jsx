@@ -144,13 +144,18 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
     if (!pts || pts <= 0) { toast.error('Enter a valid points amount'); return; }
     if (pts > loyaltyBalance) { toast.error(`You only have ${loyaltyBalance} points`); return; }
     try {
+      console.log('[DEBUG] Sending redemption request:', { points: pts, orderTotal: grandSubtotal, loyaltySettings });
       const res = await loyaltyAPI.calculateRedemption(pts, grandSubtotal);
+      console.log('[DEBUG] Redemption response:', res.data);
       if (res.data?.success) {
         setLoyaltyDiscount(res.data.data.value || 0);
         setLoyaltyApplied(true);
         toast.success(`${res.data.data.points} PESA Coins applied: -${formatPrice(res.data.data.value)}`);
       }
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed to apply PESA Coins'); }
+    } catch (err) { 
+      console.error('[DEBUG] Redemption error:', err.response?.data || err);
+      toast.error(err.response?.data?.message || 'Failed to apply PESA Coins'); 
+    }
   };
 
   const handleApplyGiftCard = async () => {
