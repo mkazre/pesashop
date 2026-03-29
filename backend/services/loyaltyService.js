@@ -504,11 +504,16 @@ class LoyaltyService {
         isActive: true
       }).sort({ priority: -1 });
       
+      console.log('[DEBUG] Found', rules.length, 'active redemption rules');
+      
       let redemptionRate = settings.redemptionRate || 0.1;
       let maxPoints = settings.maxRedemptionPoints;
       let maxPercentage = settings.maxRedemptionPercentage;
       
+      console.log('[DEBUG] Base redemptionRate from settings:', settings.redemptionRate);
+      
       for (const rule of rules) {
+        console.log('[DEBUG] Checking rule:', rule.name, 'with rate:', rule.redemptionRate);
         // For redemption rules, we check user/level conditions, not product
         let applies = true;
         
@@ -541,6 +546,7 @@ class LoyaltyService {
         }
         
         if (applies) {
+          console.log('[DEBUG] Rule', rule.name, 'APPLIES - overriding redemptionRate from', redemptionRate, 'to', rule.redemptionRate);
           if (rule.redemptionRate) redemptionRate = rule.redemptionRate;
           if (rule.maxRedemptionPoints) maxPoints = rule.maxRedemptionPoints;
           if (rule.maxRedemptionPercentage) maxPercentage = rule.maxRedemptionPercentage;
