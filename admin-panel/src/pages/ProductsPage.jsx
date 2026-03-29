@@ -428,6 +428,7 @@ const ProductsPage = () => {
             className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
           >
             <option value="">All Categories</option>
+            <option value="uncategorized">📂 Uncategorized (No Category)</option>
             {allCategories.map(cat => (
               <option key={cat._id} value={cat._id}>{cat.name}</option>
             ))}

@@ -131,7 +131,27 @@ router.get('/', optionalAuth, async (req, res) => {
     }
     
     if (req.query.category) {
-      query.categories = req.query.category;
+      if (req.query.category === 'uncategorized') {
+        // Find products with no categories assigned (empty array or missing field)
+        const uncategorizedConditions = [
+          { categories: { $exists: false } },
+          { categories: { $size: 0 } },
+          { categories: null },
+          { categories: [] }
+        ];
+        if (query.$or) {
+          // Combine with existing $or (status filter) using $and
+          query.$and = [
+            { $or: query.$or },
+            { $or: uncategorizedConditions }
+          ];
+          delete query.$or;
+        } else {
+          query.$or = uncategorizedConditions;
+        }
+      } else {
+        query.categories = req.query.category;
+      }
     }
 
     // Support plural categories param (array or comma-separated)
