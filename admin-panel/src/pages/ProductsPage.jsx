@@ -29,6 +29,7 @@ const ProductsPage = () => {
   const [aiGenerationType, setAiGenerationType] = useState('selected'); // 'selected', 'category', 'all'
   const [selectedCategory, setSelectedCategory] = useState('');
   const [includeSpecifications, setIncludeSpecifications] = useState(false);
+  const [onlyNewProducts, setOnlyNewProducts] = useState(false);
   const [sortKey, setSortKey] = useState('date-desc');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
@@ -98,6 +99,7 @@ const ProductsPage = () => {
         setAiGenerationType('selected');
         setSelectedCategory('');
         setIncludeSpecifications(false);
+        setOnlyNewProducts(false);
       },
       onError: (error) => {
         toast.error(error.response?.data?.message || 'Failed to generate AI descriptions');
@@ -169,6 +171,10 @@ const ProductsPage = () => {
 
     if (includeSpecifications) {
       requestData.includeSpecifications = true;
+    }
+
+    if (onlyNewProducts) {
+      requestData.onlyNewProducts = true;
     }
 
     aiGenerateMutation.mutate(requestData);
@@ -562,6 +568,7 @@ const ProductsPage = () => {
           setAiModal(false);
           setAiGenerationType('selected');
           setSelectedCategory('');
+          setOnlyNewProducts(false);
         }}
         title="Generate AI Descriptions"
         onConfirm={handleAIGenerate}
@@ -632,6 +639,19 @@ const ProductsPage = () => {
               <span className="text-sm font-medium">Include product specifications</span>
             </label>
             <p className="text-xs text-gray-500 mt-1 ml-6">Generate technical specifications (dimensions, materials, etc.) alongside descriptions</p>
+          </div>
+
+          <div className="mt-2 pt-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={onlyNewProducts}
+                onChange={(e) => setOnlyNewProducts(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+              />
+              <span className="text-sm font-medium">Only generate for new products</span>
+            </label>
+            <p className="text-xs text-gray-500 mt-1 ml-6">Skip products that already have AI-generated descriptions or specifications</p>
           </div>
 
           <div className="bg-blue-50 p-3 rounded text-sm text-blue-800">

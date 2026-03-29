@@ -148,7 +148,7 @@ router.post('/bulk-generate', protect, authorize('admin', 'manager'), async (req
       });
     }
     
-    const { productIds, categoryId, includeSpecifications } = req.body;
+    const { productIds, categoryId, includeSpecifications, onlyNewProducts } = req.body;
     
     let query = { status: { $ne: 'trash' } };
     
@@ -161,6 +161,16 @@ router.post('/bulk-generate', protect, authorize('admin', 'manager'), async (req
         success: false,
         message: 'Please provide product IDs or category ID'
       });
+    }
+    
+    // If onlyNewProducts is true, filter out products that already have AI-generated content
+    if (onlyNewProducts) {
+      query.$or = [
+        { 'aiGenerated.description': { $ne: true } },
+        { 'aiGenerated.shortDescription': { $ne: true } },
+        { 'aiGenerated.specifications': { $ne: true } },
+        { aiGenerated: { $exists: false } }
+      ];
     }
     
     const products = await Product.find(query).select('_id name description shortDescription categories').populate('categories', 'name');
@@ -216,6 +226,7 @@ Include:
 
         if (includeSpecifications && Array.isArray(generatedContent.specifications) && generatedContent.specifications.every(s => s.key && s.value)) {
           updateData.specifications = generatedContent.specifications;
+          updateData['aiGenerated.specifications'] = true;
           specsCount++;
         }
 
