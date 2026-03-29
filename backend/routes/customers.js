@@ -243,7 +243,7 @@ router.put('/:id', protect, authorize('admin', 'shop_manager'), async (req, res,
 });
 
 // DELETE customer
-router.delete('/:id', protect, authorize('admin'), async (req, res, next) => {
+router.delete('/:id', protect, authorize('shop_manager'), async (req, res, next) => {
   try {
     const customer = await User.findById(req.params.id);
     

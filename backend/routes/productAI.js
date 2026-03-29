@@ -17,7 +17,7 @@ async function getOpenAIApiKey() {
  * @desc    Generate AI description for a single product
  * @access  Private/Admin
  */
-router.post('/generate-description/:id', protect, authorize('admin', 'manager'), async (req, res) => {
+router.post('/generate-description/:id', protect, authorize('admin', 'shop_manager'), async (req, res) => {
   try {
     // Allow temp ID for new products
     let product = null;
@@ -95,7 +95,7 @@ Return ONLY valid JSON, no markdown code blocks:
  * @desc    Apply generated description to product
  * @access  Private/Admin
  */
-router.post('/apply-description/:id', protect, authorize('admin', 'manager'), async (req, res) => {
+router.post('/apply-description/:id', protect, authorize('admin', 'shop_manager'), async (req, res) => {
   try {
     const { shortDescription, longDescription } = req.body;
     
@@ -137,7 +137,7 @@ router.post('/apply-description/:id', protect, authorize('admin', 'manager'), as
  * @desc    Generate descriptions for multiple products
  * @access  Private/Admin
  */
-router.post('/bulk-generate', protect, authorize('admin', 'manager'), async (req, res) => {
+router.post('/bulk-generate', protect, authorize('admin', 'shop_manager'), async (req, res) => {
   try {
     const aiSettings = await aiAssistant.getSettings();
     const hasProvider = Object.values(aiSettings).some(s => s && s.enabled && s.apiKey);
@@ -272,7 +272,7 @@ Include:
  * @desc    Generate AI specifications for a product
  * @access  Private/Admin
  */
-router.post('/generate-specifications/:id', protect, authorize('admin', 'manager'), async (req, res) => {
+router.post('/generate-specifications/:id', protect, authorize('admin', 'shop_manager'), async (req, res) => {
   try {
     let product = null;
     if (req.params.id !== 'temp') {
@@ -363,7 +363,7 @@ Generate 8-15 relevant specification pairs. Be specific and realistic.`;
  * @desc    Apply generated specifications to product
  * @access  Private/Admin
  */
-router.post('/apply-specifications/:id', protect, authorize('admin', 'manager'), async (req, res) => {
+router.post('/apply-specifications/:id', protect, authorize('admin', 'shop_manager'), async (req, res) => {
   try {
     const { specifications } = req.body;
 
@@ -393,7 +393,7 @@ router.post('/apply-specifications/:id', protect, authorize('admin', 'manager'),
  * @desc    Generate AI specifications for multiple products (by IDs, category, or all)
  * @access  Private/Admin
  */
-router.post('/bulk-generate-specifications', protect, authorize('admin', 'manager'), async (req, res) => {
+router.post('/bulk-generate-specifications', protect, authorize('admin', 'shop_manager'), async (req, res) => {
   try {
     const aiAssistant = require('../services/aiAssistant');
     const aiSettings = await aiAssistant.getSettings();

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, adminOnly } = require('../middleware/auth');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
 
@@ -151,7 +151,7 @@ router.get('/:id', async (req, res, next) => {
  * @desc    Create new category
  * @access  Private/Admin
  */
-router.post('/', protect, authorize('admin', 'manager'), async (req, res, next) => {
+router.post('/', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
   try {
     const categoryData = req.body;
     
@@ -188,7 +188,7 @@ router.post('/', protect, authorize('admin', 'manager'), async (req, res, next) 
  * @desc    Update category
  * @access  Private/Admin
  */
-router.put('/:id', protect, authorize('admin', 'manager'), async (req, res, next) => {
+router.put('/:id', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
   try {
     const category = await Category.findById(req.params.id);
     
@@ -322,7 +322,7 @@ router.get('/:id/products', async (req, res, next) => {
  * @desc    Remove specific products from this category
  * @access  Private/Admin
  */
-router.put('/:id/products/remove', protect, authorize('admin', 'manager'), async (req, res, next) => {
+router.put('/:id/products/remove', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
   try {
     const { productIds } = req.body;
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
@@ -355,7 +355,7 @@ router.put('/:id/products/remove', protect, authorize('admin', 'manager'), async
  * @desc    Move products from this category to another (removes from source, adds to target)
  * @access  Private/Admin
  */
-router.put('/:id/products/reassign', protect, authorize('admin', 'manager'), async (req, res, next) => {
+router.put('/:id/products/reassign', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
   try {
     const { productIds, targetCategoryId } = req.body;
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
@@ -399,7 +399,7 @@ router.put('/:id/products/reassign', protect, authorize('admin', 'manager'), asy
  * @desc    Add products to a category (without removing from current categories)
  * @access  Private/Admin
  */
-router.put('/:id/products/add', protect, authorize('admin', 'manager'), async (req, res, next) => {
+router.put('/:id/products/add', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
   try {
     const { productIds } = req.body;
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {

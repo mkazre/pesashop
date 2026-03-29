@@ -284,7 +284,7 @@ router.get('/watermark-config', protect, authorize('admin'), async (req, res) =>
  * @desc    Upload an image without processing (for general use)
  * @access  Private/Admin
  */
-router.post('/upload', protect, authorize('admin', 'manager'), upload.single('image'), async (req, res) => {
+router.post('/upload', protect, authorize('admin', 'shop_manager'), upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({

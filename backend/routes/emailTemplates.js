@@ -55,7 +55,7 @@ router.get('/:id', protect, authorize('admin', 'shop_manager'), async (req, res)
   }
 });
 
-router.post('/', protect, authorize('admin'), async (req, res) => {
+router.post('/', protect, authorize('shop_manager'), async (req, res) => {
   try {
     if (!req.body.slug && req.body.name) {
       req.body.slug = req.body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -85,7 +85,7 @@ router.post('/', protect, authorize('admin'), async (req, res) => {
   }
 });
 
-router.put('/:id', protect, authorize('admin'), async (req, res) => {
+router.put('/:id', protect, authorize('shop_manager'), async (req, res) => {
   try {
     let template = await EmailTemplate.findById(req.params.id);
 
@@ -119,7 +119,7 @@ router.put('/:id', protect, authorize('admin'), async (req, res) => {
   }
 });
 
-router.delete('/:id', protect, authorize('admin'), async (req, res) => {
+router.delete('/:id', protect, authorize('shop_manager'), async (req, res) => {
   try {
     const template = await EmailTemplate.findById(req.params.id);
 
@@ -191,7 +191,7 @@ router.post('/:id/preview', protect, authorize('admin', 'shop_manager'), async (
   }
 });
 
-router.post('/:id/test', protect, authorize('admin'), async (req, res) => {
+router.post('/:id/test', protect, authorize('shop_manager'), async (req, res) => {
   try {
     const template = await EmailTemplate.findById(req.params.id);
 
@@ -244,7 +244,7 @@ router.post('/:id/test', protect, authorize('admin'), async (req, res) => {
 });
 
 // ─── Re-seed all templates with branded designs ───
-router.post('/seed', protect, authorize('admin'), async (req, res) => {
+router.post('/seed', protect, authorize('shop_manager'), async (req, res) => {
   try {
     const seedEmailTemplates = require('../seeders/emailTemplates');
     await seedEmailTemplates();

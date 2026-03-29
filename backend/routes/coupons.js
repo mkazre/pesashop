@@ -253,7 +253,7 @@ router.put('/:id', protect, authorize('admin', 'shop_manager'), async (req, res,
 });
 
 // DELETE coupon
-router.delete('/:id', protect, authorize('admin'), async (req, res, next) => {
+router.delete('/:id', protect, authorize('shop_manager'), async (req, res, next) => {
   try {
     const coupon = await Coupon.findByIdAndDelete(req.params.id);
     if (!coupon) {

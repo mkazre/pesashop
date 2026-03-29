@@ -75,6 +75,21 @@ exports.authorize = (...roles) => {
 };
 
 /**
+ * Block customers - only allow admin and shop_manager roles
+ * This prevents frontend customers from accessing admin routes
+ */
+exports.adminOnly = (req, res, next) => {
+  const allowedRoles = ['admin', 'shop_manager', 'superadmin', 'super_admin'];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Admin privileges required.'
+    });
+  }
+  next();
+};
+
+/**
  * Optional authentication - attach user if token exists
  */
 exports.optionalAuth = async (req, res, next) => {

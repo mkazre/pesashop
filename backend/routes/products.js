@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
-const { protect, authorize, optionalAuth } = require('../middleware/auth');
+const { protect, authorize, adminOnly, optionalAuth } = require('../middleware/auth');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 
@@ -60,7 +60,7 @@ const upload = multer({
  * @desc    Upload and optimize a single product image
  * @access  Private/Admin
  */
-router.post('/upload-image', protect, authorize('admin', 'manager'), upload.single('image'), async (req, res) => {
+router.post('/upload-image', protect, adminOnly, authorize('admin', 'shop_manager'), upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -103,7 +103,7 @@ router.post('/upload-image', protect, authorize('admin', 'manager'), upload.sing
  */
 router.get('/', optionalAuth, async (req, res) => {
   try {
-    const isAdmin = req.user && ['admin', 'manager'].includes(req.user.role);
+    const isAdmin = req.user && ['admin', 'shop_manager'].includes(req.user.role);
     let query = {};
     
     if (req.query.search) {
@@ -346,7 +346,7 @@ router.get('/filters', async (req, res) => {
  */
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
-    const isAdmin = req.user && ['admin', 'manager'].includes(req.user.role);
+    const isAdmin = req.user && ['admin', 'shop_manager'].includes(req.user.role);
     let product;
     
     if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -390,7 +390,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
  * @desc    Create new product
  * @access  Private/Admin
  */
-router.post('/', protect, authorize('admin', 'manager'), async (req, res) => {
+router.post('/', protect, adminOnly, authorize('admin', 'shop_manager'), async (req, res) => {
   try {
     const productData = req.body;
     
@@ -430,7 +430,7 @@ router.post('/', protect, authorize('admin', 'manager'), async (req, res) => {
  * @desc    Update product
  * @access  Private/Admin
  */
-router.put('/:id', protect, authorize('admin', 'manager'), async (req, res) => {
+router.put('/:id', protect, authorize('admin', 'shop_manager'), async (req, res) => {
   try {
     let product = await Product.findById(req.params.id);
 
@@ -518,7 +518,7 @@ router.put('/:id', protect, authorize('admin', 'manager'), async (req, res) => {
  * @desc    Move product to trash
  * @access  Private/Admin
  */
-router.delete('/:id', protect, authorize('admin'), async (req, res) => {
+router.delete('/:id', protect, adminOnly, authorize('admin'), async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     
@@ -552,7 +552,7 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
  * @desc    Restore product from trash
  * @access  Private/Admin
  */
-router.post('/:id/restore', protect, authorize('admin'), async (req, res) => {
+router.post('/:id/restore', protect, adminOnly, authorize('admin'), async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     
@@ -672,7 +672,7 @@ router.post('/bulk-edit', protect, authorize('admin'), async (req, res) => {
  * @desc    Move multiple products to trash
  * @access  Private/Admin
  */
-router.post('/bulk-trash', protect, authorize('admin'), async (req, res) => {
+router.post('/bulk-trash', protect, adminOnly, authorize('admin'), async (req, res) => {
   try {
     const { productIds } = req.body;
     
@@ -707,7 +707,7 @@ router.post('/bulk-trash', protect, authorize('admin'), async (req, res) => {
  * @desc    Get next available SKU
  * @access  Private/Admin
  */
-router.get('/next-sku', protect, authorize('admin', 'manager'), async (req, res) => {
+router.get('/next-sku', protect, adminOnly, authorize('admin', 'shop_manager'), async (req, res) => {
   try {
     const nextSKU = await Product.getNextSKU();
     

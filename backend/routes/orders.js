@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, adminOnly } = require('../middleware/auth');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { LoyaltyPoint } = require('../models/LoyaltyPoint');
