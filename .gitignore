@@ -30,7 +30,7 @@ backend/uploads/temp/
 backend/config/imageProcessorConfig.json
 
 # Frontend/Admin specific
-frontend/dist/
+!frontend/dist/
 admin-panel/dist/
 
 # Logs

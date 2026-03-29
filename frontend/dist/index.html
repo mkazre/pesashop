@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
+    <link rel="apple-touch-icon" href="/favicon.jpg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PesaShop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/assets/index-CkRmmlN9.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-JjUuC2M_.css">
+  </head>
+  <body>
+    <!-- Global Preloader: Animated Delivery Van -->
+    <div id="global-preloader" style="position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s ease">
+      <style>
+        @keyframes vanBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        @keyframes wheelSpin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+        @keyframes roadMove { 0%{transform:translateX(0)} 100%{transform:translateX(-48px)} }
+        @keyframes exhaustPuff { 0%{opacity:.7;transform:scale(1) translateX(0)} 100%{opacity:0;transform:scale(2.5) translateX(-20px)} }
+        #preloader-van { animation: vanBounce 0.6s ease-in-out infinite; }
+        .preloader-wheel { animation: wheelSpin 0.4s linear infinite; transform-origin: center; }
+        #preloader-road { animation: roadMove 0.4s linear infinite; }
+        .exhaust-puff { animation: exhaustPuff 1.2s ease-out infinite; }
+        .exhaust-puff:nth-child(2) { animation-delay: 0.4s; }
+        .exhaust-puff:nth-child(3) { animation-delay: 0.8s; }
+      </style>
+      <div style="position:relative;width:200px;height:130px">
+        <!-- Exhaust puffs -->
+        <svg style="position:absolute;left:-18px;top:62px" width="30" height="30" viewBox="0 0 30 30">
+          <circle class="exhaust-puff" cx="15" cy="15" r="4" fill="#d1d5db"/>
+          <circle class="exhaust-puff" cx="10" cy="12" r="3" fill="#e5e7eb"/>
+          <circle class="exhaust-puff" cx="8" cy="18" r="3.5" fill="#d1d5db"/>
+        </svg>
+        <!-- Van SVG -->
+        <svg id="preloader-van" viewBox="0 0 180 100" width="180" height="100" style="position:absolute;left:10px;top:8px">
+          <!-- Van body (green) -->
+          <rect x="2" y="25" width="105" height="50" rx="4" fill="#16a34a"/>
+          <!-- Cargo door lines -->
+          <line x1="52" y1="30" x2="52" y2="70" stroke="#15803d" stroke-width="1.5"/>
+          <line x1="80" y1="30" x2="80" y2="70" stroke="#15803d" stroke-width="1.5"/>
+          <!-- Door handle -->
+          <rect x="55" y="46" width="6" height="3" rx="1" fill="#fbbf24"/>
+          <rect x="83" y="46" width="6" height="3" rx="1" fill="#fbbf24"/>
+          <!-- Cab (yellow) -->
+          <path d="M107,35 L107,75 L155,75 L155,48 L140,35 Z" fill="#facc15" stroke="#eab308" stroke-width="1"/>
+          <!-- Cab roof -->
+          <path d="M107,35 L140,35 L155,48 L107,48 Z" fill="#fde047"/>
+          <!-- Windshield -->
+          <path d="M138,37 L152,48 L152,42 L142,37 Z" fill="#bfdbfe" stroke="#93c5fd" stroke-width="0.5"/>
+          <!-- Side window -->
+          <rect x="110" y="38" width="24" height="12" rx="1.5" fill="#bfdbfe" stroke="#93c5fd" stroke-width="0.5"/>
+          <!-- Headlight -->
+          <rect x="153" y="55" width="5" height="8" rx="2" fill="#fef08a" stroke="#fbbf24" stroke-width="0.5"/>
+          <!-- Bumper -->
+          <rect x="105" y="72" width="55" height="5" rx="1.5" fill="#374151"/>
+          <!-- Rear bumper -->
+          <rect x="0" y="72" width="30" height="5" rx="1.5" fill="#374151"/>
+          <!-- PesaShop text on van body -->
+          <text x="20" y="55" font-family="Inter,Arial,sans-serif" font-size="10" font-weight="700" fill="#fff" letter-spacing="0.5">PESA</text>
+          <!-- Stripe (yellow accent) -->
+          <rect x="2" y="62" width="105" height="4" fill="#facc15" rx="1"/>
+          <!-- Front wheel -->
+          <g transform="translate(130,78)">
+            <circle r="10" fill="#374151"/>
+            <circle r="7" fill="#6b7280"/>
+            <circle r="3" fill="#374151"/>
+            <g class="preloader-wheel">
+              <line x1="-5" y1="0" x2="5" y2="0" stroke="#9ca3af" stroke-width="1.5"/>
+              <line x1="0" y1="-5" x2="0" y2="5" stroke="#9ca3af" stroke-width="1.5"/>
+            </g>
+          </g>
+          <!-- Rear wheel -->
+          <g transform="translate(28,78)">
+            <circle r="10" fill="#374151"/>
+            <circle r="7" fill="#6b7280"/>
+            <circle r="3" fill="#374151"/>
+            <g class="preloader-wheel">
+              <line x1="-5" y1="0" x2="5" y2="0" stroke="#9ca3af" stroke-width="1.5"/>
+              <line x1="0" y1="-5" x2="0" y2="5" stroke="#9ca3af" stroke-width="1.5"/>
+            </g>
+          </g>
+        </svg>
+        <!-- Road -->
+        <svg style="position:absolute;bottom:0;left:0" width="200" height="16" viewBox="0 0 200 16">
+          <rect y="0" width="200" height="3" fill="#d1d5db"/>
+          <g id="preloader-road">
+            <rect x="0" y="8" width="20" height="3" rx="1" fill="#d1d5db"/>
+            <rect x="32" y="8" width="20" height="3" rx="1" fill="#d1d5db"/>
+            <rect x="64" y="8" width="20" height="3" rx="1" fill="#d1d5db"/>
+            <rect x="96" y="8" width="20" height="3" rx="1" fill="#d1d5db"/>
+            <rect x="128" y="8" width="20" height="3" rx="1" fill="#d1d5db"/>
+            <rect x="160" y="8" width="20" height="3" rx="1" fill="#d1d5db"/>
+            <rect x="192" y="8" width="20" height="3" rx="1" fill="#d1d5db"/>
+            <rect x="224" y="8" width="20" height="3" rx="1" fill="#d1d5db"/>
+          </g>
+        </svg>
+      </div>
+      <p style="margin-top:18px;font-family:Inter,Arial,sans-serif;font-size:14px;color:#6b7280;font-weight:500;letter-spacing:0.3px">Loading your store...</p>
+    </div>
+
+    <div id="root"></div>
+  </body>
+</html>
