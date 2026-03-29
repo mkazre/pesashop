@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
-const { checkPermission } = require('../middleware/checkPermission');
+const checkPermission = require('../middleware/checkPermission');
 const CustomerGroup = require('../models/CustomerGroup');
 const PriceList = require('../models/PriceList');
 const PricingRule = require('../models/PricingRule');
