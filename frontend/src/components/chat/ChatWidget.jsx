@@ -242,7 +242,10 @@ const ChatWidget = () => {
   // Default to showing widget if settings haven't loaded
   const isEnabled = settings?.enabled !== false; // Show by default unless explicitly disabled
 
-  if (!isEnabled) return null;
+  // DEBUG: Always show widget for testing
+  console.log('[ChatWidget] Settings:', settings, 'isEnabled:', isEnabled);
+  
+  if (isEnabled === false) return null;
 
   return (
     <div className={`fixed z-50 ${positionClasses[position]}`}>
