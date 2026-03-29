@@ -1,0 +1,14 @@
+{
+  "watermarkPath": "/Volumes/MKDrive/Websites/Pesa/React App/ecommerce-platform-complete/ecommerce-platform/backend/uploads/watermarks/watermark-1769331774956.png",
+  "watermarkPosition": "bottom-right",
+  "watermarkSize": 0.2,
+  "watermarkOpacity": 0.7,
+  "targetWidth": 2000,
+  "targetHeight": 2000,
+  "targetRatio": 1,
+  "trimWhitespace": false,
+  "backgroundColor": null,
+  "smartThumbnailControl": true,
+  "outputFormat": "webp",
+  "imageQuality": 90
+}
