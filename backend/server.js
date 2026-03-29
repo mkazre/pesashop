@@ -142,6 +142,7 @@ const userRoutes = require('./routes/users');
 const shippingRoutes = require('./routes/shipping');
 const footerConfigRoutes = require('./routes/footerConfig');
 const mobileAppConfigRoutes = require('./routes/mobileAppConfig');
+const chatRoutes = require('./routes/chat');
 
 // Mount routes
 app.use('/api/auth', authRoutes);
@@ -185,6 +186,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/shipping', shippingRoutes);
 app.use('/api/footer-config', footerConfigRoutes);
 app.use('/api/mobile-app-config', mobileAppConfigRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -265,6 +267,10 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
+
+// Initialize Socket.io for chat
+const { initializeSocket } = require('./sockets/chatSocket');
+initializeSocket(server);
 
 // Allow long-running requests (imports, bulk operations) — individual routes
 // set their own timeouts via req.setTimeout() for finer control

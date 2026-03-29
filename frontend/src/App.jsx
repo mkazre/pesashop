@@ -27,6 +27,8 @@ import CategoriesPage from './pages/CategoriesPage';
 import AddressesPage from './pages/account/AddressesPage';
 import DynamicPage from './pages/DynamicPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import ChatAdmin from './pages/chat/ChatAdmin';
+import ChatWidget from './components/chat/ChatWidget';
 
 // Modals
 import QuickViewModal from './components/modals/QuickViewModal';
@@ -79,10 +81,15 @@ function App() {
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="compare" element={<ComparePage />} />
           <Route path="page/:slug" element={<DynamicPage />} />
+          {/* Chat Admin - separate login route */}
+          <Route path="chat-admin" element={<ChatAdmin />} />
           {/* Catch-all: try to render as a dynamic page by slug */}
           <Route path=":slug" element={<DynamicPage />} />
         </Route>
       </Routes>
+
+      {/* Chat Widget - visible on all pages */}
+      <ChatWidget />
 
       {/* Global Modals */}
       {quickViewProduct && <QuickViewModal />}
