@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { MessageCircle, X, Send, Paperclip, ChevronDown, User, Bot } from 'lucide-react';
 import axios from 'axios';
@@ -6,6 +7,7 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ChatWidget = () => {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [visitorId, setVisitorId] = useState(null);
@@ -268,11 +270,12 @@ const ChatWidget = () => {
   };
 
   // Default to showing widget if settings haven't loaded
-  const isEnabled = settings?.enabled !== false; // Show by default unless explicitly disabled
+  const isEnabled = settings?.enabled !== false;
 
-  // DEBUG: Always show widget for testing
-  console.log('[ChatWidget] Settings:', settings, 'isEnabled:', isEnabled);
-  
+  // Hide on admin routes
+  const path = location.pathname;
+  if (path.startsWith('/admin') || path.startsWith('/chat-admin')) return null;
+
   if (isEnabled === false) return null;
 
   return (
@@ -280,8 +283,10 @@ const ChatWidget = () => {
       {/* Chat Window */}
       {isOpen && (
         <div
-          className={`bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
-            isMinimized ? 'h-14 w-80' : 'h-[500px] w-80 sm:w-96'
+          className={`bg-white shadow-2xl overflow-hidden transition-all duration-300 ${
+            isMinimized
+              ? 'h-14 w-80 rounded-2xl'
+              : 'fixed inset-0 sm:relative sm:inset-auto sm:h-[500px] sm:w-96 sm:rounded-2xl'
           }`}
           style={{ borderColor: primaryColor }}
         >
@@ -317,7 +322,7 @@ const ChatWidget = () => {
             <>
               {/* Pre-chat Form */}
               {showPreChat ? (
-                <div className="p-4 h-[400px] overflow-y-auto">
+                <div className="p-4 h-[calc(100vh-56px)] sm:h-[400px] overflow-y-auto">
                   <h4 className="font-medium mb-4">Before we start...</h4>
                   <form onSubmit={handlePreChatSubmit} className="space-y-4">
                     <div>
@@ -359,7 +364,7 @@ const ChatWidget = () => {
               ) : (
                 <>
                   {/* Messages */}
-                  <div className="h-[350px] overflow-y-auto p-4 space-y-3 bg-gray-50">
+                  <div className="h-[calc(100vh-130px)] sm:h-[350px] overflow-y-auto p-4 space-y-3 bg-gray-50">
                     {messages.map((message) => (
                       <div
                         key={message.id}
@@ -414,7 +419,7 @@ const ChatWidget = () => {
                   </div>
 
                   {/* Input */}
-                  <form onSubmit={handleSendMessage} className="p-3 border-t bg-white">
+                  <form onSubmit={handleSendMessage} className="p-3 border-t bg-white safe-bottom">
                     <div className="flex gap-2">
                       <input
                         type="text"

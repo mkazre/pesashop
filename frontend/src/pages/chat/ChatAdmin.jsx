@@ -405,61 +405,63 @@ const ChatAdmin = () => {
   return (
     <div className="h-screen bg-gray-100 flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-            <MessageCircle className="text-white" size={20} />
+      <header className="bg-white border-b px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <MessageCircle className="text-white" size={18} />
           </div>
-          <div>
-            <h1 className="font-semibold text-gray-900">Live Chat</h1>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span className="w-2 h-2 bg-green-500 rounded-full" />
-              Online
-              {stats && (
-                <span className="ml-2">
-                  • {stats.activeNow} visitors • {stats.activeConversations} chats
-                </span>
-              )}
+          <div className="min-w-0">
+            <h1 className="font-semibold text-gray-900 text-sm sm:text-base">Live Chat</h1>
+            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500">
+              <span className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+              <span className="truncate">
+                Online
+                {stats && (
+                  <span className="hidden sm:inline ml-1">
+                    • {stats.activeNow} visitors • {stats.activeConversations} chats
+                  </span>
+                )}
+              </span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           <button
             onClick={() => setShowVisitorPanel(!showVisitorPanel)}
-            className="p-2 hover:bg-gray-100 rounded-lg relative"
+            className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg relative"
           >
-            <Users size={20} />
+            <Users size={18} />
             {activeVisitors.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-blue-600 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center">
                 {activeVisitors.length}
               </span>
             )}
           </button>
           <button
             onClick={() => setShowSettings(true)}
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg"
           >
-            <Settings size={20} />
+            <Settings size={18} />
           </button>
-          <button className="p-2 hover:bg-gray-100 rounded-lg">
-            <Bell size={20} />
+          <button className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg">
+            <Bell size={18} />
           </button>
           <div className="relative group">
-            <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg">
-              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium">{user?.name?.[0] || 'A'}</span>
+            <button className="flex items-center gap-1 p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                <span className="text-xs sm:text-sm font-medium">{user?.name?.[0] || 'A'}</span>
               </div>
-              <ChevronDown size={16} />
+              <ChevronDown size={14} className="hidden sm:block" />
             </button>
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border hidden group-hover:block">
+            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border hidden group-hover:block z-50">
               <div className="p-3 border-b">
-                <p className="font-medium">{user?.name}</p>
-                <p className="text-sm text-gray-500">{user?.email}</p>
+                <p className="font-medium text-sm">{user?.name}</p>
+                <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2 text-sm"
               >
                 <LogOut size={16} />
                 Logout
@@ -471,8 +473,8 @@ const ChatAdmin = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Conversations Sidebar */}
-        <div className="w-full md:w-80 bg-white border-r flex flex-col">
+        {/* Conversations Sidebar - hidden on mobile when a conversation is selected */}
+        <div className={`w-full md:w-80 bg-white border-r flex flex-col ${selectedConversation ? 'hidden md:flex' : 'flex'}`}>
           {/* Filters */}
           <div className="p-3 border-b space-y-3">
             <div className="relative">
@@ -571,65 +573,65 @@ const ChatAdmin = () => {
 
         {/* Chat Area */}
         {selectedConversation ? (
-          <div className="flex-1 flex flex-col bg-white">
+          <div className={`flex-1 flex-col bg-white ${selectedConversation ? 'flex' : 'hidden md:flex'}`}>
             {/* Chat Header */}
-            <div className="px-4 py-3 border-b flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="px-3 sm:px-4 py-2 sm:py-3 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <button
                   onClick={() => setSelectedConversation(null)}
-                  className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+                  className="md:hidden p-1.5 hover:bg-gray-100 rounded-lg flex-shrink-0"
                 >
                   <ArrowLeft size={20} />
                 </button>
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span className="text-lg">👤</span>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-base sm:text-lg">👤</span>
                 </div>
-                <div>
-                  <p className="font-medium">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm sm:text-base truncate">
                     {selectedConversation.visitor?.name || 'Anonymous'}
                   </p>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500 flex-wrap">
                     {selectedConversation.visitor?.isOnline ? (
                       <>
-                        <span className="w-2 h-2 bg-green-500 rounded-full" />
-                        Online
+                        <span className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                        <span>Online</span>
                       </>
                     ) : (
                       <>
-                        <Clock size={14} />
-                        Last seen {safeFormatDistance(selectedConversation.visitor?.lastActivity) || 'a while ago'}
+                        <Clock size={12} />
+                        <span className="truncate">Last seen {safeFormatDistance(selectedConversation.visitor?.lastActivity) || 'a while ago'}</span>
                       </>
                     )}
                     {selectedConversation.visitor?.currentPage && (
-                      <>
-                        <Globe size={14} />
+                      <span className="hidden sm:flex items-center gap-1 truncate">
+                        <Globe size={12} />
                         {safePathname(selectedConversation.visitor.currentPage)}
-                      </>
+                      </span>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                 {!selectedConversation.assignedTo && (
                   <button
                     onClick={() => handleAssignConversation(selectedConversation.id)}
-                    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                    className="px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-600 text-white rounded-lg text-xs sm:text-sm hover:bg-blue-700"
                   >
-                    Take Chat
+                    Take
                   </button>
                 )}
                 <button
                   onClick={() => setShowVisitorPanel(true)}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
+                  className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg"
                 >
                   <Users size={20} />
                 </button>
                 <button
                   onClick={() => handleCloseConversation(selectedConversation.id)}
-                  className="p-2 hover:bg-gray-100 rounded-lg text-red-600"
+                  className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg text-red-600"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
             </div>
@@ -693,7 +695,7 @@ const ChatAdmin = () => {
             </div>
 
             {/* Input */}
-            <form onSubmit={handleSendMessage} className="p-4 border-t bg-white">
+            <form onSubmit={handleSendMessage} className="p-2 sm:p-4 border-t bg-white">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -704,20 +706,20 @@ const ChatAdmin = () => {
                   }}
                   onBlur={handleTypingStop}
                   placeholder="Type your message..."
-                  className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-3 sm:px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
                 <button
                   type="submit"
                   disabled={!inputMessage.trim()}
-                  className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50"
+                  className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 flex-shrink-0"
                 >
-                  <Send size={20} />
+                  <Send size={18} />
                 </button>
               </div>
             </form>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
+          <div className="hidden md:flex flex-1 items-center justify-center bg-gray-50">
             <div className="text-center">
               <MessageCircle size={64} className="mx-auto mb-4 text-gray-300" />
               <p className="text-gray-500">Select a conversation to start chatting</p>
@@ -735,7 +737,7 @@ const ChatAdmin = () => {
               className="absolute inset-0 bg-black/50"
               onClick={() => setShowSettings(false)}
             />
-            <div className="absolute right-0 top-0 h-full w-96 bg-white shadow-xl overflow-y-auto">
+            <div className="absolute right-0 top-0 h-full w-full sm:w-96 bg-white shadow-xl overflow-y-auto">
               <div className="p-4 border-b flex items-center justify-between">
                 <h2 className="font-semibold">Chat Settings</h2>
                 <button
