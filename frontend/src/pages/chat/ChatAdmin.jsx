@@ -28,11 +28,13 @@ const safeFormatTime = (dateStr) => {
   } catch { return ''; }
 };
 
-const safePathname = (url) => {
+const safePathname = (page) => {
   try {
+    if (!page) return '';
+    const url = typeof page === 'object' ? page.url : page;
     if (!url) return '';
     return new URL(url).pathname;
-  } catch { return url; }
+  } catch { return typeof page === 'object' ? page.url : page; }
 };
 
 const ChatAdmin = () => {
@@ -141,12 +143,37 @@ const ChatAdmin = () => {
 
     newSocket.on('visitor:new', (data) => {
       setActiveVisitors(prev => [data, ...prev]);
+      playNotificationSound();
     });
 
     newSocket.on('visitor:offline', (data) => {
       setActiveVisitors(prev =>
         prev.filter(v => v.visitorId !== data.visitorId)
       );
+    });
+
+    newSocket.on('visitor:pageChanged', (data) => {
+      const pageUrl = data.url;
+      setActiveVisitors(prev =>
+        prev.map(v =>
+          v.visitorId === data.visitorId
+            ? { ...v, currentPage: pageUrl }
+            : v
+        )
+      );
+      setConversations(prev =>
+        prev.map(c =>
+          c.visitor?.visitorId === data.visitorId
+            ? { ...c, visitor: { ...c.visitor, currentPage: pageUrl } }
+            : c
+        )
+      );
+      setSelectedConversation(prev => {
+        if (prev && prev.visitor?.visitorId === data.visitorId) {
+          return { ...prev, visitor: { ...prev.visitor, currentPage: pageUrl } };
+        }
+        return prev;
+      });
     });
 
     newSocket.on('message:received', (data) => {
@@ -530,7 +557,7 @@ const ChatAdmin = () => {
                         )}
                         {conv.visitor?.currentPage && (
                           <span className="text-xs text-gray-400 truncate">
-                            {new URL(conv.visitor.currentPage).pathname}
+                            {safePathname(conv.visitor.currentPage)}
                           </span>
                         )}
                       </div>

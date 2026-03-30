@@ -343,8 +343,8 @@ const handleVisitorConnection = (socket) => {
         type
       });
 
-      // Send to all agents in conversation room
-      io.to(`conversation_${conversationId}`).to('agents').emit('message:received', {
+      // Send to agents only (not conversation room, since visitor is in it too)
+      io.to('agents').emit('message:received', {
         conversationId,
         message: formatMessage(message),
         visitorId

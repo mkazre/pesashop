@@ -121,24 +121,43 @@ const ChatWidget = () => {
     };
   }, [visitorId]);
 
-  // Track page changes
+  // Track page changes (SPA-aware)
   useEffect(() => {
     if (!socketRef.current || !isConnected) return;
 
-    const handleRouteChange = () => {
-      socketRef.current.emit('visitor:pageview', {
-        url: window.location.href,
-        title: document.title
-      });
+    let lastUrl = window.location.href;
+
+    const emitPageView = () => {
+      const currentUrl = window.location.href;
+      if (currentUrl !== lastUrl || !lastUrl) {
+        lastUrl = currentUrl;
+        socketRef.current?.emit('visitor:pageview', {
+          url: currentUrl,
+          title: document.title
+        });
+      }
     };
 
-    window.addEventListener('popstate', handleRouteChange);
+    // Intercept pushState/replaceState for React Router navigations
+    const origPush = history.pushState.bind(history);
+    const origReplace = history.replaceState.bind(history);
+    history.pushState = function (...args) { origPush(...args); emitPageView(); };
+    history.replaceState = function (...args) { origReplace(...args); emitPageView(); };
+
+    window.addEventListener('popstate', emitPageView);
+
+    // Poll as fallback for any missed navigations
+    const poll = setInterval(emitPageView, 3000);
 
     // Track initial page
-    handleRouteChange();
+    lastUrl = '';
+    emitPageView();
 
     return () => {
-      window.removeEventListener('popstate', handleRouteChange);
+      history.pushState = origPush;
+      history.replaceState = origReplace;
+      window.removeEventListener('popstate', emitPageView);
+      clearInterval(poll);
     };
   }, [isConnected]);
 
