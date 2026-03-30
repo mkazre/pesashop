@@ -10,6 +10,31 @@ import { formatDistanceToNow, format } from 'date-fns';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+const safeFormatDistance = (dateStr) => {
+  try {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return formatDistanceToNow(d, { addSuffix: true });
+  } catch { return ''; }
+};
+
+const safeFormatTime = (dateStr) => {
+  try {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return format(d, 'HH:mm');
+  } catch { return ''; }
+};
+
+const safePathname = (url) => {
+  try {
+    if (!url) return '';
+    return new URL(url).pathname;
+  } catch { return url; }
+};
+
 const ChatAdmin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
@@ -468,7 +493,7 @@ const ChatAdmin = () => {
                           {conv.visitor?.name || 'Anonymous'}
                         </p>
                         <span className="text-xs text-gray-500">
-                          {conv.lastMessageAt && formatDistanceToNow(new Date(conv.lastMessageAt), { addSuffix: true })}
+                          {safeFormatDistance(conv.lastMessageAt)}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 truncate">
@@ -527,13 +552,13 @@ const ChatAdmin = () => {
                     ) : (
                       <>
                         <Clock size={14} />
-                        Last seen {formatDistanceToNow(new Date(selectedConversation.visitor?.lastActivity))} ago
+                        Last seen {safeFormatDistance(selectedConversation.visitor?.lastActivity) || 'a while ago'}
                       </>
                     )}
                     {selectedConversation.visitor?.currentPage && (
                       <>
                         <Globe size={14} />
-                        {new URL(selectedConversation.visitor.currentPage).pathname}
+                        {safePathname(selectedConversation.visitor.currentPage)}
                       </>
                     )}
                   </div>
@@ -590,7 +615,7 @@ const ChatAdmin = () => {
                     <p className="text-sm">{message.content}</p>
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-xs opacity-60">
-                        {format(new Date(message.createdAt), 'HH:mm')}
+                        {safeFormatTime(message.createdAt)}
                       </span>
                       {message.senderType === 'agent' && (
                         <>
