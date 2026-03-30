@@ -100,9 +100,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   }
 }));
 
-// Serve React frontend static files
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-
 // Import routes
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
@@ -147,6 +144,9 @@ const footerConfigRoutes = require('./routes/footerConfig');
 const mobileAppConfigRoutes = require('./routes/mobileAppConfig');
 const chatRoutes = require('./routes/chat');
 
+// Mount API routes FIRST (before static files)
+app.use('/api/auth', authRoutes);
+
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -190,6 +190,9 @@ app.use('/api/shipping', shippingRoutes);
 app.use('/api/footer-config', footerConfigRoutes);
 app.use('/api/mobile-app-config', mobileAppConfigRoutes);
 app.use('/api/chat', chatRoutes);
+
+// Serve React frontend static files AFTER API routes
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Health check
 app.get('/health', (req, res) => {
