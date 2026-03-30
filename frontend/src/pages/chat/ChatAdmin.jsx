@@ -233,7 +233,7 @@ const ChatAdmin = () => {
   const handleLogin = async (email, password) => {
     try {
       const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
-      const { token, user } = response.data.data;
+      const { token, user } = response.data;
 
       if (!['admin', 'shop_manager', 'support'].includes(user.role)) {
         throw new Error('Unauthorized role for chat');
