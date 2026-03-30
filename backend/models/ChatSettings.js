@@ -48,6 +48,15 @@ const chatSettingsSchema = new mongoose.Schema({
     logoUrl: String,
     agentAvatarUrl: String,
 
+    // Margins (pixels)
+    marginTop: { type: Number, default: 20 },
+    marginBottom: { type: Number, default: 20 },
+    marginLeft: { type: Number, default: 20 },
+    marginRight: { type: Number, default: 20 },
+
+    // Custom icon image URL
+    customIconUrl: String,
+
     // Border radius
     borderRadius: {
       type: Number,

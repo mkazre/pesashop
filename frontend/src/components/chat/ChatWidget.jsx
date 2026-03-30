@@ -233,12 +233,19 @@ const ChatWidget = () => {
   const widgetTitle = settings?.text?.widgetTitle || 'Chat with us';
   const widgetSubtitle = settings?.text?.widgetSubtitle || 'We typically reply in minutes';
   const inputPlaceholder = settings?.text?.inputPlaceholder || 'Type your message...';
+  const widgetSize = settings?.appearance?.widgetSize || 56;
+  const iconSize = Math.round(widgetSize * 0.43);
+  const marginTop = settings?.appearance?.marginTop ?? 20;
+  const marginBottom = settings?.appearance?.marginBottom ?? 20;
+  const marginLeft = settings?.appearance?.marginLeft ?? 20;
+  const marginRight = settings?.appearance?.marginRight ?? 20;
+  const customIconUrl = settings?.appearance?.customIconUrl || '';
 
-  const positionClasses = {
-    'bottom-right': 'bottom-4 right-4',
-    'bottom-left': 'bottom-4 left-4',
-    'top-right': 'top-4 right-4',
-    'top-left': 'top-4 left-4'
+  const positionStyles = {
+    'bottom-right': { bottom: marginBottom, right: marginRight },
+    'bottom-left': { bottom: marginBottom, left: marginLeft },
+    'top-right': { top: marginTop, right: marginRight },
+    'top-left': { top: marginTop, left: marginLeft }
   };
 
   // Default to showing widget if settings haven't loaded
@@ -250,7 +257,7 @@ const ChatWidget = () => {
   if (isEnabled === false) return null;
 
   return (
-    <div className={`fixed z-50 ${positionClasses[position]}`}>
+    <div className="fixed z-50" style={positionStyles[position] || positionStyles['bottom-right']}>
       {/* Chat Window */}
       {isOpen && (
         <div
@@ -420,10 +427,23 @@ const ChatWidget = () => {
       {!isOpen && (
         <button
           onClick={toggleChat}
-          className="relative p-4 rounded-full shadow-lg text-white hover:scale-110 transition-transform"
-          style={{ backgroundColor: primaryColor }}
+          className="relative rounded-full shadow-lg text-white hover:scale-110 transition-transform flex items-center justify-center"
+          style={{
+            backgroundColor: primaryColor,
+            width: widgetSize,
+            height: widgetSize
+          }}
         >
-          <MessageCircle size={24} />
+          {customIconUrl ? (
+            <img
+              src={customIconUrl}
+              alt="Chat"
+              style={{ width: iconSize * 1.5, height: iconSize * 1.5 }}
+              className="object-contain rounded-full"
+              onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+            />
+          ) : null}
+          <MessageCircle size={iconSize} style={customIconUrl ? { display: 'none' } : {}} />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
               {unreadCount}

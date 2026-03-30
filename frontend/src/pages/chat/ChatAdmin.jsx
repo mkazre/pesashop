@@ -58,7 +58,13 @@ const ChatAdmin = () => {
     position: 'bottom-right',
     primaryColor: '#2563eb',
     greeting: 'Hi there! How can we help you today?',
-    inputPlaceholder: 'Type your message...'
+    inputPlaceholder: 'Type your message...',
+    widgetSize: 56,
+    marginTop: 20,
+    marginBottom: 20,
+    marginLeft: 20,
+    marginRight: 20,
+    customIconUrl: ''
   });
 
   const messagesEndRef = useRef(null);
@@ -220,8 +226,14 @@ const ChatAdmin = () => {
           setSettings({
             position: data.appearance?.position || 'bottom-right',
             primaryColor: data.appearance?.primaryColor || '#2563eb',
-            greeting: data.widget?.greeting || 'Hi there! How can we help you today?',
-            inputPlaceholder: data.widget?.inputPlaceholder || 'Type your message...'
+            greeting: data.text?.welcomeMessage || 'Hi there! How can we help you today?',
+            inputPlaceholder: data.text?.inputPlaceholder || 'Type your message...',
+            widgetSize: data.appearance?.widgetSize || 56,
+            marginTop: data.appearance?.marginTop ?? 20,
+            marginBottom: data.appearance?.marginBottom ?? 20,
+            marginLeft: data.appearance?.marginLeft ?? 20,
+            marginRight: data.appearance?.marginRight ?? 20,
+            customIconUrl: data.appearance?.customIconUrl || ''
           });
         }
       } catch (error) {
@@ -286,10 +298,16 @@ const ChatAdmin = () => {
       await axios.put(`${API_URL}/api/chat/admin/settings`, {
         appearance: {
           position: settings.position,
-          primaryColor: settings.primaryColor
+          primaryColor: settings.primaryColor,
+          widgetSize: Number(settings.widgetSize),
+          marginTop: Number(settings.marginTop),
+          marginBottom: Number(settings.marginBottom),
+          marginLeft: Number(settings.marginLeft),
+          marginRight: Number(settings.marginRight),
+          customIconUrl: settings.customIconUrl
         },
-        widget: {
-          greeting: settings.greeting,
+        text: {
+          welcomeMessage: settings.greeting,
           inputPlaceholder: settings.inputPlaceholder
         }
       }, {
@@ -770,6 +788,87 @@ const ChatAdmin = () => {
                     className="w-full px-3 py-2 border rounded-lg text-sm"
                     placeholder="Type your message..."
                   />
+                </div>
+
+                {/* Widget Size */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Widget Button Size: {settings.widgetSize}px
+                  </label>
+                  <input
+                    type="range"
+                    min="36"
+                    max="80"
+                    value={settings.widgetSize}
+                    onChange={(e) => setSettings({ ...settings, widgetSize: Number(e.target.value) })}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>36px</span>
+                    <span>80px</span>
+                  </div>
+                </div>
+
+                {/* Margins */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Widget Margins (px)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { key: 'marginTop', label: 'Top' },
+                      { key: 'marginBottom', label: 'Bottom' },
+                      { key: 'marginLeft', label: 'Left' },
+                      { key: 'marginRight', label: 'Right' }
+                    ].map(({ key, label }) => (
+                      <div key={key}>
+                        <label className="block text-xs text-gray-500 mb-1">{label}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="200"
+                          value={settings[key]}
+                          onChange={(e) => setSettings({ ...settings, [key]: Number(e.target.value) })}
+                          className="w-full px-3 py-2 border rounded-lg text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Icon */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Custom Icon / Image URL
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.customIconUrl}
+                    onChange={(e) => setSettings({ ...settings, customIconUrl: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                    placeholder="https://example.com/icon.png"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Leave empty to use the default chat icon</p>
+                  {settings.customIconUrl && (
+                    <div className="mt-2 flex items-center gap-3">
+                      <div
+                        className="rounded-full overflow-hidden flex items-center justify-center"
+                        style={{
+                          width: settings.widgetSize,
+                          height: settings.widgetSize,
+                          backgroundColor: settings.primaryColor
+                        }}
+                      >
+                        <img
+                          src={settings.customIconUrl}
+                          alt="Preview"
+                          className="w-3/4 h-3/4 object-contain"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500">Preview</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Save Button */}
