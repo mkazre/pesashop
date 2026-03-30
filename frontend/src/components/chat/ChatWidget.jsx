@@ -396,7 +396,6 @@ const ChatWidget = () => {
                         placeholder={inputPlaceholder}
                         className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 text-sm"
                         style={{ focusRingColor: primaryColor }}
-                        disabled={!conversationId}
                       />
                       <button
                         type="submit"
