@@ -3,6 +3,8 @@ import { io } from 'socket.io-client';
 import { MessageCircle, X, Send, Paperclip, ChevronDown, User, Bot } from 'lucide-react';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -38,7 +40,7 @@ const ChatWidget = () => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const response = await axios.get('/api/chat/settings');
+        const response = await axios.get(`${API_URL}/api/chat/settings`);
         setSettings(response.data.data);
       } catch (error) {
         console.error('Failed to load chat settings:', error);
@@ -51,7 +53,7 @@ const ChatWidget = () => {
   useEffect(() => {
     if (!visitorId) return;
 
-    const socket = io(process.env.REACT_APP_API_URL || '', {
+    const socket = io(API_URL, {
       auth: { visitorId, isAgent: false },
       transports: ['websocket', 'polling']
     });

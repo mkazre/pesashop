@@ -57,6 +57,7 @@ app.use(helmet({
       imgSrc: ["'self'", "data:", "blob:", "*"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
+      connectSrc: ["'self'", "wss:", "ws:"],
     },
   },
   crossOriginResourcePolicy: { policy: "cross-origin" }
@@ -145,9 +146,6 @@ const mobileAppConfigRoutes = require('./routes/mobileAppConfig');
 const chatRoutes = require('./routes/chat');
 
 // Mount API routes FIRST (before static files)
-app.use('/api/auth', authRoutes);
-
-// Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);

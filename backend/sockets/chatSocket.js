@@ -16,12 +16,20 @@ const agentSockets = new Map(); // userId -> Set of socketIds
 const initializeSocket = (server) => {
   io = socketIo(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return callback(null, true);
+        if (/^https?:\/\/([a-z0-9-]+\.)?pesashop\.com$/.test(origin)) return callback(null, true);
+        const allowed = [process.env.FRONTEND_URL, process.env.ADMIN_URL].filter(Boolean);
+        if (allowed.includes(origin)) return callback(null, true);
+        callback(null, false);
+      },
       methods: ['GET', 'POST'],
       credentials: true
     },
     pingTimeout: 60000,
-    pingInterval: 25000
+    pingInterval: 25000,
+    transports: ['websocket', 'polling']
   });
 
   // Middleware to authenticate connections

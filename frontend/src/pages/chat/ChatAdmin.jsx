@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const ChatAdmin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
@@ -26,6 +28,13 @@ const ChatAdmin = () => {
   const [filter, setFilter] = useState('all'); // all, waiting, mine
   const [showVisitorPanel, setShowVisitorPanel] = useState(false);
   const [stats, setStats] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState({
+    position: 'bottom-right',
+    primaryColor: '#2563eb',
+    greeting: 'Hi there! How can we help you today?',
+    inputPlaceholder: 'Type your message...'
+  });
 
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -39,7 +48,7 @@ const ChatAdmin = () => {
 
   const verifyToken = async () => {
     try {
-      const response = await axios.get('/api/auth/me', {
+      const response = await axios.get(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data.data);
@@ -54,7 +63,7 @@ const ChatAdmin = () => {
   useEffect(() => {
     if (!isAuthenticated || !token) return;
 
-    const newSocket = io(process.env.REACT_APP_API_URL || '', {
+    const newSocket = io(API_URL, {
       auth: { token, isAgent: true },
       transports: ['websocket', 'polling']
     });
@@ -147,7 +156,7 @@ const ChatAdmin = () => {
     const loadMessages = async () => {
       try {
         const response = await axios.get(
-          `/api/chat/admin/conversations/${selectedConversation.id}`,
+          `${API_URL}/api/chat/admin/conversations/${selectedConversation.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setMessages(response.data.data.messages);
@@ -174,13 +183,35 @@ const ChatAdmin = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, visitorTyping]);
 
-  // Load stats periodically
+  // Load chat settings
+  useEffect(() => {
+    if (!token) return;
+
+    const loadSettings = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/chat/settings`);
+        if (response.data.success) {
+          const data = response.data.data;
+          setSettings({
+            position: data.appearance?.position || 'bottom-right',
+            primaryColor: data.appearance?.primaryColor || '#2563eb',
+            greeting: data.widget?.greeting || 'Hi there! How can we help you today?',
+            inputPlaceholder: data.widget?.inputPlaceholder || 'Type your message...'
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    };
+
+    loadSettings();
+  }, [token]);
   useEffect(() => {
     if (!token) return;
 
     const loadStats = async () => {
       try {
-        const response = await axios.get('/api/chat/admin/stats', {
+        const response = await axios.get(`${API_URL}/api/chat/admin/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setStats(response.data.data);
@@ -201,7 +232,7 @@ const ChatAdmin = () => {
 
   const handleLogin = async (email, password) => {
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
+      const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
       const { token, user } = response.data.data;
 
       if (!['admin', 'shop_manager', 'support'].includes(user.role)) {
@@ -223,6 +254,26 @@ const ChatAdmin = () => {
     setIsAuthenticated(false);
     setUser(null);
     socket?.disconnect();
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      await axios.put(`${API_URL}/api/chat/admin/settings`, {
+        appearance: {
+          position: settings.position,
+          primaryColor: settings.primaryColor
+        },
+        widget: {
+          greeting: settings.greeting,
+          inputPlaceholder: settings.inputPlaceholder
+        }
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShowSettings(false);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+    }
   };
 
   const handleAssignConversation = (conversationId) => {
@@ -314,6 +365,12 @@ const ChatAdmin = () => {
                 {activeVisitors.length}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <Settings size={20} />
           </button>
           <button className="p-2 hover:bg-gray-100 rounded-lg">
             <Bell size={20} />
@@ -601,52 +658,102 @@ const ChatAdmin = () => {
           </div>
         )}
 
-        {/* Visitor Panel (slide-over) */}
-        {showVisitorPanel && (
+        {/* Settings Panel (slide-over) */}
+        {showSettings && (
           <div className="fixed inset-0 z-50">
             <div
               className="absolute inset-0 bg-black/50"
-              onClick={() => setShowVisitorPanel(false)}
+              onClick={() => setShowSettings(false)}
             />
-            <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-xl">
+            <div className="absolute right-0 top-0 h-full w-96 bg-white shadow-xl overflow-y-auto">
               <div className="p-4 border-b flex items-center justify-between">
-                <h2 className="font-semibold">Active Visitors ({activeVisitors.length})</h2>
+                <h2 className="font-semibold">Chat Settings</h2>
                 <button
-                  onClick={() => setShowVisitorPanel(false)}
+                  onClick={() => setShowSettings(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg"
                 >
                   <X size={20} />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {activeVisitors.map((visitor) => (
-                  <div key={visitor.visitorId} className="p-3 border rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-sm">👤</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">
-                          {visitor.name || visitor.visitorId.slice(0, 8)}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {visitor.currentPage ? new URL(visitor.currentPage).pathname : 'Unknown page'}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
-                          {visitor.device?.type === 'mobile' ? (
-                            <Smartphone size={12} />
-                          ) : (
-                            <Monitor size={12} />
-                          )}
-                          <span className="capitalize">{visitor.device?.type || 'desktop'}</span>
-                          {visitor.country && (
-                            <span>• {visitor.country}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+              <div className="p-4 space-y-6">
+                {/* Position Setting */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Widget Position
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['bottom-right', 'bottom-left', 'top-right', 'top-left'].map((pos) => (
+                      <button
+                        key={pos}
+                        onClick={() => setSettings({ ...settings, position: pos })}
+                        className={`p-3 border rounded-lg text-sm capitalize ${
+                          settings.position === pos
+                            ? 'bg-blue-100 border-blue-500 text-blue-700'
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        {pos.replace('-', ' ')}
+                      </button>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* Primary Color */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Primary Color
+                  </label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="color"
+                      value={settings.primaryColor}
+                      onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
+                      className="w-12 h-10 rounded border cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={settings.primaryColor}
+                      onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
+                      className="flex-1 px-3 py-2 border rounded-lg text-sm"
+                      placeholder="#2563eb"
+                    />
+                  </div>
+                </div>
+
+                {/* Greeting Message */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Greeting Message
+                  </label>
+                  <textarea
+                    value={settings.greeting}
+                    onChange={(e) => setSettings({ ...settings, greeting: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm h-20 resize-none"
+                    placeholder="Hi there! How can we help you today?"
+                  />
+                </div>
+
+                {/* Input Placeholder */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Input Placeholder
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.inputPlaceholder}
+                    onChange={(e) => setSettings({ ...settings, inputPlaceholder: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                    placeholder="Type your message..."
+                  />
+                </div>
+
+                {/* Save Button */}
+                <button
+                  onClick={handleSaveSettings}
+                  className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                >
+                  Save Settings
+                </button>
               </div>
             </div>
           </div>
