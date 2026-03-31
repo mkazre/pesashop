@@ -20,8 +20,10 @@ const SettingsPage = () => {
   const [testingEmail, setTestingEmail] = useState(false);
   const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [emailConfigStatus, setEmailConfigStatus] = useState(null);
+  const [brevoKeyConfigured, setBrevoKeyConfigured] = useState(false);
   
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm({
+    shouldUnregister: false,
     defaultValues: {
       storeName: '',
       storeEmail: '',
@@ -130,7 +132,7 @@ const SettingsPage = () => {
           timeZone: settings.timeZone || 'Africa/Johannesburg',
           // Email
           emailProvider: settings.emailProvider || 'smtp',
-          brevoApiKey: settings.brevoApiKey === '***configured***' ? '' : (settings.brevoApiKey || ''),
+          brevoApiKey: (settings.brevoApiKey && settings.brevoApiKey !== '***configured***') ? settings.brevoApiKey : '',
           // SMTP
           smtpHost: settings.smtpHost || '',
           smtpPort: String(settings.smtpPort || 587),
@@ -203,6 +205,7 @@ const SettingsPage = () => {
           socialLoginFacebookAppSecret: settings.socialLogin?.facebook?.appSecret === '***configured***' ? '' : (settings.socialLogin?.facebook?.appSecret || ''),
         });
         setBankDetails(settings.bankDetails || []);
+        setBrevoKeyConfigured(settings.brevoApiKey === '***configured***');
       }
     }
   );
@@ -250,7 +253,7 @@ const SettingsPage = () => {
       taxRate: parseFloat(data.taxRate),
       // Email provider
       emailProvider: data.emailProvider || 'smtp',
-      brevoApiKey: data.brevoApiKey || '',
+      ...(data.brevoApiKey ? { brevoApiKey: data.brevoApiKey } : {}),
       // SMTP
       smtpHost: data.smtpHost || '',
       smtpPort: parseInt(data.smtpPort) || 587,
@@ -452,11 +455,14 @@ const SettingsPage = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Brevo SMTP Key</label>
                     <div className="relative">
-                      <Input type={showSmtpPassword ? 'text' : 'password'} {...register('brevoApiKey')} placeholder="xsmtpsib-xxxxx..." fullWidth className="pr-10" />
+                      <Input type={showSmtpPassword ? 'text' : 'password'} {...register('brevoApiKey')} placeholder={brevoKeyConfigured ? '••••••••  (already saved — leave blank to keep)' : 'xsmtpsib-xxxxx...'} fullWidth className="pr-10" />
                       <button type="button" onClick={() => setShowSmtpPassword(!showSmtpPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
                         {showSmtpPassword ? <IoEyeOff size={18} /> : <IoEye size={18} />}
                       </button>
                     </div>
+                    {brevoKeyConfigured && !watch('brevoApiKey') && (
+                      <p className="text-xs text-green-600 mt-1">✓ SMTP key is saved. Leave blank to keep the existing key, or enter a new one to replace it.</p>
+                    )}
                   </div>
                 </div>
               </div>
