@@ -39,21 +39,25 @@ class EmailService {
 
     const provider = settings.emailProvider || 'smtp';
 
-    if (provider === 'brevo' && settings.brevoApiKey) {
+    const brevoKey = settings.brevoApiKey;
+    const brevoKeyValid = brevoKey && brevoKey.length > 20;
+
+    if (provider === 'brevo' && brevoKeyValid) {
+      const brevoUser = settings.smtpUser || settings.fromEmail || 'apikey';
       // Brevo SMTP relay — uses HTTP-friendly port 587, no blocking issues
       this.transporter = nodemailer.createTransport({
         host: 'smtp-relay.brevo.com',
         port: 587,
         secure: false,
         auth: {
-          user: settings.smtpUser || settings.fromEmail || 'apikey',
-          pass: settings.brevoApiKey,
+          user: brevoUser,
+          pass: brevoKey,
         },
         connectionTimeout: 30000,
         greetingTimeout: 30000,
         socketTimeout: 60000,
       });
-      console.log('[EmailService] Initialized with Brevo SMTP relay');
+      console.log(`[EmailService] Initialized with Brevo SMTP relay, user=${brevoUser}, key=${brevoKey.substring(0, 12)}...`);
     } else {
       // Custom SMTP
       const host = settings.smtpHost || process.env.EMAIL_HOST;
@@ -90,7 +94,9 @@ class EmailService {
     try {
       const Settings = require('../models/Settings');
       const settings = await Settings.getSettings();
-      if (settings.smtpHost) this.reinitialize(settings);
+      if (settings.emailProvider === 'brevo' || settings.smtpHost) {
+        this.reinitialize(settings);
+      }
       this._dbInitialized = true;
     } catch (e) { /* settings not yet available */ }
   }

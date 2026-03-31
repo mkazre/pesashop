@@ -253,7 +253,7 @@ const SettingsPage = () => {
       taxRate: parseFloat(data.taxRate),
       // Email provider
       emailProvider: data.emailProvider || 'smtp',
-      ...(data.brevoApiKey ? { brevoApiKey: data.brevoApiKey } : {}),
+      ...(data.brevoApiKey && data.brevoApiKey.length > 20 ? { brevoApiKey: data.brevoApiKey } : {}),
       // SMTP
       smtpHost: data.smtpHost || '',
       smtpPort: parseInt(data.smtpPort) || 587,
@@ -454,12 +454,16 @@ const SettingsPage = () => {
                   <Input label="Brevo Login (email used to sign up)" {...register('smtpUser')} placeholder="your@email.com" fullWidth />
                   <div>
                     <label className="block text-sm font-medium mb-1">Brevo SMTP Key</label>
-                    <div className="relative">
-                      <Input type={showSmtpPassword ? 'text' : 'password'} {...register('brevoApiKey')} placeholder={brevoKeyConfigured ? '••••••••  (already saved — leave blank to keep)' : 'xsmtpsib-xxxxx...'} fullWidth className="pr-10" />
-                      <button type="button" onClick={() => setShowSmtpPassword(!showSmtpPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
-                        {showSmtpPassword ? <IoEyeOff size={18} /> : <IoEye size={18} />}
-                      </button>
-                    </div>
+                    <Input
+                      type="text"
+                      autoComplete="off"
+                      data-1p-ignore="true"
+                      data-lpignore="true"
+                      data-form-type="other"
+                      {...register('brevoApiKey')}
+                      placeholder={brevoKeyConfigured ? '(already saved — leave blank to keep current key)' : 'xsmtpsib-xxxxx...'}
+                      fullWidth
+                    />
                     {brevoKeyConfigured && !watch('brevoApiKey') && (
                       <p className="text-xs text-green-600 mt-1">✓ SMTP key is saved. Leave blank to keep the existing key, or enter a new one to replace it.</p>
                     )}

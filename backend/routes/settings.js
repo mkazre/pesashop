@@ -53,6 +53,10 @@ router.put('/', protect, authorize('admin'), async (req, res) => {
       SENSITIVE_KEYS.forEach(k => {
         if (payload[k] === MASK || payload[k] === '') delete payload[k];
       });
+      // Reject obviously invalid Brevo keys (e.g. browser autofill garbage)
+      if (payload.brevoApiKey && payload.brevoApiKey.length < 20) {
+        delete payload.brevoApiKey;
+      }
       if (payload.socialLogin?.google?.clientSecret === MASK) delete payload.socialLogin.google.clientSecret;
       if (payload.socialLogin?.facebook?.appSecret === MASK) delete payload.socialLogin.facebook.appSecret;
       
