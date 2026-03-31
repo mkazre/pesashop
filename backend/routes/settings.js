@@ -195,14 +195,11 @@ router.post('/verify-email-config', protect, authorize('admin'), async (req, res
     if (provider === 'brevo') {
       config = {
         provider: 'brevo',
-        host: 'smtp-relay.brevo.com',
-        port: 587,
-        user: settings.smtpUser || settings.fromEmail || null,
+        method: 'HTTP API (port 443)',
         from: settings.fromEmail || null,
-        hasApiKey: !!settings.brevoApiKey,
+        hasApiKey: !!(settings.brevoApiKey && settings.brevoApiKey.length > 20),
       };
-      if (!config.hasApiKey) issues.push('Brevo SMTP Key is not configured');
-      if (!config.user) issues.push('Brevo Login email is not configured');
+      if (!config.hasApiKey) issues.push('Brevo API Key is not configured');
       if (!config.from) issues.push('From Email is not configured');
     } else {
       const port = parseInt(settings.smtpPort) || parseInt(process.env.EMAIL_PORT) || 587;

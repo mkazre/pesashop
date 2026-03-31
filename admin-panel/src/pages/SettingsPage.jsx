@@ -448,26 +448,23 @@ const SettingsPage = () => {
             {watch('emailProvider') === 'brevo' && (
               <div className="space-y-3">
                 <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800">
-                  <strong>Setup:</strong> Sign up at <a href="https://www.brevo.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">brevo.com</a> → Go to <strong>Settings → SMTP & API → SMTP</strong> → Copy your <strong>SMTP Key</strong> and <strong>Login</strong> below.
+                  <strong>Setup:</strong> Sign up at <a href="https://www.brevo.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">brevo.com</a> → Go to <strong>Settings → SMTP & API → API Keys</strong> → Generate or copy your <strong>v3 API Key</strong> below. Emails are sent via HTTPS (port 443), so it works on all cloud hosts.
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input label="Brevo Login (email used to sign up)" {...register('smtpUser')} placeholder="your@email.com" fullWidth />
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Brevo SMTP Key</label>
-                    <Input
-                      type="text"
-                      autoComplete="off"
-                      data-1p-ignore="true"
-                      data-lpignore="true"
-                      data-form-type="other"
-                      {...register('brevoApiKey')}
-                      placeholder={brevoKeyConfigured ? '(already saved — leave blank to keep current key)' : 'xsmtpsib-xxxxx...'}
-                      fullWidth
-                    />
-                    {brevoKeyConfigured && !watch('brevoApiKey') && (
-                      <p className="text-xs text-green-600 mt-1">✓ SMTP key is saved. Leave blank to keep the existing key, or enter a new one to replace it.</p>
-                    )}
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Brevo API Key</label>
+                  <Input
+                    type="text"
+                    autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    {...register('brevoApiKey')}
+                    placeholder={brevoKeyConfigured ? '(already saved — leave blank to keep current key)' : 'xkeysib-xxxxx...'}
+                    fullWidth
+                  />
+                  {brevoKeyConfigured && !watch('brevoApiKey') && (
+                    <p className="text-xs text-green-600 mt-1">✓ API key is saved. Leave blank to keep the existing key, or enter a new one to replace it.</p>
+                  )}
                 </div>
               </div>
             )}

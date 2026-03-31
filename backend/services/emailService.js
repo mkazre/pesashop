@@ -1,11 +1,15 @@
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 const EmailTemplate = require('../models/EmailTemplate');
+
+const BREVO_API_URL = 'https://api.brevo.com/v3';
 
 class EmailService {
   constructor() {
     this.transporter = null;
     this.from = process.env.EMAIL_FROM || 'noreply@ecommerce.com';
     this._dbInitialized = false;
+    this._brevoConfig = null; // { apiKey, fromEmail, fromName }
     this.initializeTransporter();
   }
 
@@ -43,23 +47,17 @@ class EmailService {
     const brevoKeyValid = brevoKey && brevoKey.length > 20;
 
     if (provider === 'brevo' && brevoKeyValid) {
-      const brevoUser = settings.smtpUser || settings.fromEmail || 'apikey';
-      // Brevo SMTP relay — uses HTTP-friendly port 587, no blocking issues
-      this.transporter = nodemailer.createTransport({
-        host: 'smtp-relay.brevo.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: brevoUser,
-          pass: brevoKey,
-        },
-        connectionTimeout: 30000,
-        greetingTimeout: 30000,
-        socketTimeout: 60000,
-      });
-      console.log(`[EmailService] Initialized with Brevo SMTP relay, user=${brevoUser}, key=${brevoKey.substring(0, 12)}...`);
+      // Brevo HTTP API — uses HTTPS port 443, never blocked by cloud providers
+      this._brevoConfig = {
+        apiKey: brevoKey,
+        fromEmail: settings.fromEmail || settings.smtpUser || 'noreply@ecommerce.com',
+        fromName: settings.fromName || 'PesaShop',
+      };
+      this.transporter = null; // Not using nodemailer for Brevo
+      console.log(`[EmailService] Initialized with Brevo HTTP API, from=${this._brevoConfig.fromEmail}, key=${brevoKey.substring(0, 12)}...`);
     } else {
-      // Custom SMTP
+      // Custom SMTP — clear Brevo config
+      this._brevoConfig = null;
       const host = settings.smtpHost || process.env.EMAIL_HOST;
       const port = parseInt(settings.smtpPort) || parseInt(process.env.EMAIL_PORT) || 587;
       const user = settings.smtpUser || process.env.EMAIL_USER;
@@ -162,19 +160,66 @@ class EmailService {
   }
 
   /**
-   * Test SMTP connection
+   * Test email connection (Brevo HTTP API or SMTP)
    */
   async testConnection() {
     try {
       await this.ensureInitialized();
+
+      if (this._brevoConfig) {
+        // Test Brevo HTTP API by fetching account info
+        const res = await axios.get(`${BREVO_API_URL}/account`, {
+          headers: { 'api-key': this._brevoConfig.apiKey },
+          timeout: 15000,
+        });
+        const plan = res.data?.plan?.[0]?.type || 'unknown';
+        return { success: true, message: `Brevo API connected (plan: ${plan})` };
+      }
+
       if (!this.transporter) {
-        return { success: false, message: 'No SMTP transporter configured' };
+        return { success: false, message: 'No email provider configured' };
       }
       await this.transporter.verify();
       return { success: true, message: 'SMTP connection successful' };
     } catch (error) {
-      return { success: false, message: error.message };
+      const msg = error.response?.data?.message || error.message;
+      return { success: false, message: msg };
     }
+  }
+
+  /**
+   * Send email via Brevo HTTP API
+   */
+  async _sendViaBrevo({ to, subject, html, text, cc, bcc }) {
+    const toList = Array.isArray(to) ? to.map(e => ({ email: e })) : [{ email: to }];
+    const payload = {
+      sender: { name: this._brevoConfig.fromName, email: this._brevoConfig.fromEmail },
+      to: toList,
+      subject,
+      htmlContent: html || undefined,
+      textContent: text || undefined,
+    };
+    if (cc) {
+      payload.cc = Array.isArray(cc) ? cc.map(e => ({ email: e })) : [{ email: cc }];
+    }
+    if (bcc) {
+      payload.bcc = Array.isArray(bcc) ? bcc.map(e => ({ email: e })) : [{ email: bcc }];
+    }
+
+    const res = await axios.post(`${BREVO_API_URL}/smtp/email`, payload, {
+      headers: {
+        'api-key': this._brevoConfig.apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      timeout: 30000,
+    });
+
+    return {
+      success: true,
+      messageId: res.data?.messageId || res.data?.messageIds?.[0] || 'brevo-ok',
+      response: `Brevo API 201 OK`,
+    };
   }
 
   /**
@@ -183,6 +228,11 @@ class EmailService {
   async sendEmail({ to, subject, html, text, attachments = [], cc = null, bcc = null }) {
     try {
       await this.ensureInitialized();
+
+      // Use Brevo HTTP API if configured
+      if (this._brevoConfig) {
+        return await this._sendViaBrevo({ to, subject, html, text, cc, bcc });
+      }
 
       if (!this.transporter) {
         throw new Error('Email transporter not configured. Set SMTP settings in admin Settings or .env');
@@ -208,7 +258,7 @@ class EmailService {
         response: info.response
       };
     } catch (error) {
-      console.error('Email send error:', error);
+      console.error('Email send error:', error.response?.data || error.message);
       throw error;
     }
   }
@@ -634,22 +684,6 @@ class EmailService {
     }
 
     return results;
-  }
-
-  /**
-   * Test email configuration
-   */
-  async testConnection() {
-    try {
-      await this.ensureInitialized();
-      if (!this.transporter) {
-        return { success: false, message: 'No SMTP transporter configured. Please set SMTP settings in admin Settings or .env' };
-      }
-      await this.transporter.verify();
-      return { success: true, message: 'SMTP connection successful' };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
   }
 
   /**
