@@ -71,6 +71,12 @@ const ChatAdmin = () => {
 
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const selectedConversationRef = useRef(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
 
   // Check auth on mount
   useEffect(() => {
@@ -132,7 +138,7 @@ const ChatAdmin = () => {
           c.id === data.conversationId ? { ...c, status: 'closed' } : c
         )
       );
-      if (selectedConversation?.id === data.conversationId) {
+      if (selectedConversationRef.current?.id === data.conversationId) {
         setSelectedConversation(null);
       }
     });
@@ -177,7 +183,7 @@ const ChatAdmin = () => {
     });
 
     newSocket.on('message:received', (data) => {
-      if (selectedConversation?.id === data.conversationId) {
+      if (selectedConversationRef.current?.id === data.conversationId) {
         setMessages(prev => [...prev, data.message]);
       }
       // Update conversation last message
@@ -198,8 +204,33 @@ const ChatAdmin = () => {
       playNotificationSound();
     });
 
+    // Agent's own sent message confirmed by server
+    newSocket.on('message:sent', (data) => {
+      if (selectedConversationRef.current) {
+        setMessages(prev => [...prev, data.message]);
+      }
+      // Update conversation last message in sidebar
+      const msg = data.message;
+      if (msg?.conversationId) {
+        setConversations(prev =>
+          prev.map(c =>
+            c.id === msg.conversationId
+              ? { ...c, lastMessage: { content: msg.content, senderType: 'agent', timestamp: new Date() } }
+              : c
+          )
+        );
+      }
+    });
+
+    // Message from another agent in the same conversation
+    newSocket.on('message:new', (data) => {
+      if (selectedConversationRef.current) {
+        setMessages(prev => [...prev, data.message]);
+      }
+    });
+
     newSocket.on('visitor:typing', (data) => {
-      if (selectedConversation?.visitorId === data.visitorId) {
+      if (selectedConversationRef.current?.visitorId === data.visitorId) {
         setVisitorTyping(data.isTyping);
       }
     });
@@ -290,8 +321,21 @@ const ChatAdmin = () => {
   }, [token]);
 
   const playNotificationSound = () => {
-    const audio = new Audio('/chat-notification.mp3');
-    audio.play().catch(() => {});
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(660, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+      osc.onended = () => ctx.close();
+    } catch (e) {}
   };
 
   const handleLogin = async (email, password) => {

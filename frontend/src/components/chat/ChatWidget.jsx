@@ -283,10 +283,10 @@ const ChatWidget = () => {
       {/* Chat Window */}
       {isOpen && (
         <div
-          className={`bg-white shadow-2xl overflow-hidden transition-all duration-300 ${
+          className={`bg-white shadow-2xl overflow-hidden transition-all duration-300 flex flex-col ${
             isMinimized
               ? 'h-14 w-80 rounded-2xl'
-              : 'fixed inset-0 sm:relative sm:inset-auto sm:h-[500px] sm:w-96 sm:rounded-2xl'
+              : 'fixed bottom-0 left-0 right-0 max-h-[70vh] sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:max-h-none sm:h-[420px] sm:w-96 sm:rounded-2xl rounded-t-2xl'
           }`}
           style={{ borderColor: primaryColor }}
         >
@@ -322,7 +322,7 @@ const ChatWidget = () => {
             <>
               {/* Pre-chat Form */}
               {showPreChat ? (
-                <div className="p-4 h-[calc(100vh-56px)] sm:h-[400px] overflow-y-auto">
+                <div className="p-4 flex-1 overflow-y-auto">
                   <h4 className="font-medium mb-4">Before we start...</h4>
                   <form onSubmit={handlePreChatSubmit} className="space-y-4">
                     <div>
@@ -362,9 +362,9 @@ const ChatWidget = () => {
                   </form>
                 </div>
               ) : (
-                <>
+                <div className="flex-1 flex flex-col min-h-0">
                   {/* Messages */}
-                  <div className="h-[calc(100vh-130px)] sm:h-[350px] overflow-y-auto p-4 space-y-3 bg-gray-50">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
                     {messages.map((message) => (
                       <div
                         key={message.id}
@@ -440,7 +440,7 @@ const ChatWidget = () => {
                       </button>
                     </div>
                   </form>
-                </>
+                </div>
               )}
             </>
           )}
