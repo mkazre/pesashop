@@ -31,6 +31,9 @@ const SettingsPage = () => {
       currency: 'ZAR',
       dateFormat: 'dd/MM/yyyy',
       timeZone: 'Africa/Johannesburg',
+      // Email
+      emailProvider: 'smtp',
+      brevoApiKey: '',
       // SMTP
       smtpHost: '',
       smtpPort: '587',
@@ -125,6 +128,9 @@ const SettingsPage = () => {
           currency: settings.currency || 'ZAR',
           dateFormat: settings.dateFormat || 'dd/MM/yyyy',
           timeZone: settings.timeZone || 'Africa/Johannesburg',
+          // Email
+          emailProvider: settings.emailProvider || 'smtp',
+          brevoApiKey: settings.brevoApiKey === '***configured***' ? '' : (settings.brevoApiKey || ''),
           // SMTP
           smtpHost: settings.smtpHost || '',
           smtpPort: String(settings.smtpPort || 587),
@@ -242,6 +248,9 @@ const SettingsPage = () => {
     saveMutation.mutate({
       ...cleanData,
       taxRate: parseFloat(data.taxRate),
+      // Email provider
+      emailProvider: data.emailProvider || 'smtp',
+      brevoApiKey: data.brevoApiKey || '',
       // SMTP
       smtpHost: data.smtpHost || '',
       smtpPort: parseInt(data.smtpPort) || 587,
@@ -408,40 +417,88 @@ const SettingsPage = () => {
           </div>
         </Card>
 
-        {/* Email Settings — SMTP */}
-        <Card title="Email Settings — SMTP Configuration">
+        {/* Email Settings */}
+        <Card title="Email Settings">
           <div className="space-y-4">
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
-              <IoMail className="inline mr-1" size={16} />
-              Configure your SMTP server here. If left blank, the system falls back to environment variables.
-              <br /><strong>Tip:</strong> For cPanel, use port <strong>587</strong> with SSL/TLS enabled. Port 465 may be blocked by some cloud providers.
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input label="SMTP Host" {...register('smtpHost')} placeholder="smtp.gmail.com" fullWidth />
-              <Input label="SMTP Port" type="number" {...register('smtpPort')} placeholder="587" fullWidth />
-              <div className="flex items-end pb-1">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4" {...register('smtpSecure')} />
-                  <span className="text-sm font-medium">Use SSL/TLS</span>
+            {/* Provider selector */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Email Provider</label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition ${watch('emailProvider') === 'brevo' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  <input type="radio" value="brevo" {...register('emailProvider')} className="w-4 h-4 text-blue-600" />
+                  <div>
+                    <div className="font-medium text-sm">Brevo (Recommended)</div>
+                    <div className="text-xs text-gray-500">300 emails/day free. Works on all cloud hosts.</div>
+                  </div>
+                </label>
+                <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition ${watch('emailProvider') === 'smtp' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  <input type="radio" value="smtp" {...register('emailProvider')} className="w-4 h-4 text-blue-600" />
+                  <div>
+                    <div className="font-medium text-sm">Custom SMTP</div>
+                    <div className="text-xs text-gray-500">Use your own SMTP server (cPanel, Gmail, etc.)</div>
+                  </div>
                 </label>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="SMTP Username" {...register('smtpUser')} placeholder="your@email.com" fullWidth />
-              <div>
-                <label className="block text-sm font-medium mb-1">SMTP Password</label>
-                <div className="relative">
-                  <Input type={showSmtpPassword ? 'text' : 'password'} {...register('smtpPassword')} placeholder="App password or SMTP password" fullWidth className="pr-10" />
-                  <button type="button" onClick={() => setShowSmtpPassword(!showSmtpPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
-                    {showSmtpPassword ? <IoEyeOff size={18} /> : <IoEye size={18} />}
-                  </button>
+
+            {/* Brevo settings */}
+            {watch('emailProvider') === 'brevo' && (
+              <div className="space-y-3">
+                <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+                  <strong>Setup:</strong> Sign up at <a href="https://www.brevo.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">brevo.com</a> → Go to <strong>Settings → SMTP & API → SMTP</strong> → Copy your <strong>SMTP Key</strong> and <strong>Login</strong> below.
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input label="Brevo Login (email used to sign up)" {...register('smtpUser')} placeholder="your@email.com" fullWidth />
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Brevo SMTP Key</label>
+                    <div className="relative">
+                      <Input type={showSmtpPassword ? 'text' : 'password'} {...register('brevoApiKey')} placeholder="xsmtpsib-xxxxx..." fullWidth className="pr-10" />
+                      <button type="button" onClick={() => setShowSmtpPassword(!showSmtpPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                        {showSmtpPassword ? <IoEyeOff size={18} /> : <IoEye size={18} />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Custom SMTP settings */}
+            {watch('emailProvider') === 'smtp' && (
+              <div className="space-y-3">
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                  <IoMail className="inline mr-1" size={16} />
+                  Configure your SMTP server. <strong>Tip:</strong> Use port <strong>587</strong> with SSL/TLS. Port 465 may be blocked by cloud providers.
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input label="SMTP Host" {...register('smtpHost')} placeholder="mail.yourdomain.com" fullWidth />
+                  <Input label="SMTP Port" type="number" {...register('smtpPort')} placeholder="587" fullWidth />
+                  <div className="flex items-end pb-1">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" className="w-4 h-4" {...register('smtpSecure')} />
+                      <span className="text-sm font-medium">Use SSL/TLS</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input label="SMTP Username" {...register('smtpUser')} placeholder="your@email.com" fullWidth />
+                  <div>
+                    <label className="block text-sm font-medium mb-1">SMTP Password</label>
+                    <div className="relative">
+                      <Input type={showSmtpPassword ? 'text' : 'password'} {...register('smtpPassword')} placeholder="App password or SMTP password" fullWidth className="pr-10" />
+                      <button type="button" onClick={() => setShowSmtpPassword(!showSmtpPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                        {showSmtpPassword ? <IoEyeOff size={18} /> : <IoEye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* From / Reply-to — shared by both providers */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input label="From Name" {...register('fromName')} placeholder="PesaShop" fullWidth />
-              <Input label="From Email" type="email" {...register('fromEmail')} placeholder="noreply@pesashop.com" fullWidth />
-              <Input label="Reply-To Email" type="email" {...register('replyToEmail')} placeholder="support@pesashop.com" fullWidth />
+              <Input label="From Email" type="email" {...register('fromEmail')} placeholder="noreply@yourdomain.com" fullWidth />
+              <Input label="Reply-To Email" type="email" {...register('replyToEmail')} placeholder="support@yourdomain.com" fullWidth />
             </div>
 
             <div className="border-t pt-4 mt-4">

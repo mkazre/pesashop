@@ -33,32 +33,51 @@ class EmailService {
    * Re-initialize transporter from DB settings (called when admin saves SMTP config)
    */
   reinitialize(settings) {
-    const host = settings.smtpHost || process.env.EMAIL_HOST;
-    const port = parseInt(settings.smtpPort) || parseInt(process.env.EMAIL_PORT) || 587;
-    const user = settings.smtpUser || process.env.EMAIL_USER;
-    const pass = settings.smtpPassword || process.env.EMAIL_PASSWORD;
-    // Port 465 = implicit TLS (secure:true)
-    // Port 587 = STARTTLS (secure:false, upgrade via STARTTLS)
-    const useImplicitTLS = port === 465;
     this.from = settings.fromEmail
       ? (settings.fromName ? `"${settings.fromName}" <${settings.fromEmail}>` : settings.fromEmail)
       : (process.env.EMAIL_FROM || 'noreply@ecommerce.com');
-    if (host) {
-      const transportOpts = {
-        host,
-        port,
-        secure: useImplicitTLS,
-        auth: { user, pass },
+
+    const provider = settings.emailProvider || 'smtp';
+
+    if (provider === 'brevo' && settings.brevoApiKey) {
+      // Brevo SMTP relay — uses HTTP-friendly port 587, no blocking issues
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp-relay.brevo.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: settings.smtpUser || settings.fromEmail || 'apikey',
+          pass: settings.brevoApiKey,
+        },
         connectionTimeout: 30000,
         greetingTimeout: 30000,
         socketTimeout: 60000,
-        tls: { rejectUnauthorized: false },
-      };
-      // For port 587 with SSL/TLS checkbox enabled, require STARTTLS upgrade
-      if (!useImplicitTLS && (settings.smtpSecure === true || port === 587)) {
-        transportOpts.requireTLS = true;
+      });
+      console.log('[EmailService] Initialized with Brevo SMTP relay');
+    } else {
+      // Custom SMTP
+      const host = settings.smtpHost || process.env.EMAIL_HOST;
+      const port = parseInt(settings.smtpPort) || parseInt(process.env.EMAIL_PORT) || 587;
+      const user = settings.smtpUser || process.env.EMAIL_USER;
+      const pass = settings.smtpPassword || process.env.EMAIL_PASSWORD;
+      const useImplicitTLS = port === 465;
+      if (host) {
+        const transportOpts = {
+          host,
+          port,
+          secure: useImplicitTLS,
+          auth: { user, pass },
+          connectionTimeout: 30000,
+          greetingTimeout: 30000,
+          socketTimeout: 60000,
+          tls: { rejectUnauthorized: false },
+        };
+        if (!useImplicitTLS && (settings.smtpSecure === true || port === 587)) {
+          transportOpts.requireTLS = true;
+        }
+        this.transporter = nodemailer.createTransport(transportOpts);
+        console.log(`[EmailService] Initialized with custom SMTP: ${host}:${port}`);
       }
-      this.transporter = nodemailer.createTransport(transportOpts);
     }
     this._dbInitialized = true;
   }

@@ -6,7 +6,7 @@ const Settings = require('../models/Settings');
 const MASK = '***configured***';
 const SENSITIVE_KEYS = [
   'openaiApiKey', 'deepseekApiKey', 'anthropicApiKey', 'aiWebSearchApiKey',
-  'smtpPassword', 'vapidPrivateKey',
+  'smtpPassword', 'vapidPrivateKey', 'brevoApiKey',
 ];
 
 function maskSensitive(obj) {
@@ -64,8 +64,8 @@ router.put('/', protect, authorize('admin'), async (req, res) => {
       );
     }
 
-    // Re-initialize email transporter if SMTP settings changed
-    if (req.body.smtpHost || req.body.smtpPort || req.body.smtpUser || req.body.smtpPassword) {
+    // Re-initialize email transporter if email settings changed
+    if (req.body.smtpHost || req.body.smtpPort || req.body.smtpUser || req.body.smtpPassword || req.body.emailProvider || req.body.brevoApiKey) {
       try {
         const emailService = require('../services/emailService');
         emailService.reinitialize(settings);
@@ -184,38 +184,53 @@ router.post('/verify-email-config', protect, authorize('admin'), async (req, res
     const settings = await Settings.getSettings();
     emailService.reinitialize(settings);
 
-    const port = parseInt(settings.smtpPort) || parseInt(process.env.EMAIL_PORT) || 587;
-    const isSecure = settings.smtpSecure === true || port === 465;
-
-    const config = {
-      host: settings.smtpHost || process.env.EMAIL_HOST || null,
-      port,
-      user: settings.smtpUser || process.env.EMAIL_USER || null,
-      from: settings.fromEmail || process.env.EMAIL_FROM || null,
-      secure: isSecure,
-      hasPassword: !!(settings.smtpPassword || process.env.EMAIL_PASSWORD),
-    };
-
+    const provider = settings.emailProvider || 'smtp';
     const issues = [];
-    if (!config.host) issues.push('SMTP Host is not configured');
-    if (!config.port) issues.push('SMTP Port is not configured');
-    if (!config.user) issues.push('SMTP Username is not configured');
-    if (!config.hasPassword) issues.push('SMTP Password is not configured');
-    if (!config.from) issues.push('From Email is not configured');
+    let config;
+
+    if (provider === 'brevo') {
+      config = {
+        provider: 'brevo',
+        host: 'smtp-relay.brevo.com',
+        port: 587,
+        user: settings.smtpUser || settings.fromEmail || null,
+        from: settings.fromEmail || null,
+        hasApiKey: !!settings.brevoApiKey,
+      };
+      if (!config.hasApiKey) issues.push('Brevo SMTP Key is not configured');
+      if (!config.user) issues.push('Brevo Login email is not configured');
+      if (!config.from) issues.push('From Email is not configured');
+    } else {
+      const port = parseInt(settings.smtpPort) || parseInt(process.env.EMAIL_PORT) || 587;
+      config = {
+        provider: 'smtp',
+        host: settings.smtpHost || process.env.EMAIL_HOST || null,
+        port,
+        user: settings.smtpUser || process.env.EMAIL_USER || null,
+        from: settings.fromEmail || process.env.EMAIL_FROM || null,
+        secure: settings.smtpSecure === true || port === 465,
+        hasPassword: !!(settings.smtpPassword || process.env.EMAIL_PASSWORD),
+      };
+      if (!config.host) issues.push('SMTP Host is not configured');
+      if (!config.port) issues.push('SMTP Port is not configured');
+      if (!config.user) issues.push('SMTP Username is not configured');
+      if (!config.hasPassword) issues.push('SMTP Password is not configured');
+      if (!config.from) issues.push('From Email is not configured');
+    }
 
     if (issues.length > 0) {
       return res.json({ success: true, data: { status: 'incomplete', config, issues } });
     }
 
-    console.log(`[Email Verify] Testing SMTP: host=${config.host} port=${config.port} secure=${config.secure} user=${config.user}`);
+    console.log(`[Email Verify] Testing ${provider}: host=${config.host} port=${config.port} user=${config.user}`);
 
     const verify = await emailService.testConnection();
     if (!verify.success) {
-      console.error(`[Email Verify] SMTP connection failed: ${verify.message}`);
+      console.error(`[Email Verify] Connection failed: ${verify.message}`);
       return res.json({ success: true, data: { status: 'failed', config, issues: [`Connection failed: ${verify.message}`] } });
     }
 
-    console.log('[Email Verify] SMTP connection successful');
+    console.log('[Email Verify] Connection successful');
     res.json({ success: true, data: { status: 'ok', config, issues: [] } });
   } catch (error) {
     console.error('Verify email config error:', error);

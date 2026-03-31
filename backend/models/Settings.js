@@ -45,7 +45,10 @@ const settingsSchema = new mongoose.Schema({
   vapidPublicKey: { type: String, default: '' },
   vapidPrivateKey: { type: String, default: '' },
 
-  // Email Settings — SMTP
+  // Email Settings
+  emailProvider: { type: String, enum: ['smtp', 'brevo'], default: 'smtp' },
+  brevoApiKey: { type: String, default: '' },
+  // SMTP (used when emailProvider = 'smtp', or as fallback)
   smtpHost: { type: String, default: '' },
   smtpPort: { type: Number, default: 587 },
   smtpUser: { type: String, default: '' },
