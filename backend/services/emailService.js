@@ -21,9 +21,10 @@ class EmailService {
         port,
         secure: port === 465,
         auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
+        connectionTimeout: 30000,
+        greetingTimeout: 30000,
+        socketTimeout: 60000,
+        tls: { rejectUnauthorized: false },
       });
     }
   }
@@ -33,22 +34,31 @@ class EmailService {
    */
   reinitialize(settings) {
     const host = settings.smtpHost || process.env.EMAIL_HOST;
-    const port = settings.smtpPort || parseInt(process.env.EMAIL_PORT) || 587;
+    const port = parseInt(settings.smtpPort) || parseInt(process.env.EMAIL_PORT) || 587;
     const user = settings.smtpUser || process.env.EMAIL_USER;
     const pass = settings.smtpPassword || process.env.EMAIL_PASSWORD;
+    // Port 465 = implicit TLS (secure:true)
+    // Port 587 = STARTTLS (secure:false, upgrade via STARTTLS)
+    const useImplicitTLS = port === 465;
     this.from = settings.fromEmail
       ? (settings.fromName ? `"${settings.fromName}" <${settings.fromEmail}>` : settings.fromEmail)
       : (process.env.EMAIL_FROM || 'noreply@ecommerce.com');
     if (host) {
-      this.transporter = nodemailer.createTransport({
+      const transportOpts = {
         host,
         port,
-        secure: settings.smtpSecure || port === 465,
+        secure: useImplicitTLS,
         auth: { user, pass },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-      });
+        connectionTimeout: 30000,
+        greetingTimeout: 30000,
+        socketTimeout: 60000,
+        tls: { rejectUnauthorized: false },
+      };
+      // For port 587 with SSL/TLS checkbox enabled, require STARTTLS upgrade
+      if (!useImplicitTLS && (settings.smtpSecure === true || port === 587)) {
+        transportOpts.requireTLS = true;
+      }
+      this.transporter = nodemailer.createTransport(transportOpts);
     }
     this._dbInitialized = true;
   }

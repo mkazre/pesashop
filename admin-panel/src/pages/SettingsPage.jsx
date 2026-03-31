@@ -414,6 +414,7 @@ const SettingsPage = () => {
             <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
               <IoMail className="inline mr-1" size={16} />
               Configure your SMTP server here. If left blank, the system falls back to environment variables.
+              <br /><strong>Tip:</strong> For cPanel, use port <strong>587</strong> with SSL/TLS enabled. Port 465 may be blocked by some cloud providers.
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input label="SMTP Host" {...register('smtpHost')} placeholder="smtp.gmail.com" fullWidth />

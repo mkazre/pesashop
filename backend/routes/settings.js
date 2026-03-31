@@ -184,12 +184,15 @@ router.post('/verify-email-config', protect, authorize('admin'), async (req, res
     const settings = await Settings.getSettings();
     emailService.reinitialize(settings);
 
+    const port = parseInt(settings.smtpPort) || parseInt(process.env.EMAIL_PORT) || 587;
+    const isSecure = settings.smtpSecure === true || port === 465;
+
     const config = {
       host: settings.smtpHost || process.env.EMAIL_HOST || null,
-      port: settings.smtpPort || process.env.EMAIL_PORT || null,
+      port,
       user: settings.smtpUser || process.env.EMAIL_USER || null,
       from: settings.fromEmail || process.env.EMAIL_FROM || null,
-      secure: settings.smtpSecure || false,
+      secure: isSecure,
       hasPassword: !!(settings.smtpPassword || process.env.EMAIL_PASSWORD),
     };
 
@@ -204,11 +207,15 @@ router.post('/verify-email-config', protect, authorize('admin'), async (req, res
       return res.json({ success: true, data: { status: 'incomplete', config, issues } });
     }
 
+    console.log(`[Email Verify] Testing SMTP: host=${config.host} port=${config.port} secure=${config.secure} user=${config.user}`);
+
     const verify = await emailService.testConnection();
     if (!verify.success) {
+      console.error(`[Email Verify] SMTP connection failed: ${verify.message}`);
       return res.json({ success: true, data: { status: 'failed', config, issues: [`Connection failed: ${verify.message}`] } });
     }
 
+    console.log('[Email Verify] SMTP connection successful');
     res.json({ success: true, data: { status: 'ok', config, issues: [] } });
   } catch (error) {
     console.error('Verify email config error:', error);
