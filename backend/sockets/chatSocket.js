@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Visitor = require('../models/Visitor');
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
+const ChatSettings = require('../models/ChatSettings');
 const chatService = require('../services/chatService');
 
 let io;
@@ -49,9 +50,17 @@ const initializeSocket = (server) => {
         }
 
         socket.userId = user._id.toString();
-        socket.userName = user.name || user.email;
         socket.userRole = user.role;
         socket.isAgent = true;
+
+        // Use agentNickname from settings if available, fallback to user name, then email
+        try {
+          const chatSettings = await ChatSettings.getSettings();
+          const nickname = chatSettings?.text?.agentNickname;
+          socket.userName = nickname || user.name || user.email;
+        } catch (e) {
+          socket.userName = user.name || user.email;
+        }
 
         next();
       } else if (visitorId) {

@@ -86,6 +86,10 @@ const chatSettingsSchema = new mongoose.Schema({
       type: String,
       default: 'Type your message...'
     },
+    agentNickname: {
+      type: String,
+      default: ''
+    },
     sendButtonText: {
       type: String,
       default: 'Send'

@@ -66,7 +66,8 @@ const ChatAdmin = () => {
     marginBottom: 20,
     marginLeft: 20,
     marginRight: 20,
-    customIconUrl: ''
+    customIconUrl: '',
+    agentNickname: ''
   });
 
   const messagesEndRef = useRef(null);
@@ -291,7 +292,8 @@ const ChatAdmin = () => {
             marginBottom: data.appearance?.marginBottom ?? 20,
             marginLeft: data.appearance?.marginLeft ?? 20,
             marginRight: data.appearance?.marginRight ?? 20,
-            customIconUrl: data.appearance?.customIconUrl || ''
+            customIconUrl: data.appearance?.customIconUrl || '',
+            agentNickname: data.text?.agentNickname || ''
           });
         }
       } catch (error) {
@@ -379,7 +381,8 @@ const ChatAdmin = () => {
         },
         text: {
           welcomeMessage: settings.greeting,
-          inputPlaceholder: settings.inputPlaceholder
+          inputPlaceholder: settings.inputPlaceholder,
+          agentNickname: settings.agentNickname
         }
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -646,12 +649,6 @@ const ChatAdmin = () => {
                         <span className="truncate">Last seen {safeFormatDistance(selectedConversation.visitor?.lastActivity) || 'a while ago'}</span>
                       </>
                     )}
-                    {selectedConversation.visitor?.currentPage && (
-                      <span className="hidden sm:flex items-center gap-1 truncate">
-                        <Globe size={12} />
-                        {safePathname(selectedConversation.visitor.currentPage)}
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -679,6 +676,14 @@ const ChatAdmin = () => {
                 </button>
               </div>
             </div>
+
+            {/* Visitor current page bar */}
+            {selectedConversation.visitor?.currentPage && (
+              <div className="px-3 sm:px-4 py-1.5 bg-gray-50 border-b flex items-center gap-2 text-xs text-gray-500">
+                <Globe size={12} className="flex-shrink-0 text-gray-400" />
+                <span className="truncate">{safePathname(selectedConversation.visitor.currentPage)}</span>
+              </div>
+            )}
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
@@ -861,6 +866,21 @@ const ChatAdmin = () => {
                     className="w-full px-3 py-2 border rounded-lg text-sm"
                     placeholder="Type your message..."
                   />
+                </div>
+
+                {/* Agent Nickname */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Agent Display Name
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.agentNickname}
+                    onChange={(e) => setSettings({ ...settings, agentNickname: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                    placeholder="e.g. Support Team, Sarah, etc."
+                  />
+                  <p className="text-xs text-gray-400 mt-1">This name will show to customers instead of your email</p>
                 </div>
 
                 {/* Widget Size */}
