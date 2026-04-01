@@ -119,12 +119,18 @@ emailTemplateSchema.methods.render = function(variables = {}) {
   // Replace all variables
   Object.keys(variables).forEach(key => {
     const regex = new RegExp(`{{${key}}}`, 'g');
-    const value = variables[key] || '';
+    const value = variables[key] != null ? String(variables[key]) : '';
     
     if (html) html = html.replace(regex, value);
     if (text) text = text.replace(regex, value);
     if (subject) subject = subject.replace(regex, value);
   });
+
+  // Clean up any unreplaced {{placeholders}} so they don't leak into the email
+  const cleanupRegex = /\{\{[a-zA-Z_]+\}\}/g;
+  if (html) html = html.replace(cleanupRegex, '');
+  if (text) text = text.replace(cleanupRegex, '');
+  if (subject) subject = subject.replace(cleanupRegex, '');
   
   return {
     subject,

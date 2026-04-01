@@ -136,7 +136,7 @@ class EmailService {
       try { settings = await Settings.getSettings() || {}; } catch (_) {}
       const enriched = {
         frontendUrl: process.env.FRONTEND_URL || 'https://pesashop.com',
-        logoUrl: settings.logoUrl || `${process.env.FRONTEND_URL || 'https://pesashop.com'}/logo.png`,
+        logoUrl: settings.storeLogo || `${process.env.FRONTEND_URL || 'https://pesashop.com'}/logo.png`,
         supportEmail: settings.storeEmail || process.env.EMAIL_FROM || 'support@pesashop.com',
         year: new Date().getFullYear().toString(),
         ...variables,
@@ -275,19 +275,27 @@ class EmailService {
       return;
     }
     
+    const frontendUrl = process.env.FRONTEND_URL || 'https://pesashop.com';
+    const subtotal = order.subtotal ?? order.items?.reduce((sum, i) => sum + (i.total || i.price * i.quantity || 0), 0) ?? 0;
+    const shippingCost = order.shipping ?? 0;
+    const discount = order.discount ?? 0;
+
     const variables = {
       customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
-      order_date: order.createdAt.toLocaleDateString(),
+      order_date: order.createdAt.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }),
       order_total: `R ${order.total.toFixed(2)}`,
+      subtotal: `R ${subtotal.toFixed(2)}`,
+      shipping_cost: shippingCost > 0 ? `R ${shippingCost.toFixed(2)}` : 'FREE',
+      discount: discount > 0 ? `- R ${discount.toFixed(2)}` : '',
       order_items: this.formatOrderItems(order.items),
       billing_address: this.formatAddress(order.billingAddress),
       shipping_address: this.formatAddress(order.shippingAddress),
-      delivery_method: order.deliveryMethod || 'delivery',
+      delivery_method: order.deliveryMethod === 'pickup' ? 'Store Pickup' : 'Standard Delivery',
       pickup_location: order.deliveryMethod === 'pickup' && order.pickupAddress
         ? `${order.pickupAddress.label || ''} — ${order.pickupAddress.address || ''}`.trim()
         : '',
-      tracking_url: order.trackingUrl || '#'
+      tracking_url: order.trackingUrl || `${frontendUrl}/account/orders`
     };
 
     return await this.sendTemplatedEmail(
@@ -397,10 +405,63 @@ class EmailService {
       const settings = await Settings.getSettings();
       const adminEmail = settings.storeEmail;
       if (!adminEmail) return;
+
+      await order.populate('customer');
+      const customer = order.customer;
+      const customerName = customer?.getFullName?.() || customer?.firstName || 'Guest';
+      const customerEmail = customer?.email || 'N/A';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://pesashop.com';
+      const adminUrl = process.env.ADMIN_URL || `${frontendUrl.replace('www.', 'admin.')}`;
+      const logoUrl = settings.storeLogo || `${frontendUrl}/logo.png`;
+      const itemsHtml = this.formatOrderItems(order.items);
+      const shippingAddr = this.formatAddress(order.shippingAddress);
+
       return await this.sendEmail({
         to: adminEmail,
-        subject: `New Order #${order.orderNumber} — R ${order.total.toFixed(2)}`,
-        html: `<h2>New Order Received</h2><p><strong>Order:</strong> #${order.orderNumber}</p><p><strong>Total:</strong> R ${order.total.toFixed(2)}</p><p><strong>Items:</strong> ${order.items?.length || 0}</p><p><a href="${process.env.ADMIN_URL || 'http://localhost:3001'}/orders/${order._id}">View Order</a></p>`,
+        subject: `🛒 New Order #${order.orderNumber} — R ${order.total.toFixed(2)}`,
+        html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background:#e2e2e2;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background:#fff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<tr><td>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#f7f7f7;padding:16px 32px;">
+    <tr>
+      <td><a href="${frontendUrl}"><img src="${logoUrl}" alt="PesaShop" style="height:40px;width:auto;" /></a></td>
+      <td style="text-align:right;font-size:13px;color:#666;">Admin Notification</td>
+    </tr>
+  </table>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,#0F604B 0%,#1a8a6a 100%);padding:36px 40px;text-align:center;">
+    <tr><td>
+      <div style="font-size:44px;margin-bottom:10px;">🛒</div>
+      <h1 style="color:#fff;font-size:24px;font-weight:800;margin:0;">New Order Received!</h1>
+      <p style="color:rgba(255,255,255,0.85);font-size:15px;margin:10px 0 0;">Order #${order.orderNumber} — <strong>R ${order.total.toFixed(2)}</strong></p>
+    </td></tr>
+  </table>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding:28px 32px;">
+    <tr><td>
+      <table border="0" cellpadding="10" cellspacing="0" width="100%" style="background:#f7f7f7;margin-bottom:20px;">
+        <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Customer</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${customerName} (${customerEmail})</td></tr>
+        <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Payment</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${order.paymentMethod || 'N/A'} — ${order.paymentStatus || 'pending'}</td></tr>
+        <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Delivery</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${order.deliveryMethod === 'pickup' ? 'Store Pickup' : 'Delivery'}</td></tr>
+        <tr><td style="font-size:14px;font-weight:600;">Ship To</td><td style="text-align:right;font-size:14px;">${shippingAddr}</td></tr>
+      </table>
+      <h3 style="font-size:16px;font-weight:700;margin:0 0 12px;color:#222;">Order Items (${order.items?.length || 0})</h3>
+      ${itemsHtml}
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#f7f7f7;padding:16px;margin-top:16px;">
+        <tr><td style="font-size:16px;font-weight:700;color:#222;">Total</td><td style="text-align:right;font-size:16px;font-weight:700;color:#0F604B;">R ${order.total.toFixed(2)}</td></tr>
+      </table>
+    </td></tr>
+  </table>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding:0 32px 32px;">
+    <tr><td align="center">
+      <a href="${adminUrl}/orders/${order._id}" style="display:inline-block;background:#0F604B;color:#fff;padding:14px 36px;font-size:15px;font-weight:700;text-decoration:none;border-radius:6px;">View Order in Admin</a>
+    </td></tr>
+  </table>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#282834;padding:20px;text-align:center;">
+    <tr><td><p style="font-size:12px;color:#aaa;margin:0;">&copy; ${new Date().getFullYear()} PesaShop. Admin notification.</p></td></tr>
+  </table>
+</td></tr>
+</table>
+</body></html>`,
       });
     } catch (e) { console.error('Admin new order email error:', e); }
   }
@@ -690,14 +751,33 @@ class EmailService {
    * Helper: Format order items for email
    */
   formatOrderItems(items) {
-    return items.map(item => `
-      <tr>
-        <td>${item.name}</td>
-        <td>${item.quantity}</td>
-        <td>R ${item.price.toFixed(2)}</td>
-        <td>R ${item.total.toFixed(2)}</td>
-      </tr>
-    `).join('');
+    if (!items || items.length === 0) return '<p style="color:#999;font-size:14px;">No items</p>';
+    return items.map(item => {
+      const imgUrl = item.image || item.images?.[0] || '';
+      const name = item.name || 'Product';
+      let variant = item.variant || item.selectedVariant || '';
+      if (!variant && item.variation && typeof item.variation === 'object') {
+        variant = Object.entries(item.variation).map(([k, v]) => `${k}: ${v}`).join(', ');
+      }
+      const qty = item.quantity || 1;
+      const price = typeof item.price === 'number' ? item.price.toFixed(2) : '0.00';
+      const total = typeof item.total === 'number' ? item.total.toFixed(2) : (item.price * qty).toFixed(2);
+      return `<table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-bottom:1px solid #eee;padding:14px 0;">
+  <tr>
+    <td style="width:70px;vertical-align:top;padding-right:14px;">
+      ${imgUrl ? `<img src="${imgUrl}" alt="${name}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #eee;" />` : `<div style="width:64px;height:64px;background:#f0f0f0;border-radius:6px;text-align:center;line-height:64px;font-size:28px;">&#128722;</div>`}
+    </td>
+    <td style="vertical-align:top;font-family:'Public Sans',Arial,sans-serif;">
+      <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#222;">${name}</p>
+      ${variant ? `<p style="margin:0 0 4px;font-size:12px;color:#888;">${variant}</p>` : ''}
+      <p style="margin:0;font-size:13px;color:#666;">Qty: ${qty} &times; R ${price}</p>
+    </td>
+    <td style="vertical-align:top;text-align:right;white-space:nowrap;font-family:'Public Sans',Arial,sans-serif;">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#0F604B;">R ${total}</p>
+    </td>
+  </tr>
+</table>`;
+    }).join('');
   }
 
   /**
@@ -705,14 +785,14 @@ class EmailService {
    */
   formatAddress(address) {
     if (!address) return 'N/A';
-    
-    return `
-      ${address.firstName} ${address.lastName}<br>
-      ${address.street}<br>
-      ${address.street2 ? address.street2 + '<br>' : ''}
-      ${address.city}, ${address.state} ${address.postalCode}<br>
-      ${address.country}
-    `;
+    const parts = [];
+    if (address.firstName || address.lastName) parts.push(`${address.firstName || ''} ${address.lastName || ''}`.trim());
+    if (address.street || address.address1) parts.push(address.street || address.address1);
+    if (address.street2 || address.address2) parts.push(address.street2 || address.address2);
+    const cityLine = [address.city, address.state || address.province, address.postalCode || address.zipCode].filter(Boolean).join(', ');
+    if (cityLine) parts.push(cityLine);
+    if (address.country) parts.push(address.country);
+    return parts.join('<br>') || 'N/A';
   }
 
   /**
