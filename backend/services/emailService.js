@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const axios = require('axios');
 const EmailTemplate = require('../models/EmailTemplate');
+const Currency = require('../models/Currency');
 
 const BREVO_API_URL = 'https://api.brevo.com/v3';
 
@@ -279,16 +280,17 @@ class EmailService {
     const subtotal = order.subtotal ?? order.items?.reduce((sum, i) => sum + (i.total || i.price * i.quantity || 0), 0) ?? 0;
     const shippingCost = order.shipping ?? 0;
     const discount = order.discount ?? 0;
+    const fmt = await this._getOrderCurrencyFormatter(order);
 
     const variables = {
       customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
       order_date: order.createdAt.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }),
-      order_total: `R ${order.total.toFixed(2)}`,
-      subtotal: `R ${subtotal.toFixed(2)}`,
-      shipping_cost: shippingCost > 0 ? `R ${shippingCost.toFixed(2)}` : 'FREE',
-      discount: discount > 0 ? `- R ${discount.toFixed(2)}` : '',
-      order_items: this.formatOrderItems(order.items),
+      order_total: fmt(order.total),
+      subtotal: fmt(subtotal),
+      shipping_cost: shippingCost > 0 ? fmt(shippingCost) : 'FREE',
+      discount: discount > 0 ? `- ${fmt(discount)}` : '',
+      order_items: this.formatOrderItems(order.items, fmt),
       billing_address: this.formatAddress(order.billingAddress),
       shipping_address: this.formatAddress(order.shippingAddress),
       delivery_method: order.deliveryMethod === 'pickup' ? 'Store Pickup' : 'Standard Delivery',
@@ -340,10 +342,11 @@ class EmailService {
     await order.populate('customer');
     const customer = order.customer;
     if (!customer?.email) return;
+    const fmt = await this._getOrderCurrencyFormatter(order);
     return await this.sendTemplatedEmail(customer.email, 'order_delivered', {
       customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
-      order_total: `R ${order.total.toFixed(2)}`,
+      order_total: fmt(order.total),
       delivery_date: new Date().toLocaleDateString('en-ZA'),
     });
   }
@@ -356,10 +359,11 @@ class EmailService {
     await order.populate('customer');
     const customer = order.customer;
     if (!customer?.email) return;
+    const fmt = await this._getOrderCurrencyFormatter(order);
     return await this.sendTemplatedEmail(customer.email, 'order_cancelled', {
       customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
-      order_total: `R ${order.total.toFixed(2)}`,
+      order_total: fmt(order.total),
       cancellation_reason: reason || 'No reason provided',
     });
   }
@@ -372,11 +376,12 @@ class EmailService {
     await order.populate('customer');
     const customer = order.customer;
     if (!customer?.email) return;
+    const fmt = await this._getOrderCurrencyFormatter(order);
     return await this.sendTemplatedEmail(customer.email, 'order_refunded', {
       customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
-      refund_amount: `R ${(refundAmount || order.total).toFixed(2)}`,
-      order_total: `R ${order.total.toFixed(2)}`,
+      refund_amount: fmt(refundAmount || order.total),
+      order_total: fmt(order.total),
     });
   }
 
@@ -413,12 +418,18 @@ class EmailService {
       const frontendUrl = process.env.FRONTEND_URL || 'https://pesashop.com';
       const adminUrl = process.env.ADMIN_URL || `${frontendUrl.replace('www.', 'admin.')}`;
       const logoUrl = settings.storeLogo || `${frontendUrl}/logo.png`;
-      const itemsHtml = this.formatOrderItems(order.items);
+      const fmtZAR = (v) => `R ${(v || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+      const fmtCust = await this._getOrderCurrencyFormatter(order);
+      const isNonZAR = order.currency && order.currency !== 'ZAR' && order.exchangeRate !== 1;
+      const itemsHtml = this.formatOrderItems(order.items, fmtZAR);
       const shippingAddr = this.formatAddress(order.shippingAddress);
+      const totalDisplay = isNonZAR
+        ? `${fmtZAR(order.total)} <span style="font-weight:400;font-size:13px;color:#ccc;">(${fmtCust(order.total)} ${order.currency})</span>`
+        : fmtZAR(order.total);
 
       return await this.sendEmail({
         to: adminEmail,
-        subject: `🛒 New Order #${order.orderNumber} — R ${order.total.toFixed(2)}`,
+        subject: `🛒 New Order #${order.orderNumber} — R ${order.total.toFixed(2)}${isNonZAR ? ` (${fmtCust(order.total)} ${order.currency})` : ''}`,
         html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background:#e2e2e2;">
 <table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background:#fff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
@@ -433,7 +444,7 @@ class EmailService {
     <tr><td>
       <div style="font-size:44px;margin-bottom:10px;">🛒</div>
       <h1 style="color:#fff;font-size:24px;font-weight:800;margin:0;">New Order Received!</h1>
-      <p style="color:rgba(255,255,255,0.85);font-size:15px;margin:10px 0 0;">Order #${order.orderNumber} — <strong>R ${order.total.toFixed(2)}</strong></p>
+      <p style="color:rgba(255,255,255,0.85);font-size:15px;margin:10px 0 0;">Order #${order.orderNumber} — <strong>${fmtZAR(order.total)}</strong>${isNonZAR ? ` <span style="opacity:0.7">(${fmtCust(order.total)} ${order.currency})</span>` : ''}</p>
     </td></tr>
   </table>
   <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding:28px 32px;">
@@ -441,13 +452,14 @@ class EmailService {
       <table border="0" cellpadding="10" cellspacing="0" width="100%" style="background:#f7f7f7;margin-bottom:20px;">
         <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Customer</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${customerName} (${customerEmail})</td></tr>
         <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Payment</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${order.paymentMethod || 'N/A'} — ${order.paymentStatus || 'pending'}</td></tr>
+        ${isNonZAR ? `<tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Currency</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${order.currency} (rate: ${order.exchangeRate})</td></tr>` : ''}
         <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Delivery</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${order.deliveryMethod === 'pickup' ? 'Store Pickup' : 'Delivery'}</td></tr>
         <tr><td style="font-size:14px;font-weight:600;">Ship To</td><td style="text-align:right;font-size:14px;">${shippingAddr}</td></tr>
       </table>
       <h3 style="font-size:16px;font-weight:700;margin:0 0 12px;color:#222;">Order Items (${order.items?.length || 0})</h3>
       ${itemsHtml}
       <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#f7f7f7;padding:16px;margin-top:16px;">
-        <tr><td style="font-size:16px;font-weight:700;color:#222;">Total</td><td style="text-align:right;font-size:16px;font-weight:700;color:#0F604B;">R ${order.total.toFixed(2)}</td></tr>
+        <tr><td style="font-size:16px;font-weight:700;color:#222;">Total</td><td style="text-align:right;font-size:16px;font-weight:700;color:#0F604B;">${totalDisplay}</td></tr>
       </table>
     </td></tr>
   </table>
@@ -476,13 +488,14 @@ class EmailService {
       if (!laybye.order || typeof laybye.order === 'string') await laybye.populate('order');
       const customer = laybye.customer;
       if (!customer?.email) return;
+      const fmt = await this._getOrderCurrencyFormatter(laybye.order);
       return await this.sendTemplatedEmail(customer.email, 'laybye_created', {
         customer_name: customer.firstName ? `${customer.firstName} ${customer.lastName}` : customer.email,
         order_number: laybye.order?.orderNumber || 'N/A',
         plan_name: laybye.installmentPlan?.planName || 'Layby Plan',
-        deposit_amount: `R ${(laybye.depositAmount || 0).toFixed(2)}`,
-        installment_amount: `R ${(laybye.installmentPlan?.installmentAmount || 0).toFixed(2)}`,
-        total_amount: `R ${(laybye.totalAmount || 0).toFixed(2)}`,
+        deposit_amount: fmt(laybye.depositAmount || 0),
+        installment_amount: fmt(laybye.installmentPlan?.installmentAmount || 0),
+        total_amount: fmt(laybye.totalAmount || 0),
         payment_link: `${process.env.FRONTEND_URL}/account/laybyes/${laybye._id}`,
       });
     } catch (e) { console.error('Laybye created email error:', e); }
@@ -498,13 +511,14 @@ class EmailService {
       if (!laybye.order || typeof laybye.order === 'string') await laybye.populate('order');
       const customer = laybye.customer;
       if (!customer?.email) return;
+      const fmt = await this._getOrderCurrencyFormatter(laybye.order);
       return await this.sendTemplatedEmail(customer.email, 'laybye_payment', {
         customer_name: customer.firstName ? `${customer.firstName} ${customer.lastName}` : customer.email,
         order_number: laybye.order?.orderNumber || 'N/A',
-        payment_amount: `R ${(paymentAmount || 0).toFixed(2)}`,
-        remaining_balance: `R ${(laybye.remainingAmount || 0).toFixed(2)}`,
-        paid_amount: `R ${(laybye.paidAmount || 0).toFixed(2)}`,
-        total_amount: `R ${(laybye.totalAmount || 0).toFixed(2)}`,
+        payment_amount: fmt(paymentAmount || 0),
+        remaining_balance: fmt(laybye.remainingAmount || 0),
+        paid_amount: fmt(laybye.paidAmount || 0),
+        total_amount: fmt(laybye.totalAmount || 0),
         payment_link: `${process.env.FRONTEND_URL}/account/laybyes/${laybye._id}`,
       });
     } catch (e) { console.error('Laybye payment email error:', e); }
@@ -520,10 +534,11 @@ class EmailService {
       if (!laybye.order || typeof laybye.order === 'string') await laybye.populate('order');
       const customer = laybye.customer;
       if (!customer?.email) return;
+      const fmt = await this._getOrderCurrencyFormatter(laybye.order);
       return await this.sendTemplatedEmail(customer.email, 'laybye_completed', {
         customer_name: customer.firstName ? `${customer.firstName} ${customer.lastName}` : customer.email,
         order_number: laybye.order?.orderNumber || 'N/A',
-        total_amount: `R ${(laybye.totalAmount || 0).toFixed(2)}`,
+        total_amount: fmt(laybye.totalAmount || 0),
       });
     } catch (e) { console.error('Laybye completed email error:', e); }
   }
@@ -563,16 +578,18 @@ class EmailService {
       const daysUntilExpiry = laybye.expiryDate ?
         Math.ceil((laybye.expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : null;
 
+      const fmt = await this._getOrderCurrencyFormatter(order);
+
       let subject = '';
       let template = 'laybye_reminder';
       const variables = {
         customer_name: customer.firstName ? `${customer.firstName} ${customer.lastName}` : customer.email,
         order_number: order?.orderNumber || 'N/A',
-        payment_amount: `R ${laybye.installmentPlan?.installmentAmount?.toFixed(2) || '0.00'}`,
+        payment_amount: fmt(laybye.installmentPlan?.installmentAmount || 0),
         payment_date: laybye.nextPaymentDate ? laybye.nextPaymentDate.toLocaleDateString('en-ZA') : 'N/A',
-        remaining_balance: `R ${laybye.remainingAmount?.toFixed(2) || '0.00'}`,
-        total_amount: `R ${laybye.totalAmount?.toFixed(2) || '0.00'}`,
-        paid_amount: `R ${laybye.paidAmount?.toFixed(2) || '0.00'}`,
+        remaining_balance: fmt(laybye.remainingAmount || 0),
+        total_amount: fmt(laybye.totalAmount || 0),
+        paid_amount: fmt(laybye.paidAmount || 0),
         payment_link: `${process.env.FRONTEND_URL}/account/laybyes/${laybye._id}`,
         days_until_payment: daysUntilPayment,
         days_overdue: daysOverdue,
@@ -680,18 +697,20 @@ class EmailService {
     const customer = order.customer;
     if (!customer?.email) return;
     try {
+      const fmt = await this._getOrderCurrencyFormatter(order);
       return await this.sendTemplatedEmail(customer.email, 'payment_confirmation', {
         customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
         order_number: order.orderNumber,
-        order_total: `R ${order.total.toFixed(2)}`,
+        order_total: fmt(order.total),
         payment_method: order.paymentMethod || 'N/A',
       });
     } catch (templateErr) {
       // Fallback to simple email if no payment_confirmation template exists
+      const fmt = await this._getOrderCurrencyFormatter(order);
       return await this.sendEmail({
         to: customer.email,
         subject: `Payment Confirmed - Order #${order.orderNumber}`,
-        html: `<h2>Payment Confirmed</h2><p>Dear ${customer.getFullName?.() || customer.firstName || 'Customer'},</p><p>Your payment for order <strong>#${order.orderNumber}</strong> has been confirmed.</p><p><strong>Total:</strong> R ${order.total.toFixed(2)}</p><p>Thank you for your purchase!</p>`,
+        html: `<h2>Payment Confirmed</h2><p>Dear ${customer.getFullName?.() || customer.firstName || 'Customer'},</p><p>Your payment for order <strong>#${order.orderNumber}</strong> has been confirmed.</p><p><strong>Total:</strong> ${fmt(order.total)}</p><p>Thank you for your purchase!</p>`,
       });
     }
   }
@@ -748,10 +767,33 @@ class EmailService {
   }
 
   /**
+   * Build a currency formatter for an order.
+   * Returns fmt(zarAmount) → formatted string in the customer's chosen currency.
+   * Admin variant: fmtZAR(zarAmount) always formats in ZAR.
+   */
+  async _getOrderCurrencyFormatter(order) {
+    const code = order?.currency || 'ZAR';
+    const rate = order?.exchangeRate || 1;
+    try {
+      const curr = await Currency.findOne({ code, isActive: true });
+      if (curr && !curr.isBaseCurrency && rate !== 1) {
+        // Customer chose a non-ZAR currency
+        return (zarAmount) => {
+          const converted = (zarAmount || 0) / rate;
+          return curr.formatAmount(converted);
+        };
+      }
+    } catch (_) { /* fall through to ZAR default */ }
+    // Default ZAR formatter
+    return (zarAmount) => `R ${(zarAmount || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+  }
+
+  /**
    * Helper: Format order items for email
    */
-  formatOrderItems(items) {
+  formatOrderItems(items, fmt) {
     if (!items || items.length === 0) return '<p style="color:#999;font-size:14px;">No items</p>';
+    const f = fmt || ((v) => `R ${(v || 0).toFixed(2)}`);
     return items.map(item => {
       const imgUrl = item.image || item.images?.[0] || '';
       const name = item.name || 'Product';
@@ -760,8 +802,8 @@ class EmailService {
         variant = Object.entries(item.variation).map(([k, v]) => `${k}: ${v}`).join(', ');
       }
       const qty = item.quantity || 1;
-      const price = typeof item.price === 'number' ? item.price.toFixed(2) : '0.00';
-      const total = typeof item.total === 'number' ? item.total.toFixed(2) : (item.price * qty).toFixed(2);
+      const price = typeof item.price === 'number' ? item.price : 0;
+      const total = typeof item.total === 'number' ? item.total : price * qty;
       return `<table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-bottom:1px solid #eee;padding:14px 0;">
   <tr>
     <td style="width:70px;vertical-align:top;padding-right:14px;">
@@ -770,10 +812,10 @@ class EmailService {
     <td style="vertical-align:top;font-family:'Public Sans',Arial,sans-serif;">
       <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#222;">${name}</p>
       ${variant ? `<p style="margin:0 0 4px;font-size:12px;color:#888;">${variant}</p>` : ''}
-      <p style="margin:0;font-size:13px;color:#666;">Qty: ${qty} &times; R ${price}</p>
+      <p style="margin:0;font-size:13px;color:#666;">Qty: ${qty} &times; ${f(price)}</p>
     </td>
     <td style="vertical-align:top;text-align:right;white-space:nowrap;font-family:'Public Sans',Arial,sans-serif;">
-      <p style="margin:0;font-size:14px;font-weight:700;color:#0F604B;">R ${total}</p>
+      <p style="margin:0;font-size:14px;font-weight:700;color:#0F604B;">${f(total)}</p>
     </td>
   </tr>
 </table>`;
