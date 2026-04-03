@@ -8,53 +8,57 @@ const HEAD = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{subject}}</title>
-<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<title>{{storeName}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style type="text/css">
+  body { margin:0; padding:24px 0; background-color:#eceae6; font-family:'Public Sans',Arial,sans-serif; -webkit-text-size-adjust:100%; }
+  table { border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; }
+  img { border:0; display:block; line-height:100%; outline:none; text-decoration:none; }
+  a { text-decoration:none; }
+</style>
 </head>`;
 
-const HEADER = `<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f7f7;">
+const HEADER = `<table width="100%" border="0" cellpadding="0" cellspacing="0">
   <tr>
-    <td style="padding:16px 32px;text-align:left;">
-      <a href="{{frontendUrl}}" style="display:inline-block;">
-        <img src="{{logoUrl}}" alt="PESASHOP" style="height:40px;width:auto;" />
+    <td style="background:#ffffff; padding:20px 40px; border-bottom:3px solid #1a5c2e;">
+      <a href="{{frontendUrl}}">
+        <img src="{{logoUrl}}" alt="{{storeName}}" height="50" style="height:50px; width:auto;">
       </a>
-    </td>
-    <td style="padding:16px 32px;text-align:right;font-family:'Public Sans',Arial,sans-serif;">
-      <a href="{{frontendUrl}}" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Shop</a>
-      <a href="{{frontendUrl}}/account" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">My Account</a>
-      <a href="{{frontendUrl}}/contact" style="font-size:13px;color:#252525;text-decoration:none;font-weight:500;margin-left:18px;">Contact</a>
     </td>
   </tr>
 </table>`;
 
-const FOOTER = `<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#282834;color:#ffffff;padding:28px 24px;font-family:'Public Sans',Arial,sans-serif;">
-  <tr><td align="center">
-    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
-      <tr><td style="font-size:18px;font-weight:700;color:#ffffff;">Shop at <span style="color:#0F604B;">Pesa</span><span style="color:#f7bd20;">Shop</span></td></tr>
-    </table>
-    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
-      <tr>
-        <td><a href="{{frontendUrl}}/contact" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;">Contact Us</a></td>
-        <td><a href="{{frontendUrl}}/pages/privacy-policy" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Privacy Policy</a></td>
-        <td><a href="{{frontendUrl}}/pages/terms" style="font-size:13px;font-weight:600;color:#fff;text-decoration:underline;margin-left:20px;">Terms &amp; Conditions</a></td>
-      </tr>
-    </table>
-    <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;">
-      <tr>
-        <td><a href="https://facebook.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="FB" style="width:20px;height:20px;filter:brightness(10);"></a></td>
-        <td><a href="https://twitter.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733579.png" alt="TW" style="width:20px;height:20px;filter:brightness(10);"></a></td>
-        <td><a href="https://instagram.com" style="margin:0 8px;"><img src="https://cdn-icons-png.flaticon.com/24/733/733558.png" alt="IG" style="width:20px;height:20px;filter:brightness(10);"></a></td>
-      </tr>
-    </table>
-    <p style="font-size:12px;color:#aaa;margin:0;letter-spacing:0.5px;">&copy; {{year}} PesaShop. All rights reserved.</p>
-  </td></tr>
+const FOOTER = `<table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top:36px;">
+  <tr>
+    <td style="background:linear-gradient(145deg,#112519 0%,#1a5c2e 100%);padding:46px 40px 36px;text-align:center;">
+      <a href="{{frontendUrl}}">
+        <img src="{{logoUrl}}" alt="{{storeName}}" height="42" style="height:42px;width:auto;margin:0 auto 22px;filter:brightness(0) invert(1);">
+      </a>
+      <h2 style="font-family:'Public Sans',Arial,sans-serif;font-size:21px;font-weight:800;color:#fff;margin:0 0 6px;letter-spacing:-0.3px;">
+        Your family deserves the best.
+      </h2>
+      <p style="font-family:'Public Sans',Arial,sans-serif;font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);margin:0 0 28px;letter-spacing:3px;text-transform:uppercase;">
+        Send &nbsp;&middot;&nbsp; Love &nbsp;&middot;&nbsp; Home
+      </p>
+      <a href="{{frontendUrl}}" style="display:inline-block;background-color:#e8a000;color:#1a1a1a;font-family:'Public Sans',Arial,sans-serif;font-size:13px;font-weight:800;padding:13px 32px;border-radius:4px;text-decoration:none;letter-spacing:0.4px;margin-bottom:34px;">
+        Shop at {{storeName}} &rarr;
+      </a>
+      <hr style="border:0;border-top:1px solid rgba(255,255,255,0.09);margin:0 0 26px;">
+      <p style="font-family:'Public Sans',Arial,sans-serif;font-size:11px;color:rgba(255,255,255,0.22);margin:0;letter-spacing:0.3px;">
+        &copy; {{year}} {{storeName}} &nbsp;&middot;&nbsp;
+        <a href="{{frontendUrl}}" style="color:rgba(255,255,255,0.28);text-decoration:none;">pesashop.com</a>
+      </p>
+    </td>
+  </tr>
 </table>`;
 
 function wrap(bodyContent) {
   return `${HEAD}
-<body style="margin:0;padding:0;font-family:'Public Sans',Arial,sans-serif;background-color:#e2e2e2;width:100%;-webkit-text-size-adjust:none;">
-<table align="center" border="0" cellpadding="0" cellspacing="0" style="max-width:650px;width:100%;margin:20px auto;background-color:#ffffff;box-shadow:0 0 14px -4px rgba(0,0,0,0.17);">
+<body>
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="680" style="background:#fff;box-shadow:0 4px 40px rgba(0,0,0,0.11);margin:0 auto;">
 <tbody><tr><td>
 ${HEADER}
 ${bodyContent}
