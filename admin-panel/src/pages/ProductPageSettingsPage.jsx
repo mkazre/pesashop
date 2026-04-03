@@ -948,12 +948,12 @@ export default function ProductPageSettingsPage() {
         <div className="p-4 border border-gray-200 bg-gray-50 mb-4">
           <h4 className="text-sm font-bold text-gray-800 mb-3">Free Shipping Progress Bar</h4>
           <p className="text-xs text-gray-500 mb-2">
-            Enter the threshold in your store's <strong>display currency</strong> (e.g. enter 1000 if you want customers to spend $1000 / R1000 in whatever currency they're viewing).
+            Enter the threshold in your store's <strong>base currency (ZAR)</strong>. The remaining amount shown to customers is automatically converted to whatever currency they're viewing — so a customer in the UK will see the correct GBP equivalent.
             The bar turns <span className="text-red-500 font-semibold">red → orange → green</span> as the customer gets closer.
           </p>
           <Toggle label="Enable" checked={s.conversionEnhancers?.freeShippingBar?.enabled} onChange={(v) => updateDeep('conversionEnhancers', 'freeShippingBar', 'enabled', v)} />
           <div className="grid grid-cols-2 gap-3 mt-2">
-            <Field label="Threshold (display currency amount)" type="number" value={s.conversionEnhancers?.freeShippingBar?.threshold} onChange={(v) => updateDeep('conversionEnhancers', 'freeShippingBar', 'threshold', v)} />
+            <Field label="Threshold (ZAR — base currency)" type="number" value={s.conversionEnhancers?.freeShippingBar?.threshold} onChange={(v) => updateDeep('conversionEnhancers', 'freeShippingBar', 'threshold', v)} />
             <Field
               label="Show In"
               type="select"

@@ -227,7 +227,7 @@ export default function WalmartProductPage({ product, settings }) {
   const { isAuthenticated } = useAuthStore();
   const { openAuthModal } = useUIStore();
   const { displayPrice } = useB2BPricing(product);
-  const { formatPrice, convertFromBase, selectedCurrency } = useCurrencyStore();
+  const { formatPrice } = useCurrencyStore();
 
   const s = settings || {};
   const theme = s.theme || {};
@@ -509,20 +509,19 @@ export default function WalmartProductPage({ product, settings }) {
   const handleNextImage = () => setMainImg(i => (i < images.length - 1 ? i + 1 : 0));
 
   // Free shipping bar — reusable render (used in product info + fulfillment box)
+  // Calculation is done entirely in BASE currency (ZAR). cartTotal is already ZAR.
+  // formatPrice(remaining) automatically converts the ZAR remaining amount to whatever
+  // currency the customer is viewing (GBP, USD, etc.) using the live exchange rate.
+  // This means: threshold=1000 ZAR, cart=800 ZAR → remaining=200 ZAR → formatPrice shows £12 / $11 etc.
   const renderShippingBar = () => {
     if (!ce.freeShippingBar?.enabled) return null;
     const threshold = ce.freeShippingBar.threshold || 100;
-    // Convert cart total from base currency → customer's display currency, so
-    // the threshold the admin enters means the same amount the customer sees.
-    const cartTotalDisplay = convertFromBase(cartTotal);
-    const pct = Math.min((cartTotalDisplay / threshold) * 100, 100);
-    const remaining = Math.max(threshold - cartTotalDisplay, 0);
-    const currencySymbol = selectedCurrency?.symbol || 'R';
-    const formattedRemaining = `${currencySymbol}${remaining % 1 === 0 ? remaining.toFixed(0) : remaining.toFixed(2)}`;
+    const pct = Math.min((cartTotal / threshold) * 100, 100);
+    const remaining = Math.max(threshold - cartTotal, 0);
     const msg = pct >= 100
       ? (ce.freeShippingBar.completedMessage || '🎉 You qualify for FREE shipping!')
-      : (ce.freeShippingBar.message || 'Spend {remaining} more for FREE shipping!').replace('{remaining}', formattedRemaining);
-    // Color: red → orange → green based on progress
+      : (ce.freeShippingBar.message || 'Spend {remaining} more for FREE shipping!').replace('{remaining}', formatPrice(remaining));
+    // Color: red (0-40%) → orange (40-80%) → green (80-100%)
     const barColor = pct >= 80 ? '#16a34a' : pct >= 40 ? '#ea7c17' : '#ef4444';
     const barClass = pct >= 80 ? 'bar-green' : pct >= 40 ? 'bar-orange' : '';
     return (
@@ -961,7 +960,7 @@ export default function WalmartProductPage({ product, settings }) {
             )}
 
             {/* Free Shipping Progress Bar — product info placement */}
-            {(ce.freeShippingBar?.showIn === 'info' || ce.freeShippingBar?.showIn === 'both' || !ce.freeShippingBar?.showIn) && renderShippingBar()}
+            {(!ce.freeShippingBar?.showIn || ce.freeShippingBar.showIn === 'info' || ce.freeShippingBar.showIn === 'both') && renderShippingBar()}
 
             {/* Estimated Delivery */}
             {pi.showEstimatedDelivery && (
