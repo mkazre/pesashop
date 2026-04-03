@@ -384,6 +384,8 @@ const productPageSettingsSchema = new mongoose.Schema({
       threshold: { type: Number, default: 100 },
       message: { type: String, default: 'Spend {remaining} more for FREE shipping!' },
       completedMessage: { type: String, default: '🎉 You qualify for FREE shipping!' },
+      // 'info' = product info column only, 'fulfillment' = fulfillment box only, 'both' = both
+      showIn: { type: String, enum: ['info', 'fulfillment', 'both'], default: 'info' },
     },
 
     // Recently viewed

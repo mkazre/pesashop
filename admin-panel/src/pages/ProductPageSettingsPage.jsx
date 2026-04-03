@@ -947,10 +947,25 @@ export default function ProductPageSettingsPage() {
         {/* Free Shipping Bar */}
         <div className="p-4 border border-gray-200 bg-gray-50 mb-4">
           <h4 className="text-sm font-bold text-gray-800 mb-3">Free Shipping Progress Bar</h4>
+          <p className="text-xs text-gray-500 mb-2">
+            Enter the threshold in your store's <strong>display currency</strong> (e.g. enter 1000 if you want customers to spend $1000 / R1000 in whatever currency they're viewing).
+            The bar turns <span className="text-red-500 font-semibold">red → orange → green</span> as the customer gets closer.
+          </p>
           <Toggle label="Enable" checked={s.conversionEnhancers?.freeShippingBar?.enabled} onChange={(v) => updateDeep('conversionEnhancers', 'freeShippingBar', 'enabled', v)} />
           <div className="grid grid-cols-2 gap-3 mt-2">
-            <Field label="Threshold ($)" type="number" value={s.conversionEnhancers?.freeShippingBar?.threshold} onChange={(v) => updateDeep('conversionEnhancers', 'freeShippingBar', 'threshold', v)} />
-            <Field label="Message" type="text" value={s.conversionEnhancers?.freeShippingBar?.message} onChange={(v) => updateDeep('conversionEnhancers', 'freeShippingBar', 'message', v)} />
+            <Field label="Threshold (display currency amount)" type="number" value={s.conversionEnhancers?.freeShippingBar?.threshold} onChange={(v) => updateDeep('conversionEnhancers', 'freeShippingBar', 'threshold', v)} />
+            <Field
+              label="Show In"
+              type="select"
+              value={s.conversionEnhancers?.freeShippingBar?.showIn || 'info'}
+              onChange={(v) => updateDeep('conversionEnhancers', 'freeShippingBar', 'showIn', v)}
+              options={[
+                { value: 'info', label: 'Product Information box only' },
+                { value: 'fulfillment', label: 'Fulfillment box only (above Buy Now)' },
+                { value: 'both', label: 'Both boxes' },
+              ]}
+            />
+            <Field label="Message (use {remaining} placeholder)" type="text" value={s.conversionEnhancers?.freeShippingBar?.message} onChange={(v) => updateDeep('conversionEnhancers', 'freeShippingBar', 'message', v)} />
             <Field label="Completed Message" type="text" value={s.conversionEnhancers?.freeShippingBar?.completedMessage} onChange={(v) => updateDeep('conversionEnhancers', 'freeShippingBar', 'completedMessage', v)} />
           </div>
         </div>

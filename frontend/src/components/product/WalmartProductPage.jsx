@@ -101,9 +101,11 @@ const STYLES = `
 .wp-countdown-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85; }
 
 /* Free Shipping Progress Bar */
-.wp-shipping-bar { margin: 10px 0; padding: 10px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; font-size: 13px; }
-.wp-shipping-bar-track { height: 6px; background: #d1fae5; border-radius: 3px; margin-top: 6px; overflow: hidden; }
-.wp-shipping-bar-fill { height: 100%; border-radius: 3px; background: var(--wp-primary, #1b5e35); transition: width 0.5s ease; }
+.wp-shipping-bar { margin: 10px 0; padding: 10px 14px; border: 1px solid #fecaca; background: #fff5f5; font-size: 13px; transition: background 0.4s, border-color 0.4s; }
+.wp-shipping-bar.bar-orange { border-color: #fed7aa; background: #fff7ed; }
+.wp-shipping-bar.bar-green { border-color: #bbf7d0; background: #f0fdf4; }
+.wp-shipping-bar-track { height: 7px; background: #e5e7eb; border-radius: 4px; margin-top: 7px; overflow: hidden; }
+.wp-shipping-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease, background-color 0.4s; }
 
 /* Exit Intent Overlay */
 .wp-exit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 99990; display: flex; align-items: center; justify-content: center; animation: wpFadeIn 0.25s ease; }
@@ -225,7 +227,7 @@ export default function WalmartProductPage({ product, settings }) {
   const { isAuthenticated } = useAuthStore();
   const { openAuthModal } = useUIStore();
   const { displayPrice } = useB2BPricing(product);
-  const { formatPrice } = useCurrencyStore();
+  const { formatPrice, convertFromBase, selectedCurrency } = useCurrencyStore();
 
   const s = settings || {};
   const theme = s.theme || {};
@@ -505,6 +507,33 @@ export default function WalmartProductPage({ product, settings }) {
 
   const handlePrevImage = () => setMainImg(i => (i > 0 ? i - 1 : images.length - 1));
   const handleNextImage = () => setMainImg(i => (i < images.length - 1 ? i + 1 : 0));
+
+  // Free shipping bar — reusable render (used in product info + fulfillment box)
+  const renderShippingBar = () => {
+    if (!ce.freeShippingBar?.enabled) return null;
+    const threshold = ce.freeShippingBar.threshold || 100;
+    // Convert cart total from base currency → customer's display currency, so
+    // the threshold the admin enters means the same amount the customer sees.
+    const cartTotalDisplay = convertFromBase(cartTotal);
+    const pct = Math.min((cartTotalDisplay / threshold) * 100, 100);
+    const remaining = Math.max(threshold - cartTotalDisplay, 0);
+    const currencySymbol = selectedCurrency?.symbol || 'R';
+    const formattedRemaining = `${currencySymbol}${remaining % 1 === 0 ? remaining.toFixed(0) : remaining.toFixed(2)}`;
+    const msg = pct >= 100
+      ? (ce.freeShippingBar.completedMessage || '🎉 You qualify for FREE shipping!')
+      : (ce.freeShippingBar.message || 'Spend {remaining} more for FREE shipping!').replace('{remaining}', formattedRemaining);
+    // Color: red → orange → green based on progress
+    const barColor = pct >= 80 ? '#16a34a' : pct >= 40 ? '#ea7c17' : '#ef4444';
+    const barClass = pct >= 80 ? 'bar-green' : pct >= 40 ? 'bar-orange' : '';
+    return (
+      <div className={`wp-shipping-bar ${barClass}`}>
+        <span style={{ color: pct >= 80 ? '#15803d' : pct >= 40 ? '#c2410c' : '#b91c1c', fontWeight: 600 }}>{msg}</span>
+        <div className="wp-shipping-bar-track">
+          <div className="wp-shipping-bar-fill" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+        </div>
+      </div>
+    );
+  };
 
   // CSS custom properties
   const cssVars = {
@@ -931,23 +960,8 @@ export default function WalmartProductPage({ product, settings }) {
               </div>
             )}
 
-            {/* Free Shipping Progress Bar */}
-            {ce.freeShippingBar?.enabled && (() => {
-              const threshold = ce.freeShippingBar.threshold || 100;
-              const pct = Math.min((cartTotal / threshold) * 100, 100);
-              const remaining = Math.max(threshold - cartTotal, 0);
-              const msg = pct >= 100
-                ? (ce.freeShippingBar.completedMessage || '🎉 You qualify for FREE shipping!')
-                : (ce.freeShippingBar.message || 'Spend {remaining} more for FREE shipping!').replace('{remaining}', formatPrice(remaining));
-              return (
-                <div className="wp-shipping-bar">
-                  <span style={{ color: pct >= 100 ? '#16a34a' : '#374151', fontWeight: 600 }}>{msg}</span>
-                  <div className="wp-shipping-bar-track">
-                    <div className="wp-shipping-bar-fill" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })()}
+            {/* Free Shipping Progress Bar — product info placement */}
+            {(ce.freeShippingBar?.showIn === 'info' || ce.freeShippingBar?.showIn === 'both' || !ce.freeShippingBar?.showIn) && renderShippingBar()}
 
             {/* Estimated Delivery */}
             {pi.showEstimatedDelivery && (
@@ -1207,6 +1221,9 @@ export default function WalmartProductPage({ product, settings }) {
                   <button onClick={() => setQuantity(quantity + 1)} style={{ width: 36, height: 36, border: '1px solid var(--wp-border)', background: '#fff', cursor: 'pointer', fontSize: 16, fontWeight: 700 }}>+</button>
                 </div>
               )}
+
+              {/* Free Shipping Progress Bar — fulfillment box placement */}
+              {(ce.freeShippingBar?.showIn === 'fulfillment' || ce.freeShippingBar?.showIn === 'both') && renderShippingBar()}
 
               {/* Buy Now Button */}
               {fb.showBuyNow && (
