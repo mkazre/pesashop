@@ -212,11 +212,24 @@ router.post('/:id/test', protect, authorize('admin', 'shop_manager', 'superadmin
     }
 
     const emailService = require('../services/emailService');
+    const Settings = require('../models/Settings');
 
-    // Build sample variables from template variable definitions
-    const sampleVars = {};
+    // Inject live globals (logo, store name, etc.) so the rendered email looks real
+    let settings = {};
+    try { settings = (await Settings.findOne()) || {}; } catch (_) {}
+    const frontendUrl = process.env.FRONTEND_URL || 'https://pesashop.com';
+    const globals = {
+      storeName:    settings.storeName    || 'PesaShop',
+      supportEmail: settings.storeEmail   || process.env.EMAIL_FROM || 'support@pesashop.com',
+      logoUrl:      settings.storeLogo    || `${frontendUrl}/logo.png`,
+      frontendUrl,
+      year:         new Date().getFullYear().toString(),
+    };
+
+    // Build sample variables from template variable definitions, then overlay globals
+    const sampleVars = { ...globals };
     (template.variables || []).forEach(v => {
-      sampleVars[v.name] = v.example || `[${v.name}]`;
+      if (!globals[v.name]) sampleVars[v.name] = v.example || `[${v.name}]`;
     });
 
     const { subject, html, text } = template.render(sampleVars);
@@ -247,7 +260,7 @@ router.post('/:id/test', protect, authorize('admin', 'shop_manager', 'superadmin
 router.post('/seed', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
   try {
     const seedEmailTemplates = require('../seeders/emailTemplates');
-    await seedEmailTemplates();
+    await seedEmailTemplates({ force: true });
     const count = await EmailTemplate.countDocuments();
     res.json({
       success: true,
