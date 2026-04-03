@@ -139,6 +139,7 @@ class EmailService {
         frontendUrl: process.env.FRONTEND_URL || 'https://pesashop.com',
         logoUrl: settings.storeLogo || `${process.env.FRONTEND_URL || 'https://pesashop.com'}/logo.png`,
         supportEmail: settings.storeEmail || process.env.EMAIL_FROM || 'support@pesashop.com',
+        storeName: settings.storeName || 'PesaShop',
         year: new Date().getFullYear().toString(),
         ...variables,
       };
@@ -297,7 +298,8 @@ class EmailService {
       pickup_location: order.deliveryMethod === 'pickup' && order.pickupAddress
         ? `${order.pickupAddress.label || ''} — ${order.pickupAddress.address || ''}`.trim()
         : '',
-      tracking_url: order.trackingUrl || `${frontendUrl}/account/orders`
+      tracking_url: order.trackingUrl || `${frontendUrl}/account/orders`,
+      order_link: order.trackingUrl || `${frontendUrl}/account/orders`
     };
 
     return await this.sendTemplatedEmail(
