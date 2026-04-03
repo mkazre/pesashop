@@ -116,14 +116,16 @@ emailTemplateSchema.methods.render = function(variables = {}) {
   let text = this.textContent;
   let subject = this.subject;
   
-  // Replace all variables
+  // Replace all variables.
+  // Use a function as the replacement argument to prevent $ in values (e.g. image URLs,
+  // USD prices like $35.15, Cloudinary URLs) from being interpreted as regex special
+  // replacement patterns ($& $' $` $1 etc.), which would silently corrupt / truncate output.
   Object.keys(variables).forEach(key => {
     const regex = new RegExp(`{{${key}}}`, 'g');
     const value = variables[key] != null ? String(variables[key]) : '';
-    
-    if (html) html = html.replace(regex, value);
-    if (text) text = text.replace(regex, value);
-    if (subject) subject = subject.replace(regex, value);
+    if (html) html = html.replace(regex, () => value);
+    if (text) text = text.replace(regex, () => value);
+    if (subject) subject = subject.replace(regex, () => value);
   });
 
   // Clean up any unreplaced {{placeholders}} so they don't leak into the email

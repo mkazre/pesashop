@@ -39,8 +39,17 @@ const TEMPLATE_TYPES = [
   { value: 'custom', label: 'Custom' },
 ];
 
+// These are auto-injected into every template by sendTemplatedEmail() — always available
+const GLOBAL_VARIABLES = ['storeName', 'supportEmail', 'year', 'frontendUrl', 'logoUrl'];
+
 const DEFAULT_VARIABLES = {
-  order_confirmation: ['customer_name', 'order_number', 'order_date', 'order_total', 'order_items', 'billing_address', 'shipping_address'],
+  order_confirmation: [
+    'customer_name', 'order_number', 'order_date', 'order_total', 'subtotal',
+    'shipping_cost', 'discount', 'order_items', 'billing_address', 'shipping_address',
+    'delivery_method', 'fulfillment_heading', 'fulfillment_details',
+    'pickup_hub_name', 'pickup_hub_address', 'pickup_location',
+    'tracking_url', 'order_link',
+  ],
   order_shipped: ['customer_name', 'order_number', 'tracking_number', 'tracking_url', 'estimated_delivery'],
   order_delivered: ['customer_name', 'order_number'],
   order_cancelled: ['customer_name', 'order_number', 'cancellation_reason'],
@@ -160,6 +169,15 @@ const EmailTemplatesPage = () => {
     setEditModal('new');
   };
 
+  // Merge saved DB variables with current GLOBAL + DEFAULT vars so newly added
+  // variables always appear in the chips even for older saved templates
+  const mergeVariables = (type, saved = []) => {
+    const savedNames = new Set(saved.map(v => v.name));
+    const combined = [...GLOBAL_VARIABLES, ...(DEFAULT_VARIABLES[type] || [])];
+    const added = combined.filter(n => !savedNames.has(n)).map(n => ({ name: n, description: '', example: '' }));
+    return [...saved, ...added];
+  };
+
   const openEditModal = async (template) => {
     try {
       const res = await emailTemplatesAPI.getOne(template._id);
@@ -177,7 +195,7 @@ const EmailTemplatesPage = () => {
         fromEmail: t.fromEmail || '',
         replyTo: t.replyTo || '',
         previewText: t.previewText || '',
-        variables: t.variables || [],
+        variables: mergeVariables(t.type, t.variables || []),
       });
       setEditModal(t);
     } catch (err) {
@@ -204,7 +222,8 @@ const EmailTemplatesPage = () => {
   };
 
   const handleTypeChange = (newType) => {
-    const vars = (DEFAULT_VARIABLES[newType] || []).map(v => ({ name: v, description: '', example: '' }));
+    const combined = [...GLOBAL_VARIABLES, ...(DEFAULT_VARIABLES[newType] || [])];
+    const vars = combined.map(v => ({ name: v, description: '', example: '' }));
     setFormData({ ...formData, type: newType, variables: vars });
   };
 

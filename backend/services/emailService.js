@@ -283,6 +283,10 @@ class EmailService {
     const discount = order.discount ?? 0;
     const fmt = await this._getOrderCurrencyFormatter(order);
 
+    const isPickup = order.deliveryMethod === 'pickup';
+    const hubName = order.pickupAddress?.label || '';
+    const hubAddress = order.pickupAddress?.address || '';
+
     const variables = {
       customer_name: customer.getFullName?.() || customer.firstName || 'Customer',
       order_number: order.orderNumber,
@@ -294,10 +298,20 @@ class EmailService {
       order_items: this.formatOrderItems(order.items, fmt),
       billing_address: this.formatAddress(order.billingAddress),
       shipping_address: this.formatAddress(order.shippingAddress),
-      delivery_method: order.deliveryMethod === 'pickup' ? 'Store Pickup' : 'Standard Delivery',
-      pickup_location: order.deliveryMethod === 'pickup' && order.pickupAddress
-        ? `${order.pickupAddress.label || ''} — ${order.pickupAddress.address || ''}`.trim()
+      // Delivery vs pickup
+      delivery_method: isPickup
+        ? `Collection from Hub${hubName ? ` — ${hubName}` : ''}`
+        : 'Standard Delivery',
+      pickup_hub_name: hubName,
+      pickup_hub_address: hubAddress,
+      pickup_location: isPickup && (hubName || hubAddress)
+        ? [hubName, hubAddress].filter(Boolean).join(' — ')
         : '',
+      // Template section helpers — avoid needing conditionals in templates
+      fulfillment_heading: isPickup ? 'Collecting From' : 'Delivering To',
+      fulfillment_details: isPickup
+        ? `${hubName ? `<strong>${hubName}</strong>${hubAddress ? '<br>' : ''}` : ''}${hubAddress}`
+        : this.formatAddress(order.shippingAddress),
       tracking_url: order.trackingUrl || `${frontendUrl}/account/orders`,
       order_link: order.trackingUrl || `${frontendUrl}/account/orders`
     };
