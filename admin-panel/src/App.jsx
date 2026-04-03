@@ -69,9 +69,13 @@ const queryClient = new QueryClient({
   },
 });
 
+const ADMIN_ROLES = ['admin', 'shop_manager', 'superadmin', 'super_admin'];
+
 const PrivateRoute = ({ children }) => {
-  const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  const { isAuthenticated, user } = useAuthStore();
+  if (!isAuthenticated) return <Navigate to="/login" />;
+  if (!ADMIN_ROLES.includes(user?.role)) return <Navigate to="/login" />;
+  return children;
 };
 
 function App() {

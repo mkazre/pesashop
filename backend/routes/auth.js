@@ -34,16 +34,43 @@ router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email }).select('+password');
-    
+
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
-    
+
     // Update last login timestamp
     user.lastLogin = new Date();
     user.lastLoginDate = new Date();
     await user.save({ validateBeforeSave: false });
-    
+
+    sendTokenResponse(user, 200, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   POST /api/auth/admin/login
+// @desc    Admin panel login — customers are rejected
+router.post('/admin/login', async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email }).select('+password');
+
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    const adminRoles = ['admin', 'shop_manager', 'superadmin', 'super_admin'];
+    if (!adminRoles.includes(user.role)) {
+      return res.status(403).json({ success: false, message: 'Access denied. Admin privileges required.' });
+    }
+
+    // Update last login timestamp
+    user.lastLogin = new Date();
+    user.lastLoginDate = new Date();
+    await user.save({ validateBeforeSave: false });
+
     sendTokenResponse(user, 200, res);
   } catch (error) {
     next(error);
