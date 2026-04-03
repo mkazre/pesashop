@@ -565,6 +565,12 @@ class EmailService {
    * @param {String} type - Type of reminder: 'upcoming', 'overdue', or 'expiry'
    */
   async sendLaybyeReminder(laybye, type = 'upcoming') {
+    // Map reminder type to the emailNotifications key so admin panel toggles are respected
+    const notifKey = type === 'overdue' ? 'laybyeOverdueReminder'
+                   : type === 'expiry'  ? 'laybyeExpiryReminder'
+                   : 'laybyeReminder';
+    if (!(await this.isEnabled(notifKey))) return;
+
     try {
       // Ensure laybye is populated
       if (!laybye.customer || typeof laybye.customer === 'string') {
