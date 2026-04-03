@@ -247,7 +247,7 @@ router.delete('/price-lists/:id', protect, authorize('admin', 'shop_manager'), c
 });
 
 // POST add item to price list
-router.post('/price-lists/:id/items', protect, authorize('shop_manager'), async (req, res, next) => {
+router.post('/price-lists/:id/items', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res, next) => {
   try {
     const priceList = await PriceList.findById(req.params.id);
     if (!priceList) {
@@ -265,7 +265,7 @@ router.post('/price-lists/:id/items', protect, authorize('shop_manager'), async 
 });
 
 // PUT update price list item
-router.put('/price-lists/:id/items/:itemId', protect, authorize('shop_manager'), async (req, res, next) => {
+router.put('/price-lists/:id/items/:itemId', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res, next) => {
   try {
     const priceList = await PriceList.findById(req.params.id);
     if (!priceList) {
@@ -288,7 +288,7 @@ router.put('/price-lists/:id/items/:itemId', protect, authorize('shop_manager'),
 });
 
 // DELETE price list item
-router.delete('/price-lists/:id/items/:itemId', protect, authorize('shop_manager'), async (req, res, next) => {
+router.delete('/price-lists/:id/items/:itemId', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res, next) => {
   try {
     const priceList = await PriceList.findById(req.params.id);
     if (!priceList) {
@@ -665,7 +665,7 @@ router.delete('/pricing-rules/:id', protect, authorize('admin', 'shop_manager'),
 // ==================== PRICE RECALCULATION ====================
 
 // POST recalculate product prices
-router.post('/recalculate-prices', protect, authorize('shop_manager'), async (req, res, next) => {
+router.post('/recalculate-prices', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res, next) => {
   try {
     const { productId } = req.body;
     const productPriceUpdater = require('../services/productPriceUpdater');
