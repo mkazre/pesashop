@@ -532,6 +532,22 @@ export default function ProductPageSettingsPage() {
           <Toggle label="Show Video Thumbnail" checked={s.gallery?.showVideoThumbnail} onChange={(v) => update('gallery', 'showVideoThumbnail', v)} />
         </div>
         <Field label="Badge Overlay Type" type="select" value={s.gallery?.badgeOverlayType} onChange={(v) => update('gallery', 'badgeOverlayType', v)} options={['save-amount', 'percentage', 'custom-text', 'badge-module']} />
+
+        {/* Arrow Navigation */}
+        <div className="mt-4 p-4 border border-gray-200 bg-gray-50">
+          <h4 className="text-sm font-bold text-gray-800 mb-3">Navigation Arrows</h4>
+          <Toggle label="Show Navigation Arrows" checked={s.gallery?.showNavigationArrows !== false} onChange={(v) => update('gallery', 'showNavigationArrows', v)} />
+          <div className="grid grid-cols-3 gap-3 mt-3">
+            <Field label="Arrow Icon" type="select" value={s.gallery?.arrows?.icon || 'chevron'} onChange={(v) => { const a = { ...(s.gallery?.arrows || {}), icon: v }; update('gallery', 'arrows', a); }} options={['chevron', 'arrow-thin', 'triangle']} />
+            <Field label="Icon Color" type="color" value={s.gallery?.arrows?.iconColor || '#ffffff'} onChange={(v) => { const a = { ...(s.gallery?.arrows || {}), iconColor: v }; update('gallery', 'arrows', a); }} />
+            <Field label="Background Color (hex or rgba)" type="text" value={s.gallery?.arrows?.bgColor || 'rgba(27,94,53,0.85)'} onChange={(v) => { const a = { ...(s.gallery?.arrows || {}), bgColor: v }; update('gallery', 'arrows', a); }} />
+            <Field label="Icon Size (px)" type="number" value={s.gallery?.arrows?.size ?? 36} onChange={(v) => { const a = { ...(s.gallery?.arrows || {}), size: Number(v) }; update('gallery', 'arrows', a); }} min={20} max={80} />
+            <Field label="Padding (px)" type="number" value={s.gallery?.arrows?.padding ?? 8} onChange={(v) => { const a = { ...(s.gallery?.arrows || {}), padding: Number(v) }; update('gallery', 'arrows', a); }} min={0} max={30} />
+            <Field label="Border Radius (px)" type="number" value={s.gallery?.arrows?.borderRadius ?? 4} onChange={(v) => { const a = { ...(s.gallery?.arrows || {}), borderRadius: Number(v) }; update('gallery', 'arrows', a); }} min={0} max={50} />
+            <Field label="Margin from Edge (px)" type="number" value={s.gallery?.arrows?.margin ?? 8} onChange={(v) => { const a = { ...(s.gallery?.arrows || {}), margin: Number(v) }; update('gallery', 'arrows', a); }} min={0} max={40} />
+            <Field label="Border (CSS)" type="text" value={s.gallery?.arrows?.border || 'none'} onChange={(v) => { const a = { ...(s.gallery?.arrows || {}), border: v }; update('gallery', 'arrows', a); }} />
+          </div>
+        </div>
       </Section>
 
       {/* ═══ PRODUCT INFO ═══ */}
@@ -899,10 +915,19 @@ export default function ProductPageSettingsPage() {
         {/* Countdown Timer */}
         <div className="p-4 border border-gray-200 bg-gray-50 mb-4">
           <h4 className="text-sm font-bold text-gray-800 mb-3">Countdown Timer</h4>
+          <p className="text-xs text-gray-500 mb-2">The countdown uses each product's Sale End Date (set on the product form). The global end date below is a fallback for products without their own sale end date.</p>
           <Toggle label="Enable Countdown" checked={s.conversionEnhancers?.countdownTimer?.enabled} onChange={(v) => updateDeep('conversionEnhancers', 'countdownTimer', 'enabled', v)} />
           <div className="grid grid-cols-2 gap-3 mt-2">
             <Field label="Label" type="text" value={s.conversionEnhancers?.countdownTimer?.label} onChange={(v) => updateDeep('conversionEnhancers', 'countdownTimer', 'label', v)} />
-            <Toggle label="Show on Sale Only" checked={s.conversionEnhancers?.countdownTimer?.showOnSaleOnly} onChange={(v) => updateDeep('conversionEnhancers', 'countdownTimer', 'showOnSaleOnly', v)} />
+            <Toggle label="Show on Sale Products Only" checked={s.conversionEnhancers?.countdownTimer?.showOnSaleOnly} onChange={(v) => updateDeep('conversionEnhancers', 'countdownTimer', 'showOnSaleOnly', v)} />
+            <Field
+              label="Global End Date & Time (fallback)"
+              type="datetime-local"
+              value={s.conversionEnhancers?.countdownTimer?.endDate
+                ? new Date(s.conversionEnhancers.countdownTimer.endDate).toISOString().slice(0, 16)
+                : ''}
+              onChange={(v) => updateDeep('conversionEnhancers', 'countdownTimer', 'endDate', v ? new Date(v).toISOString() : null)}
+            />
           </div>
         </div>
 

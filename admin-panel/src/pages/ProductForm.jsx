@@ -123,6 +123,11 @@ const ProductForm = () => {
             setSpecifications(product[key] || []);
           } else if (key === 'productType') {
             setValue(key, product[key] || 'simple');
+          } else if (key === 'saleStartDate' || key === 'saleEndDate') {
+            if (product[key]) {
+              // datetime-local input requires "YYYY-MM-DDTHH:mm"
+              setValue(key, new Date(product[key]).toISOString().slice(0, 16));
+            }
           } else {
             setValue(key, product[key]);
           }
@@ -181,6 +186,8 @@ const ProductForm = () => {
       }
       formData.stock = parseInt(formData.stock) || 0;
       formData.weight = formData.weight ? parseFloat(formData.weight) : undefined;
+      formData.saleStartDate = formData.saleStartDate ? new Date(formData.saleStartDate).toISOString() : undefined;
+      formData.saleEndDate = formData.saleEndDate ? new Date(formData.saleEndDate).toISOString() : undefined;
 
       // Images are already uploaded and URLs are in formData.images
       // Ensure images is an array of strings (URLs)
@@ -388,6 +395,20 @@ const ProductForm = () => {
               step="0.01"
               {...register('salePrice')}
               helperText="Leave empty if no sale price"
+              fullWidth
+            />
+            <Input
+              label="Sale Start Date & Time"
+              type="datetime-local"
+              {...register('saleStartDate')}
+              helperText="When the sale price becomes active"
+              fullWidth
+            />
+            <Input
+              label="Sale End Date & Time"
+              type="datetime-local"
+              {...register('saleEndDate')}
+              helperText="Used for countdown timer on product page"
               fullWidth
             />
           </div>

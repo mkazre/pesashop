@@ -76,6 +76,14 @@ const productSchema = new mongoose.Schema({
       message: 'Sale price must be less than regular price'
     }
   },
+  saleStartDate: {
+    type: Date,
+    default: null,
+  },
+  saleEndDate: {
+    type: Date,
+    default: null,
+  },
   categories: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category'

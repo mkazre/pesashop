@@ -119,6 +119,17 @@ const productPageSettingsSchema = new mongoose.Schema({
     enableLightbox: { type: Boolean, default: true },
     enableSwipeOnMobile: { type: Boolean, default: true },
     showVideoThumbnail: { type: Boolean, default: true },
+    showNavigationArrows: { type: Boolean, default: true },
+    arrows: {
+      icon: { type: String, enum: ['chevron', 'arrow-thin', 'triangle'], default: 'chevron' },
+      iconColor: { type: String, default: '#ffffff' },
+      bgColor: { type: String, default: 'rgba(27,94,53,0.85)' },
+      size: { type: Number, default: 36 },
+      padding: { type: Number, default: 8 },
+      borderRadius: { type: Number, default: 4 },
+      border: { type: String, default: 'none' },
+      margin: { type: Number, default: 8 },
+    },
   },
 
   // ─── PRODUCT INFO (MIDDLE COLUMN) ────────────────────────────────────

@@ -64,6 +64,10 @@ const STYLES = `
 .wp-badge-overlay { position: absolute; top: 12px; left: 12px; padding: 4px 10px; font-size: 12px; font-weight: 700; z-index: 2; }
 .wp-wishlist-btn { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.9); border: none; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; z-index: 2; }
 .wp-img-counter { position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: #fff; padding: 2px 8px; font-size: 11px; font-weight: 600; z-index: 2; }
+.wp-gallery-arrow { position: absolute; top: 50%; transform: translateY(-50%); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 3; transition: opacity 0.2s, transform 0.15s; }
+.wp-gallery-arrow:hover { opacity: 0.85; transform: translateY(-50%) scale(1.08); }
+.wp-gallery-arrow.prev { left: var(--wp-arrow-margin, 8px); }
+.wp-gallery-arrow.next { right: var(--wp-arrow-margin, 8px); }
 
 /* Neon Buttons */
 .wp-btn-primary { width: 100%; padding: 14px; font-size: 15px; font-weight: 800; border: none; cursor: pointer; letter-spacing: 0.5px; position: relative; overflow: hidden; transition: all 0.2s; }
@@ -88,6 +92,36 @@ const STYLES = `
 .wp-toast { position: fixed; bottom: 24px; left: 24px; padding: 12px 16px; background: #fff; border: 1px solid #e5eae6; box-shadow: 0 4px 16px rgba(0,0,0,0.1); font-size: 13px; z-index: 9998; display: flex; align-items: center; gap: 10px; animation: wpSlideUp 0.4s ease-out; max-width: 340px; }
 @media (max-width: 768px) { .wp-toast { bottom: 80px; left: 12px; right: 12px; max-width: none; } }
 @keyframes wpSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* Countdown Timer */
+.wp-countdown { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: linear-gradient(135deg, #1b5e35, #2d7a4f); color: #fff; margin: 10px 0; font-size: 13px; font-weight: 700; flex-wrap: wrap; }
+.wp-countdown-units { display: flex; gap: 6px; }
+.wp-countdown-unit { display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.15); padding: 4px 8px; min-width: 44px; }
+.wp-countdown-num { font-size: 20px; font-weight: 800; line-height: 1; }
+.wp-countdown-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85; }
+
+/* Free Shipping Progress Bar */
+.wp-shipping-bar { margin: 10px 0; padding: 10px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; font-size: 13px; }
+.wp-shipping-bar-track { height: 6px; background: #d1fae5; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+.wp-shipping-bar-fill { height: 100%; border-radius: 3px; background: var(--wp-primary, #1b5e35); transition: width 0.5s ease; }
+
+/* Exit Intent Overlay */
+.wp-exit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 99990; display: flex; align-items: center; justify-content: center; animation: wpFadeIn 0.25s ease; }
+@keyframes wpFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.wp-exit-popup { background: #fff; max-width: 440px; width: 90%; padding: 36px 32px; position: relative; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.25); animation: wpScaleIn 0.3s ease; }
+@keyframes wpScaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.wp-exit-close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 22px; cursor: pointer; color: #999; line-height: 1; }
+.wp-exit-coupon { font-size: 22px; font-weight: 800; letter-spacing: 2px; padding: 8px 20px; border: 2px dashed var(--wp-primary, #1b5e35); color: var(--wp-primary, #1b5e35); margin: 12px 0; display: inline-block; }
+.wp-exit-expiry { font-size: 12px; color: #e53e3e; margin-top: 6px; }
+
+/* Recently Viewed */
+.wp-recently-viewed { padding: 20px; }
+.wp-rv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 10px; }
+.wp-rv-item { border: 1px solid var(--wp-border, #e5eae6); padding: 8px; cursor: pointer; transition: border-color 0.2s; text-align: center; background: #fff; }
+.wp-rv-item:hover { border-color: var(--wp-primary, #1b5e35); }
+.wp-rv-item img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+.wp-rv-name { font-size: 11px; margin-top: 4px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-rv-price { font-size: 11px; color: var(--wp-primary, #1b5e35); font-weight: 700; margin-top: 2px; }
 
 /* Urgency */
 .wp-urgency { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 6px 10px; }
@@ -185,7 +219,8 @@ const STYLES = `
 
 export default function WalmartProductPage({ product, settings }) {
   const navigate = useNavigate();
-  const { addItem } = useCartStore();
+  const { addItem, getTotal } = useCartStore();
+  const { products: recentlyViewed } = useRecentlyViewedStore();
   const { items: wishlistItems, addItem: addWish, removeItem: removeWish } = useWishlistStore();
   const { isAuthenticated } = useAuthStore();
   const { openAuthModal } = useUIStore();
@@ -224,7 +259,12 @@ export default function WalmartProductPage({ product, settings }) {
   const [addedToCart, setAddedToCart] = useState(false);
   const [openSections, setOpenSections] = useState({});
   const [socialToast, setSocialToast] = useState(null);
+  const [countdown, setCountdown] = useState(null);
+  const [exitShown, setExitShown] = useState(false);
+  const [exitOpen, setExitOpen] = useState(false);
+  const [exitExpiry, setExitExpiry] = useState(null);
 
+  const cartTotal = getTotal();
   const price = displayPrice?.displayPrice || product?.salePrice || product?.regularPrice || 0;
   const originalPrice = displayPrice?.originalPrice || product?.regularPrice || 0;
   const saving = originalPrice > price ? originalPrice - price : 0;
@@ -266,6 +306,54 @@ export default function WalmartProductPage({ product, settings }) {
 
     return () => clearTimeout(delay);
   }, [ce.socialProofToasts]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!ce.countdownTimer?.enabled) return;
+    // Priority: product's own saleEndDate → global endDate from settings
+    const endDateRaw = product?.saleEndDate || ce.countdownTimer?.endDate;
+    if (!endDateRaw) return;
+    const endDate = new Date(endDateRaw);
+    if (isNaN(endDate.getTime()) || endDate <= new Date()) return;
+    // If showOnSaleOnly, only show when product has a sale price
+    if (ce.countdownTimer.showOnSaleOnly && !product?.salePrice) return;
+
+    const tick = () => {
+      const diff = endDate - Date.now();
+      if (diff <= 0) { setCountdown(null); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setCountdown({ d, h, m, s });
+    };
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [ce.countdownTimer, product?.saleEndDate, product?.salePrice]);
+
+  // Exit intent popup
+  useEffect(() => {
+    if (!ce.exitIntent?.enabled || exitShown) return;
+    const handleMouseLeave = (e) => {
+      if (e.clientY <= 5) {
+        setExitOpen(true);
+        setExitShown(true);
+        const secs = ce.exitIntent.expirySeconds || 480;
+        setExitExpiry(secs);
+      }
+    };
+    document.addEventListener('mouseleave', handleMouseLeave);
+    return () => document.removeEventListener('mouseleave', handleMouseLeave);
+  }, [ce.exitIntent, exitShown]);
+
+  // Exit intent expiry countdown
+  useEffect(() => {
+    if (!exitOpen || exitExpiry === null) return;
+    if (exitExpiry <= 0) return;
+    const iv = setInterval(() => setExitExpiry(v => (v > 0 ? v - 1 : 0)), 1000);
+    return () => clearInterval(iv);
+  }, [exitOpen, exitExpiry]);
 
   // Urgency random values
   const viewerCount = useMemo(() =>
@@ -415,6 +503,9 @@ export default function WalmartProductPage({ product, settings }) {
   const isThreeCol = lay.type === '3-col-walmart' && fb.enabled;
   const btnStyle = btn.style || 'neon-glow';
 
+  const handlePrevImage = () => setMainImg(i => (i > 0 ? i - 1 : images.length - 1));
+  const handleNextImage = () => setMainImg(i => (i < images.length - 1 ? i + 1 : 0));
+
   // CSS custom properties
   const cssVars = {
     '--wp-primary': theme.primaryColor || '#1b5e35',
@@ -432,6 +523,7 @@ export default function WalmartProductPage({ product, settings }) {
     '--wp-gallery-w': lay.galleryColumnWidth || '420px',
     '--wp-fulfil-w': lay.fulfillmentColumnWidth || '300px',
     '--wp-sticky-offset': `${lay.stickyOffset || 120}px`,
+    '--wp-arrow-margin': `${gal.arrows?.margin ?? 8}px`,
   };
 
   return (
@@ -479,6 +571,43 @@ export default function WalmartProductPage({ product, settings }) {
                 {gal.showImageCounter && images.length > 1 && (
                   <div className="wp-img-counter">{mainImg + 1}/{images.length}</div>
                 )}
+
+                {/* Navigation Arrows */}
+                {gal.showNavigationArrows !== false && images.length > 1 && (() => {
+                  const ar = gal.arrows || {};
+                  const arrowBg = ar.bgColor || 'rgba(27,94,53,0.85)';
+                  const arrowColor = ar.iconColor || '#ffffff';
+                  const arrowSize = ar.size ?? 36;
+                  const padding = ar.padding ?? 8;
+                  const borderRadius = ar.borderRadius ?? 4;
+                  const border = ar.border || 'none';
+                  const iconSize = Math.round(arrowSize * 0.45);
+                  const ArrowIcon = ({ dir }) => {
+                    if (ar.icon === 'chevron') {
+                      return dir === 'prev'
+                        ? <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        : <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
+                    }
+                    if (ar.icon === 'arrow-thin') {
+                      return dir === 'prev'
+                        ? <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                        : <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
+                    }
+                    // default: filled triangle
+                    return <span style={{ fontSize: iconSize, lineHeight: 1 }}>{dir === 'prev' ? '‹' : '›'}</span>;
+                  };
+                  const arrowStyle = { width: arrowSize, height: arrowSize, background: arrowBg, color: arrowColor, padding, borderRadius, border };
+                  return (
+                    <>
+                      <button className="wp-gallery-arrow prev" style={arrowStyle} onClick={handlePrevImage} aria-label="Previous image">
+                        <ArrowIcon dir="prev" />
+                      </button>
+                      <button className="wp-gallery-arrow next" style={arrowStyle} onClick={handleNextImage} aria-label="Next image">
+                        <ArrowIcon dir="next" />
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Thumbnails */}
@@ -774,6 +903,51 @@ export default function WalmartProductPage({ product, settings }) {
                 )}
               </div>
             )}
+
+            {/* Countdown Timer */}
+            {countdown && (
+              <div className="wp-countdown">
+                <span>{ce.countdownTimer?.label || '⏱ Sale ends in:'}</span>
+                <div className="wp-countdown-units">
+                  {countdown.d > 0 && (
+                    <div className="wp-countdown-unit">
+                      <span className="wp-countdown-num">{String(countdown.d).padStart(2, '0')}</span>
+                      <span className="wp-countdown-label">days</span>
+                    </div>
+                  )}
+                  <div className="wp-countdown-unit">
+                    <span className="wp-countdown-num">{String(countdown.h).padStart(2, '0')}</span>
+                    <span className="wp-countdown-label">hrs</span>
+                  </div>
+                  <div className="wp-countdown-unit">
+                    <span className="wp-countdown-num">{String(countdown.m).padStart(2, '0')}</span>
+                    <span className="wp-countdown-label">min</span>
+                  </div>
+                  <div className="wp-countdown-unit">
+                    <span className="wp-countdown-num">{String(countdown.s).padStart(2, '0')}</span>
+                    <span className="wp-countdown-label">sec</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Free Shipping Progress Bar */}
+            {ce.freeShippingBar?.enabled && (() => {
+              const threshold = ce.freeShippingBar.threshold || 100;
+              const pct = Math.min((cartTotal / threshold) * 100, 100);
+              const remaining = Math.max(threshold - cartTotal, 0);
+              const msg = pct >= 100
+                ? (ce.freeShippingBar.completedMessage || '🎉 You qualify for FREE shipping!')
+                : (ce.freeShippingBar.message || 'Spend {remaining} more for FREE shipping!').replace('{remaining}', formatPrice(remaining));
+              return (
+                <div className="wp-shipping-bar">
+                  <span style={{ color: pct >= 100 ? '#16a34a' : '#374151', fontWeight: 600 }}>{msg}</span>
+                  <div className="wp-shipping-bar-track">
+                    <div className="wp-shipping-bar-fill" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Estimated Delivery */}
             {pi.showEstimatedDelivery && (
@@ -1129,6 +1303,67 @@ export default function WalmartProductPage({ product, settings }) {
           >
             Buy Now
           </button>
+        </div>
+      )}
+
+      {/* Recently Viewed */}
+      {ce.recentlyViewed?.enabled && (() => {
+        const maxItems = ce.recentlyViewed.maxItems || 6;
+        const rvItems = recentlyViewed.filter(p => p._id !== product?._id).slice(0, maxItems);
+        if (!rvItems.length) return null;
+        return (
+          <div style={{ maxWidth: lay.maxWidth || 1440, margin: '0 auto', padding: '0 24px 24px' }}>
+            <div className="wp-card wp-recently-viewed">
+              <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Recently Viewed</div>
+              <div className="wp-rv-grid">
+                {rvItems.map(p => (
+                  <div key={p._id} className="wp-rv-item" onClick={() => navigate(`/products/${p.slug || p._id}`)}>
+                    {p.images?.[0] ? (
+                      <img src={imgUrl(p.images[0])} alt={p.name} />
+                    ) : (
+                      <div style={{ aspectRatio: '1', background: '#f3f4f6' }} />
+                    )}
+                    <div className="wp-rv-name">{p.name}</div>
+                    <div className="wp-rv-price">{formatPrice(p.salePrice || p.regularPrice || 0)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Exit Intent Popup */}
+      {exitOpen && ce.exitIntent?.enabled && (
+        <div className="wp-exit-overlay" onClick={() => setExitOpen(false)}>
+          <div className="wp-exit-popup" onClick={e => e.stopPropagation()}>
+            <button className="wp-exit-close" onClick={() => setExitOpen(false)}>✕</button>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🎁</div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 8px', color: theme.textColor || '#1a1a1a' }}>
+              {ce.exitIntent.title || "Wait! Don't go yet"}
+            </h2>
+            <p style={{ fontSize: 14, color: theme.mutedColor || '#76889a', margin: '0 0 16px' }}>
+              {ce.exitIntent.subtitle || 'Grab this exclusive discount before you leave!'}
+            </p>
+            {ce.exitIntent.couponCode && (
+              <div>
+                <div style={{ fontSize: 12, color: theme.mutedColor || '#76889a', marginBottom: 4 }}>Use code:</div>
+                <div className="wp-exit-coupon">{ce.exitIntent.couponCode}</div>
+              </div>
+            )}
+            {exitExpiry > 0 && (
+              <div className="wp-exit-expiry">
+                Offer expires in {Math.floor(exitExpiry / 60)}:{String(exitExpiry % 60).padStart(2, '0')}
+              </div>
+            )}
+            <button
+              className={`wp-btn-primary ${btnStyle}`}
+              style={{ marginTop: 20, background: theme.primaryColor || '#1b5e35', color: theme.accentColor || '#a8ffca' }}
+              onClick={() => setExitOpen(false)}
+            >
+              {ce.exitIntent.discountText || 'Claim Discount Now'}
+            </button>
+          </div>
         </div>
       )}
 

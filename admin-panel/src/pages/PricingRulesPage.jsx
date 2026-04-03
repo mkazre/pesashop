@@ -226,8 +226,8 @@ const PricingRulesPage = () => {
       quantityTiers: rule.quantityTiers || [],
       action: rule.action || 'discount_percentage',
       value: rule.value || 0,
-      validFrom: rule.validFrom ? new Date(rule.validFrom).toISOString().split('T')[0] : '',
-      validUntil: rule.validUntil ? new Date(rule.validUntil).toISOString().split('T')[0] : '',
+      validFrom: rule.validFrom ? new Date(rule.validFrom).toISOString().slice(0, 16) : '',
+      validUntil: rule.validUntil ? new Date(rule.validUntil).toISOString().slice(0, 16) : '',
       daysOfWeek: rule.daysOfWeek || [],
       timeOfDay: rule.timeOfDay || { start: '', end: '' },
       priority: rule.priority || 0,
@@ -740,14 +740,16 @@ const PricingRulesPage = () => {
           {/* Date Range */}
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Valid From"
-              type="date"
+              label="Valid From (Date & Time)"
+              type="datetime-local"
               {...register('validFrom')}
+              helperText="Leave blank for no start restriction"
             />
             <Input
-              label="Valid Until"
-              type="date"
+              label="Valid Until (Date & Time)"
+              type="datetime-local"
               {...register('validUntil')}
+              helperText="The countdown timer uses this end date for pricing rule sales"
             />
           </div>
 
