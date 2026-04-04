@@ -2,13 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   FlatList,
   Dimensions,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mobileAppConfigAPI } from '@/services/api';
@@ -83,7 +83,15 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
       const res = await mobileAppConfigAPI.getSplash();
       const data = res.data?.data;
       if (data && data.enabled && data.slides?.length > 0) {
-        setConfig({ ...DEFAULTS, ...data });
+        const merged = { ...DEFAULTS, ...data };
+        // Prefetch all slide images so they display instantly (no blank flash)
+        const urls = merged.slides
+          .map((s: Slide) => s.image ? (s.image.startsWith('http') ? s.image : `${API_URL}${s.image}`) : null)
+          .filter(Boolean) as string[];
+        if (urls.length > 0) {
+          await Promise.all(urls.map(url => Image.prefetch(url)));
+        }
+        setConfig(merged);
       } else {
         // No config or disabled — skip onboarding
         await markComplete();
@@ -151,7 +159,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
     if (config.style === 'fullImage') {
       return (
         <View style={[styles.slide, { width }]}>
-          {src && <Image source={{ uri: src }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />}
+          {src && <Image source={{ uri: src }} style={StyleSheet.absoluteFillObject} contentFit="cover" cachePolicy="memory-disk" />}
           <LinearGradient colors={['transparent', 'rgba(0,0,0,0.7)']} style={styles.fullImageOverlay}>
             <Text style={[styles.heading, { color: '#ffffff' }]}>{item.heading}</Text>
             <Text style={[styles.text, { color: '#e5e7eb' }]}>{item.text}</Text>
@@ -165,7 +173,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
       return (
         <View style={[styles.slide, { width }]}>
           <View style={[styles.bottomCardTop, { backgroundColor: config.gradientFrom }]}>
-            {src && <Image source={{ uri: src }} style={styles.bottomCardImage} resizeMode="contain" />}
+            {src && <Image source={{ uri: src }} style={styles.bottomCardImage} contentFit="contain" cachePolicy="memory-disk" />}
           </View>
           <View style={styles.bottomCardContent}>
             <Text style={[styles.heading, { color: config.headingColor }]}>{item.heading}</Text>
@@ -181,7 +189,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
         <View style={[styles.slide, { width }]}>
           <LinearGradient colors={[config.gradientFrom, config.gradientTo]} style={StyleSheet.absoluteFillObject} />
           <View style={styles.centeredContent}>
-            {src && <Image source={{ uri: src }} style={styles.centeredImage} resizeMode="contain" />}
+            {src && <Image source={{ uri: src }} style={styles.centeredImage} contentFit="contain" cachePolicy="memory-disk" />}
             <Text style={[styles.heading, { color: '#ffffff' }]}>{item.heading}</Text>
             <Text style={[styles.text, { color: 'rgba(255,255,255,0.8)' }]}>{item.text}</Text>
           </View>
@@ -194,7 +202,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
       return (
         <View style={[styles.slide, { width, backgroundColor: config.backgroundColor }]}>
           <View style={styles.splitImageArea}>
-            {src && <Image source={{ uri: src }} style={styles.splitImage} resizeMode="contain" />}
+            {src && <Image source={{ uri: src }} style={styles.splitImage} contentFit="contain" cachePolicy="memory-disk" />}
           </View>
           <View style={styles.splitTextArea}>
             <Text style={[styles.heading, { color: config.headingColor }]}>{item.heading}</Text>
@@ -208,7 +216,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
     return (
       <View style={[styles.slide, { width, backgroundColor: config.backgroundColor }]}>
         <View style={styles.centeredContent}>
-          {src && <Image source={{ uri: src }} style={styles.centeredImage} resizeMode="contain" />}
+          {src && <Image source={{ uri: src }} style={styles.centeredImage} contentFit="contain" cachePolicy="memory-disk" />}
           <Text style={[styles.heading, { color: config.headingColor }]}>{item.heading}</Text>
           <Text style={[styles.text, { color: config.textColor }]}>{item.text}</Text>
         </View>

@@ -183,6 +183,8 @@ export const laybyAPI = {
   getMyLaybye: (id: string) => api.get(`/api/laybyes/my-laybyes/${id}`),
   makePayment: (id: string, data: any) =>
     api.post(`/api/laybyes/my-laybyes/${id}/pay`, data),
+  getMyTransactions: (params?: any) =>
+    api.get('/api/layby-transactions/my-transactions', { params }),
 };
 
 // ─── Currencies API ──────────────────────────────────────────────

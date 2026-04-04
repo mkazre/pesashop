@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { View, Animated, StyleSheet, Dimensions } from "react-native";
+import { Image } from "expo-image";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
@@ -12,65 +13,41 @@ import { currenciesAPI } from "@/services/api";
 import { useExpoPush } from "@/hooks/useExpoPush";
 import NotificationToast from "@/components/NotificationToast";
 
+const LOGO = require("@/../assets/pesashop-logo.png");
+
 SplashScreen.preventAutoHideAsync();
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { width: SCREEN_W } = Dimensions.get("window");
 
 function AppPreloader() {
-  const pulseAnim = useRef(new Animated.Value(0.4)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const dotAnims = [
-    useRef(new Animated.Value(0)).current,
-    useRef(new Animated.Value(0)).current,
-    useRef(new Animated.Value(0)).current,
-  ];
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(0.7)).current;
+  const progressWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Logo pulse + scale
-    Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-          Animated.spring(scaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.timing(pulseAnim, { toValue: 0.4, duration: 800, useNativeDriver: true }),
-          Animated.timing(scaleAnim, { toValue: 0.8, duration: 800, useNativeDriver: true }),
-        ]),
-      ])
-    ).start();
+    // Logo entrance: fade + spring scale
+    Animated.parallel([
+      Animated.timing(logoOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.spring(logoScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
+    ]).start();
 
-    // Dot wave animation
-    dotAnims.forEach((anim, i) => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(i * 150),
-          Animated.timing(anim, { toValue: 1, duration: 300, useNativeDriver: true }),
-          Animated.timing(anim, { toValue: 0, duration: 300, useNativeDriver: true }),
-        ])
-      ).start();
-    });
+    // Progress bar: animate to 85% over 1.4s (leaves room for actual completion)
+    Animated.timing(progressWidth, {
+      toValue: SCREEN_W * 0.85,
+      duration: 1400,
+      useNativeDriver: false,
+    }).start();
   }, []);
 
   return (
     <View style={preloaderStyles.container}>
       <StatusBar style="light" />
-      <Animated.View style={[preloaderStyles.logoWrap, { opacity: pulseAnim, transform: [{ scale: scaleAnim }] }]}>
-        <Animated.Text style={preloaderStyles.logoText}>P</Animated.Text>
+      <Animated.View style={{ opacity: logoOpacity, transform: [{ scale: logoScale }], marginBottom: 48 }}>
+        <Image source={LOGO} style={preloaderStyles.logo} contentFit="contain" />
       </Animated.View>
-      <Animated.Text style={[preloaderStyles.brandText, { opacity: pulseAnim }]}>
-        PesaShop
-      </Animated.Text>
-      <View style={preloaderStyles.dotsRow}>
-        {dotAnims.map((anim, i) => (
-          <Animated.View
-            key={i}
-            style={[
-              preloaderStyles.dot,
-              { transform: [{ scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.2] }) }], opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) },
-            ]}
-          />
-        ))}
+      {/* Progress bar */}
+      <View style={preloaderStyles.progressTrack}>
+        <Animated.View style={[preloaderStyles.progressFill, { width: progressWidth }]} />
       </View>
     </View>
   );
@@ -79,40 +56,26 @@ function AppPreloader() {
 const preloaderStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1b5e35",
+    backgroundColor: "#0F604B",
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 40,
   },
-  logoWrap: {
-    width: 90,
-    height: 90,
-    borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
+  logo: {
+    width: 220,
+    height: 70,
   },
-  logoText: {
-    fontSize: 48,
-    fontWeight: "800",
-    color: "#fff",
+  progressTrack: {
+    width: SCREEN_W * 0.6,
+    height: 3,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 2,
+    overflow: "hidden",
   },
-  brandText: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#fff",
-    letterSpacing: 1,
-    marginBottom: 32,
-  },
-  dotsRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#fff",
+  progressFill: {
+    height: 3,
+    backgroundColor: "#E8A838",
+    borderRadius: 2,
   },
 });
 
@@ -227,6 +190,18 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="account/track-order"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/dashboard"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/payments"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/transactions"
           options={{ headerShown: false }}
         />
         <Stack.Screen

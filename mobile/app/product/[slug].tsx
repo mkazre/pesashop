@@ -62,6 +62,7 @@ export default function ProductDetailScreen() {
   const [laybyeModalVisible, setLaybyeModalVisible] = useState(false);
   const [loyaltyData, setLoyaltyData] = useState<any>(null);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<Record<string, string>>({});
 
   const addToCart = useCartStore((s) => s.addItem);
   const setItemLaybye = useCartStore((s) => s.setItemLaybye);
@@ -234,6 +235,20 @@ export default function ProductDetailScreen() {
         </View>
 
         <View style={ps.infoSection}>
+          {/* Breadcrumbs */}
+          {product.categories?.[0] && (
+            <View style={ps.breadcrumbs}>
+              <Pressable onPress={() => router.replace("/(tabs)/shop" as any)}>
+                <Text style={ps.breadcrumbLink}>Shop</Text>
+              </Pressable>
+              <Text style={ps.breadcrumbSep}> › </Text>
+              <Pressable onPress={() => router.push(`/category/${product.categories[0].slug}` as any)}>
+                <Text style={ps.breadcrumbLink}>{product.categories[0].name}</Text>
+              </Pressable>
+              <Text style={ps.breadcrumbSep}> › </Text>
+              <Text style={ps.breadcrumbCurrent} numberOfLines={1}>{product.name}</Text>
+            </View>
+          )}
           {product.categories?.[0]?.name && (
             <Text style={ps.category}>{product.categories[0].name}</Text>
           )}
@@ -259,6 +274,42 @@ export default function ProductDetailScreen() {
               {product.stock > 0 ? `In Stock (${product.stock} available)` : "Out of Stock"}
             </Text>
           </View>
+
+          {/* ── Variant Selectors ── */}
+          {product.attributes?.map((attr: any) => {
+            if (!attr.values?.length) return null;
+            const isColor = attr.name?.toLowerCase().includes("color") || attr.name?.toLowerCase().includes("colour");
+            return (
+              <View key={attr.name} style={{ marginBottom: 12 }}>
+                <Text style={ps.variantLabel}>{attr.name}: <Text style={{ fontWeight: "700", color: colors.gray900 }}>{selectedVariant[attr.name] || ""}</Text></Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+                  {attr.values.map((val: string) => {
+                    const active = selectedVariant[attr.name] === val;
+                    if (isColor) {
+                      return (
+                        <Pressable
+                          key={val}
+                          onPress={() => setSelectedVariant(prev => ({ ...prev, [attr.name]: val }))}
+                          style={[ps.colorSwatch, active && ps.colorSwatchActive]}
+                        >
+                          <View style={[ps.colorSwatchInner, { backgroundColor: val.toLowerCase() }]} />
+                        </Pressable>
+                      );
+                    }
+                    return (
+                      <Pressable
+                        key={val}
+                        onPress={() => setSelectedVariant(prev => ({ ...prev, [attr.name]: val }))}
+                        style={[ps.sizeChip, active ? ps.sizeChipActive : ps.sizeChipInactive]}
+                      >
+                        <Text style={[ps.sizeChipText, active && { color: colors.white }]}>{val}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          })}
 
           {/* ── Pesa Coins ── */}
           {loyaltyData && loyaltyData.points > 0 && (pi.showPesaCoins !== false) && (
@@ -359,6 +410,18 @@ export default function ProductDetailScreen() {
                 <PulsingArrows color="#fff" size={18} count={3} />
               </Pressable>
             </>
+          )}
+
+          {/* ── Trust Badges ── */}
+          {pageSettings?.trustBadges?.enabled !== false && pageSettings?.trustBadges?.badges?.length > 0 && (
+            <View style={ps.trustRow}>
+              {pageSettings.trustBadges.badges.map((badge: any, i: number) => (
+                <View key={i} style={ps.trustBadge}>
+                  <Ionicons name={(badge.icon || "shield-checkmark-outline") as any} size={16} color={colors.primary} />
+                  <Text style={ps.trustBadgeText}>{badge.text || badge.label}</Text>
+                </View>
+              ))}
+            </View>
           )}
         </View>
 
@@ -647,4 +710,22 @@ const ps = StyleSheet.create({
   buyNowText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   laybyeApplyBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#f59e0b", paddingVertical: 14, borderRadius: 0, marginBottom: 24 },
   laybyeApplyText: { color: "#fff", fontWeight: "700", fontSize: 14, letterSpacing: 1 },
+  // Breadcrumbs
+  breadcrumbs: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", marginBottom: 8 },
+  breadcrumbLink: { fontSize: 11, color: colors.primary, fontWeight: "600" },
+  breadcrumbSep: { fontSize: 11, color: colors.gray400 },
+  breadcrumbCurrent: { fontSize: 11, color: colors.gray500, flex: 1 },
+  // Variant selectors
+  variantLabel: { fontSize: 13, color: colors.gray500, fontWeight: "500" },
+  colorSwatch: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: "transparent", alignItems: "center", justifyContent: "center" },
+  colorSwatchActive: { borderColor: colors.primary },
+  colorSwatchInner: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, borderColor: "rgba(0,0,0,0.1)" },
+  sizeChip: { paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderRadius: 0 },
+  sizeChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  sizeChipInactive: { backgroundColor: colors.white, borderColor: colors.gray300 },
+  sizeChipText: { fontSize: 13, fontWeight: "600", color: colors.gray700 },
+  // Trust badges
+  trustRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16, marginBottom: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.gray100 },
+  trustBadge: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.gray50, paddingHorizontal: 10, paddingVertical: 6 },
+  trustBadgeText: { fontSize: 11, color: colors.gray700, fontWeight: "500" },
 });
