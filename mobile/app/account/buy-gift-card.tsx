@@ -31,6 +31,7 @@ export default function BuyGiftCardScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   const [selectedPreset, setSelectedPreset] = useState<any>(null);
+  const [selectedPresetIdx, setSelectedPresetIdx] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -109,22 +110,25 @@ export default function BuyGiftCardScreen() {
             <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 16 }} />
           ) : (
             <View style={s.presetGrid}>
-              {presets.map((preset) => (
-                <Pressable
-                  key={String(preset._id)}
-                  onPress={() => { setSelectedPreset(preset); setCustomAmount(""); }}
-                  style={[s.presetCard, selectedPreset && String(selectedPreset._id) === String(preset._id) && s.presetCardActive]}
-                >
-                  <Text style={[s.presetAmount, selectedPreset && String(selectedPreset._id) === String(preset._id) && { color: "#fff" }]}>
-                    {formatPrice(preset.amount)}
-                  </Text>
-                  {preset.label && (
-                    <Text style={[s.presetLabel, selectedPreset && String(selectedPreset._id) === String(preset._id) && { color: "rgba(255,255,255,0.8)" }]}>
-                      {preset.label}
+              {presets.map((preset, idx) => {
+                const isSelected = selectedPresetIdx === idx;
+                return (
+                  <Pressable
+                    key={idx}
+                    onPress={() => { setSelectedPreset(preset); setSelectedPresetIdx(idx); setCustomAmount(""); }}
+                    style={[s.presetCard, isSelected && s.presetCardActive]}
+                  >
+                    <Text style={[s.presetAmount, isSelected && { color: "#fff" }]}>
+                      {formatPrice(preset.amount)}
                     </Text>
-                  )}
-                </Pressable>
-              ))}
+                    {preset.label && (
+                      <Text style={[s.presetLabel, isSelected && { color: "rgba(255,255,255,0.8)" }]}>
+                        {preset.label}
+                      </Text>
+                    )}
+                  </Pressable>
+                );
+              })}
             </View>
           )}
 
@@ -137,7 +141,7 @@ export default function BuyGiftCardScreen() {
               placeholderTextColor={colors.gray400}
               keyboardType="decimal-pad"
               value={customAmount}
-              onChangeText={(v) => { setCustomAmount(v); setSelectedPreset(null); }}
+              onChangeText={(v) => { setCustomAmount(v); setSelectedPreset(null); setSelectedPresetIdx(null); }}
             />
           </View>
         </View>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -5,7 +6,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import EmptyState from "@/components/EmptyState";
 import PulsingArrows from "@/components/PulsingArrows";
+import BottomTabBar from "@/components/BottomTabBar";
 import { useCartStore, useCurrencyStore, useUIStore } from "@/store";
+import { settingsAPI } from "@/services/api";
 import { colors, resolveImageUrl } from "@/theme";
 
 export default function CartScreen() {
@@ -19,11 +22,27 @@ export default function CartScreen() {
   const getItemCount = useCartStore((s) => s.getItemCount);
   const formatPrice = useCurrencyStore((s) => s.formatPrice);
   const { openCheckoutDrawer } = useUIStore();
+  const [freeShippingMin, setFreeShippingMin] = useState(0);
+
+  useEffect(() => {
+    settingsAPI.getPublic().then((res) => {
+      const d = res.data?.data || {};
+      const fs = d?.freeShipping || d?.shipping?.freeShipping;
+      if (fs?.enabled && fs.minimumOrderAmount > 0) {
+        setFreeShippingMin(fs.minimumOrderAmount);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const subtotal = getCheckoutTotal();
+  const freeShipPct = freeShippingMin > 0 ? Math.min((subtotal / freeShippingMin) * 100, 100) : 0;
+  const freeShipRemaining = Math.max(freeShippingMin - subtotal, 0);
 
   if (items.length === 0) {
     return (
       <View style={[cs.screenWhite, { paddingTop: insets.top }]}>
         <EmptyState icon="cart-outline" title="Your cart is empty" message="Add some products to get started" actionLabel="Start Shopping" onAction={() => router.push("/shop" as any)} />
+        <BottomTabBar />
       </View>
     );
   }
@@ -35,6 +54,30 @@ export default function CartScreen() {
       </View>
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        {/* Free Shipping Progress Bar */}
+        {freeShippingMin > 0 && (
+          <View style={cs.freeShipWrap}>
+            {freeShipPct >= 100 ? (
+              <View style={cs.freeShipRow}>
+                <Ionicons name="checkmark-circle" size={16} color="#16a34a" />
+                <Text style={[cs.freeShipText, { color: "#16a34a" }]}>🎉 You qualify for FREE shipping!</Text>
+              </View>
+            ) : (
+              <>
+                <View style={cs.freeShipRow}>
+                  <Ionicons name="car-outline" size={16} color={colors.primary} />
+                  <Text style={cs.freeShipText}>
+                    Add <Text style={{ fontWeight: "700" }}>{formatPrice(freeShipRemaining)}</Text> more for FREE shipping!
+                  </Text>
+                </View>
+                <View style={cs.freeShipTrack}>
+                  <View style={[cs.freeShipFill, { width: `${freeShipPct}%` as any }]} />
+                </View>
+              </>
+            )}
+          </View>
+        )}
+
         {items.map((item, index) => {
           const imageUrl = resolveImageUrl(item.product.images?.[0]) || resolveImageUrl(item.product.image);
           const price = item.product.salePrice || item.product.regularPrice;
@@ -73,7 +116,7 @@ export default function CartScreen() {
             </View>
           );
         })}
-        <View style={{ height: 160 }} />
+        <View style={{ height: 200 }} />
       </ScrollView>
 
       <View style={[cs.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
@@ -85,13 +128,14 @@ export default function CartScreen() {
         )}
         <View style={cs.totalRow}>
           <Text style={cs.totalLabel}>Total Due Now</Text>
-          <Text style={cs.totalValue}>{formatPrice(getCheckoutTotal())}</Text>
+          <Text style={cs.totalValue}>{formatPrice(subtotal)}</Text>
         </View>
         <Pressable onPress={() => openCheckoutDrawer()} style={cs.checkoutBtn}>
           <Text style={cs.checkoutText}>Proceed to Checkout</Text>
           <PulsingArrows color="#fff" size={18} count={3} />
         </Pressable>
       </View>
+      <BottomTabBar />
     </View>
   );
 }
@@ -101,6 +145,11 @@ const cs = StyleSheet.create({
   screenWhite: { flex: 1, backgroundColor: colors.white },
   header: { backgroundColor: colors.white, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
   title: { fontSize: 20, fontWeight: "700", color: colors.gray900 },
+  freeShipWrap: { backgroundColor: "#f0fdf4", marginHorizontal: 16, marginTop: 12, padding: 12, borderWidth: 1, borderColor: "#bbf7d0" },
+  freeShipRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  freeShipText: { fontSize: 13, color: colors.gray700, flex: 1 },
+  freeShipTrack: { height: 6, backgroundColor: "#d1fae5", borderRadius: 3, overflow: "hidden" },
+  freeShipFill: { height: 6, backgroundColor: "#16a34a", borderRadius: 3 },
   cartItem: { backgroundColor: colors.white, marginHorizontal: 16, marginTop: 12, borderRadius: 0, padding: 12, flexDirection: "row", borderWidth: 1, borderColor: colors.gray100 },
   cartImg: { width: 80, height: 80, borderRadius: 0 },
   itemName: { fontSize: 14, fontWeight: "600", color: colors.gray800 },
@@ -115,7 +164,7 @@ const cs = StyleSheet.create({
   qtyBtn: { width: 28, height: 28, borderRadius: 0, backgroundColor: colors.gray100, alignItems: "center", justifyContent: "center" },
   qtyText: { marginHorizontal: 12, fontSize: 14, fontWeight: "600", color: colors.gray800 },
   deleteBtn: { width: 28, height: 28, borderRadius: 0, backgroundColor: colors.red50, alignItems: "center", justifyContent: "center" },
-  bottomBar: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.gray200, paddingHorizontal: 16, paddingTop: 12 },
+  bottomBar: { backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.gray200, paddingHorizontal: 16, paddingTop: 12 },
   totalRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   totalLabel: { fontSize: 14, color: colors.gray500 },
   totalValue: { fontSize: 20, fontWeight: "700", color: colors.gray900 },

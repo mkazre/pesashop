@@ -36,6 +36,21 @@ const JOURNEY_STEPS = [
   { key: "delivered",  label: "Delivered",          icon: "home-outline" as const },
 ];
 
+const SHIPPED_WAYBILL_STATUSES = ["DISPATCHED_FROM_HUB", "OUT_FOR_DELIVERY", "RECEIVED_AT_HUB", "WITH_DELIVERY_DRIVER", "DELIVERED", "COLLECTED"];
+const DELIVERED_WAYBILL_STATUSES = ["DELIVERED", "COLLECTED"];
+
+function getActiveStepIdx(order: any): number {
+  if (!order) return 0;
+  const ps = order.paymentStatus;
+  const wb = order.waybill;
+
+  if (wb && DELIVERED_WAYBILL_STATUSES.includes(wb.status)) return 4;
+  if (wb && SHIPPED_WAYBILL_STATUSES.includes(wb.status)) return 3;
+  if (wb) return 2;
+  if (ps === "completed" || ps === "processing") return 1;
+  return 0;
+}
+
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -244,8 +259,9 @@ export default function OrderDetailScreen() {
           <View style={s.sectionDivider} />
           <Text style={s.journeyNote}>Here are the next steps for your order.</Text>
           {JOURNEY_STEPS.map((step, i) => {
-            const isActive = i <= 1; // placed + confirmed always green on new order
-            const isCurrent = i === 1;
+            const currentStepIdx = getActiveStepIdx(order);
+            const isActive = i <= currentStepIdx;
+            const isCurrent = i === currentStepIdx;
             return (
               <View key={step.key} style={s.journeyStep}>
                 {i < JOURNEY_STEPS.length - 1 && (

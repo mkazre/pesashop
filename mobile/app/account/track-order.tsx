@@ -21,8 +21,8 @@ import { Image } from "expo-image";
 const STATUS_STEPS = ["pending", "confirmed", "processing", "shipped", "delivered"];
 const STATUS_LABELS: Record<string, string> = {
   pending: "Order Placed",
-  confirmed: "Confirmed",
-  processing: "Processing",
+  confirmed: "Payment Confirmed",
+  processing: "Packing",
   shipped: "Shipped",
   delivered: "Delivered",
 };
@@ -73,7 +73,22 @@ export default function TrackOrderScreen() {
     }
   };
 
-  const currentStepIndex = order ? STATUS_STEPS.indexOf(order.status) : -1;
+  // Use waybill status if available (matches web app logic)
+  const getStepIndex = (o: any) => {
+    if (!o) return -1;
+    const wb = o.waybill;
+    if (wb) {
+      const delivered = ["DELIVERED", "COLLECTED"];
+      const shipped = ["DISPATCHED_FROM_HUB", "OUT_FOR_DELIVERY", "RECEIVED_AT_HUB", "WITH_DELIVERY_DRIVER", ...delivered];
+      if (delivered.includes(wb.status)) return 4;
+      if (shipped.includes(wb.status)) return 3;
+      return 2; // waybill exists = packing/processing
+    }
+    const ps = o.paymentStatus;
+    if (ps === "completed" || ps === "processing") return 1;
+    return Math.max(STATUS_STEPS.indexOf(o.status), 0);
+  };
+  const currentStepIndex = getStepIndex(order);
 
   return (
     <View style={[s.screen, { paddingTop: insets.top }]}>

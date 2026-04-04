@@ -20,6 +20,7 @@ import HomePageRenderer from "@/components/homeblocks/HomePageRenderer";
 import AppDrawer from "@/components/AppDrawer";
 import CurrencyPicker from "@/components/CurrencyPicker";
 import NotificationBell from "@/components/NotificationBell";
+import BottomTabBar from "@/components/BottomTabBar";
 import { colors, resolveImageUrl } from "@/theme";
 
 const LOGO = require("@/../assets/pesashop-logo.png");
@@ -216,6 +217,7 @@ export default function HomeScreen() {
         <View style={{ height: 32 }} />
       </ScrollView>
       <AppDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
+      <BottomTabBar />
     </View>
   );
 }

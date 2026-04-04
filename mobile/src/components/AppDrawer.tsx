@@ -51,13 +51,12 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
 
   useEffect(() => {
     if (!visible) return;
-    // Fetch mobile menu from admin — try all known location names including 'header' (web default)
+    // Fetch mobile menu from admin — use 'mobile-menu' location (set in Admin → Menu Builder)
     Promise.all([
-      menusAPI.getByLocation("mobile").catch(() => null),
       menusAPI.getByLocation("mobile-menu").catch(() => null),
-      menusAPI.getByLocation("header").catch(() => null),
-    ]).then(([mobileRes, mobileMenuRes, headerRes]) => {
-      const menu = mobileRes?.data?.data || mobileMenuRes?.data?.data || headerRes?.data?.data;
+      menusAPI.getByLocation("mobile").catch(() => null),
+    ]).then(([mobileMenuRes, mobileRes]) => {
+      const menu = mobileMenuRes?.data?.data || mobileRes?.data?.data;
       if (menu?.items?.length) {
         setMenuItems(menu.items);
       }

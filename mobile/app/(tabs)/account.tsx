@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore, useCurrencyStore } from "@/store";
+import BottomTabBar from "@/components/BottomTabBar";
 import { colors } from "@/theme";
 
 const LOGO = require("@/../assets/pesashop-logo.png");
@@ -32,6 +33,7 @@ export default function AccountScreen() {
             <Text style={as.registerText}>Create Account</Text>
           </Pressable>
         </View>
+        <BottomTabBar />
       </View>
     );
   }
@@ -100,6 +102,7 @@ export default function AccountScreen() {
           <Text style={as.logoutText}>Sign Out</Text>
         </Pressable>
       </ScrollView>
+      <BottomTabBar />
     </View>
   );
 }

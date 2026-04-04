@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ProductCard from "@/components/ProductCard";
 import EmptyState from "@/components/EmptyState";
+import BottomTabBar from "@/components/BottomTabBar";
 import { useWishlistStore } from "@/store";
 import { colors } from "@/theme";
 
@@ -20,6 +21,7 @@ export default function WishlistScreen() {
           <Text style={ws.title}>Wishlist</Text>
         </View>
         <EmptyState icon="heart-outline" title="Your wishlist is empty" message="Save products you love for later" actionLabel="Browse Products" onAction={() => router.push("/shop" as any)} />
+        <BottomTabBar />
       </View>
     );
   }
@@ -34,7 +36,7 @@ export default function WishlistScreen() {
         keyExtractor={(item: any) => item._id}
         numColumns={2}
         columnWrapperStyle={{ paddingHorizontal: 16, gap: 12, marginBottom: 12 }}
-        contentContainerStyle={{ paddingTop: 12 }}
+        contentContainerStyle={{ paddingTop: 12, paddingBottom: 90 }}
         renderItem={({ item }: any) => (
           <View style={{ width: (SCREEN_WIDTH - 44) / 2 }}>
             <ProductCard product={item} />
@@ -42,6 +44,7 @@ export default function WishlistScreen() {
         )}
         showsVerticalScrollIndicator={false}
       />
+      <BottomTabBar />
     </View>
   );
 }
