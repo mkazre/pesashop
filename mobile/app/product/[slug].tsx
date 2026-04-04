@@ -79,7 +79,16 @@ export default function ProductDetailScreen() {
       try {
         setLoading(true);
         const res = await productsAPI.getOne(slug!);
-        const p = res.data?.data || res.data;
+        // Extract actual product — handle both { data: product } and { data: { data: product } }
+        const p = res.data?.data?._id ? res.data.data
+          : res.data?._id ? res.data
+          : res.data?.data?.product?._id ? res.data.data.product
+          : null;
+        if (!p || !p._id) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
         setProduct(p);
         addRecentlyViewed(p);
         try { statsAPI.trackEvent({ type: "product_view", productId: p._id, sessionId: "mobile" }); } catch {}

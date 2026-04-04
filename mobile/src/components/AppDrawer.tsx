@@ -51,12 +51,13 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
 
   useEffect(() => {
     if (!visible) return;
-    // Fetch mobile menu from admin — also try 'mobile-menu' location
+    // Fetch mobile menu from admin — try all known location names including 'header' (web default)
     Promise.all([
       menusAPI.getByLocation("mobile").catch(() => null),
       menusAPI.getByLocation("mobile-menu").catch(() => null),
-    ]).then(([mobileRes, mobileMenuRes]) => {
-      const menu = mobileRes?.data?.data || mobileMenuRes?.data?.data;
+      menusAPI.getByLocation("header").catch(() => null),
+    ]).then(([mobileRes, mobileMenuRes, headerRes]) => {
+      const menu = mobileRes?.data?.data || mobileMenuRes?.data?.data || headerRes?.data?.data;
       if (menu?.items?.length) {
         setMenuItems(menu.items);
       }
@@ -144,17 +145,18 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
                     <View key={item._id || i}>
                       <Pressable
                         onPress={() => {
-                          if (itemLink && itemLink !== '#' && itemLink !== 'none') {
+                          if (item.linkType === 'page') {
+                            const slug = item.linkId || itemLink.replace(/^\//, '');
+                            navigate(`/page/${slug}`);
+                          } else if (item.linkType === 'category' && item.linkId) {
+                            navigate(`/(tabs)/shop?category=${item.linkId}`);
+                          } else if (itemLink && itemLink !== '#' && itemLink !== 'none') {
                             if (itemLink.startsWith('/category/')) {
                               navigate(`/(tabs)/shop?category=${itemLink.replace('/category/', '')}`);
                             } else if (itemLink.startsWith('/product/')) {
                               navigate(`/product/${itemLink.replace('/product/', '')}`);
                             } else if (itemLink.startsWith('/')) {
                               navigate(itemLink);
-                            } else if (item.linkType === 'page' && item.linkId) {
-                              navigate(`/page/${item.linkId}`);
-                            } else if (item.linkType === 'category' && item.linkId) {
-                              navigate(`/(tabs)/shop?category=${item.linkId}`);
                             }
                           }
                         }}
@@ -168,7 +170,12 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
                           key={child._id || j}
                           onPress={() => {
                             const childLink = child.link || child.url || '#';
-                            if (childLink && childLink !== '#') {
+                            if (child.linkType === 'page') {
+                              const slug = child.linkId || childLink.replace(/^\//, '');
+                              navigate(`/page/${slug}`);
+                            } else if (child.linkType === 'category' && child.linkId) {
+                              navigate(`/(tabs)/shop?category=${child.linkId}`);
+                            } else if (childLink && childLink !== '#') {
                               if (childLink.startsWith('/category/')) {
                                 navigate(`/(tabs)/shop?category=${childLink.replace('/category/', '')}`);
                               } else if (childLink.startsWith('/product/')) {

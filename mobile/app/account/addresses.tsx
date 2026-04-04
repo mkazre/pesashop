@@ -20,6 +20,7 @@ import BottomTabBar from "@/components/BottomTabBar";
 
 interface Address {
   _id: string;
+  type?: "shipping" | "billing";
   label?: string;
   firstName?: string;
   lastName?: string;
@@ -34,6 +35,7 @@ interface Address {
 }
 
 const EMPTY_ADDRESS = {
+  type: "shipping" as "shipping" | "billing",
   label: "",
   firstName: "",
   lastName: "",
@@ -114,6 +116,7 @@ export default function AddressesScreen() {
 
   const startEdit = (addr: Address) => {
     setForm({
+      type: addr.type || "shipping",
       label: addr.label || "",
       firstName: addr.firstName || "",
       lastName: addr.lastName || "",
@@ -158,6 +161,16 @@ export default function AddressesScreen() {
 
       {editing ? (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16 }}>
+          <Text style={s.fieldLabel}>Address Type *</Text>
+          <View style={s.typePicker}>
+            {(["shipping", "billing"] as const).map((t) => (
+              <Pressable key={t} onPress={() => setForm({ ...form, type: t })} style={[s.typeOption, form.type === t && s.typeOptionActive]}>
+                <Ionicons name={t === "shipping" ? "cube-outline" : "card-outline"} size={16} color={form.type === t ? "#fff" : colors.gray600} />
+                <Text style={[s.typeOptionText, form.type === t && { color: "#fff" }]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
+              </Pressable>
+            ))}
+          </View>
+
           <Text style={s.fieldLabel}>Label (e.g. Home, Work)</Text>
           <TextInput style={s.input} value={form.label} onChangeText={(t) => setForm({ ...form, label: t })} placeholder="Home" placeholderTextColor={colors.gray400} />
 
@@ -225,6 +238,7 @@ export default function AddressesScreen() {
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
                     <Ionicons name="location" size={16} color={colors.primary} />
                     <Text style={s.cardTitle}>{addr.label || "Address"}</Text>
+                    {addr.type && <View style={[s.defaultBadge, { backgroundColor: addr.type === "billing" ? "#dbeafe" : "#dcfce7" }]}><Text style={[s.defaultBadgeText, { color: addr.type === "billing" ? "#1d4ed8" : "#15803d" }]}>{addr.type}</Text></View>}
                     {addr.isDefault && <View style={s.defaultBadge}><Text style={s.defaultBadgeText}>Default</Text></View>}
                   </View>
                   <View style={{ flexDirection: "row", gap: 8 }}>
@@ -270,4 +284,8 @@ const s = StyleSheet.create({
   row: { flexDirection: "row", gap: 12 },
   saveBtn: { backgroundColor: colors.primary, paddingVertical: 14, alignItems: "center", marginTop: 24 },
   saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  typePicker: { flexDirection: "row", gap: 12, marginTop: 4 },
+  typeOption: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderWidth: 1.5, borderColor: colors.gray200, backgroundColor: colors.white },
+  typeOptionActive: { borderColor: colors.primary, backgroundColor: colors.primary },
+  typeOptionText: { fontSize: 13, fontWeight: "600", color: colors.gray600 },
 });

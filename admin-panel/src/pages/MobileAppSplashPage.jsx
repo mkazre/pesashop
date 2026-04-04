@@ -188,27 +188,27 @@ export default function MobileAppSplashPage() {
   const [previewSlide, setPreviewSlide] = useState(0);
 
   useEffect(() => {
-    if (config && !formState) {
-      setFormState({
-        enabled: config.enabled ?? true,
-        style: config.style || 'centered',
-        slides: config.slides?.length ? config.slides.map((s, i) => ({ ...s, order: s.order ?? i })) : [{ ...DEFAULT_SLIDE }],
-        backgroundColor: config.backgroundColor || '#ffffff',
-        headingColor: config.headingColor || '#1f2937',
-        textColor: config.textColor || '#6b7280',
-        buttonColor: config.buttonColor || '#0F604B',
-        buttonTextColor: config.buttonTextColor || '#ffffff',
-        skipButtonText: config.skipButtonText || 'Skip',
-        nextButtonText: config.nextButtonText || 'Next',
-        finishButtonText: config.finishButtonText || 'Get Started',
-        showDots: config.showDots ?? true,
-        dotColor: config.dotColor || '#d1d5db',
-        dotActiveColor: config.dotActiveColor || '#0F604B',
-        gradientFrom: config.gradientFrom || '#0F604B',
-        gradientTo: config.gradientTo || '#1a8a6a',
-      });
-    }
-  }, [config]);
+    if (!data?.data?.data) return;
+    const cfg = data.data.data.splashScreen || {};
+    setFormState({
+      enabled: cfg.enabled ?? true,
+      style: cfg.style || 'centered',
+      slides: cfg.slides?.length ? cfg.slides.map((s, i) => ({ ...s, order: s.order ?? i })) : [{ ...DEFAULT_SLIDE }],
+      backgroundColor: cfg.backgroundColor || '#ffffff',
+      headingColor: cfg.headingColor || '#1f2937',
+      textColor: cfg.textColor || '#6b7280',
+      buttonColor: cfg.buttonColor || '#0F604B',
+      buttonTextColor: cfg.buttonTextColor || '#ffffff',
+      skipButtonText: cfg.skipButtonText || 'Skip',
+      nextButtonText: cfg.nextButtonText || 'Next',
+      finishButtonText: cfg.finishButtonText || 'Get Started',
+      showDots: cfg.showDots ?? true,
+      dotColor: cfg.dotColor || '#d1d5db',
+      dotActiveColor: cfg.dotActiveColor || '#0F604B',
+      gradientFrom: cfg.gradientFrom || '#0F604B',
+      gradientTo: cfg.gradientTo || '#1a8a6a',
+    });
+  }, [data]);
 
   const saveMutation = useMutation(
     (payload) => mobileAppConfigAPI.updateSplash(payload),

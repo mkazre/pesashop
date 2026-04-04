@@ -22,6 +22,8 @@ export default function BuyGiftCardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const formatPrice = useCurrencyStore((s) => s.formatPrice);
+  const selectedCurrency = useCurrencyStore((s) => s.selectedCurrency);
+  const exchangeRate = useCurrencyStore((s) => s.selectedCurrency?.exchangeRate ?? 1);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const [presets, setPresets] = useState<any[]>([]);
@@ -42,7 +44,11 @@ export default function BuyGiftCardScreen() {
       .finally(() => setLoadingPresets(false));
   }, []);
 
-  const finalAmount = selectedPreset?.amount || parseFloat(customAmount) || 0;
+  // finalAmount is always in ZAR (base currency) for backend processing
+  // Preset amounts are stored in ZAR; custom amounts are entered in selected currency and converted back
+  const finalAmount = selectedPreset
+    ? selectedPreset.amount
+    : (parseFloat(customAmount) || 0) * exchangeRate;
 
   const handlePurchase = async () => {
     if (!isAuthenticated) {
@@ -67,11 +73,13 @@ export default function BuyGiftCardScreen() {
       setSubmitting(true);
       await giftCardsAPI.purchase({
         amount: finalAmount,
+        currency: selectedCurrency?.code || "ZAR",
+        exchangeRate: exchangeRate,
         recipientEmail: recipientEmail.trim(),
         recipientName: recipientName.trim() || undefined,
         senderName: senderName.trim() || undefined,
         message: message.trim() || undefined,
-        presetId: selectedPreset?._id || undefined,
+        presetId: selectedPreset?._id ? String(selectedPreset._id) : undefined,
       });
       Toast.show({ type: "success", text1: "Gift card purchased!", text2: `Sent to ${recipientEmail.trim()}`, visibilityTime: 3000 });
       router.back();
@@ -103,15 +111,15 @@ export default function BuyGiftCardScreen() {
             <View style={s.presetGrid}>
               {presets.map((preset) => (
                 <Pressable
-                  key={preset._id}
+                  key={String(preset._id)}
                   onPress={() => { setSelectedPreset(preset); setCustomAmount(""); }}
-                  style={[s.presetCard, selectedPreset?._id === preset._id && s.presetCardActive]}
+                  style={[s.presetCard, selectedPreset && String(selectedPreset._id) === String(preset._id) && s.presetCardActive]}
                 >
-                  <Text style={[s.presetAmount, selectedPreset?._id === preset._id && { color: "#fff" }]}>
+                  <Text style={[s.presetAmount, selectedPreset && String(selectedPreset._id) === String(preset._id) && { color: "#fff" }]}>
                     {formatPrice(preset.amount)}
                   </Text>
                   {preset.label && (
-                    <Text style={[s.presetLabel, selectedPreset?._id === preset._id && { color: "rgba(255,255,255,0.8)" }]}>
+                    <Text style={[s.presetLabel, selectedPreset && String(selectedPreset._id) === String(preset._id) && { color: "rgba(255,255,255,0.8)" }]}>
                       {preset.label}
                     </Text>
                   )}
@@ -122,7 +130,7 @@ export default function BuyGiftCardScreen() {
 
           <Text style={s.orText}>— or enter custom amount —</Text>
           <View style={s.inputRow}>
-            <Text style={s.currencySymbol}>$</Text>
+            <Text style={s.currencySymbol}>{selectedCurrency?.symbol || "R"}</Text>
             <TextInput
               style={s.amountInput}
               placeholder="0.00"

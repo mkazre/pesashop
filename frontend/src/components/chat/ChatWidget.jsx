@@ -25,6 +25,8 @@ const ChatWidget = () => {
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const [dragPos, setDragPos] = useState(null); // {x, y} in px from top-left viewport
+  const dragRef = useRef({ dragging: false, startX: 0, startY: 0, origX: 0, origY: 0 });
 
   // Generate or retrieve visitor ID
   useEffect(() => {
@@ -248,6 +250,31 @@ const ChatWidget = () => {
     handleStartChat();
   };
 
+  const handleDragStart = useCallback((e) => {
+    const touch = e.touches?.[0];
+    const clientX = touch ? touch.clientX : e.clientX;
+    const clientY = touch ? touch.clientY : e.clientY;
+    const el = e.currentTarget.closest ? e.currentTarget.closest('.chat-fab-container') : e.currentTarget;
+    const rect = el?.getBoundingClientRect?.() || { left: clientX, top: clientY };
+    dragRef.current = { dragging: true, startX: clientX, startY: clientY, origX: rect.left, origY: rect.top };
+    e.preventDefault();
+  }, []);
+
+  const handleDragMove = useCallback((e) => {
+    if (!dragRef.current.dragging) return;
+    const touch = e.touches?.[0];
+    const clientX = touch ? touch.clientX : e.clientX;
+    const clientY = touch ? touch.clientY : e.clientY;
+    const dx = clientX - dragRef.current.startX;
+    const dy = clientY - dragRef.current.startY;
+    setDragPos({ x: dragRef.current.origX + dx, y: dragRef.current.origY + dy });
+    e.preventDefault();
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    dragRef.current.dragging = false;
+  }, []);
+
   // Get appearance settings
   const primaryColor = settings?.appearance?.primaryColor || '#3B82F6';
   const position = settings?.appearance?.position || 'bottom-right';
@@ -278,8 +305,19 @@ const ChatWidget = () => {
 
   if (isEnabled === false) return null;
 
+  const containerStyle = dragPos
+    ? { position: 'fixed', left: dragPos.x, top: dragPos.y, zIndex: 50 }
+    : { position: 'fixed', zIndex: 50, ...(positionStyles[position] || positionStyles['bottom-right']) };
+
   return (
-    <div className="fixed z-50" style={positionStyles[position] || positionStyles['bottom-right']}>
+    <div
+      className="chat-fab-container"
+      style={containerStyle}
+      onMouseMove={handleDragMove}
+      onMouseUp={handleDragEnd}
+      onTouchMove={handleDragMove}
+      onTouchEnd={handleDragEnd}
+    >
       {/* Chat Window */}
       {isOpen && (
         <div
@@ -450,8 +488,16 @@ const ChatWidget = () => {
       {/* Widget Button */}
       {!isOpen && (
         <button
-          onClick={toggleChat}
-          className="relative rounded-full shadow-lg text-white hover:scale-110 transition-transform flex items-center justify-center"
+          onClick={(e) => {
+            // Only trigger click if not dragging
+            const dx = Math.abs(dragRef.current.startX - (e.clientX || 0));
+            const dy = Math.abs(dragRef.current.startY - (e.clientY || 0));
+            if (dx > 5 || dy > 5) return;
+            toggleChat();
+          }}
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
+          className="relative rounded-full shadow-lg text-white flex items-center justify-center cursor-grab active:cursor-grabbing"
           style={{
             backgroundColor: primaryColor,
             width: widgetSize,

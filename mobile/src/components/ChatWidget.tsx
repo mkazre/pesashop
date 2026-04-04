@@ -10,6 +10,9 @@ import {
   Modal,
   StyleSheet,
   ActivityIndicator,
+  PanResponder,
+  Animated,
+  Dimensions,
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,6 +41,28 @@ export default function ChatWidget() {
   const socketRef = useRef<Socket | null>(null);
   const listRef = useRef<FlatList<any>>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Draggable FAB
+  const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+  const FAB_SIZE = 56;
+  const fabPos = useRef(new Animated.ValueXY({ x: SCREEN_W - FAB_SIZE - 16, y: SCREEN_H - FAB_SIZE - 90 })).current;
+  const lastPos = useRef({ x: SCREEN_W - FAB_SIZE - 16, y: SCREEN_H - FAB_SIZE - 90 });
+  const isDragging = useRef(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 3 || Math.abs(g.dy) > 3,
+      onPanResponderGrant: () => { isDragging.current = false; },
+      onPanResponderMove: (_, g) => {
+        if (Math.abs(g.dx) > 3 || Math.abs(g.dy) > 3) isDragging.current = true;
+        fabPos.setValue({ x: lastPos.current.x + g.dx, y: lastPos.current.y + g.dy });
+      },
+      onPanResponderRelease: (_, g) => {
+        lastPos.current = { x: lastPos.current.x + g.dx, y: lastPos.current.y + g.dy };
+      },
+    })
+  ).current;
 
   // Load settings
   useEffect(() => {
@@ -187,20 +212,25 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Floating button */}
-      <Pressable
-        onPress={openChat}
-        style={[cs.fab, { backgroundColor: primaryColor }]}
+      {/* Draggable floating button */}
+      <Animated.View
+        style={[cs.fab, { backgroundColor: primaryColor, left: fabPos.x, top: fabPos.y, bottom: undefined, right: undefined }]}
+        {...panResponder.panHandlers}
       >
-        {customIconUrl
-          ? <Image source={{ uri: resolveImageUrl(customIconUrl) }} style={{ width: 28, height: 28 }} contentFit="contain" />
-          : <Ionicons name="chatbubble-ellipses" size={26} color="#fff" />}
-        {unread > 0 && (
-          <View style={cs.badge}>
-            <Text style={cs.badgeText}>{unread > 9 ? "9+" : unread}</Text>
-          </View>
-        )}
-      </Pressable>
+        <Pressable
+          onPress={() => { if (!isDragging.current) openChat(); }}
+          style={{ width: "100%", height: "100%", alignItems: "center", justifyContent: "center" }}
+        >
+          {customIconUrl
+            ? <Image source={{ uri: resolveImageUrl(customIconUrl) }} style={{ width: 28, height: 28 }} contentFit="contain" />
+            : <Ionicons name="chatbubble-ellipses" size={26} color="#fff" />}
+          {unread > 0 && (
+            <View style={cs.badge}>
+              <Text style={cs.badgeText}>{unread > 9 ? "9+" : unread}</Text>
+            </View>
+          )}
+        </Pressable>
+      </Animated.View>
 
       {/* Chat modal */}
       <Modal visible={open} animationType="slide" transparent presentationStyle="overFullScreen">
@@ -312,7 +342,7 @@ export default function ChatWidget() {
 }
 
 const cs = StyleSheet.create({
-  fab: { position: "absolute", bottom: 90, right: 16, width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8, zIndex: 999 },
+  fab: { position: "absolute", width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8, zIndex: 999 },
   badge: { position: "absolute", top: -4, right: -4, backgroundColor: "#ef4444", borderRadius: 10, minWidth: 20, height: 20, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
   badgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
 

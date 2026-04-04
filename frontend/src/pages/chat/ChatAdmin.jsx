@@ -890,14 +890,14 @@ const ChatAdmin = () => {
                   </label>
                   <input
                     type="range"
-                    min="36"
+                    min="0"
                     max="80"
                     value={settings.widgetSize}
                     onChange={(e) => setSettings({ ...settings, widgetSize: Number(e.target.value) })}
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>36px</span>
+                    <span>0px (hidden)</span>
                     <span>80px</span>
                   </div>
                 </div>
