@@ -12,6 +12,7 @@ import { useAuthStore, useCurrencyStore } from "@/store";
 import { currenciesAPI } from "@/services/api";
 import { useExpoPush } from "@/hooks/useExpoPush";
 import NotificationToast from "@/components/NotificationToast";
+import ChatWidget from "@/components/ChatWidget";
 
 const LOGO = require("@/../assets/pesashop-logo.png");
 
@@ -232,6 +233,7 @@ export default function RootLayout() {
       <CartSidebar />
       <CheckoutDrawer />
       <NotificationToast />
+      <ChatWidget />
       <Toast />
     </>
   );

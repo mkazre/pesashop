@@ -49,7 +49,7 @@ export default function CheckoutDrawer() {
   } = useUIStore();
   const cart = useCartStore();
   const { user, isAuthenticated, setAuth } = useAuthStore();
-  const { formatPrice } = useCurrencyStore();
+  const { formatPrice, selectedCurrency } = useCurrencyStore();
   const router = useRouter();
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -426,6 +426,8 @@ export default function CheckoutDrawer() {
         giftCardAmount: cart.giftCardAmount > 0 ? cart.giftCardAmount : undefined,
         loyaltyPointsRedeemed: pesaApplied ? parseInt(pesaCoinsInput, 10) : undefined,
         loyaltyDiscount: pesaApplied ? pesaDiscount : undefined,
+        currency: selectedCurrency?.code || "ZAR",
+        exchangeRate: selectedCurrency?.exchangeRate || 1,
         splitPayments: splitPayment
           ? Object.entries(splitAmounts)
               .filter(([, amt]) => parseFloat(amt) > 0)

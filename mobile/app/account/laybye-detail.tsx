@@ -14,12 +14,13 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
-import { laybyAPI, settingsAPI } from "@/services/api";
+import { laybyAPI, settingsAPI, productPageSettingsAPI } from "@/services/api";
 import { useCurrencyStore } from "@/store";
-import { colors } from "@/theme";
+import { colors, resolveImageUrl } from "@/theme";
+import { Image } from "expo-image";
 import BottomTabBar from "@/components/BottomTabBar";
 
-type PayStep = "amount" | "method" | "eft" | "cash" | "online" | "success";
+type PayStep = "amount" | "method" | "eft" | "cash" | "dynamic" | "success";
 
 export default function LaybyeDetailScreen() {
   const router = useRouter();
@@ -31,6 +32,7 @@ export default function LaybyeDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [laybye, setLaybye] = useState<any>(null);
   const [bankDetails, setBankDetails] = useState<any[]>([]);
+  const [dynamicMethods, setDynamicMethods] = useState<any[]>([]);
 
   // Payment modal state
   const [showPayModal, setShowPayModal] = useState(false);
@@ -42,12 +44,16 @@ export default function LaybyeDetailScreen() {
   const fetchData = useCallback(async () => {
     if (!id) return;
     try {
-      const [lbRes, bankRes] = await Promise.all([
+      const [lbRes, bankRes, ppRes] = await Promise.all([
         laybyAPI.getMyLaybye(id),
         settingsAPI.getBankDetails().catch(() => ({ data: { data: [] } })),
+        productPageSettingsAPI.get().catch(() => ({ data: null })),
       ]);
       setLaybye(lbRes.data?.data || null);
       setBankDetails(bankRes.data?.data || []);
+      const ppSettings = ppRes.data?.data || ppRes.data;
+      const methods = (ppSettings?.checkoutDrawer?.paymentMethods || []).filter((p: any) => p.enabled !== false);
+      setDynamicMethods(methods);
     } catch {
       Toast.show({ type: "error", text1: "Could not load laybye details" });
     } finally {
@@ -108,17 +114,15 @@ export default function LaybyeDetailScreen() {
     const amountInBase = convertToBase(parseFloat(paymentAmount));
     setSubmitting(true);
     try {
+      const methodLabel = paymentMethod === "eft" ? "EFT bank transfer"
+        : paymentMethod === "cash" ? "Cash payment"
+        : (dynamicMethods.find((m) => (m.id || m._id) === paymentMethod)?.label || paymentMethod);
       await laybyAPI.makePayment(laybye._id, {
         amount: amountInBase,
-        paymentMethod,
-        note: paymentMethod === "eft" ? "EFT bank transfer" : paymentMethod === "cash" ? "Cash payment" : "",
+        paymentMethod: methodLabel,
+        note: methodLabel,
       });
-      if (paymentMethod === "eft" || paymentMethod === "cash") {
-        setPayStep("success");
-      } else {
-        Toast.show({ type: "success", text1: "Payment recorded" });
-        closePayModal();
-      }
+      setPayStep("success");
       fetchData();
     } catch (err: any) {
       Toast.show({ type: "error", text1: err.response?.data?.message || "Payment failed" });
@@ -404,6 +408,31 @@ export default function LaybyeDetailScreen() {
                   <Text style={{ fontSize: 13, color: colors.gray600, marginBottom: 4 }}>Amount: <Text style={{ fontWeight: "700", color: colors.gray900 }}>{formatPrice(convertToBase(parseFloat(paymentAmount)))}</Text></Text>
                   <Text style={{ fontSize: 14, fontWeight: "600", color: colors.gray700, marginBottom: 12 }}>How would you like to pay?</Text>
 
+                  {/* Dynamic methods from admin — shown first under "Popular Methods" */}
+                  {dynamicMethods.length > 0 && (
+                    <>
+                      <Text style={s.methodGroupLabel}>Popular Methods</Text>
+                      {dynamicMethods.map((pm: any) => {
+                        const pmId = pm.id || pm._id || pm.key || pm.label;
+                        return (
+                          <Pressable key={pmId} onPress={() => { setPaymentMethod(pmId); setPayStep("dynamic"); }} style={s.methodCard}>
+                            <View style={[s.methodIcon, { backgroundColor: "#fef3c7" }]}>
+                              {pm.displayType === "image" && pm.image
+                                ? <Image source={{ uri: pm.image }} style={{ width: 32, height: 32 }} contentFit="contain" />
+                                : <Ionicons name={(pm.icon as any) || "wallet-outline"} size={20} color="#d97706" />}
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={s.methodTitle}>{pm.label || pm.name}</Text>
+                              {pm.description ? <Text style={s.methodDesc}>{pm.description}</Text> : null}
+                            </View>
+                            <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
+                          </Pressable>
+                        );
+                      })}
+                      <Text style={[s.methodGroupLabel, { marginTop: 8 }]}>Other Options</Text>
+                    </>
+                  )}
+
                   <Pressable onPress={() => { setPaymentMethod("eft"); setPayStep("eft"); }} style={s.methodCard}>
                     <View style={[s.methodIcon, { backgroundColor: "#dbeafe" }]}>
                       <Ionicons name="card-outline" size={20} color="#2563eb" />
@@ -422,17 +451,6 @@ export default function LaybyeDetailScreen() {
                     <View style={{ flex: 1 }}>
                       <Text style={s.methodTitle}>Cash Payment</Text>
                       <Text style={s.methodDesc}>Record a cash payment for admin verification</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
-                  </Pressable>
-
-                  <Pressable onPress={() => { setPaymentMethod("online"); setPayStep("online"); }} style={s.methodCard}>
-                    <View style={[s.methodIcon, { backgroundColor: "#f3e8ff" }]}>
-                      <Ionicons name="lock-closed-outline" size={20} color="#9333ea" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.methodTitle}>Pay Online</Text>
-                      <Text style={s.methodDesc}>Pay securely with a payment gateway</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
                   </Pressable>
@@ -504,19 +522,37 @@ export default function LaybyeDetailScreen() {
                 </View>
               )}
 
-              {/* Step 3c: Online (placeholder) */}
-              {payStep === "online" && (
-                <View style={s.modalBody}>
-                  <View style={{ backgroundColor: "#f3e8ff", padding: 16, alignItems: "center" }}>
-                    <Ionicons name="lock-closed-outline" size={36} color="#9333ea" />
-                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#7e22ce", marginTop: 8 }}>Online Payment Coming Soon</Text>
-                    <Text style={{ fontSize: 12, color: "#9333ea", marginTop: 4, textAlign: "center" }}>Payment gateways are being set up. Please use EFT or Cash for now.</Text>
+              {/* Step 3c: Dynamic payment method */}
+              {payStep === "dynamic" && (() => {
+                const selectedPm = dynamicMethods.find((m) => (m.id || m._id || m.key || m.label) === paymentMethod);
+                return (
+                  <View style={s.modalBody}>
+                    <View style={{ backgroundColor: "#fef3c7", padding: 12, marginBottom: 12 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#d97706" }}>{selectedPm?.label || paymentMethod}</Text>
+                      <Text style={{ fontSize: 12, color: "#d97706", marginTop: 2 }}>
+                        Please make a payment of {formatPrice(convertToBase(parseFloat(paymentAmount)))} using {selectedPm?.label || paymentMethod} and tap "I've Paid" below.
+                      </Text>
+                    </View>
+                    {selectedPm?.displayType === "image" && selectedPm?.image && (
+                      <Image source={{ uri: resolveImageUrl(selectedPm.image) }} style={{ width: 120, height: 48, alignSelf: "center", marginBottom: 12 }} contentFit="contain" />
+                    )}
+                    {selectedPm?.instructions && (
+                      <Text style={{ fontSize: 13, color: colors.gray600, marginBottom: 12, lineHeight: 20 }}>{selectedPm.instructions}</Text>
+                    )}
+                    <View style={{ backgroundColor: "#fef3c7", padding: 10, marginTop: 4 }}>
+                      <Text style={{ fontSize: 11, color: "#d97706" }}>Your payment will be marked as pending until the store verifies the funds.</Text>
+                    </View>
+                    <View style={s.modalFooter}>
+                      <Pressable onPress={() => setPayStep("method")} style={s.secondaryBtn}>
+                        <Text style={s.secondaryBtnText}>← Back</Text>
+                      </Pressable>
+                      <Pressable onPress={handleSubmitPayment} disabled={submitting} style={[s.primaryBtn, submitting && { opacity: 0.5 }]}>
+                        {submitting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.primaryBtnText}>I've Paid</Text>}
+                      </Pressable>
+                    </View>
                   </View>
-                  <Pressable onPress={() => setPayStep("method")} style={[s.secondaryBtn, { marginTop: 12 }]}>
-                    <Text style={s.secondaryBtnText}>← Back</Text>
-                  </Pressable>
-                </View>
-              )}
+                );
+              })()}
 
               {/* Success */}
               {payStep === "success" && (
@@ -526,7 +562,7 @@ export default function LaybyeDetailScreen() {
                   </View>
                   <Text style={{ fontSize: 18, fontWeight: "700", color: colors.gray900, marginBottom: 6 }}>Payment Submitted</Text>
                   <Text style={{ fontSize: 13, color: colors.gray600, textAlign: "center", lineHeight: 20 }}>
-                    Your {paymentMethod === "eft" ? "EFT" : "cash"} payment of {formatPrice(convertToBase(parseFloat(paymentAmount)))} has been recorded and is awaiting verification.
+                    Your {paymentMethod === "eft" ? "EFT" : paymentMethod === "cash" ? "cash" : (dynamicMethods.find((m) => (m.id || m._id || m.key || m.label) === paymentMethod)?.label || paymentMethod)} payment of {formatPrice(convertToBase(parseFloat(paymentAmount)))} has been recorded and is awaiting verification.
                   </Text>
                   <Text style={{ fontSize: 11, color: colors.gray400, marginTop: 6 }}>You will be notified once confirmed.</Text>
                   <Pressable onPress={closePayModal} style={[s.primaryBtn, { marginTop: 16, width: "100%" }]}>
@@ -603,6 +639,7 @@ const s = StyleSheet.create({
 
   input: { backgroundColor: colors.gray50, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, color: colors.gray900 },
 
+  methodGroupLabel: { fontSize: 10, fontWeight: "700", color: colors.gray500, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 },
   methodCard: { flexDirection: "row", alignItems: "center", padding: 14, borderWidth: 1, borderColor: colors.gray200, marginBottom: 8, gap: 12 },
   methodIcon: { width: 40, height: 40, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   methodTitle: { fontSize: 14, fontWeight: "600", color: colors.gray900 },

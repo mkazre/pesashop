@@ -38,6 +38,36 @@ export function useExpoPush() {
   const responseListener = useRef<any>();
 
   useEffect(() => {
+    if (!Notifications || Platform.OS === 'web') return;
+
+    // Request permissions immediately on app launch (mandatory)
+    const requestPermissionsEarly = async () => {
+      try {
+        if (Device && !Device.isDevice) return;
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'PESA Shop',
+            description: 'Order updates, promotions and important alerts',
+            importance: Notifications.AndroidImportance?.MAX,
+            sound: 'default',
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#0F604B',
+            enableVibrate: true,
+            showBadge: true,
+            lockscreenVisibility: Notifications.AndroidNotificationVisibility?.PUBLIC,
+          });
+        }
+        const { status } = await Notifications.getPermissionsAsync();
+        if (status !== 'granted') {
+          await Notifications.requestPermissionsAsync();
+        }
+      } catch {}
+    };
+
+    requestPermissionsEarly();
+  }, []);
+
+  useEffect(() => {
     if (registered.current || !Notifications || Platform.OS === 'web') return;
 
     const isLoggedIn = !!token;
@@ -54,13 +84,15 @@ export function useExpoPush() {
         // This ensures the channel exists so push notifications play sound & vibrate
         if (Platform.OS === 'android') {
           await Notifications.setNotificationChannelAsync('default', {
-            name: 'Default',
+            name: 'PESA Shop',
+            description: 'Order updates, promotions and important alerts',
             importance: Notifications.AndroidImportance?.MAX,
             sound: 'default',
             vibrationPattern: [0, 250, 250, 250],
             lightColor: '#0F604B',
             enableVibrate: true,
             showBadge: true,
+            lockscreenVisibility: Notifications.AndroidNotificationVisibility?.PUBLIC,
           });
         }
 

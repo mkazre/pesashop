@@ -309,4 +309,12 @@ export const notificationsAPI = {
   unsubscribe: (data: any) => api.delete('/api/notifications/subscribe', { data }),
 };
 
+// ─── Chat API ───────────────────────────────────────────────────
+export const chatAPI = {
+  getSettings: () => api.get('/api/chat/settings'),
+  initVisitor: (data: any) => api.post('/api/chat/visitor/init', data),
+  startConversation: (data: any) => api.post('/api/chat/conversations/start', data),
+  getVisitorConversations: (visitorId: string) => api.get(`/api/chat/conversations/visitor/${visitorId}`),
+};
+
 export default api;

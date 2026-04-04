@@ -34,9 +34,11 @@ const ProductsPage = () => {
   const [sortKey, setSortKey] = useState('date-desc');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const [filterStock, setFilterStock] = useState('');
+  const [filterImages, setFilterImages] = useState('');
 
   const { data, isLoading } = useQuery(
-    ['products', page, search, sortKey, filterStatus, filterCategory],
+    ['products', page, search, sortKey, filterStatus, filterCategory, filterStock, filterImages],
     () => productsAPI.getAll({
       page,
       limit: 20,
@@ -44,6 +46,9 @@ const ProductsPage = () => {
       sort: sortKey || undefined,
       status: filterStatus || undefined,
       category: filterCategory || undefined,
+      inStock: filterStock === 'inStock' ? true : undefined,
+      outOfStock: filterStock === 'outOfStock' ? true : undefined,
+      imageFilter: filterImages || undefined,
     }),
     { keepPreviousData: true }
   );
@@ -182,6 +187,37 @@ const ProductsPage = () => {
     aiGenerateMutation.mutate(requestData);
   };
 
+  // Sortable column header helper
+  const sortColMap = {
+    images: { asc: 'images-asc', desc: 'images-desc' },
+    sku:    { asc: 'sku-asc',    desc: 'sku-desc' },
+    name:   { asc: 'name-asc',   desc: 'name-desc' },
+    category: { asc: 'category-asc', desc: 'category-desc' },
+    price:  { asc: 'price-asc',  desc: 'price-desc' },
+    stock:  { asc: 'stock-asc',  desc: 'stock-desc' },
+    status: { asc: 'status-asc', desc: 'status-desc' },
+  };
+  const SortHeader = ({ label, colKey }) => {
+    const map = sortColMap[colKey];
+    if (!map) return <span>{label}</span>;
+    const isAsc = sortKey === map.asc;
+    const isDesc = sortKey === map.desc;
+    const active = isAsc || isDesc;
+    const handleClick = () => {
+      if (!active || isDesc) { setSortKey(map.asc); setPage(1); }
+      else { setSortKey(map.desc); setPage(1); }
+    };
+    return (
+      <button onClick={handleClick} className={`flex items-center gap-1 hover:text-primary transition-colors ${active ? 'text-primary font-semibold' : ''}`}>
+        {label}
+        <span className="flex flex-col leading-none">
+          <IoArrowUp size={9} className={isAsc ? 'text-primary' : 'text-gray-300'} />
+          <IoArrowDown size={9} className={isDesc ? 'text-primary' : 'text-gray-300'} />
+        </span>
+      </button>
+    );
+  };
+
   const columns = [
     {
       key: 'select',
@@ -206,8 +242,7 @@ const ProductsPage = () => {
     },
     {
       key: 'images',
-      title: 'Image',
-      sortable: false,
+      title: <SortHeader label="Image" colKey="images" />,
       width: '80px',
       render: (images, row) => {
         const imageUrl = row.featuredImage || (images && images.length > 0 ? (typeof images[0] === 'string' ? images[0] : images[0]?.url) : null);
@@ -246,18 +281,16 @@ const ProductsPage = () => {
     },
     {
       key: 'sku',
-      title: 'SKU',
+      title: <SortHeader label="SKU" colKey="sku" />,
       width: '120px',
-      sortable: false,
     },
     {
       key: 'name',
-      title: 'Name',
-      sortKey: 'name',
+      title: <SortHeader label="Name" colKey="name" />,
     },
     {
       key: 'categories',
-      title: 'Category',
+      title: <SortHeader label="Category" colKey="category" />,
       width: '150px',
       render: (categories) => (
         <div className="text-sm">
@@ -271,9 +304,8 @@ const ProductsPage = () => {
     },
     {
       key: 'regularPrice',
-      title: 'Price',
+      title: <SortHeader label="Price" colKey="price" />,
       width: '100px',
-      sortKey: 'price',
       render: (price, row) => (
         <div>
           <p className="font-medium">R {price?.toFixed(2) || '0.00'}</p>
@@ -285,10 +317,9 @@ const ProductsPage = () => {
     },
     {
       key: 'stock',
-      title: 'Stock',
+      title: <SortHeader label="Stock" colKey="stock" />,
       width: '80px',
       align: 'center',
-      sortable: false,
       render: (stock, row) => (
         <span className={stock < (row.lowStockThreshold || 5) ? 'text-red-600 font-medium' : ''}>
           {stock || 0}
@@ -297,9 +328,8 @@ const ProductsPage = () => {
     },
     {
       key: 'status',
-      title: 'Status',
+      title: <SortHeader label="Status" colKey="status" />,
       width: '120px',
-      sortable: false,
       render: (status) => (
         <span className={`badge ${
           status === 'active' ? 'badge-success' :
@@ -436,6 +466,24 @@ const ProductsPage = () => {
             ))}
           </select>
           <select
+            value={filterStock}
+            onChange={(e) => { setFilterStock(e.target.value); setPage(1); }}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            <option value="">All Stock</option>
+            <option value="inStock">In Stock</option>
+            <option value="outOfStock">Out of Stock</option>
+          </select>
+          <select
+            value={filterImages}
+            onChange={(e) => { setFilterImages(e.target.value); setPage(1); }}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            <option value="">All Images</option>
+            <option value="single">1 Image Only</option>
+            <option value="multiple">2+ Images</option>
+          </select>
+          <select
             value={sortKey}
             onChange={(e) => { setSortKey(e.target.value); setPage(1); }}
             className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
@@ -444,13 +492,19 @@ const ProductsPage = () => {
             <option value="date-asc">Oldest First</option>
             <option value="name-asc">Name A-Z</option>
             <option value="name-desc">Name Z-A</option>
+            <option value="sku-asc">SKU A-Z</option>
+            <option value="sku-desc">SKU Z-A</option>
             <option value="price-asc">Price Low-High</option>
             <option value="price-desc">Price High-Low</option>
+            <option value="stock-asc">Stock Low-High</option>
+            <option value="stock-desc">Stock High-Low</option>
             <option value="rating-desc">Top Rated</option>
+            <option value="status-asc">Status A-Z</option>
+            <option value="category-asc">Category A-Z</option>
           </select>
-          {(filterStatus || filterCategory || sortKey !== 'date-desc') && (
+          {(filterStatus || filterCategory || filterStock || filterImages || sortKey !== 'date-desc') && (
             <button
-              onClick={() => { setFilterStatus(''); setFilterCategory(''); setSortKey('date-desc'); setPage(1); }}
+              onClick={() => { setFilterStatus(''); setFilterCategory(''); setFilterStock(''); setFilterImages(''); setSortKey('date-desc'); setPage(1); }}
               className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
             >
               Clear filters

@@ -183,7 +183,21 @@ router.get('/', optionalAuth, async (req, res) => {
       if (req.query.minPrice) query.regularPrice.$gte = Number(req.query.minPrice);
       if (req.query.maxPrice) query.regularPrice.$lte = Number(req.query.maxPrice);
     }
-    
+
+    if (req.query.inStock === 'true') {
+      query.stock = { $gt: 0 };
+    }
+
+    if (req.query.outOfStock === 'true') {
+      query.stock = { $lte: 0 };
+    }
+
+    if (req.query.imageFilter === 'single') {
+      query.$expr = { $lte: [{ $size: { $ifNull: ['$images', []] } }, 1] };
+    } else if (req.query.imageFilter === 'multiple') {
+      query.$expr = { $gt: [{ $size: { $ifNull: ['$images', []] } }, 1] };
+    }
+
     let sortBy = '-createdAt';
     if (req.query.sort) {
       const sortMap = {
@@ -191,6 +205,14 @@ router.get('/', optionalAuth, async (req, res) => {
         'price-desc': '-regularPrice',
         'name-asc': 'name',
         'name-desc': '-name',
+        'sku-asc': 'sku',
+        'sku-desc': '-sku',
+        'stock-asc': 'stock',
+        'stock-desc': '-stock',
+        'status-asc': 'status',
+        'status-desc': '-status',
+        'category-asc': 'categories',
+        'category-desc': '-categories',
         'date-desc': '-createdAt',
         'date-asc': 'createdAt',
         'rating-desc': '-rating',
