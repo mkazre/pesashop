@@ -24,6 +24,7 @@ export default function OrdersScreen() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<any[]>([]);
   const formatPrice = useCurrencyStore((s) => s.formatPrice);
+  const userEmail = (require("@/store").useAuthStore.getState().user?.email) || "";
 
   useEffect(() => {
     ordersAPI.getAll({ sort: "-createdAt" }).then((res) => setOrders(res.data?.data || [])).catch(() => {}).finally(() => setLoading(false));
@@ -75,7 +76,7 @@ export default function OrdersScreen() {
                 <Pressable
                   onPress={(e) => {
                     e.stopPropagation();
-                    router.push("/account/track-order" as any);
+                    router.push({ pathname: "/account/track-order", params: { orderNumber: orderNum, email: userEmail } } as any);
                   }}
                   style={os.trackBtn}
                 >

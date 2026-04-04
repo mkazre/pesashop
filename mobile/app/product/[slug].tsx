@@ -295,9 +295,9 @@ export default function ProductDetailScreen() {
           </View>
 
           {/* ── Short Description ── */}
-          {product.shortDescription ? (
+          {(product.shortDescription || product.short_description || product.excerpt) ? (
             <View style={ps.shortDescCard}>
-              <Text style={ps.shortDescText}>{product.shortDescription}</Text>
+              <Text style={ps.shortDescText}>{product.shortDescription || product.short_description || product.excerpt}</Text>
             </View>
           ) : null}
 

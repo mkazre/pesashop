@@ -41,7 +41,9 @@ export default function ProductCard({ product, compact, deliveryDays }: ProductC
   const imageUrl = resolveImageUrl(product.images?.[0]) || resolveImageUrl(product.image);
 
   const handlePress = () => {
-    router.push(`/product/${product.slug || product._id}`);
+    const id = product.slug || product._id;
+    if (!id) return;
+    router.push(`/product/${id}` as any);
   };
 
   const toggleWishlist = () => {

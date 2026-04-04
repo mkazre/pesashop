@@ -14,11 +14,13 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import SearchBar from "@/components/SearchBar";
 import ProductCard from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import EmptyState from "@/components/EmptyState";
-import { colors } from "@/theme";
+import BottomTabBar from "@/components/BottomTabBar";
+import { colors, resolveImageUrl } from "@/theme";
 import { productsAPI, categoriesAPI, productArchiveSettingsAPI } from "@/services/api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -118,20 +120,40 @@ export default function ShopScreen() {
 
   const cardWidth = (SCREEN_WIDTH - 32 - (numColumns - 1) * 12) / numColumns;
 
+  const shopBanner = archiveSettings?.shopBanner || archiveSettings?.banner;
+
   const renderHeader = () => (
     <View>
-      {/* Category pills */}
+      {/* Shop Banner */}
+      {shopBanner?.image && (
+        <Pressable style={ss.bannerWrap} onPress={() => shopBanner.link && router.push(shopBanner.link as any)}>
+          <Image source={{ uri: resolveImageUrl(shopBanner.image) }} style={ss.bannerImg} contentFit="cover" />
+          {(shopBanner.title || shopBanner.subtitle) && (
+            <View style={ss.bannerOverlay}>
+              {shopBanner.title && <Text style={ss.bannerTitle}>{shopBanner.title}</Text>}
+              {shopBanner.subtitle && <Text style={ss.bannerSubtitle}>{shopBanner.subtitle}</Text>}
+            </View>
+          )}
+        </Pressable>
+      )}
+      {/* Category pills — tap navigates to category page */}
       <FlatList
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 8 }}
-        data={[{ _id: null, name: "All" }, ...categories]}
-        keyExtractor={(item) => item._id || "all"}
-        renderItem={({ item }) => {
-          const active = selectedCategory === item._id;
+        data={[{ _id: null, name: "All", slug: null }, ...categories]}
+        keyExtractor={(item: any) => item._id || "all"}
+        renderItem={({ item }: any) => {
+          const active = !item._id && !selectedCategory;
           return (
             <Pressable
-              onPress={() => setSelectedCategory(item._id)}
+              onPress={() => {
+                if (!item._id) {
+                  setSelectedCategory(null);
+                } else {
+                  router.push(`/category/${item.slug || item._id}` as any);
+                }
+              }}
               style={[ss.chip, active ? ss.chipActive : ss.chipInactive]}
             >
               <Text style={[ss.chipText, active ? ss.chipTextActive : ss.chipTextInactive]}>{item.name}</Text>
@@ -189,6 +211,8 @@ export default function ShopScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      <BottomTabBar />
 
       {/* Filter & Sort Drawer */}
       <Modal visible={filterDrawerOpen} animationType="slide" transparent presentationStyle="overFullScreen">
@@ -259,6 +283,11 @@ const ss = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.gray50 },
   header: { backgroundColor: colors.white, paddingHorizontal: 16, paddingBottom: 12, paddingTop: 8, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
   title: { fontSize: 20, fontWeight: "700", color: colors.gray900, marginBottom: 8 },
+  bannerWrap: { position: "relative", height: 140, marginBottom: 0 },
+  bannerImg: { width: "100%", height: 140 },
+  bannerOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 12, backgroundColor: "rgba(0,0,0,0.4)" },
+  bannerTitle: { fontSize: 18, fontWeight: "800", color: "#fff" },
+  bannerSubtitle: { fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 },
   chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 0, borderWidth: 1 },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipInactive: { backgroundColor: colors.white, borderColor: colors.gray200 },

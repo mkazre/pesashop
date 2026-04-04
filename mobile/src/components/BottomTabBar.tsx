@@ -2,15 +2,16 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useCartStore, useCompareStore } from "@/store";
+import { useCartStore, useWishlistStore, useCompareStore } from "@/store";
 import { colors } from "@/theme";
 
 const TABS = [
-  { name: "Home",    route: "/",        icon: "home-outline",          activeIcon: "home",           badge: "cart" as const | undefined },
-  { name: "Shop",    route: "/shop",    icon: "grid-outline",          activeIcon: "grid",           badge: undefined },
-  { name: "Cart",    route: "/cart",    icon: "cart-outline",          activeIcon: "cart",           badge: "cart" as const },
-  { name: "Compare", route: "/compare", icon: "git-compare-outline",   activeIcon: "git-compare",    badge: "compare" as const },
-  { name: "Account", route: "/account", icon: "person-outline",        activeIcon: "person",         badge: undefined },
+  { name: "Home",     route: "/",           icon: "home-outline",        activeIcon: "home"          },
+  { name: "Shop",     route: "/shop",        icon: "grid-outline",        activeIcon: "grid"          },
+  { name: "Cart",     route: "/cart",        icon: "cart-outline",        activeIcon: "cart"          },
+  { name: "Wishlist", route: "/(tabs)/wishlist", icon: "heart-outline",   activeIcon: "heart"         },
+  { name: "Compare",  route: "/compare",     icon: "git-compare-outline", activeIcon: "git-compare"   },
+  { name: "Account",  route: "/account",     icon: "person-outline",      activeIcon: "person"        },
 ] as const;
 
 export default function BottomTabBar() {
@@ -18,15 +19,16 @@ export default function BottomTabBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const cartCount = useCartStore((s) => s.getItemCount());
+  const wishlistCount = useWishlistStore((s) => s.items.length);
   const compareCount = useCompareStore((s) => s.products.length);
 
   return (
-    <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+    <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       {TABS.map((tab) => {
         const isActive =
           tab.route === "/"
             ? pathname === "/" || pathname === "/index"
-            : pathname.startsWith(tab.route);
+            : pathname === tab.route || pathname.startsWith(tab.route.replace("(tabs)/", ""));
         const iconName = isActive ? tab.activeIcon : tab.icon;
 
         return (
@@ -36,14 +38,15 @@ export default function BottomTabBar() {
             style={s.tab}
           >
             <View>
-              <Ionicons
-                name={iconName as any}
-                size={22}
-                color={isActive ? colors.primary : "#9ca3af"}
-              />
+              <Ionicons name={iconName as any} size={20} color={isActive ? colors.primary : "#9ca3af"} />
               {tab.name === "Cart" && cartCount > 0 && (
                 <View style={s.badge}>
                   <Text style={s.badgeText}>{cartCount > 99 ? "99+" : cartCount}</Text>
+                </View>
+              )}
+              {tab.name === "Wishlist" && wishlistCount > 0 && (
+                <View style={[s.badge, { backgroundColor: "#ef4444" }]}>
+                  <Text style={s.badgeText}>{wishlistCount > 99 ? "99+" : wishlistCount}</Text>
                 </View>
               )}
               {tab.name === "Compare" && compareCount > 0 && (
@@ -52,12 +55,7 @@ export default function BottomTabBar() {
                 </View>
               )}
             </View>
-            <Text
-              style={[
-                s.label,
-                { color: isActive ? colors.primary : "#9ca3af" },
-              ]}
-            >
+            <Text style={[s.label, { color: isActive ? colors.primary : "#9ca3af" }]}>
               {tab.name}
             </Text>
           </Pressable>
@@ -73,33 +71,34 @@ const s = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#f3f4f6",
-    paddingTop: 8,
+    paddingTop: 6,
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
+    paddingHorizontal: 2,
   },
   label: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: "600",
   },
   badge: {
     position: "absolute",
     top: -4,
-    right: -8,
+    right: -6,
     backgroundColor: "#ef4444",
-    borderRadius: 9,
-    minWidth: 18,
-    height: 18,
+    borderRadius: 8,
+    minWidth: 15,
+    height: 15,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
   },
   badgeText: {
     color: "#fff",
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: "700",
   },
 });

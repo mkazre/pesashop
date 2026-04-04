@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
@@ -31,11 +31,25 @@ export default function TrackOrderScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { formatPrice } = useCurrencyStore();
+  const params = useLocalSearchParams<{ orderNumber?: string; email?: string }>();
 
-  const [orderNumber, setOrderNumber] = useState("");
-  const [email, setEmail] = useState("");
+  const [orderNumber, setOrderNumber] = useState(params.orderNumber || "");
+  const [email, setEmail] = useState(params.email || "");
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState<any>(null);
+
+  // Auto-search when navigated from orders list with pre-filled details
+  useEffect(() => {
+    if (!params.orderNumber || !params.email) return;
+    setLoading(true);
+    ordersAPI.track(params.orderNumber, params.email).then((res) => {
+      const data = res.data?.data || res.data?.order || res.data;
+      if (data) setOrder(data);
+      else Toast.show({ type: "error", text1: "Order not found" });
+    }).catch((err: any) => {
+      Toast.show({ type: "error", text1: err.response?.data?.message || "Order not found" });
+    }).finally(() => setLoading(false));
+  }, []);
 
   const handleTrack = async () => {
     if (!orderNumber.trim() || !email.trim()) {

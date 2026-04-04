@@ -127,21 +127,19 @@ export default function CheckoutDrawer() {
       Animated.timing(overlayAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
     ]).start();
 
-    // Fetch payment methods
-    paymentMethodsAPI.getActive().then((res) => {
-      const methods = res.data?.data || res.data || [];
-      if (methods.length > 0) {
-        setPaymentMethods(methods);
-        setPaymentMethod(methods[0].id || methods[0]._id || methods[0].key || "");
-      }
-    }).catch(() => {});
-
-    // Fetch pickup addresses + free shipping
+    // Fetch pickup addresses + payment methods (both from productPageSettings)
     productPageSettingsAPI.get().then((res) => {
       const settings = res.data?.data || res.data;
+      // Pickup addresses
       const pickups = settings?.checkoutDrawer?.pickupAddresses?.filter((p: any) => p.enabled) || [];
       setPickupAddresses(pickups);
       if (pickups.length > 0) setSelectedPickup(pickups[0].label);
+      // Payment methods from admin panel
+      const methods = (settings?.checkoutDrawer?.paymentMethods || []).filter((p: any) => p.enabled !== false);
+      if (methods.length > 0) {
+        setPaymentMethods(methods);
+        setPaymentMethod(methods[0].id || "");
+      }
     }).catch(() => {});
 
     settingsAPI.getPublic().then((res) => {
@@ -309,7 +307,7 @@ export default function CheckoutDrawer() {
     setPesaCalculating(true);
     try {
       const res = await loyaltyAPI.calculateRedemption(coins, amountDueNow);
-      const discount = res.data?.data?.discountAmount || res.data?.discountAmount || 0;
+      const discount = res.data?.data?.value || res.data?.value || res.data?.data?.discountAmount || 0;
       setPesaDiscount(discount);
       setPesaApplied(true);
       Toast.show({ type: "success", text1: `${coins} PESA Coins applied! -${formatPrice(discount)}` });
@@ -338,8 +336,8 @@ export default function CheckoutDrawer() {
     }
     setLaybyeLoading((s) => ({ ...s, [productId]: true }));
     try {
-      const res = await laybyPlansAPI.getForProduct(productId);
-      const plans = res.data?.data || res.data || [];
+      const res = await laybyPlansAPI.checkProduct(productId);
+      const plans = res.data?.plans || res.data?.data || [];
       setLaybyePlans((s) => ({ ...s, [productId]: plans }));
       setExpandedLaybye(productId);
     } catch {
@@ -452,9 +450,8 @@ export default function CheckoutDrawer() {
 
   if (!checkoutDrawerOpen) return null;
 
-  const pmId = (pm: any) => pm.id || pm._id || pm.key || pm.name;
-  const pmLabel = (pm: any) => pm.name || pm.label || pm.id || "";
-  const pmIcon = (pm: any) => pm.icon || pm.emoji || "💳";
+  const pmId = (pm: any) => pm.id || pm._id || pm.key || "";
+  const pmLabel = (pm: any) => pm.label || pm.name || pm.id || "";
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -881,45 +878,50 @@ export default function CheckoutDrawer() {
                   <Text style={s.splitToggleText}>Split payment across multiple methods</Text>
                 </Pressable>
 
-                {paymentMethods.length > 0 ? paymentMethods.map((pm) => {
-                  const id = pmId(pm);
-                  const active = !splitPayment && paymentMethod === id;
-                  return (
-                    <View key={id}>
-                      <Pressable
-                        onPress={() => !splitPayment && setPaymentMethod(id)}
-                        style={[s.paymentOpt, active && s.paymentOptActive]}
-                      >
-                        <Text style={s.paymentIcon}>{pmIcon(pm)}</Text>
-                        <Text style={[s.paymentLabel, active && { color: colors.primary }]}>{pmLabel(pm)}</Text>
-                        {!splitPayment ? (
-                          <View style={s.paymentRadio}>{active && <View style={s.paymentRadioInner} />}</View>
-                        ) : (
-                          <TextInput
-                            style={s.splitAmountInput}
-                            value={splitAmounts[id] || ""}
-                            onChangeText={(v) => setSplitAmounts((a) => ({ ...a, [id]: v }))}
-                            placeholder="0.00"
-                            placeholderTextColor={colors.gray400}
-                            keyboardType="decimal-pad"
-                          />
-                        )}
-                      </Pressable>
-                    </View>
-                  );
-                }) : (
-                  // Fallback hardcoded methods if API fails
+                {paymentMethods.length > 0 ? (
+                  <>
+                    <Text style={s.pmGroupLabel}>Popular Methods</Text>
+                    {paymentMethods.map((pm) => {
+                      const id = pmId(pm);
+                      const active = !splitPayment && paymentMethod === id;
+                      return (
+                        <Pressable key={id} onPress={() => !splitPayment && setPaymentMethod(id)}
+                          style={[s.paymentOpt, active && s.paymentOptActive]}>
+                          {pm.displayType === "image" && pm.image ? (
+                            <Image source={{ uri: resolveImageUrl(pm.image) }} style={s.pmLogo} contentFit="contain" />
+                          ) : (
+                            <Text style={s.paymentIcon}>{pm.icon || "💳"}</Text>
+                          )}
+                          <Text style={[s.paymentLabel, active && { color: colors.primary }]}>{pmLabel(pm)}</Text>
+                          {!splitPayment ? (
+                            <View style={s.paymentRadio}>{active && <View style={s.paymentRadioInner} />}</View>
+                          ) : (
+                            <TextInput
+                              style={s.splitAmountInput}
+                              value={splitAmounts[id] || ""}
+                              onChangeText={(v) => setSplitAmounts((a) => ({ ...a, [id]: v }))}
+                              placeholder="0.00"
+                              placeholderTextColor={colors.gray400}
+                              keyboardType="decimal-pad"
+                            />
+                          )}
+                        </Pressable>
+                      );
+                    })}
+                  </>
+                ) : (
+                  // Fallback if settings not loaded yet
                   [
-                    { id: "eft", name: "EFT / Bank Transfer", emoji: "🏦" },
-                    { id: "cash", name: "Cash on Delivery", emoji: "💵" },
-                    { id: "card", name: "Card", emoji: "💳" },
+                    { id: "eft", label: "EFT / Bank Transfer", icon: "🏦" },
+                    { id: "cash", label: "Cash on Delivery", icon: "💵" },
+                    { id: "card", label: "Card", icon: "💳" },
                   ].map((pm) => {
                     const active = !splitPayment && paymentMethod === pm.id;
                     return (
                       <Pressable key={pm.id} onPress={() => !splitPayment && setPaymentMethod(pm.id)}
                         style={[s.paymentOpt, active && s.paymentOptActive]}>
-                        <Text style={s.paymentIcon}>{pm.emoji}</Text>
-                        <Text style={[s.paymentLabel, active && { color: colors.primary }]}>{pm.name}</Text>
+                        <Text style={s.paymentIcon}>{pm.icon}</Text>
+                        <Text style={[s.paymentLabel, active && { color: colors.primary }]}>{pm.label}</Text>
                         <View style={s.paymentRadio}>{active && <View style={s.paymentRadioInner} />}</View>
                       </Pressable>
                     );
@@ -1260,6 +1262,8 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: colors.gray200, marginBottom: 6,
   },
   paymentOptActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  pmGroupLabel: { fontSize: 10, fontWeight: "700", color: colors.gray400, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, marginTop: 4 },
+  pmLogo: { width: 36, height: 24, backgroundColor: colors.gray50 },
   paymentIcon: { fontSize: 18 },
   paymentLabel: { flex: 1, fontSize: 13, fontWeight: "500", color: colors.gray700 },
   paymentRadio: {
