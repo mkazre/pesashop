@@ -7,9 +7,12 @@ import {
   ActivityIndicator,
   StyleSheet,
   RefreshControl,
+  Clipboard,
 } from "react-native";
+import Toast from "react-native-toast-message";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { couponsAPI } from "@/services/api";
 import { useCurrencyStore } from "@/store";
@@ -93,7 +96,15 @@ export default function CouponsScreen() {
                   </View>
                 </View>
                 <View style={s.cardRight}>
-                  <Text style={[s.couponCode, expired && { color: colors.gray400 }]}>{coupon.code}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Text style={[s.couponCode, expired && { color: colors.gray400 }]}>{coupon.code}</Text>
+                    <Pressable
+                      onPress={() => { Clipboard.setString(coupon.code); Toast.show({ type: "success", text1: "Coupon code copied!", visibilityTime: 1500 }); }}
+                      style={s.copyBtn}
+                    >
+                      <Ionicons name="copy-outline" size={14} color={colors.primary} />
+                    </Pressable>
+                  </View>
                   {coupon.description && <Text style={s.couponDesc} numberOfLines={2}>{coupon.description}</Text>}
                   <View style={s.metaRow}>
                     {(coupon.minimumOrderAmount || coupon.minimumAmount) > 0 && (
@@ -143,4 +154,5 @@ const s = StyleSheet.create({
   metaRow: { flexDirection: "row", gap: 12, marginTop: 6 },
   metaText: { fontSize: 11, color: colors.gray500 },
   usageText: { fontSize: 10, color: colors.gray400, marginTop: 4 },
+  copyBtn: { padding: 5, backgroundColor: colors.primaryLight, borderRadius: 2 },
 });

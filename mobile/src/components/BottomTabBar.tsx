@@ -2,15 +2,15 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useCartStore } from "@/store";
+import { useCartStore, useCompareStore } from "@/store";
 import { colors } from "@/theme";
 
 const TABS = [
-  { name: "Home", route: "/", icon: "home-outline", activeIcon: "home" },
-  { name: "Shop", route: "/shop", icon: "grid-outline", activeIcon: "grid" },
-  { name: "Cart", route: "/cart", icon: "cart-outline", activeIcon: "cart" },
-  { name: "Wishlist", route: "/wishlist", icon: "heart-outline", activeIcon: "heart" },
-  { name: "Account", route: "/account", icon: "person-outline", activeIcon: "person" },
+  { name: "Home",    route: "/",        icon: "home-outline",          activeIcon: "home",           badge: "cart" as const | undefined },
+  { name: "Shop",    route: "/shop",    icon: "grid-outline",          activeIcon: "grid",           badge: undefined },
+  { name: "Cart",    route: "/cart",    icon: "cart-outline",          activeIcon: "cart",           badge: "cart" as const },
+  { name: "Compare", route: "/compare", icon: "git-compare-outline",   activeIcon: "git-compare",    badge: "compare" as const },
+  { name: "Account", route: "/account", icon: "person-outline",        activeIcon: "person",         badge: undefined },
 ] as const;
 
 export default function BottomTabBar() {
@@ -18,6 +18,7 @@ export default function BottomTabBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const cartCount = useCartStore((s) => s.getItemCount());
+  const compareCount = useCompareStore((s) => s.products.length);
 
   return (
     <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
@@ -42,9 +43,12 @@ export default function BottomTabBar() {
               />
               {tab.name === "Cart" && cartCount > 0 && (
                 <View style={s.badge}>
-                  <Text style={s.badgeText}>
-                    {cartCount > 99 ? "99+" : cartCount}
-                  </Text>
+                  <Text style={s.badgeText}>{cartCount > 99 ? "99+" : cartCount}</Text>
+                </View>
+              )}
+              {tab.name === "Compare" && compareCount > 0 && (
+                <View style={[s.badge, { backgroundColor: colors.primary }]}>
+                  <Text style={s.badgeText}>{compareCount}</Text>
                 </View>
               )}
             </View>

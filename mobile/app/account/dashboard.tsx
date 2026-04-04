@@ -158,8 +158,8 @@ export default function DashboardScreen() {
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.gray50 },
   loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 60 },
-  statsGrid: { flexDirection: "row", flexWrap: "wrap", padding: 12, gap: 12 },
-  statCard: { width: "46%", flex: 1, backgroundColor: colors.white, padding: 16, alignItems: "center" },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", padding: 12, gap: 10 },
+  statCard: { width: "47%", flexGrow: 1, flexShrink: 1, flexBasis: "47%", backgroundColor: colors.white, padding: 14, alignItems: "center", minWidth: 140 },
   statIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", marginBottom: 10 },
   statValue: { fontSize: 22, fontWeight: "800", color: colors.gray900, marginBottom: 2 },
   statLabel: { fontSize: 11, color: colors.gray500, textAlign: "center", fontWeight: "500" },
@@ -171,8 +171,8 @@ const s = StyleSheet.create({
   upcomingOrder: { fontSize: 13, fontWeight: "600", color: colors.gray800 },
   upcomingDate: { fontSize: 12, color: colors.gray500, marginTop: 2 },
   upcomingAmount: { fontSize: 14, fontWeight: "700", color: colors.primary },
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  quickItem: { width: "30%", flex: 1, alignItems: "center", paddingVertical: 14, borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.gray50, gap: 6 },
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  quickItem: { width: "30%", flexGrow: 1, flexShrink: 1, flexBasis: "30%", alignItems: "center", paddingVertical: 14, borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.gray50, gap: 6, minWidth: 100 },
   quickIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primaryLight, alignItems: "center", justifyContent: "center" },
   quickLabel: { fontSize: 11, color: colors.gray700, fontWeight: "600", textAlign: "center" },
 });

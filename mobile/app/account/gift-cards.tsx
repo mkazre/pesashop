@@ -7,9 +7,12 @@ import {
   ActivityIndicator,
   StyleSheet,
   RefreshControl,
+  Clipboard,
 } from "react-native";
+import Toast from "react-native-toast-message";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { giftCardsAPI } from "@/services/api";
 import { useCurrencyStore } from "@/store";
@@ -58,7 +61,9 @@ export default function GiftCardsScreen() {
       <View style={s.header}>
         <Pressable onPress={() => router.back()} style={s.backBtn}><Ionicons name="arrow-back" size={22} color={colors.gray800} /></Pressable>
         <Text style={s.headerTitle}>Gift Cards</Text>
-        <View style={{ width: 40 }} />
+        <Pressable onPress={() => router.push("/account/buy-gift-card" as any)} style={s.buyBtn}>
+          <Text style={s.buyBtnText}>Buy Gift Card</Text>
+        </Pressable>
       </View>
 
       <ScrollView
@@ -82,7 +87,15 @@ export default function GiftCardsScreen() {
                   <Text style={s.cardBalLabel}>Balance</Text>
                 </View>
                 <View style={s.cardBody}>
-                  <Text style={s.cardCode}>{gc.code}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                    <Text style={[s.cardCode, { marginBottom: 0 }]}>{gc.code}</Text>
+                    <Pressable
+                      onPress={() => { Clipboard.setString(gc.code); Toast.show({ type: "success", text1: "Gift card code copied!", visibilityTime: 1500 }); }}
+                      style={s.copyBtn}
+                    >
+                      <Ionicons name="copy-outline" size={14} color={colors.primary} />
+                    </Pressable>
+                  </View>
                   <View style={s.cardRow}>
                     <View>
                       <Text style={s.cardMetaLabel}>Original Value</Text>
@@ -136,7 +149,10 @@ const s = StyleSheet.create({
   cardBalance: { fontSize: 28, fontWeight: "800", color: "#fff", marginTop: 8 },
   cardBalLabel: { fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 2 },
   cardBody: { padding: 16 },
-  cardCode: { fontSize: 16, fontWeight: "700", color: colors.gray900, letterSpacing: 2, marginBottom: 12 },
+  cardCode: { fontSize: 16, fontWeight: "700", color: colors.gray900, letterSpacing: 2 },
+  copyBtn: { padding: 6, backgroundColor: colors.primaryLight },
+  buyBtn: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 7 },
+  buyBtnText: { color: "#fff", fontSize: 12, fontWeight: "700" },
   cardRow: { flexDirection: "row", justifyContent: "space-between" },
   cardMetaLabel: { fontSize: 10, color: colors.gray500, textTransform: "uppercase", letterSpacing: 0.5 },
   cardMetaValue: { fontSize: 13, fontWeight: "600", color: colors.gray900, marginTop: 2 },

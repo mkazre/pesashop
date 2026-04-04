@@ -52,6 +52,7 @@ export default function ProductDetailScreen() {
   const scrollRef = useRef<ScrollView>(null);
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [product, setProduct] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -99,7 +100,7 @@ export default function ProductDetailScreen() {
         }
       } catch (err) {
         console.error("Error fetching product:", err);
-        Toast.show({ type: "error", text1: "Product not found" });
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -143,7 +144,16 @@ export default function ProductDetailScreen() {
     [product?._id]
   );
 
-  if (loading || !product) return <LoadingSpinner fullScreen />;
+  if (loading) return <LoadingSpinner fullScreen />;
+  if (error || !product) return (
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.white }}>
+      <Ionicons name="alert-circle-outline" size={48} color={colors.gray300} />
+      <Text style={{ fontSize: 16, fontWeight: "600", color: colors.gray600, marginTop: 12 }}>Product not found</Text>
+      <Pressable onPress={() => router.back()} style={{ marginTop: 16, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: colors.primary }}>
+        <Text style={{ color: "#fff", fontWeight: "600" }}>Go Back</Text>
+      </Pressable>
+    </View>
+  );
 
   const images = (() => {
     const raw: string[] = [];
@@ -193,14 +203,20 @@ export default function ProductDetailScreen() {
         <Pressable onPress={() => router.back()} style={ps.floatBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.gray800} />
         </Pressable>
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <Pressable onPress={handleShare} style={ps.floatBtn}>
-            <Ionicons name="share-outline" size={20} color={colors.gray800} />
-          </Pressable>
-          <Pressable onPress={() => inWishlist ? removeFromWishlist(product._id) : addToWishlist(product)} style={ps.floatBtn}>
-            <Ionicons name={inWishlist ? "heart" : "heart-outline"} size={20} color={inWishlist ? colors.red500 : colors.gray800} />
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={() => {
+            if (inWishlist) {
+              removeFromWishlist(product._id);
+              Toast.show({ type: "success", text1: "Removed from wishlist", visibilityTime: 1500 });
+            } else {
+              addToWishlist(product);
+              Toast.show({ type: "success", text1: "Added to wishlist!", visibilityTime: 1500 });
+            }
+          }}
+          style={ps.floatBtn}
+        >
+          <Ionicons name={inWishlist ? "heart" : "heart-outline"} size={20} color={inWishlist ? colors.red500 : colors.gray800} />
+        </Pressable>
       </View>
 
       <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
@@ -273,7 +289,17 @@ export default function ProductDetailScreen() {
             <Text style={[ps.stockText, { color: product.stock > 0 ? colors.green600 : colors.red500 }]}>
               {product.stock > 0 ? `In Stock (${product.stock} available)` : "Out of Stock"}
             </Text>
+            {product.sku && (
+              <Text style={ps.skuText}>SKU: <Text style={{ color: colors.gray700 }}>{product.sku}</Text></Text>
+            )}
           </View>
+
+          {/* ── Short Description ── */}
+          {product.shortDescription ? (
+            <View style={ps.shortDescCard}>
+              <Text style={ps.shortDescText}>{product.shortDescription}</Text>
+            </View>
+          ) : null}
 
           {/* ── Variant Selectors ── */}
           {product.attributes?.map((attr: any) => {
@@ -424,6 +450,21 @@ export default function ProductDetailScreen() {
             </View>
           )}
         </View>
+
+        {/* ════ QUICK SPECS ════ */}
+        {product.specifications?.length > 0 && (
+          <View style={ps.quickSpecsCard}>
+            <Text style={ps.quickSpecsTitle}>Quick Specs</Text>
+            <View style={ps.quickSpecsGrid}>
+              {product.specifications.slice(0, 6).map((spec: any, i: number) => (
+                <View key={i} style={ps.quickSpecItem}>
+                  <Text style={ps.quickSpecKey}>{spec.key || spec.name}</Text>
+                  <Text style={ps.quickSpecVal} numberOfLines={1}>{spec.value}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* ════ PESA AI ASSISTANT ════ */}
         <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
@@ -609,6 +650,9 @@ export default function ProductDetailScreen() {
           );
         })()}
 
+        {/* ════ RECENTLY VIEWED ════ */}
+        <RecentlyViewedRow currentId={product._id} />
+
         <View style={{ height: 16 }} />
       </ScrollView>
 
@@ -620,6 +664,28 @@ export default function ProductDetailScreen() {
       />
 
       <BottomTabBar />
+    </View>
+  );
+}
+
+function RecentlyViewedRow({ currentId }: { currentId: string }) {
+  const products = useRecentlyViewedStore((s) => s.products).filter((p: any) => p._id !== currentId).slice(0, 6);
+  if (products.length === 0) return null;
+  return (
+    <View style={ps.recentSection}>
+      <Text style={ps.recentTitle}>Recently Viewed</Text>
+      <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        data={products}
+        keyExtractor={(item: any) => item._id}
+        contentContainerStyle={{ gap: 10, paddingHorizontal: 16 }}
+        renderItem={({ item }: any) => (
+          <View style={{ width: 150 }}>
+            <ProductCard product={item} compact />
+          </View>
+        )}
+      />
     </View>
   );
 }
@@ -728,4 +794,18 @@ const ps = StyleSheet.create({
   trustRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16, marginBottom: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.gray100 },
   trustBadge: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.gray50, paddingHorizontal: 10, paddingVertical: 6 },
   trustBadgeText: { fontSize: 11, color: colors.gray700, fontWeight: "500" },
+  // SKU + short desc
+  skuText: { fontSize: 11, color: colors.gray400, marginLeft: 12 },
+  shortDescCard: { backgroundColor: colors.gray50, borderLeftWidth: 3, borderLeftColor: colors.primary, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
+  shortDescText: { fontSize: 14, color: colors.gray700, lineHeight: 22 },
+  // Quick specs
+  quickSpecsCard: { marginHorizontal: 16, marginBottom: 12, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray100, padding: 16 },
+  quickSpecsTitle: { fontSize: 12, fontWeight: "700", color: colors.gray700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 },
+  quickSpecsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  quickSpecItem: { width: "48%", backgroundColor: colors.gray50, padding: 8 },
+  quickSpecKey: { fontSize: 10, color: colors.gray500, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 },
+  quickSpecVal: { fontSize: 13, fontWeight: "600", color: colors.gray800 },
+  // Recently viewed
+  recentSection: { marginTop: 8, paddingVertical: 16, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.gray100 },
+  recentTitle: { fontSize: 14, fontWeight: "700", color: colors.gray900, textTransform: "uppercase", letterSpacing: 0.5, paddingHorizontal: 16, marginBottom: 12 },
 });

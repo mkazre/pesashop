@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store";
-import { pagesAPI, menusAPI } from "@/services/api";
+import { menusAPI } from "@/services/api";
 import { colors } from "@/theme";
 
 const LOGO = require("@/../assets/pesashop-logo.png");
@@ -34,7 +34,6 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
 
-  const [customPages, setCustomPages] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [slideAnim] = useState(new Animated.Value(-drawerWidth));
 
@@ -52,16 +51,6 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
 
   useEffect(() => {
     if (!visible) return;
-    // Fetch published custom pages
-    pagesAPI.getPublished()
-      .then((res) => {
-        const pages = (res.data?.data || []).filter(
-          (p: any) => p.templateType === "page" || p.templateType === "custom"
-        );
-        setCustomPages(pages);
-      })
-      .catch(() => {});
-
     // Fetch mobile menu from admin — also try 'mobile-menu' location
     Promise.all([
       menusAPI.getByLocation("mobile").catch(() => null),
@@ -90,9 +79,10 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
   };
 
   const staticLinks: { icon: keyof typeof Ionicons.glyphMap; label: string; path: string }[] = [
-    { icon: "home-outline", label: "Home", path: "/(tabs)" },
-    { icon: "grid-outline", label: "Shop", path: "/(tabs)/shop" },
-    { icon: "navigate-outline", label: "Track Order", path: "/account/track-order" },
+    { icon: "home-outline",         label: "Home",        path: "/(tabs)" },
+    { icon: "grid-outline",         label: "Shop",        path: "/(tabs)/shop" },
+    { icon: "apps-outline",         label: "Categories",  path: "/categories" },
+    { icon: "navigate-outline",     label: "Track Order", path: "/account/track-order" },
   ];
 
   if (!visible) return null;
@@ -200,22 +190,7 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
               </View>
             )}
 
-            {/* Custom pages from page builder */}
-            {customPages.length > 0 && (
-              <View style={s.section}>
-                <Text style={s.sectionTitle}>Pages</Text>
-                {customPages.map((pg: any) => (
-                  <Pressable
-                    key={pg._id}
-                    onPress={() => navigate(`/page/${pg.slug}`)}
-                    style={s.menuItem}
-                  >
-                    <Ionicons name="document-text-outline" size={18} color={colors.gray700} />
-                    <Text style={s.menuLabel}>{pg.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
+            {/* Pages are surfaced only via admin Menu Builder — no separate section */}
 
             {/* Auth links */}
             <View style={s.section}>

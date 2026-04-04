@@ -2,7 +2,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useCurrencyStore, useWishlistStore, useCartStore, useUIStore } from "@/store";
+import { useCurrencyStore, useWishlistStore, useCartStore, useUIStore, useCompareStore } from "@/store";
 import { colors, resolveImageUrl } from "@/theme";
 import Toast from "react-native-toast-message";
 import ProductBadges from "./ProductBadges";
@@ -11,9 +11,10 @@ import { useLaybyEligibility } from "@/hooks/useLaybyEligibility";
 interface ProductCardProps {
   product: any;
   compact?: boolean;
+  deliveryDays?: number;
 }
 
-export default function ProductCard({ product, compact }: ProductCardProps) {
+export default function ProductCard({ product, compact, deliveryDays }: ProductCardProps) {
   const router = useRouter();
   const formatPrice = useCurrencyStore((s) => s.formatPrice);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist);
@@ -21,8 +22,12 @@ export default function ProductCard({ product, compact }: ProductCardProps) {
   const removeFromWishlist = useWishlistStore((s) => s.removeItem);
   const addToCart = useCartStore((s) => s.addItem);
   const openCartSidebar = useUIStore((s) => s.openCartSidebar);
+  const addToCompare = useCompareStore((s) => s.addProduct);
+  const removeFromCompare = useCompareStore((s) => s.removeProduct);
+  const isInCompare = useCompareStore((s) => s.isInCompare);
 
   const inWishlist = isInWishlist(product._id);
+  const inCompare = isInCompare(product._id);
   const hasDiscount = product.salePrice && product.salePrice < product.regularPrice;
   const discountPercent = hasDiscount
     ? Math.round(((product.regularPrice - product.salePrice) / product.regularPrice) * 100)
@@ -46,6 +51,16 @@ export default function ProductCard({ product, compact }: ProductCardProps) {
     } else {
       addToWishlist(product);
       Toast.show({ type: "success", text1: "Added to wishlist!", visibilityTime: 1500 });
+    }
+  };
+
+  const toggleCompare = () => {
+    if (inCompare) {
+      removeFromCompare(product._id);
+      Toast.show({ type: "info", text1: "Removed from compare", visibilityTime: 1500 });
+    } else {
+      addToCompare(product);
+      Toast.show({ type: "success", text1: "Added to compare", visibilityTime: 1500 });
     }
   };
 
@@ -100,10 +115,15 @@ export default function ProductCard({ product, compact }: ProductCardProps) {
         {/* Admin-configured badges */}
         <ProductBadges productId={product._id} displayContext="productCards" />
 
-        {/* Wishlist button — top right */}
-        <Pressable onPress={toggleWishlist} style={s.wishBtn}>
-          <Ionicons name={inWishlist ? "heart" : "heart-outline"} size={16} color={inWishlist ? colors.red500 : colors.gray700} />
-        </Pressable>
+        {/* Wishlist + Compare buttons — top right */}
+        <View style={s.topRightBtns}>
+          <Pressable onPress={toggleWishlist} style={s.iconBtn}>
+            <Ionicons name={inWishlist ? "heart" : "heart-outline"} size={15} color={inWishlist ? colors.red500 : colors.gray700} />
+          </Pressable>
+          <Pressable onPress={toggleCompare} style={s.iconBtn}>
+            <Ionicons name="git-compare-outline" size={14} color={inCompare ? colors.primary : colors.gray700} />
+          </Pressable>
+        </View>
 
         {/* Add to cart bar — bottom */}
         {inStock && (
@@ -151,6 +171,13 @@ export default function ProductCard({ product, compact }: ProductCardProps) {
             {!inStock ? "Out of Stock" : isLowStock ? `Only ${product.stock} left!` : "In Stock"}
           </Text>
         )}
+
+        {/* Delivery estimate */}
+        {inStock && deliveryDays !== undefined && deliveryDays > 0 && (
+          <Text style={s.deliveryText}>
+            🚚 Get it in {deliveryDays} day{deliveryDays !== 1 ? "s" : ""}
+          </Text>
+        )}
       </View>
     </Pressable>
   );
@@ -169,7 +196,9 @@ const s = StyleSheet.create({
   badgeDiscountText: { color: "#fff", fontSize: 9, fontWeight: "700" },
   laybyBadge: { position: "absolute", bottom: 32, left: 6, backgroundColor: colors.amber500, paddingHorizontal: 6, paddingVertical: 2, zIndex: 10 },
   laybyBadgeText: { color: "#fff", fontSize: 9, fontWeight: "700" },
-  wishBtn: { position: "absolute", top: 6, right: 6, width: 30, height: 30, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2, zIndex: 10 },
+  topRightBtns: { position: "absolute", top: 4, right: 4, gap: 4, zIndex: 10 },
+  iconBtn: { width: 26, height: 26, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
+  deliveryText: { fontSize: 10, color: colors.green600, marginTop: 3 },
   cartBar: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: colors.primary, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 7, zIndex: 10 },
   cartBarText: { color: "#fff", fontSize: 11, fontWeight: "600" },
   oosOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.15)" },

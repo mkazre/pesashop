@@ -403,3 +403,26 @@ export const useRecentlyViewedStore = create<RecentlyViewedState>()(
     }
   )
 );
+
+// ─── Compare Store ───────────────────────────────────────────────
+interface CompareState {
+  products: any[];
+  addProduct: (product: any) => void;
+  removeProduct: (id: string) => void;
+  isInCompare: (id: string) => boolean;
+  clearAll: () => void;
+}
+
+export const useCompareStore = create<CompareState>()((set, get) => ({
+  products: [],
+  addProduct: (product) => {
+    const products = get().products;
+    if (products.find((p) => p._id === product._id)) return;
+    if (products.length >= 4) return; // max 4 for compare
+    set({ products: [...products, product] });
+  },
+  removeProduct: (id) =>
+    set({ products: get().products.filter((p) => p._id !== id) }),
+  isInCompare: (id) => get().products.some((p) => p._id === id),
+  clearAll: () => set({ products: [] }),
+}));

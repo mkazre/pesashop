@@ -321,12 +321,12 @@ export default function LaybyeDetailScreen() {
           )}
         </View>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 24 }} />
       </ScrollView>
 
-      {/* Make Payment Button (only for active laybyes) */}
+      {/* Make Payment Button — above BottomTabBar in flex layout */}
       {laybye.status === "active" && (
-        <View style={s.bottomBar}>
+        <View style={s.payBarInline}>
           <Pressable onPress={openPayModal} style={s.payBtn}>
             <Ionicons name="card-outline" size={18} color="#fff" />
             <Text style={s.payBtnText}>Make Payment</Text>
@@ -582,7 +582,7 @@ const s = StyleSheet.create({
 
   paymentRow: { paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
 
-  bottomBar: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.gray200, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 32 },
+  payBarInline: { backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.gray200, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
   payBtn: { backgroundColor: colors.primary, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8 },
   payBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 

@@ -152,6 +152,11 @@ export const homePageConfigAPI = {
 export const settingsAPI = {
   getBankDetails: () => api.get('/api/settings/bank-details'),
   getPublic: () => api.get('/api/settings/public'),
+  getFreeShipping: () => api.get('/api/settings/public'),
+};
+
+export const paymentMethodsAPI = {
+  getActive: () => api.get('/api/payment-methods/active'),
 };
 
 export const productPageSettingsAPI = {

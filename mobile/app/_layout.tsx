@@ -212,6 +212,22 @@ export default function RootLayout() {
           name="notifications"
           options={{ headerShown: false, animation: "slide_from_right" }}
         />
+        <Stack.Screen
+          name="notification/[id]"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="categories"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="compare"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/buy-gift-card"
+          options={{ headerShown: false }}
+        />
       </Stack>
       <CartSidebar />
       <CheckoutDrawer />

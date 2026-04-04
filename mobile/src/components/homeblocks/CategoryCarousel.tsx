@@ -88,9 +88,9 @@ const s = StyleSheet.create({
   loadingRow: { height: 120, alignItems: "center", justifyContent: "center" },
   catItem: { alignItems: "center", width: 90 },
   catIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 4,
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",

@@ -78,9 +78,7 @@ export default function NotificationsScreen() {
   };
 
   const handlePress = async (notif: any) => {
-    const n = notif.notification;
-    if (!n) return;
-
+    if (!notif) return;
     try {
       await notificationsAPI.recordClick(notif._id);
       setNotifications(prev =>
@@ -88,24 +86,8 @@ export default function NotificationsScreen() {
       );
       setUnreadCount(prev => Math.max(0, prev - (notif.read ? 0 : 1)));
     } catch {}
-
-    if (n.actionUrl) {
-      if (n.actionUrl.startsWith('/product/')) {
-        const slug = n.actionUrl.replace('/product/', '');
-        router.push(`/product/${slug}`);
-      } else if (n.actionUrl.startsWith('/category/')) {
-        const slug = n.actionUrl.replace('/category/', '');
-        router.push(`/category/${slug}`);
-      } else if (n.actionUrl.startsWith('/order/')) {
-        const id = n.actionUrl.replace('/order/', '');
-        router.push(`/order/${id}`);
-      } else if (n.actionUrl === '/shop' || n.actionUrl.startsWith('/shop')) {
-        router.push('/(tabs)/shop');
-      } else {
-        // Fallback: just go home
-        router.push('/(tabs)/');
-      }
-    }
+    // Navigate to detail page
+    router.push(`/notification/${notif._id}` as any);
   };
 
   const handleMarkAllRead = async () => {

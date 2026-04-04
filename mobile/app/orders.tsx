@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { View, Text, FlatList, Pressable, StyleSheet, Clipboard } from "react-native";
 import { useRouter } from "expo-router";
+import Toast from "react-native-toast-message";
 import ScreenHeader from "@/components/ScreenHeader";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import EmptyState from "@/components/EmptyState";
+import { Ionicons } from "@expo/vector-icons";
 import { ordersAPI } from "@/services/api";
 import { useCurrencyStore } from "@/store";
 import { colors } from "@/theme";
@@ -41,12 +43,26 @@ export default function OrdersScreen() {
           contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }: any) => {
             const sc = statusColorMap[item.status] || { bg: colors.gray100, text: colors.gray700 };
+            const orderNum = item.orderNumber || item._id.slice(-8);
             return (
               <Pressable onPress={() => router.push(`/order/${item._id}` as any)} style={os.card}>
                 <View style={os.cardHeader}>
-                  <Text style={os.orderNum}>#{item.orderNumber || item._id.slice(-8)}</Text>
-                  <View style={[os.badge, { backgroundColor: sc.bg }]}>
-                    <Text style={[os.badgeText, { color: sc.text }]}>{item.status}</Text>
+                  <Text style={os.orderNum}>#{orderNum}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <View style={[os.badge, { backgroundColor: sc.bg }]}>
+                      <Text style={[os.badgeText, { color: sc.text }]}>{item.status}</Text>
+                    </View>
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        Clipboard.setString(orderNum);
+                        Toast.show({ type: "success", text1: "Order number copied!", visibilityTime: 1500 });
+                      }}
+                      style={os.copyBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Ionicons name="copy-outline" size={14} color={colors.gray500} />
+                    </Pressable>
                   </View>
                 </View>
                 <Text style={os.date}>
@@ -56,6 +72,16 @@ export default function OrdersScreen() {
                   <Text style={os.itemCount}>{item.items?.length || 0} item{(item.items?.length || 0) !== 1 ? "s" : ""}</Text>
                   <Text style={os.total}>{formatPrice(item.total || 0)}</Text>
                 </View>
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    router.push("/account/track-order" as any);
+                  }}
+                  style={os.trackBtn}
+                >
+                  <Ionicons name="navigate-outline" size={13} color={colors.primary} />
+                  <Text style={os.trackBtnText}>Track Order</Text>
+                </Pressable>
               </Pressable>
             );
           }}
@@ -70,6 +96,9 @@ export default function OrdersScreen() {
 const os = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.gray50 },
   card: { backgroundColor: colors.white, borderRadius: 0, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.gray100 },
+  copyBtn: { padding: 4, backgroundColor: colors.gray50, borderRadius: 2 },
+  trackBtn: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.gray50 },
+  trackBtnText: { fontSize: 12, fontWeight: "600", color: colors.primary },
   cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   orderNum: { fontSize: 14, fontWeight: "700", color: colors.gray900 },
   badge: { paddingHorizontal: 10, paddingVertical: 2, borderRadius: 0 },
