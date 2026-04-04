@@ -13,7 +13,6 @@ import Toast from "react-native-toast-message";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Ionicons } from "@expo/vector-icons";
 import { couponsAPI } from "@/services/api";
 import { useCurrencyStore } from "@/store";
 import BottomTabBar from "@/components/BottomTabBar";
