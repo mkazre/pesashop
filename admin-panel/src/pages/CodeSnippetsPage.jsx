@@ -580,10 +580,10 @@ const CodeSnippetsPage = () => {
               {selectedSnippets.length} snippet(s) selected
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleBulkAction('enable')}>
+              <Button variant="outline" size="sm" onClick={() => handleBulkAction('activate')}>
                 Enable
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleBulkAction('disable')}>
+              <Button variant="outline" size="sm" onClick={() => handleBulkAction('deactivate')}>
                 Disable
               </Button>
               <Button variant="danger" size="sm" onClick={() => handleBulkAction('delete')}>

@@ -13,7 +13,7 @@ router.get('/', protect, authorize('admin', 'shop_manager'), async (req, res, ne
     if (environment) query.environment = environment;
     if (location) query.location = location;
     if (type) query.type = type;
-    if (isActive !== undefined) query.isActive = isActive === 'true';
+    if (isActive !== undefined && isActive !== '') query.isActive = isActive === 'true';
     if (pageTarget) query.pageTarget = pageTarget;
     
     if (search) {
