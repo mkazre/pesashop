@@ -167,11 +167,14 @@ const injectHTML = (snippet, location, injectedIdsRef) => {
 const getInjectionTarget = (location) => {
   switch (location) {
     case 'header':
-    case 'body_start':
+    case 'after_opening_head':
+    case 'before_closing_head':
       return document.head;
     case 'footer':
+    case 'body_start':
     case 'body_end':
-      return document.body;
+    case 'after_opening_body':
+    case 'before_closing_body':
     default:
       return document.body;
   }
