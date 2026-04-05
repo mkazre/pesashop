@@ -145,7 +145,7 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
                       <Pressable
                         onPress={() => {
                           if (item.linkType === 'page') {
-                            const slug = item.linkId || itemLink.replace(/^\//, '');
+                            const slug = itemLink.replace(/^\//, '') || item.linkId;
                             navigate(`/page/${slug}`);
                           } else if (item.linkType === 'category' && item.linkId) {
                             navigate(`/(tabs)/shop?category=${item.linkId}`);
@@ -170,7 +170,7 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
                           onPress={() => {
                             const childLink = child.link || child.url || '#';
                             if (child.linkType === 'page') {
-                              const slug = child.linkId || childLink.replace(/^\//, '');
+                              const slug = childLink.replace(/^\//, '') || child.linkId;
                               navigate(`/page/${slug}`);
                             } else if (child.linkType === 'category' && child.linkId) {
                               navigate(`/(tabs)/shop?category=${child.linkId}`);

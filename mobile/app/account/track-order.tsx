@@ -84,9 +84,12 @@ export default function TrackOrderScreen() {
       if (shipped.includes(wb.status)) return 3;
       return 2; // waybill exists = packing/processing
     }
+    // No waybill — use explicit order status first (higher steps take priority)
+    const statusIdx = STATUS_STEPS.indexOf(o.status);
+    if (statusIdx >= 2) return statusIdx; // processing/shipped/delivered take priority over payment status
     const ps = o.paymentStatus;
-    if (ps === "completed" || ps === "processing") return 1;
-    return Math.max(STATUS_STEPS.indexOf(o.status), 0);
+    if (ps === "completed" || ps === "processing") return Math.max(statusIdx, 1);
+    return Math.max(statusIdx, 0);
   };
   const currentStepIndex = getStepIndex(order);
 

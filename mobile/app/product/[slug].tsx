@@ -311,7 +311,7 @@ export default function ProductDetailScreen() {
           ) : null}
 
           {/* ── Variant Selectors ── */}
-          {product.attributes?.map((attr: any) => {
+          {(Array.isArray(product.attributes) ? product.attributes : []).map((attr: any) => {
             if (!attr.values?.length) return null;
             const isColor = attr.name?.toLowerCase().includes("color") || attr.name?.toLowerCase().includes("colour");
             return (
@@ -461,7 +461,7 @@ export default function ProductDetailScreen() {
         </View>
 
         {/* ════ QUICK SPECS ════ */}
-        {product.specifications?.length > 0 && (
+        {Array.isArray(product.specifications) && product.specifications.length > 0 && (
           <View style={ps.quickSpecsCard}>
             <Text style={ps.quickSpecsTitle}>Quick Specs</Text>
             <View style={ps.quickSpecsGrid}>
@@ -520,7 +520,7 @@ export default function ProductDetailScreen() {
 
                       {/* Specifications */}
                       {sec.id === "specifications" && (
-                        product.specifications?.length > 0 ? (
+                        Array.isArray(product.specifications) && product.specifications.length > 0 ? (
                           <View>
                             {product.specifications.map((spec: any, i: number) => (
                               <View key={i} style={[ps.specRow, i < product.specifications.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.gray50 }]}>

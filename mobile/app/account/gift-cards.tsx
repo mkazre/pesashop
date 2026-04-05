@@ -77,7 +77,8 @@ export default function GiftCardsScreen() {
           </View>
         ) : (
           giftCards.map((gc: any) => {
-            const isActive = (gc.isActive !== false) && (gc.currentBalance || gc.balance) > 0;
+            const isPendingPayment = gc.paymentStatus === 'pending_payment';
+            const isActive = !isPendingPayment && (gc.isActive !== false) && (gc.currentBalance || gc.balance) > 0;
             return (
               <View key={gc._id} style={[s.card, !isActive && { opacity: 0.6 }]}>
                 <View style={s.cardGradient}>
@@ -102,7 +103,7 @@ export default function GiftCardsScreen() {
                     </View>
                     <View>
                       <Text style={s.cardMetaLabel}>Status</Text>
-                      <Text style={[s.cardMetaValue, { color: isActive ? colors.green600 : colors.gray500, textTransform: "capitalize" }]}>{gc.isActive === false ? "used" : gc.isRedeemed ? "redeemed" : "active"}</Text>
+                      <Text style={[s.cardMetaValue, { color: isPendingPayment ? colors.amber500 : isActive ? colors.green600 : colors.gray500, textTransform: "capitalize" }]}>{isPendingPayment ? "Awaiting Payment" : gc.isRedeemed ? "Redeemed" : isActive ? "Active" : "Expired"}</Text>
                     </View>
                     {gc.expiresAt && (
                       <View>

@@ -8,7 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import PulsingArrows from "@/components/PulsingArrows";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useCartStore, useCurrencyStore, useUIStore } from "@/store";
-import { settingsAPI } from "@/services/api";
+import { productPageSettingsAPI } from "@/services/api";
 import { colors, resolveImageUrl } from "@/theme";
 
 export default function CartScreen() {
@@ -25,11 +25,11 @@ export default function CartScreen() {
   const [freeShippingMin, setFreeShippingMin] = useState(0);
 
   useEffect(() => {
-    settingsAPI.getPublic().then((res) => {
-      const d = res.data?.data || {};
-      const fs = d?.freeShipping || d?.shipping?.freeShipping;
-      if (fs?.enabled && fs.minimumOrderAmount > 0) {
-        setFreeShippingMin(fs.minimumOrderAmount);
+    productPageSettingsAPI.get().then((res) => {
+      const settings = res.data?.data || res.data || {};
+      const bar = settings?.conversionEnhancers?.freeShippingBar || settings?.freeShippingBar;
+      if (bar?.enabled && bar.threshold > 0) {
+        setFreeShippingMin(bar.threshold);
       }
     }).catch(() => {});
   }, []);
