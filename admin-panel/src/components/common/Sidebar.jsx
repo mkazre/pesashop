@@ -34,6 +34,7 @@ import {
   IoPersonOutline,
   IoCarOutline,
   IoPhonePortraitOutline,
+  IoMegaphoneOutline,
 } from 'react-icons/io5';
 import { useUIStore } from '@/store';
 import classNames from 'classnames';
@@ -79,6 +80,7 @@ const Sidebar = () => {
     { path: '/profile', icon: IoPersonOutline, label: 'My Profile' },
     { path: '/emails', icon: IoMailOutline, label: 'Email Templates' },
     { path: '/snippets', icon: IoCodeSlashOutline, label: 'Code Snippets' },
+    { path: '/popups', icon: IoMegaphoneOutline, label: 'Popup Builder' },
     { path: '/import-export', icon: IoCloudUploadOutline, label: 'Import/Export' },
     { path: '/media-library', icon: IoFolderOutline, label: 'Media Library' },
     { path: '/images', icon: IoImagesOutline, label: 'Image Manager' },

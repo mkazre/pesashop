@@ -29,6 +29,7 @@ import DynamicPage from './pages/DynamicPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import ChatAdmin from './pages/chat/ChatAdmin';
 import ChatWidget from './components/chat/ChatWidget';
+import PopupRenderer from './components/common/PopupRenderer';
 
 // Modals
 import QuickViewModal from './components/modals/QuickViewModal';
@@ -91,6 +92,9 @@ function App() {
 
       {/* Chat Widget - visible on all pages */}
       <ChatWidget />
+
+      {/* Popup Renderer - evaluates and displays active popups */}
+      <PopupRenderer isApp={false} />
 
       {/* Global Modals */}
       {quickViewProduct && <QuickViewModal />}

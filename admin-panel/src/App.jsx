@@ -59,6 +59,7 @@ import MobileScannerPage from './pages/MobileScannerPage';
 import PODCapturePage from './pages/PODCapturePage';
 import FooterBuilderPage from './pages/FooterBuilderPage';
 import MobileAppSplashPage from './pages/MobileAppSplashPage';
+import PopupBuilderPage from './pages/PopupBuilderPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -123,6 +124,7 @@ function App() {
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="emails" element={<EmailTemplatesPage />} />
             <Route path="snippets" element={<CodeSnippetsPage />} />
+            <Route path="popups" element={<PopupBuilderPage />} />
             <Route path="import-export" element={<ImportExportPage />} />
             <Route path="media-library" element={<MediaLibraryPage />} />
             <Route path="images" element={<ImageManagerPage />} />

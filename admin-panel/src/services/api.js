@@ -300,6 +300,19 @@ export const pageBuilderAPI = {
   delete: (id) => api.delete(`/page-builder/${id}`),
 };
 
+// Popups API
+export const popupsAPI = {
+  getAll: (params) => api.get('/popups', { params }),
+  getOne: (id) => api.get(`/popups/${id}`),
+  create: (data) => api.post('/popups', data),
+  update: (id, data) => api.put(`/popups/${id}`, data),
+  delete: (id) => api.delete(`/popups/${id}`),
+  setStatus: (id, status) => api.put(`/popups/${id}/status`, { status }),
+  duplicate: (id) => api.post(`/popups/${id}/duplicate`),
+  bulk: (action, ids) => api.post('/popups/bulk', { action, ids }),
+  getActive: (params) => api.get('/popups/public/active', { params }),
+};
+
 // Import/Export API
 export const importAPI = {
   validate: (type, file) => {
