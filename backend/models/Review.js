@@ -119,6 +119,12 @@ const reviewSchema = new mongoose.Schema({
     respondedAt: Date
   },
   
+  // Loyalty
+  pointsAwarded: {
+    type: Boolean,
+    default: false
+  },
+
   // Moderation
   reportedCount: {
     type: Number,

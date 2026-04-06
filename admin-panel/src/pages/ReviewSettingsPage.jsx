@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { reviewsAPI, emailsAPI } from '@/services/api';
+import { reviewsAPI, emailTemplatesAPI } from '@/services/api';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
@@ -44,7 +44,7 @@ const ReviewSettingsPage = () => {
 
   const { data: emailTemplatesData } = useQuery(
     'email-templates-for-reviews',
-    () => emailsAPI.getAll(),
+    () => emailTemplatesAPI.getAll(),
     {
       retry: false,
       refetchOnWindowFocus: false,

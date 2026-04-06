@@ -267,12 +267,12 @@ router.post('/', optionalAuth, uploadReviewImages.array('images', 10), async (re
     // Award PESA Coins if enabled and review is approved
     if (settings.loyaltyPointsEnabled && status === 'approved' && req.user) {
       try {
-        await loyaltyService.awardBonusPoints(
+        await loyaltyService.awardExtraPoints(
           req.user._id,
-          'review_bonus',
-          settings.loyaltyPointsAmount,
-          { reviewId: review._id, productId: product }
+          'review',
+          { productName: productDoc.name, reviewId: review._id }
         );
+        await Review.findByIdAndUpdate(review._id, { pointsAwarded: true });
       } catch (loyaltyError) {
         console.error('Failed to award PESA Coins for review:', loyaltyError);
       }
@@ -367,15 +367,14 @@ router.post('/:id/approve', protect, authorize('admin', 'shop_manager'), async (
     
     // Award PESA Coins if enabled and not already awarded
     const settings = await ReviewSettings.getSettings();
-    if (settings.loyaltyPointsEnabled && review.user) {
-      // Check if points were already awarded (by checking if review was just approved)
+    if (settings.loyaltyPointsEnabled && review.user && !review.pointsAwarded) {
       try {
-        await loyaltyService.awardBonusPoints(
+        await loyaltyService.awardExtraPoints(
           review.user._id,
-          'review_bonus',
-          settings.loyaltyPointsAmount,
-          { reviewId: review._id, productId: review.product._id }
+          'review',
+          { productName: review.product?.name || 'N/A', reviewId: review._id }
         );
+        await Review.findByIdAndUpdate(review._id, { pointsAwarded: true });
       } catch (loyaltyError) {
         console.error('Failed to award PESA Coins for review:', loyaltyError);
       }
