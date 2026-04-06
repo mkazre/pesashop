@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 
@@ -49,7 +49,7 @@ const getSession = () => {
 // ─── ANALYTICS ───────────────────────────────────────────────────────────────
 
 const trackEvent = (popupId, event) => {
-  try { axios.post(`${API}/popups/${popupId}/analytics`, { event }).catch(() => {}); } catch {}
+  try { axios.post(`${API}/popups/track/${popupId}`, { event }).catch(() => {}); } catch {}
 };
 
 // ─── DEVICE DETECTION ────────────────────────────────────────────────────────
@@ -178,6 +178,27 @@ const getPositionStyle = (position) => {
   }
 };
 
+// ─── INPUT BLOCK (own component so useState is at top level) ─────────────────
+
+const InputBlock = ({ content, styles, onConversion }) => {
+  const [inputVal, setInputVal] = useState('');
+  const handleSubmit = () => {
+    if (inputVal) {
+      onConversion && onConversion();
+      setInputVal('');
+    }
+  };
+  return (
+    <div style={{ marginBottom: styles.marginBottom || '12px' }}>
+      {content.label && <label style={{ display: 'block', fontSize: '13px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>{content.label}</label>}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <input type={content.type || 'email'} placeholder={content.placeholder || 'Enter email'} value={inputVal} onChange={e => setInputVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} style={{ flex: 1, padding: '11px 14px', borderRadius: styles.borderRadius || '8px', border: '1.5px solid #d1d5db', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+        {content.buttonText && <button onClick={handleSubmit} style={{ padding: '11px 18px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: styles.borderRadius || '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>{content.buttonText}</button>}
+      </div>
+    </div>
+  );
+};
+
 // ─── BLOCK RENDERER ───────────────────────────────────────────────────────────
 
 const BlockRenderer = ({ block, onConversion }) => {
@@ -246,24 +267,8 @@ const BlockRenderer = ({ block, onConversion }) => {
       );
     }
 
-    case 'input': {
-      const [inputVal, setInputVal] = useState('');
-      const handleSubmit = () => {
-        if (inputVal) {
-          onConversion && onConversion();
-          setInputVal('');
-        }
-      };
-      return (
-        <div style={{ marginBottom: styles.marginBottom || '12px' }}>
-          {content.label && <label style={{ display: 'block', fontSize: '13px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>{content.label}</label>}
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input type={content.type || 'email'} placeholder={content.placeholder || 'Enter email'} value={inputVal} onChange={e => setInputVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} style={{ flex: 1, padding: '11px 14px', borderRadius: styles.borderRadius || '8px', border: '1.5px solid #d1d5db', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
-            {content.buttonText && <button onClick={handleSubmit} style={{ padding: '11px 18px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: styles.borderRadius || '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>{content.buttonText}</button>}
-          </div>
-        </div>
-      );
-    }
+    case 'input':
+      return <InputBlock content={content} styles={styles} onConversion={onConversion} />;
 
     case 'coupon':
       return (
@@ -342,8 +347,6 @@ const createElement = (tag, props, children) => {
 };
 
 // ─── SINGLE POPUP DISPLAY ────────────────────────────────────────────────────
-
-import React from 'react';
 
 const PopupDisplay = ({ popup, onClose, onConversion }) => {
   const [visible, setVisible] = useState(false);

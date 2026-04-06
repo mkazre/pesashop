@@ -5,6 +5,35 @@ const Popup = require('../models/Popup');
 
 // ─── ADMIN ROUTES ─────────────────────────────────────────────────────────────
 
+// ─── PUBLIC ROUTES — must be before /:id to avoid Express swallowing them ────
+
+// GET active popups for frontend rendering
+router.get('/public/active', async (req, res, next) => {
+  try {
+    const { pagePath, pageType, isWeb, isApp } = req.query;
+    const popups = await Popup.getActiveForContext({
+      pagePath: pagePath || '/',
+      pageType: pageType || 'homepage',
+      isWeb: isWeb !== 'false',
+      isApp: isApp === 'true',
+    });
+    res.json({ success: true, data: popups });
+  } catch (err) { next(err); }
+});
+
+// POST track analytics event (public — no auth needed)
+router.post('/track/:id', async (req, res, next) => {
+  try {
+    const { event } = req.body;
+    const validEvents = { impression: 'analytics.impressions', click: 'analytics.clicks', conversion: 'analytics.conversions', dismissal: 'analytics.dismissals' };
+    if (!validEvents[event]) return res.status(400).json({ success: false, message: 'Invalid event' });
+    await Popup.findByIdAndUpdate(req.params.id, { $inc: { [validEvents[event]]: 1 } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ─── ADMIN ROUTES ─────────────────────────────────────────────────────────────
+
 // GET all popups
 router.get('/', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
   try {
@@ -120,31 +149,5 @@ router.post('/bulk', protect, authorize('admin'), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ─── PUBLIC ROUTES (frontend) ────────────────────────────────────────────────
-
-// GET active popups for frontend rendering
-router.get('/public/active', async (req, res, next) => {
-  try {
-    const { pagePath, pageType, isWeb, isApp } = req.query;
-    const popups = await Popup.getActiveForContext({
-      pagePath: pagePath || '/',
-      pageType: pageType || 'homepage',
-      isWeb: isWeb !== 'false',
-      isApp: isApp === 'true',
-    });
-    res.json({ success: true, data: popups });
-  } catch (err) { next(err); }
-});
-
-// POST track analytics event
-router.post('/:id/analytics', async (req, res, next) => {
-  try {
-    const { event } = req.body;
-    const validEvents = { impression: 'analytics.impressions', click: 'analytics.clicks', conversion: 'analytics.conversions', dismissal: 'analytics.dismissals' };
-    if (!validEvents[event]) return res.status(400).json({ success: false, message: 'Invalid event' });
-    await Popup.findByIdAndUpdate(req.params.id, { $inc: { [validEvents[event]]: 1 } });
-    res.json({ success: true });
-  } catch (err) { next(err); }
-});
 
 module.exports = router;
