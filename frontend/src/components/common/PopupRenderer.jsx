@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 
-const API = import.meta.env.VITE_API_URL || '/api';
+const API = `${import.meta.env.VITE_API_URL || ''}/api`;
 
 // ─── FREQUENCY / STORAGE HELPERS ─────────────────────────────────────────────
 
