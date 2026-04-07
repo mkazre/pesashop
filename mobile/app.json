@@ -18,7 +18,16 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pesashop.mobile"
+      "bundleIdentifier": "com.pesashop.mobile",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Pesa Shop uses your camera to let you upload product review photos.",
+        "NSPhotoLibraryUsageDescription": "Pesa Shop accesses your photo library so you can upload profile and review images.",
+        "NSPhotoLibraryAddUsageDescription": "Pesa Shop saves images to your photo library.",
+        "NSMicrophoneUsageDescription": "Pesa Shop uses your microphone for voice-enabled chat support.",
+        "NSFaceIDUsageDescription": "Pesa Shop uses Face ID to securely log you in.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -26,9 +35,17 @@
         "backgroundColor": "#0F604B"
       },
       "package": "com.pesashop.mobile",
+      "versionCode": 1,
       "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ]
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ],
     },
     "web": {
       "favicon": "./assets/favicon.png",
