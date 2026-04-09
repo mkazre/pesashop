@@ -1333,7 +1333,7 @@ export default function WalmartProductPage({ product, settings }) {
               <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Recently Viewed</div>
               <div className="wp-rv-grid">
                 {rvItems.map(p => (
-                  <div key={p._id} className="wp-rv-item" onClick={() => navigate(`/products/${p.slug || p._id}`)}>
+                  <div key={p._id} className="wp-rv-item" onClick={() => navigate(`/product/${p.slug || p._id}`)}>
                     {p.images?.[0] ? (
                       <img src={imgUrl(p.images[0])} alt={p.name} />
                     ) : (
