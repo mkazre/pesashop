@@ -8,11 +8,14 @@ import Toast from "react-native-toast-message";
 import CartSidebar from "@/components/CartSidebar";
 import CheckoutDrawer from "@/components/CheckoutDrawer";
 import OnboardingScreen from "@/components/OnboardingScreen";
+import PopupRenderer from "@/components/PopupRenderer";
 import { useAuthStore, useCurrencyStore } from "@/store";
 import { currenciesAPI } from "@/services/api";
 import { useExpoPush } from "@/hooks/useExpoPush";
 import NotificationToast from "@/components/NotificationToast";
 import ChatWidget from "@/components/ChatWidget";
+import { CartSuccessOverlay } from "@/components/CartSuccessOverlay";
+import { CheckoutSuccessOverlay } from "@/components/CheckoutSuccessOverlay";
 
 const LOGO = require("@/../assets/pesashop-logo.png");
 
@@ -234,6 +237,9 @@ export default function RootLayout() {
       <CheckoutDrawer />
       <NotificationToast />
       <ChatWidget />
+      <PopupRenderer />
+      <CartSuccessOverlay />
+      <CheckoutSuccessOverlay />
       <Toast />
     </>
   );

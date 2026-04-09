@@ -15,6 +15,7 @@ import { IoAdd, IoTrash, IoCreate, IoFlash, IoClose, IoWarning, IoRefresh } from
 const PricingRulesPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
@@ -65,10 +66,10 @@ const PricingRulesPage = () => {
   const action = watch('action');
 
   const { data, isLoading, refetch } = useQuery(
-    ['pricing-rules', page, search, isActiveFilter, ruleTypeFilter],
+    ['pricing-rules', page, perPage, search, isActiveFilter, ruleTypeFilter],
     () => b2bkingAPI.getPricingRules({
-      page,
-      limit: 20,
+      page: perPage === 0 ? 1 : page,
+      limit: perPage === 0 ? 10000 : perPage,
       search: search.length >= 2 ? search : undefined,
       isActive: isActiveFilter || undefined,
       ruleType: ruleTypeFilter || undefined
@@ -427,6 +428,20 @@ const PricingRulesPage = () => {
               ]}
               className="w-40"
             />
+            <Select
+              value={perPage}
+              onChange={(e) => {
+                setPerPage(Number(e.target.value));
+                setPage(1);
+              }}
+              options={[
+                { value: 20, label: '20 / page' },
+                { value: 50, label: '50 / page' },
+                { value: 100, label: '100 / page' },
+                { value: 0, label: 'Show All' },
+              ]}
+              className="w-36"
+            />
           </div>
         </div>
 
@@ -434,11 +449,10 @@ const PricingRulesPage = () => {
           columns={columns}
           data={useMemo(() => {
             const rules = extractData(data);
-            console.log('[PricingRulesPage] Extracted rules:', rules.length, rules);
             return rules;
           }, [data])}
           isLoading={isLoading}
-          pagination={{
+          pagination={perPage === 0 ? undefined : {
             page,
             totalPages: data?.data?.pagination?.pages || 1,
             onPageChange: setPage

@@ -27,6 +27,8 @@ import ProductAIAssistant from "@/components/ProductAIAssistant";
 import ProductRecommendations from "@/components/ProductRecommendations";
 import BottomTabBar from "@/components/BottomTabBar";
 import PulsingArrows from "@/components/PulsingArrows";
+import FreeShippingBar from "@/components/FreeShippingBar";
+import { useCartSuccessOverlay } from "@/components/CartSuccessOverlay";
 import { colors, resolveImageUrl } from "@/theme";
 import {
   productsAPI,
@@ -69,6 +71,7 @@ export default function ProductDetailScreen() {
   const setItemLaybye = useCartStore((s) => s.setItemLaybye);
   const formatPrice = useCurrencyStore((s) => s.formatPrice);
   const { openCartSidebar, openCheckoutDrawer } = useUIStore();
+  const showCartOverlay = useCartSuccessOverlay((s) => s.show);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist);
   const addToWishlist = useWishlistStore((s) => s.addItem);
   const removeFromWishlist = useWishlistStore((s) => s.removeItem);
@@ -187,8 +190,19 @@ export default function ProductDetailScreen() {
       if (idx >= 0) setItemLaybye(idx, laybyeSelection);
     }
     if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Toast.show({ type: "success", text1: "Added to cart", text2: `${product.name} x${quantity}`, visibilityTime: 2000 });
-    openCartSidebar();
+    // Show animated overlay with PesaCoins earned (if feature enabled)
+    if (pageSettings?.mobileFeatures?.cartSuccessAnimation !== false) {
+      if (loyaltyData?.points > 0) {
+        showCartOverlay({
+          product,
+          points: loyaltyData.points * quantity,
+          cashValue: (loyaltyData.cashValueZAR || 0) * quantity,
+          coinLabel: loyaltyData.labels?.points || "PESA Coins",
+        });
+      } else {
+        showCartOverlay({ product, points: 0, cashValue: 0 });
+      }
+    }
   };
 
   const handleBuyNow = () => {
@@ -410,6 +424,10 @@ export default function ProductDetailScreen() {
                 </View>
               )}
             </View>
+          )}
+
+          {pageSettings?.mobileFeatures?.freeShippingBarOnProductPage !== false && (
+            <FreeShippingBar extraAmount={(product.salePrice || product.regularPrice || 0) * quantity} />
           )}
 
           <InlineLaybyePlans product={product} onLaybyeSelect={setLaybyeSelection} />

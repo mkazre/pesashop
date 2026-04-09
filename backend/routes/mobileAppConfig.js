@@ -1,25 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const { protect } = require('../middleware/auth');
-const checkPermission = require('../middleware/checkPermission');
 const MobileAppConfig = require('../models/MobileAppConfig');
+const { uploadToCloudinary } = require('../config/cloudinary');
 
-// Upload config for splash images
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '..', 'uploads', 'mobile');
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `splash-${Date.now()}${ext}`);
-  },
-});
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+// Use memory storage so we can pipe buffer to Cloudinary
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 // Helper: get or create config singleton
 async function getConfig() {
@@ -83,8 +70,9 @@ router.post('/splash/upload', protect, upload.single('image'), async (req, res) 
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-    const imageUrl = `/uploads/mobile/${req.file.filename}`;
-    res.json({ success: true, data: { url: imageUrl } });
+    // Upload to Cloudinary so the URL is persistent and accessible from any device
+    const result = await uploadToCloudinary(req.file.buffer, { folder: 'mobile-splash' });
+    res.json({ success: true, data: { url: result.url } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

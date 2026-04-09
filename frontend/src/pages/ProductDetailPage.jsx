@@ -22,6 +22,7 @@ import PageRenderer from '@/components/pagebuilder/PageRenderer';
 import WalmartProductPage from '@/components/product/WalmartProductPage';
 import useProductPageSettings from '@/hooks/useProductPageSettings';
 import { useSingleProductBadges } from '@/hooks/useProductBadges';
+import StickyAddToCart from '@/components/product/StickyAddToCart';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -148,6 +149,12 @@ export default function ProductDetailPage() {
 
   return (
     <div className="bg-white">
+      <StickyAddToCart
+        product={product}
+        quantity={quantity}
+        selectedVariant={{ size: selectedSize, color: selectedColor }}
+        disabled={(sizes.length > 0 && !selectedSize) || (colors.length > 0 && !selectedColor)}
+      />
       <div className="container-custom py-6">
         {/* Breadcrumbs */}
         <Breadcrumbs 

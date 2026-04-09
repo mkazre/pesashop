@@ -213,17 +213,29 @@ export default function MobileAppSplashPage() {
   const saveMutation = useMutation(
     (payload) => mobileAppConfigAPI.updateSplash(payload),
     {
-      onSuccess: () => {
+      onSuccess: (res) => {
         queryClient.invalidateQueries('mobile-app-config');
-        toast.success('Splash screen saved');
+        toast.success('Onboarding screens saved');
       },
-      onError: () => toast.error('Failed to save'),
+      onError: (err) => {
+        const msg = err?.response?.data?.message || err?.message || 'Failed to save';
+        toast.error(`Save failed: ${msg}`);
+        console.error('[MobileAppSplashPage] Save error:', err?.response?.data || err);
+      },
     }
   );
 
   const handleSave = () => {
     if (!formState) return;
-    const payload = { ...formState, slides: formState.slides.map((s, i) => ({ ...s, order: i })) };
+    const payload = {
+      ...formState,
+      slides: formState.slides.map((s, i) => ({
+        image: s.image || '',
+        heading: s.heading || '',
+        text: s.text || '',
+        order: i,
+      })),
+    };
     saveMutation.mutate(payload);
   };
 

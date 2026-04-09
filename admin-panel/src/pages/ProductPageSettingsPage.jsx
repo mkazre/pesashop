@@ -1080,6 +1080,30 @@ export default function ProductPageSettingsPage() {
         </div>
       </Section>
 
+      {/* ═══ MOBILE APP FEATURES ═══ */}
+      <Section title="Mobile App Feature Toggles" description="Enable or disable animated features in the mobile app">
+        <div className="grid grid-cols-2 gap-4">
+          <Toggle
+            label="Free Shipping Bar on Product Page"
+            description="Animated progress bar showing how much more to spend for free delivery"
+            checked={s.mobileFeatures?.freeShippingBarOnProductPage !== false}
+            onChange={(v) => update('mobileFeatures', 'freeShippingBarOnProductPage', v)}
+          />
+          <Toggle
+            label="Add-to-Cart Success Animation"
+            description="Animated overlay with PESA Coins counter when a product is added to cart"
+            checked={s.mobileFeatures?.cartSuccessAnimation !== false}
+            onChange={(v) => update('mobileFeatures', 'cartSuccessAnimation', v)}
+          />
+          <Toggle
+            label="Checkout Success Animation"
+            description="Confetti celebration overlay with coins earned after a successful order"
+            checked={s.mobileFeatures?.checkoutSuccessAnimation !== false}
+            onChange={(v) => update('mobileFeatures', 'checkoutSuccessAnimation', v)}
+          />
+        </div>
+      </Section>
+
       {/* ═══ THEME ═══ */}
       <Section title="Theme / Brand Colors" description="Colors, fonts, and visual style">
         <div className="grid grid-cols-3 gap-4">

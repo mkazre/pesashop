@@ -9,6 +9,7 @@ import { loyaltyAPI, settingsAPI } from '@/services/api';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useWebPush } from '@/hooks/useWebPush';
 import NotificationToast from '@/components/common/NotificationToast';
+import ScrollToTop from '@/components/common/ScrollToTop';
 
 export default function Layout() {
   const { setCurrencies } = useCurrencyStore();
@@ -44,6 +45,7 @@ export default function Layout() {
       <Footer />
       <MobileBottomNav />
       <NotificationToast />
+      <ScrollToTop />
     </div>
   );
 }

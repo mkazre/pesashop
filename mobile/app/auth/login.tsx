@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,14 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { authAPI } from "@/services/api";
 import { useAuthStore } from "@/store";
 import { colors } from "@/theme";
@@ -29,6 +31,49 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+
+  useEffect(() => {
+    authAPI.getSocialLoginConfig().then((res: any) => {
+      const config = res.data?.data || res.data;
+      if (config?.google?.enabled && config?.google?.clientId) {
+        GoogleSignin.configure({
+          webClientId: config.google.clientId,
+          offlineAccess: false,
+        });
+        setGoogleEnabled(true);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.data?.idToken ?? (userInfo as any).idToken;
+      if (!idToken) throw new Error("No ID token returned from Google");
+      const res = await authAPI.googleLogin(idToken);
+      const { user, token } = res.data;
+      await setAuth(user, token);
+      Toast.show({ type: "success", text1: `Welcome, ${user.firstName || "there"}!` });
+      router.back();
+    } catch (err: any) {
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled — silent
+      } else if (err.code === statusCodes.IN_PROGRESS) {
+        Toast.show({ type: "info", text1: "Sign-in already in progress" });
+      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Toast.show({ type: "error", text1: "Google Play Services not available" });
+      } else {
+        const msg = err.response?.data?.message || err.message || "Google sign-in failed";
+        Toast.show({ type: "error", text1: msg });
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -85,6 +130,34 @@ export default function LoginScreen() {
             <Text style={ls.submitText}>{loading ? "Signing in..." : "Sign In"}</Text>
           </Pressable>
 
+          {googleEnabled && (
+            <>
+              <View style={ls.dividerRow}>
+                <View style={ls.dividerLine} />
+                <Text style={ls.dividerText}>or</Text>
+                <View style={ls.dividerLine} />
+              </View>
+
+              <Pressable
+                onPress={handleGoogleLogin}
+                disabled={googleLoading}
+                style={[ls.googleBtn, googleLoading && { opacity: 0.7 }]}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator size="small" color={colors.gray700} />
+                ) : (
+                  <>
+                    <View style={ls.googleIconWrap}>
+                      {/* Google G logo */}
+                      <Text style={ls.googleG}>G</Text>
+                    </View>
+                    <Text style={ls.googleText}>Continue with Google</Text>
+                  </>
+                )}
+              </Pressable>
+            </>
+          )}
+
           <View style={ls.linkRow}>
             <Text style={ls.linkLabel}>Don't have an account? </Text>
             <Pressable onPress={() => router.replace("/auth/register" as any)}>
@@ -111,6 +184,13 @@ const ls = StyleSheet.create({
   forgotText: { fontSize: 12, color: colors.primary, fontWeight: "600" },
   submitBtn: { backgroundColor: colors.primary, paddingVertical: 16, borderRadius: 0, alignItems: "center", marginBottom: 16 },
   submitText: { color: colors.white, fontWeight: "700", fontSize: 16 },
+  dividerRow: { flexDirection: "row", alignItems: "center", marginVertical: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.gray200 },
+  dividerText: { marginHorizontal: 12, fontSize: 12, color: colors.gray400 },
+  googleBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", height: 48, borderWidth: 1, borderColor: colors.gray200, backgroundColor: colors.white, marginBottom: 8, gap: 10 },
+  googleIconWrap: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#4285F4", alignItems: "center", justifyContent: "center" },
+  googleG: { color: colors.white, fontSize: 12, fontWeight: "700" },
+  googleText: { fontSize: 14, fontWeight: "600", color: colors.gray700 },
   linkRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 16 },
   linkLabel: { fontSize: 14, color: colors.gray500 },
   linkAction: { fontSize: 14, color: colors.primary, fontWeight: "700" },

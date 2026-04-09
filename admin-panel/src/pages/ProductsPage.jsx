@@ -15,6 +15,7 @@ const ProductsPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
   const [search, setSearch] = useState('');
   const [deleteModal, setDeleteModal] = useState(null);
   const [bulkEditModal, setBulkEditModal] = useState(false);
@@ -38,10 +39,10 @@ const ProductsPage = () => {
   const [filterImages, setFilterImages] = useState('');
 
   const { data, isLoading } = useQuery(
-    ['products', page, search, sortKey, filterStatus, filterCategory, filterStock, filterImages],
+    ['products', page, perPage, search, sortKey, filterStatus, filterCategory, filterStock, filterImages],
     () => productsAPI.getAll({
-      page,
-      limit: 20,
+      page: perPage === 0 ? 1 : page,
+      limit: perPage === 0 ? 100000 : perPage,
       search: search.length >= 3 ? search : undefined,
       sort: sortKey || undefined,
       status: filterStatus || undefined,
@@ -502,6 +503,16 @@ const ProductsPage = () => {
             <option value="status-asc">Status A-Z</option>
             <option value="category-asc">Category A-Z</option>
           </select>
+          <select
+            value={perPage}
+            onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            <option value={20}>20 / page</option>
+            <option value={100}>100 / page</option>
+            <option value={200}>200 / page</option>
+            <option value={0}>Show All</option>
+          </select>
           {(filterStatus || filterCategory || filterStock || filterImages || sortKey !== 'date-desc') && (
             <button
               onClick={() => { setFilterStatus(''); setFilterCategory(''); setFilterStock(''); setFilterImages(''); setSortKey('date-desc'); setPage(1); }}
@@ -521,10 +532,10 @@ const ProductsPage = () => {
         />
 
         {/* Pagination */}
-        {((data?.data?.pagination?.totalPages || 0) > 1 || (data?.data?.total && data.data.total > 20)) && (
+        {perPage !== 0 && ((data?.data?.pagination?.totalPages || 0) > 1 || (data?.data?.total && data.data.total > perPage)) && (
           <div className="flex items-center justify-between mt-6">
             <p className="text-sm text-gray-600">
-              Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, data?.data?.pagination?.total || data?.data?.total || 0)} of {data?.data?.pagination?.total || data?.data?.total || 0} products
+              Showing {((page - 1) * perPage) + 1} to {Math.min(page * perPage, data?.data?.pagination?.total || data?.data?.total || 0)} of {data?.data?.pagination?.total || data?.data?.total || 0} products
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -535,11 +546,11 @@ const ProductsPage = () => {
                 Previous
               </Button>
               <span className="px-4 py-2 text-sm">
-                Page {page} of {data?.data?.pagination?.totalPages || Math.ceil((data?.data?.total || 0) / 20)}
+                Page {page} of {data?.data?.pagination?.totalPages || Math.ceil((data?.data?.total || 0) / perPage)}
               </span>
               <Button
                 variant="ghost"
-                disabled={page >= (data?.data?.pagination?.totalPages || Math.ceil((data?.data?.total || 0) / 20))}
+                disabled={page >= (data?.data?.pagination?.totalPages || Math.ceil((data?.data?.total || 0) / perPage))}
                 onClick={() => setPage(page + 1)}
               >
                 Next

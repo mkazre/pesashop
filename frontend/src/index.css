@@ -228,3 +228,13 @@
 .badge-anim-heartbeat { animation: badge-heartbeat 1.5s ease-in-out infinite; }
 .badge-anim-rubberBand { animation: badge-rubberBand 1.2s ease infinite; }
 .badge-anim-tada { animation: badge-tada 1.5s ease infinite; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}

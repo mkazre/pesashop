@@ -10,6 +10,7 @@ import {
   Modal,
   ScrollView,
   Switch,
+  RefreshControl,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -52,6 +53,8 @@ export default function ShopScreen() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
+  const [refreshing, setRefreshing] = useState(false);
+
   // Pending (in drawer) vs applied
   const [pendingSort, setPendingSort] = useState("-createdAt");
   const [pendingInStock, setPendingInStock] = useState(false);
@@ -89,6 +92,7 @@ export default function ShopScreen() {
       finally {
         setLoading(false);
         setLoadingMore(false);
+        setRefreshing(false);
       }
     },
     [selectedCategory, sortBy, inStockOnly, limit]
@@ -97,6 +101,11 @@ export default function ShopScreen() {
   useEffect(() => { fetchProducts(1, false); }, [fetchProducts]);
 
   const loadMore = () => { if (!loadingMore && hasMore) fetchProducts(page + 1, true); };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchProducts(1, false);
+  }, [fetchProducts]);
 
   const openFilterDrawer = () => {
     setPendingSort(sortBy);
@@ -209,6 +218,9 @@ export default function ShopScreen() {
               : null
           }
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          }
         />
       )}
 

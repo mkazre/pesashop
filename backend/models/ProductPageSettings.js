@@ -472,6 +472,13 @@ const productPageSettingsSchema = new mongoose.Schema({
 
   // ─── THEME / BRAND COLORS ───────────────────────────────────────────
   theme: {
+    // Mobile app feature flags
+    mobileFeatures: {
+      freeShippingBarOnProductPage: { type: Boolean, default: true },
+      cartSuccessAnimation: { type: Boolean, default: true },
+      checkoutSuccessAnimation: { type: Boolean, default: true },
+    },
+
     primaryColor: { type: String, default: '#1b5e35' },
     secondaryColor: { type: String, default: '#f5b800' },
     accentColor: { type: String, default: '#a8ffca' },

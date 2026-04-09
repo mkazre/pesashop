@@ -22,6 +22,7 @@ import CurrencyPicker from "@/components/CurrencyPicker";
 import NotificationBell from "@/components/NotificationBell";
 import BottomTabBar from "@/components/BottomTabBar";
 import { colors, resolveImageUrl } from "@/theme";
+import { useRecentlyViewedStore } from "@/store";
 
 const LOGO = require("@/../assets/pesashop-logo.png");
 import {
@@ -43,6 +44,7 @@ export default function HomeScreen() {
   const [categories, setCategories] = useState<any[]>([]);
   const [trendingProducts, setTrendingProducts] = useState<any[]>([]);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const recentlyViewed = useRecentlyViewedStore((s) => s.products);
 
   const fetchFallbackData = useCallback(async () => {
     try {
@@ -213,6 +215,30 @@ export default function HomeScreen() {
         )}
 
         {hasBlockConfig === false && loading && <LoadingSpinner fullScreen />}
+
+        {/* Recently Viewed */}
+        {recentlyViewed.length > 0 && (
+          <View style={s.section}>
+            <View style={s.sectionHeader}>
+              <Text style={s.sectionTitle}>Recently Viewed</Text>
+              <Pressable onPress={() => router.push("/shop" as any)}>
+                <Text style={s.seeAll}>See All</Text>
+              </Pressable>
+            </View>
+            <FlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+              data={recentlyViewed.slice(0, 8)}
+              keyExtractor={(item) => item._id}
+              renderItem={({ item }) => (
+                <View style={{ width: SCREEN_WIDTH * 0.36 }}>
+                  <ProductCard product={item} compact />
+                </View>
+              )}
+            />
+          </View>
+        )}
 
         <View style={{ height: 32 }} />
       </ScrollView>

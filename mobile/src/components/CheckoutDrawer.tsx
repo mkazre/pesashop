@@ -35,6 +35,7 @@ import {
 import { colors, resolveImageUrl } from "@/theme";
 import PulsingArrows from "@/components/PulsingArrows";
 import Toast from "react-native-toast-message";
+import { useCheckoutSuccessOverlay } from "@/components/CheckoutSuccessOverlay";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -82,6 +83,8 @@ export default function CheckoutDrawer() {
   const [giftCardInput, setGiftCardInput] = useState("");
   const [giftCardLoading, setGiftCardLoading] = useState(false);
 
+  const showCheckoutOverlay = useCheckoutSuccessOverlay((s) => s.show);
+
   // ── PESA Coins ────────────────────────────────────────────────────────────
   const [pesaBalance, setPesaBalance] = useState(0);
   const [pesaCoinsInput, setPesaCoinsInput] = useState("");
@@ -97,6 +100,7 @@ export default function CheckoutDrawer() {
 
   // ── Free Shipping ─────────────────────────────────────────────────────────
   const [freeShippingMin, setFreeShippingMin] = useState(0);
+  const [checkoutAnimEnabled, setCheckoutAnimEnabled] = useState(true);
 
   // ── Form / pickup ─────────────────────────────────────────────────────────
   const [pickupAddresses, setPickupAddresses] = useState<any[]>([]);
@@ -148,6 +152,11 @@ export default function CheckoutDrawer() {
       if (fs?.enabled && fs?.minimumOrderAmount > 0) {
         setFreeShippingMin(fs.minimumOrderAmount);
       }
+    }).catch(() => {});
+
+    productPageSettingsAPI.get().then((res) => {
+      const d = res.data?.data || res.data;
+      setCheckoutAnimEnabled(d?.mobileFeatures?.checkoutSuccessAnimation !== false);
     }).catch(() => {});
 
     // Fetch PESA coins if authenticated
@@ -437,11 +446,19 @@ export default function CheckoutDrawer() {
 
       const res = await ordersAPI.create(orderData);
       const orderId = res.data?.data?._id || res.data?.order?._id;
+      const pointsEarned = res.data?.data?.loyaltyPointsEarned || res.data?.loyaltyPointsEarned || 0;
       cart.clearCart();
       setCouponCode(""); setCouponDiscount(0); setCouponApplied(false);
       setGiftCardInput(""); setPesaCoinsInput(""); setPesaDiscount(0); setPesaApplied(false);
       closeCheckoutDrawer();
-      Toast.show({ type: "success", text1: "Order placed successfully!", text2: "Thank you for your purchase" });
+      // Show checkout success animation (if feature enabled)
+      if (checkoutAnimEnabled) {
+        if (pointsEarned > 0) {
+          showCheckoutOverlay({ totalPoints: pointsEarned, cashValue: pointsEarned * 0.01, coinLabel: "PESA Coins" });
+        } else {
+          showCheckoutOverlay({ totalPoints: 0, cashValue: 0 });
+        }
+      }
       if (orderId) router.push(`/order/${orderId}` as any);
     } catch (err: any) {
       Toast.show({ type: "error", text1: "Failed to place order", text2: err?.response?.data?.message || "Please try again" });
