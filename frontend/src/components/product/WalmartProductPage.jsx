@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useCartStore, useWishlistStore, useRecentlyViewedStore, useAuthStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useQuery, useQueryClient } from 'react-query';
-import { laybyAPI, reviewsAPI } from '@/services/api';
+import { laybyAPI, reviewsAPI, loyaltyAPI } from '@/services/api';
+import { useCartSuccessOverlay } from '@/components/common/CartSuccessOverlay';
 import StarRating from '../common/StarRating';
 import InlineLaybyePlans from './InlineLaybyePlans';
 import CheckoutDrawer from './CheckoutDrawer';
@@ -228,6 +229,7 @@ export default function WalmartProductPage({ product, settings }) {
   const { openAuthModal } = useUIStore();
   const { displayPrice } = useB2BPricing(product);
   const { formatPrice } = useCurrencyStore();
+  const showOverlay = useCartSuccessOverlay((s) => s.show);
 
   const s = settings || {};
   const theme = s.theme || {};
@@ -417,11 +419,17 @@ export default function WalmartProductPage({ product, settings }) {
 
   const toggleSection = (id) => setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     addItem({ ...product, quantity });
     setAddedToCart(true);
-    toast.success(btn.addedToCartLabel || '✓ Added to Cart!');
     setTimeout(() => setAddedToCart(false), 2000);
+    showOverlay({ product, points: 0, cashValue: 0, coinLabel: 'PESA Coins' });
+    try {
+      const res = await loyaltyAPI.calculateProductPoints(product._id, quantity);
+      const pts = res.data?.data?.points || 0;
+      const cash = res.data?.data?.cashValueZAR || 0;
+      if (pts > 0) showOverlay({ product, points: pts * quantity, cashValue: cash * quantity, coinLabel: 'PESA Coins' });
+    } catch { /* overlay already showing */ }
   };
 
   const handleBuyNow = async () => {
@@ -459,9 +467,11 @@ export default function WalmartProductPage({ product, settings }) {
       setDrawerOpen(true);
     } else if (btn.buyNowAction === 'cart-page') {
       addItem({ ...product, quantity });
+      showOverlay({ product, points: 0, cashValue: 0, coinLabel: 'PESA Coins' });
       navigate('/cart');
     } else {
       addItem({ ...product, quantity });
+      showOverlay({ product, points: 0, cashValue: 0, coinLabel: 'PESA Coins' });
       navigate('/checkout');
     }
   };
