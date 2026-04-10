@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { create } from 'zustand';
+import { useCurrencyStore } from '@/store';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const resolveImg = (src) => {
@@ -22,7 +23,7 @@ export const useCartSuccessOverlay = create((set) => ({
 }));
 
 // ── Animated counter hook ─────────────────────────────────────────────────────
-function useCountUp(target, duration = 1200) {
+function useCountUp(target, duration = 1000) {
   const [display, setDisplay] = useState(0);
   const raf = useRef(null);
 
@@ -31,7 +32,7 @@ function useCountUp(target, duration = 1200) {
     const start = performance.now();
     const tick = (now) => {
       const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
       setDisplay(Math.round(eased * target));
       if (t < 1) raf.current = requestAnimationFrame(tick);
     };
@@ -48,6 +49,7 @@ export default function CartSuccessOverlay() {
   const [animIn, setAnimIn] = useState(false);
   const displayPoints = useCountUp(visible ? points : 0, 1000);
   const timerRef = useRef(null);
+  const formatPrice = useCurrencyStore((s) => s.formatPrice);
 
   useEffect(() => {
     if (visible) {
@@ -94,17 +96,22 @@ export default function CartSuccessOverlay() {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Check circle */}
+        {/* Check circle — white SVG checkmark on green circle */}
         <div style={{
-          width: 52, height: 52, borderRadius: '50%',
-          background: '#22c55e', margin: '0 auto 16px',
+          width: 56, height: 56, borderRadius: '50%',
+          background: '#22c55e',
+          margin: '0 auto 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 26,
           transform: animIn ? 'scale(1)' : 'scale(0)',
           transition: 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.1s',
-        }}>✓</div>
+          flexShrink: 0,
+        }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
 
-        {/* Product image + name */}
+        {/* Product image */}
         {imageUrl && (
           <img
             src={imageUrl}
@@ -136,13 +143,12 @@ export default function CartSuccessOverlay() {
             <div style={{ fontSize: 12, color: '#92400e', marginTop: 2 }}>{coinLabel}</div>
             {cashValue > 0 && (
               <div style={{ fontSize: 11, color: '#a16207', marginTop: 6, paddingTop: 6, borderTop: '1px solid #fcd34d' }}>
-                ≈ R{cashValue.toFixed(2)} cash value
+                ≈ {formatPrice(cashValue)} cash value
               </div>
             )}
           </div>
         )}
 
-        {/* Close hint */}
         <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 14, marginBottom: 0 }}>Tap anywhere to dismiss</p>
       </div>
     </div>

@@ -8,7 +8,6 @@ import { loyaltyAPI } from '@/services/api';
 
 export default function BuyButtons({ product, quantity, selectedVariant, disabled }) {
   const { addItem } = useCartStore();
-  const { openCartSidebar } = useUIStore();
   const navigate = useNavigate();
   const showOverlay = useCartSuccessOverlay((s) => s.show);
 
@@ -17,17 +16,18 @@ export default function BuyButtons({ product, quantity, selectedVariant, disable
       toast.error('This product is out of stock');
       return;
     }
-
     addItem(product, quantity, selectedVariant);
-
-    // Show animated overlay instead of plain toast
+    // Show overlay immediately with 0 points, then update if loyalty API returns data
+    showOverlay({ product, points: 0, cashValue: 0, coinLabel: 'PESA Coins' });
     try {
       const res = await loyaltyAPI.calculateProductPoints(product._id, quantity);
       const pts = res.data?.data?.points || 0;
       const cash = res.data?.data?.cashValueZAR || 0;
-      showOverlay({ product, points: pts * quantity, cashValue: cash * quantity, coinLabel: 'PESA Coins' });
+      if (pts > 0) {
+        showOverlay({ product, points: pts * quantity, cashValue: cash * quantity, coinLabel: 'PESA Coins' });
+      }
     } catch {
-      showOverlay({ product, points: 0, cashValue: 0 });
+      // overlay already showing without points — that's fine
     }
   };
 
@@ -36,7 +36,6 @@ export default function BuyButtons({ product, quantity, selectedVariant, disable
       toast.error('This product is out of stock');
       return;
     }
-
     addItem(product, quantity, selectedVariant);
     navigate('/checkout');
   };

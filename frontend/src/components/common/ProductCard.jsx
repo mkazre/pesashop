@@ -37,14 +37,13 @@ export default function ProductCard({ product, layout = 'grid' }) {
   const handleAddToCart = async (e) => {
     e.preventDefault();
     addItem(product, 1);
+    showOverlay({ product, points: 0, cashValue: 0, coinLabel: 'PESA Coins' });
     try {
       const res = await loyaltyAPI.calculateProductPoints(product._id, 1);
       const pts = res.data?.data?.points || 0;
       const cash = res.data?.data?.cashValueZAR || 0;
-      showOverlay({ product, points: pts, cashValue: cash, coinLabel: 'PESA Coins' });
-    } catch {
-      showOverlay({ product, points: 0, cashValue: 0 });
-    }
+      if (pts > 0) showOverlay({ product, points: pts, cashValue: cash, coinLabel: 'PESA Coins' });
+    } catch { /* overlay already showing */ }
   };
 
   const handleWishlistToggle = (e) => {

@@ -27,14 +27,13 @@ export default function StickyAddToCart({ product, quantity = 1, selectedVariant
   const handleAddToCart = async () => {
     if (!product || product.stock === 0) return;
     addItem(product, quantity, selectedVariant);
+    showOverlay({ product, points: 0, cashValue: 0, coinLabel: 'PESA Coins' });
     try {
       const res = await loyaltyAPI.calculateProductPoints(product._id, quantity);
       const pts = res.data?.data?.points || 0;
       const cash = res.data?.data?.cashValueZAR || 0;
-      showOverlay({ product, points: pts * quantity, cashValue: cash * quantity, coinLabel: 'PESA Coins' });
-    } catch {
-      showOverlay({ product, points: 0, cashValue: 0 });
-    }
+      if (pts > 0) showOverlay({ product, points: pts * quantity, cashValue: cash * quantity, coinLabel: 'PESA Coins' });
+    } catch { /* overlay already showing */ }
   };
 
   if (!product || !visible) return null;
