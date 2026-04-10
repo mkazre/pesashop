@@ -5,9 +5,10 @@ import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
 import { VariantSelector, QuantitySelector } from '../product/ProductVariants';
-import toast from '@/utils/toast';
 import { Link } from 'react-router-dom';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
+import { useCartSuccessOverlay } from '@/components/common/CartSuccessOverlay';
+import { loyaltyAPI } from '@/services/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 function getImageSrc(path) {
@@ -19,6 +20,7 @@ export default function QuickViewModal() {
   const { quickViewProduct, closeQuickView } = useUIStore();
   const { addItem, openCartSidebar } = useCartStore();
   const { formatPrice } = useCurrencyStore();
+  const showOverlay = useCartSuccessOverlay((s) => s.show);
   
   const [selectedImage, setSelectedImage] = useState(0);
   const { titleLines, shortDescriptionLines } = useProductDisplay('other');
@@ -33,12 +35,18 @@ export default function QuickViewModal() {
     ? Math.round(((product.regularPrice - product.salePrice) / product.regularPrice) * 100)
     : 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     const variant = selectedSize || selectedColor ? { size: selectedSize, color: selectedColor } : null;
     addItem(product, quantity, variant);
-    toast.success('Added to cart!');
     closeQuickView();
-    openCartSidebar();
+    try {
+      const res = await loyaltyAPI.calculateProductPoints(product._id, quantity);
+      const pts = res.data?.data?.points || 0;
+      const cash = res.data?.data?.cashValueZAR || 0;
+      showOverlay({ product, points: pts * quantity, cashValue: cash * quantity, coinLabel: 'PESA Coins' });
+    } catch {
+      showOverlay({ product, points: 0, cashValue: 0 });
+    }
   };
 
   // Extract unique sizes and colors from variants if available
