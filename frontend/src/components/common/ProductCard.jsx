@@ -7,6 +7,7 @@ import { useCartStore, useWishlistStore, useAuthStore, useUIStore, useCurrencySt
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
 import { useSingleProductBadges } from '@/hooks/useProductBadges';
+import toast from '@/utils/toast';
 import { useCartSuccessOverlay } from '@/components/common/CartSuccessOverlay';
 import { loyaltyAPI } from '@/services/api';
 
