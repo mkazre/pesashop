@@ -426,10 +426,6 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {pageSettings?.mobileFeatures?.freeShippingBarOnProductPage !== false && (
-            <FreeShippingBar extraAmount={(product.salePrice || product.regularPrice || 0) * quantity} />
-          )}
-
           <InlineLaybyePlans product={product} onLaybyeSelect={setLaybyeSelection} />
 
           {laybyeSelection && (
@@ -437,6 +433,10 @@ export default function ProductDetailScreen() {
               <Ionicons name="card-outline" size={18} color="#fff" />
               <Text style={ps.laybyeApplyText}>GET IT ON LAYBY</Text>
             </Pressable>
+          )}
+
+          {pageSettings?.mobileFeatures?.freeShippingBarOnProductPage !== false && (
+            <FreeShippingBar extraAmount={(product.salePrice || product.regularPrice || 0) * quantity} />
           )}
 
           <View style={{ height: 20 }} />

@@ -7,7 +7,8 @@ import { useCartStore, useWishlistStore, useAuthStore, useUIStore, useCurrencySt
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
 import { useSingleProductBadges } from '@/hooks/useProductBadges';
-import toast from '@/utils/toast';
+import { useCartSuccessOverlay } from '@/components/common/CartSuccessOverlay';
+import { loyaltyAPI } from '@/services/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const resolveImg = (src) => {
@@ -30,12 +31,19 @@ export default function ProductCard({ product, layout = 'grid' }) {
 
   const isInWishlist = wishlistItems.some(item => item._id === product._id);
   const discount = displayPrice.discount || 0;
+  const showOverlay = useCartSuccessOverlay((s) => s.show);
 
-  const handleAddToCart = (e) => {
+  const handleAddToCart = async (e) => {
     e.preventDefault();
     addItem(product, 1);
-    toast.success('Added to cart!');
-    openCartSidebar();
+    try {
+      const res = await loyaltyAPI.calculateProductPoints(product._id, 1);
+      const pts = res.data?.data?.points || 0;
+      const cash = res.data?.data?.cashValueZAR || 0;
+      showOverlay({ product, points: pts, cashValue: cash, coinLabel: 'PESA Coins' });
+    } catch {
+      showOverlay({ product, points: 0, cashValue: 0 });
+    }
   };
 
   const handleWishlistToggle = (e) => {

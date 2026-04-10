@@ -10,6 +10,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { useWebPush } from '@/hooks/useWebPush';
 import NotificationToast from '@/components/common/NotificationToast';
 import ScrollToTop from '@/components/common/ScrollToTop';
+import CartSuccessOverlay from '@/components/common/CartSuccessOverlay';
 
 export default function Layout() {
   const { setCurrencies } = useCurrencyStore();
@@ -46,6 +47,7 @@ export default function Layout() {
       <MobileBottomNav />
       <NotificationToast />
       <ScrollToTop />
+      <CartSuccessOverlay />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useCurrencyStore, useCartStore, useUIStore } from '@/store';
-import toast from '@/utils/toast';
+import { useCartSuccessOverlay } from '@/components/common/CartSuccessOverlay';
+import { loyaltyAPI } from '@/services/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const resolveImg = (src) => {
@@ -15,6 +16,7 @@ export default function StickyAddToCart({ product, quantity = 1, selectedVariant
   const formatPrice = useCurrencyStore((s) => s.formatPrice);
   const addItem = useCartStore((s) => s.addItem);
   const openCartSidebar = useUIStore((s) => s.openCartSidebar);
+  const showOverlay = useCartSuccessOverlay((s) => s.show);
 
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > 500);
@@ -22,11 +24,17 @@ export default function StickyAddToCart({ product, quantity = 1, selectedVariant
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product || product.stock === 0) return;
     addItem(product, quantity, selectedVariant);
-    toast.success('Added to cart!');
-    openCartSidebar();
+    try {
+      const res = await loyaltyAPI.calculateProductPoints(product._id, quantity);
+      const pts = res.data?.data?.points || 0;
+      const cash = res.data?.data?.cashValueZAR || 0;
+      showOverlay({ product, points: pts * quantity, cashValue: cash * quantity, coinLabel: 'PESA Coins' });
+    } catch {
+      showOverlay({ product, points: 0, cashValue: 0 });
+    }
   };
 
   if (!product || !visible) return null;
