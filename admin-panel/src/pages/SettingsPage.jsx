@@ -108,6 +108,7 @@ const SettingsPage = () => {
       socialLoginGoogleEnabled: false,
       socialLoginGoogleClientId: '',
       socialLoginGoogleClientSecret: '',
+      socialLoginGoogleMobileClientId: '',
       socialLoginFacebookEnabled: false,
       socialLoginFacebookAppId: '',
       socialLoginFacebookAppSecret: '',
@@ -200,6 +201,7 @@ const SettingsPage = () => {
           socialLoginGoogleEnabled: settings.socialLogin?.google?.enabled || false,
           socialLoginGoogleClientId: settings.socialLogin?.google?.clientId || '',
           socialLoginGoogleClientSecret: settings.socialLogin?.google?.clientSecret === '***configured***' ? '' : (settings.socialLogin?.google?.clientSecret || ''),
+          socialLoginGoogleMobileClientId: settings.socialLogin?.google?.mobileClientId || '',
           socialLoginFacebookEnabled: settings.socialLogin?.facebook?.enabled || false,
           socialLoginFacebookAppId: settings.socialLogin?.facebook?.appId || '',
           socialLoginFacebookAppSecret: settings.socialLogin?.facebook?.appSecret === '***configured***' ? '' : (settings.socialLogin?.facebook?.appSecret || ''),
@@ -316,6 +318,7 @@ const SettingsPage = () => {
           enabled: data.socialLoginGoogleEnabled || false,
           clientId: data.socialLoginGoogleClientId || '',
           clientSecret: data.socialLoginGoogleClientSecret || '',
+          mobileClientId: data.socialLoginGoogleMobileClientId || '',
         },
         facebook: {
           enabled: data.socialLoginFacebookEnabled || false,
@@ -1117,7 +1120,7 @@ const SettingsPage = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Client ID</label>
+                  <label className="block text-sm font-medium mb-1">Web Client ID</label>
                   <Input {...register('socialLoginGoogleClientId')} placeholder="xxxx.apps.googleusercontent.com" fullWidth />
                 </div>
                 <div>
@@ -1130,8 +1133,13 @@ const SettingsPage = () => {
                   </div>
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Mobile App Client ID <span className="text-xs text-gray-400 font-normal">(Android / iOS OAuth credential)</span></label>
+                <Input {...register('socialLoginGoogleMobileClientId')} placeholder="xxxx.apps.googleusercontent.com" fullWidth />
+                <p className="text-xs text-gray-400 mt-1">Create a separate Android or iOS OAuth 2.0 credential in Google Cloud Console for the mobile app. Leave blank to fall back to the Web Client ID.</p>
+              </div>
               <p className="text-xs text-gray-500">
-                Create credentials at <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Google Cloud Console</a>. 
+                Create credentials at <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Google Cloud Console</a>.
                 Add your domain to Authorized JavaScript origins and <code className="bg-gray-100 px-1 rounded">/api/auth/google/callback</code> to Authorized redirect URIs.
               </p>
             </div>

@@ -102,10 +102,15 @@ router.post('/google', async (req, res, next) => {
 
     // Verify the Google ID token
     const { OAuth2Client } = require('google-auth-library');
-    const client = new OAuth2Client(googleConfig.clientId);
+    // Build audience list: web client ID + mobile client ID (if configured separately)
+    const audiences = [googleConfig.clientId];
+    if (googleConfig.mobileClientId && googleConfig.mobileClientId !== googleConfig.clientId) {
+      audiences.push(googleConfig.mobileClientId);
+    }
+    const client = new OAuth2Client();
     const ticket = await client.verifyIdToken({
       idToken: credential,
-      audience: googleConfig.clientId,
+      audience: audiences,
     });
     const payload = ticket.getPayload();
 

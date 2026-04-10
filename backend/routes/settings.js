@@ -122,6 +122,7 @@ router.get('/social-login', async (req, res) => {
         google: {
           enabled: !!(sl.google?.enabled && sl.google?.clientId),
           clientId: sl.google?.enabled ? sl.google.clientId : '',
+          mobileClientId: sl.google?.enabled ? (sl.google.mobileClientId || sl.google.clientId || '') : '',
         },
         facebook: {
           enabled: !!(sl.facebook?.enabled && sl.facebook?.appId),

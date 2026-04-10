@@ -38,8 +38,10 @@ export default function LoginScreen() {
     authAPI.getSocialLoginConfig().then((res: any) => {
       const config = res.data?.data || res.data;
       if (config?.google?.enabled && config?.google?.clientId) {
+        // Use mobile-specific client ID if configured, otherwise fall back to web client ID
+        const mobileClientId = config.google.mobileClientId || config.google.clientId;
         GoogleSignin.configure({
-          webClientId: config.google.clientId,
+          webClientId: mobileClientId,
           offlineAccess: false,
         });
         setGoogleEnabled(true);
