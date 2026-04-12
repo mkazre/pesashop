@@ -4,6 +4,7 @@ import { pageTemplatesAPI, productsAPI, categoriesAPI } from '@/services/api';
 import Loading from '@/components/common/Loading';
 import ProductCard from '@/components/common/ProductCard';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
+import ServiceProviderAdSlot from '@/components/ads/ServiceProviderAdSlot';
 import HomePageRenderer from '@/components/homeblocks/HomePageRenderer';
 import { useHomePageConfig } from '@/hooks/useHomePageConfig';
 import { Link } from 'react-router-dom';
@@ -203,6 +204,14 @@ function HomePageFallback() {
           </div>
         </section>
       )}
+
+      {/* Service Provider Ads — home banner */}
+      <ServiceProviderAdSlot
+        slotId="home_banner"
+        pageType="home"
+        maxAds={2}
+        className="container mx-auto px-4 mb-6"
+      />
 
       {featuredProducts.length === 0 && newArrivals.length === 0 && categories.length === 0 && (
         <div className="py-16 px-4 text-center text-gray-500">

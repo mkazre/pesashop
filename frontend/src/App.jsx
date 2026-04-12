@@ -25,6 +25,8 @@ import WishlistPage from './pages/WishlistPage';
 import ComparePage from './pages/ComparePage';
 import CategoriesPage from './pages/CategoriesPage';
 import AddressesPage from './pages/account/AddressesPage';
+import RecurringOrdersAccountPage from './pages/account/RecurringOrdersPage';
+import MyOffersPage from './pages/account/MyOffersPage';
 import DynamicPage from './pages/DynamicPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import ChatAdmin from './pages/chat/ChatAdmin';
@@ -80,6 +82,8 @@ function App() {
             <Route path="wishlist" element={<WishlistPage />} />
             <Route path="addresses" element={<AddressesPage />} />
             <Route path="settings" element={<AccountSettingsPage />} />
+            <Route path="recurring-orders" element={<RecurringOrdersAccountPage />} />
+            <Route path="my-offers" element={<MyOffersPage />} />
           </Route>
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="categories" element={<CategoriesPage />} />

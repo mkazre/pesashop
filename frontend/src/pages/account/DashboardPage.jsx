@@ -2,6 +2,7 @@ import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { useAuthStore, useCurrencyStore } from '@/store';
 import { ordersAPI, laybyAPI, loyaltyAPI } from '@/services/api';
+import OfferSlot from '@/components/offers/OfferSlot';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -129,6 +130,9 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Special Offers */}
+      <OfferSlot page="account" className="mt-2" />
 
       {/* Quick Links */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">

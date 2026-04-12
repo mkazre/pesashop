@@ -8,6 +8,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import toast from '@/utils/toast';
 import { IoGift, IoClose } from 'react-icons/io5';
+import OfferSlot from '@/components/offers/OfferSlot';
 import CheckoutLoyaltyPoints from '@/components/loyalty/CheckoutLoyaltyPoints';
 import CouponWidget from '@/components/coupon/CouponWidget';
 import { usePageTemplate } from '@/hooks/usePageTemplate';
@@ -419,6 +420,9 @@ export default function CheckoutPage() {
                 >
                   Proceed to checkout
                 </Button>
+
+                {/* Offers sidebar */}
+                <OfferSlot page="checkout" compact className="mt-4" />
               </div>
             </div>
           </div>

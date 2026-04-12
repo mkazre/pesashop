@@ -317,4 +317,46 @@ export const chatAPI = {
   getVisitorConversations: (visitorId: string) => api.get(`/api/chat/conversations/visitor/${visitorId}`),
 };
 
+// ─── Demographics & Profile API ─────────────────────────────────
+export const demographicsAPI = {
+  getProfileCompletion: () => api.get('/api/demographics/profile-completion'),
+  updateProfile: (data: any) => api.put('/api/demographics/update', data),
+  getHobbyProducts: (hobbies: string[], limit = 3) =>
+    api.get('/api/demographics/hobby-products', { params: { hobbies, limit } }),
+  getRecommendations: (productId?: string) =>
+    api.get('/api/demographics/recommendations', { params: { productId } }),
+};
+
+// ─── Offers API ──────────────────────────────────────────────────
+export const offersAPI = {
+  getForPage: (page: string) => api.get('/api/offers', { params: { page } }),
+  take: (id: string) => api.post(`/api/offers/${id}/take`),
+  contactRequest: (id: string) => api.post(`/api/offers/${id}/contact-request`),
+  getMine: () => api.get('/api/offers/mine'),
+  cancelMine: (id: string) => api.delete(`/api/offers/mine/${id}`),
+};
+
+// ─── Recurring Orders API ────────────────────────────────────────
+export const recurringOrdersAPI = {
+  getPlansForProduct: (productId: string) =>
+    api.get('/api/recurring-orders/plans/active', { params: { productId } }),
+  create: (data: any) => api.post('/api/recurring-orders', data),
+  getMine: (params?: any) => api.get('/api/recurring-orders/mine', { params }),
+  pause: (id: string) => api.put(`/api/recurring-orders/${id}/pause`),
+  resume: (id: string) => api.put(`/api/recurring-orders/${id}/resume`),
+  cancel: (id: string, reason: string) => api.put(`/api/recurring-orders/${id}/cancel`, { reason }),
+  updateFrequency: (id: string, frequency: string) =>
+    api.put(`/api/recurring-orders/${id}/update-frequency`, { frequency }),
+};
+
+// ─── Service Provider Ads API ────────────────────────────────────
+export const serviceProviderAdsAPI = {
+  getContextual: (params: any) =>
+    api.get('/api/service-provider-ads/contextual', { params }),
+  recordImpression: (id: string) =>
+    api.post(`/api/service-provider-ads/${id}/impression`),
+  recordClick: (id: string) =>
+    api.post(`/api/service-provider-ads/${id}/click`),
+};
+
 export default api;

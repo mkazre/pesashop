@@ -250,6 +250,7 @@ export const reviewsAPI = {
   }),
   vote: (reviewId, vote) => api.post(`/api/reviews/${reviewId}/vote`, { vote }),
   report: (reviewId, reason) => api.post(`/api/reviews/${reviewId}/report`, { reason }),
+  getCategories: () => api.get('/api/reviews/categories'),
 };
 
 // Q&A API (public + authenticated)
@@ -272,6 +273,41 @@ export const notificationsAPI = {
   subscribeAnonymous: (data) => api.post('/api/notifications/subscribe-anonymous', data),
   unsubscribe: (data) => api.delete('/api/notifications/subscribe', { data }),
   getVapidPublicKey: () => api.get('/api/notifications/vapid-public-key'),
+};
+
+// Demographics & Profile API
+export const demographicsAPI = {
+  getProfileCompletion: () => api.get('/api/demographics/profile-completion'),
+  updateProfile: (data) => api.put('/api/demographics/update', data),
+  getHobbyProducts: (hobbies, limit = 3) => api.get('/api/demographics/hobby-products', { params: { hobbies, limit } }),
+  getRecommendations: (productId) => api.get('/api/demographics/recommendations', { params: { productId } }),
+};
+
+// Offers API (frontend)
+export const offersAPI = {
+  getForPage: (page) => api.get('/api/offers', { params: { page } }),
+  take: (id) => api.post(`/api/offers/${id}/take`),
+  contactRequest: (id) => api.post(`/api/offers/${id}/contact-request`),
+  getMine: () => api.get('/api/offers/mine'),
+  cancelMine: (id) => api.delete(`/api/offers/mine/${id}`),
+};
+
+// Recurring Orders API (frontend)
+export const recurringOrdersAPI = {
+  getPlansForProduct: (productId) => api.get('/api/recurring-orders/plans/active', { params: { productId } }),
+  create: (data) => api.post('/api/recurring-orders', data),
+  getMine: (params) => api.get('/api/recurring-orders/mine', { params }),
+  pause: (id) => api.put(`/api/recurring-orders/${id}/pause`),
+  resume: (id) => api.put(`/api/recurring-orders/${id}/resume`),
+  cancel: (id, reason) => api.put(`/api/recurring-orders/${id}/cancel`, { reason }),
+  updateFrequency: (id, frequency) => api.put(`/api/recurring-orders/${id}/update-frequency`, { frequency }),
+};
+
+// Service Provider Ads API (frontend)
+export const serviceProviderAdsAPI = {
+  getContextual: (params) => api.get('/api/service-provider-ads/contextual', { params }),
+  recordImpression: (id) => api.post(`/api/service-provider-ads/${id}/impression`),
+  recordClick: (id) => api.post(`/api/service-provider-ads/${id}/click`),
 };
 
 export default api;

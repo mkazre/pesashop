@@ -163,6 +163,26 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
+        {/* Quick links */}
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>More Account Options</Text>
+          {[
+            { label: "My Profile & Interests", path: "/account/demographics", icon: "person-circle-outline" },
+            { label: "Recurring Orders", path: "/account/recurring-orders", icon: "refresh-circle-outline" },
+            { label: "My Offers", path: "/account/my-offers", icon: "pricetag-outline" },
+          ].map(item => (
+            <Pressable
+              key={item.path}
+              onPress={() => router.push(item.path as any)}
+              style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.gray100 }}
+            >
+              <Ionicons name={item.icon as any} size={20} color={colors.gray600} style={{ marginRight: 10 }} />
+              <Text style={{ flex: 1, fontSize: 14, color: colors.gray800 }}>{item.label}</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
+            </Pressable>
+          ))}
+        </View>
+
         {/* Danger Zone */}
         <View style={[s.section, { borderTopWidth: 1, borderTopColor: "#fee2e2" }]}>
           <Text style={[s.sectionTitle, { color: colors.red500 }]}>Danger Zone</Text>

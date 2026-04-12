@@ -1,6 +1,9 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useQuery } from 'react-query';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import { useAuthStore, useCartStore, useWishlistStore } from '@/store';
+import { demographicsAPI } from '@/services/api';
+import ProfileCompletionPopup from '@/components/account/ProfileCompletionPopup';
 
 const NAV_ITEMS = [
   { path: '/account', label: 'Dashboard', icon: (
@@ -33,16 +36,30 @@ const NAV_ITEMS = [
   { path: '/account/addresses', label: 'Addresses', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
   )},
-  { path: '/account/settings', label: 'Account Settings', icon: (
+  { path: '/account/recurring-orders', label: 'Recurring Orders', icon: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+  )},
+  { path: '/account/my-offers', label: 'My Offers', icon: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>
+  )},
+  { path: '/account/settings', label: 'Account Settings', badge: 'profile', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
   )},
 ];
 
 export default function AccountPage() {
-  const { user, clearAuth } = useAuthStore();
+  const { user, clearAuth, isAuthenticated } = useAuthStore();
   const { clearCart } = useCartStore();
   const { clearWishlist } = useWishlistStore();
   const navigate = useNavigate();
+
+  // Profile completion — drives notification badge on Account Settings link
+  const { data: completionData } = useQuery(
+    'profile-completion',
+    () => demographicsAPI.getProfileCompletion(),
+    { enabled: isAuthenticated, staleTime: 60000 }
+  );
+  const profileScore = completionData?.data?.data?.score;
 
   const handleLogout = () => {
     clearCart();
@@ -55,6 +72,7 @@ export default function AccountPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ProfileCompletionPopup />
       <div className="container-custom py-6">
         <Breadcrumbs items={[{ label: 'My Account' }]} />
 
@@ -89,7 +107,10 @@ export default function AccountPage() {
                     }
                   >
                     {item.icon}
-                    {item.label}
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge === 'profile' && profileScore !== undefined && profileScore < 100 && (
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+                    )}
                   </NavLink>
                 ))}
               </div>

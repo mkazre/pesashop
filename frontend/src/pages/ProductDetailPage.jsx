@@ -16,6 +16,9 @@ import CustomersAlsoBought from '@/components/product/CustomersAlsoBought';
 import RecommendedWithPurchase from '@/components/product/RecommendedWithPurchase';
 import Loading from '@/components/common/Loading';
 import LaybyWidget from '@/components/product/LaybyWidget';
+import RecurringWidget from '@/components/product/RecurringWidget';
+import OfferSlot from '@/components/offers/OfferSlot';
+import ServiceProviderAdSlot from '@/components/ads/ServiceProviderAdSlot';
 import LoyaltyPointsBadge from '@/components/loyalty/LoyaltyPointsBadge';
 import { usePageTemplate } from '@/hooks/usePageTemplate';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
@@ -225,12 +228,24 @@ export default function ProductDetailPage() {
 
               {/* Layby Widget */}
               <LaybyWidget product={product} />
+
+              {/* Recurring Purchase Widget */}
+              <RecurringWidget product={product} />
             </div>
           </div>
         </div>
 
         {/* Trust Badges */}
         <TrustBadges />
+
+        {/* Service Provider Ads — below buy buttons */}
+        <ServiceProviderAdSlot
+          slotId="product_detail_below_buy"
+          pageType="product"
+          productId={product._id}
+          categorySlug={product.categories?.[0]?.slug}
+          className="mt-4"
+        />
 
         {/* Product Tabs */}
         <ProductTabs product={product} />
@@ -252,6 +267,9 @@ export default function ProductDetailPage() {
           <h2 className="text-lg font-bold text-gray-900 mb-4">Recommended With Your Purchase</h2>
           <RecommendedWithPurchase productId={product._id} />
         </div>
+
+        {/* Special Offers */}
+        <OfferSlot page="product_detail" className="mt-6 mb-8" />
       </div>
     </div>
   );

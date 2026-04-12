@@ -42,6 +42,7 @@ export default function WriteReview({ productId, productName, onReviewSubmitted 
   const [images, setImages] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [error, setError] = useState('');
+  const [categoryRatings, setCategoryRatings] = useState({}); // { categoryId: rating }
 
   // Get review settings
   const { data: settingsData } = useQuery(
@@ -50,6 +51,14 @@ export default function WriteReview({ productId, productName, onReviewSubmitted 
     { staleTime: 60 * 1000 }
   );
   const settings = settingsData?.data?.data || {};
+
+  // Get review categories
+  const { data: categoriesData } = useQuery(
+    'review-categories-public',
+    () => reviewsAPI.getCategories(),
+    { staleTime: 5 * 60 * 1000 }
+  );
+  const reviewCategories = (categoriesData?.data?.data || []).filter(c => c.isActive);
 
   // Check if user can review
   const { data: canReviewData, isLoading: checkingEligibility } = useQuery(
@@ -73,6 +82,7 @@ export default function WriteReview({ productId, productName, onReviewSubmitted 
         setImages([]);
         setPreviews([]);
         setError('');
+        setCategoryRatings({});
         onReviewSubmitted?.();
       },
       onError: (err) => {
@@ -131,6 +141,17 @@ export default function WriteReview({ productId, productName, onReviewSubmitted 
     formData.append('title', title);
     formData.append('content', content);
     images.forEach(img => formData.append('images', img));
+
+    // Category ratings
+    const catRatingsArr = Object.entries(categoryRatings)
+      .filter(([, r]) => r > 0)
+      .map(([categoryId, rating]) => {
+        const cat = reviewCategories.find(c => c._id === categoryId);
+        return { categoryId, categoryName: cat?.name || '', rating };
+      });
+    if (catRatingsArr.length) {
+      formData.append('categoryRatings', JSON.stringify(catRatingsArr));
+    }
 
     submitMutation.mutate(formData);
   };
@@ -199,6 +220,28 @@ export default function WriteReview({ productId, productName, onReviewSubmitted 
           {rating > 0 && <span className="text-sm font-medium text-amber-600">{RATING_LABELS[rating]}</span>}
         </div>
       </div>
+
+      {/* Category Ratings (optional) */}
+      {reviewCategories.length > 0 && (
+        <div className="border border-gray-100 rounded-lg p-3 bg-gray-50 space-y-2">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            Optional: Rate specific aspects
+          </p>
+          {reviewCategories.map(cat => (
+            <div key={cat._id} className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5 min-w-0">
+                {cat.icon && <span>{cat.icon}</span>}
+                <span className="text-sm text-gray-700 truncate">{cat.name}</span>
+              </div>
+              <StarInput
+                value={categoryRatings[cat._id] || 0}
+                onChange={(v) => setCategoryRatings(prev => ({ ...prev, [cat._id]: v }))}
+                size="sm"
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Title */}
       <div>

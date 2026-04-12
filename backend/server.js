@@ -12,6 +12,7 @@ const currencyUpdater = require('./services/currencyUpdater');
 const { initLaybyeCronJobs } = require('./cron/laybyeCron');
 const { initCouponEmailCronJobs } = require('./cron/couponEmailCron');
 const { initReviewReminderCron } = require('./cron/reviewReminderCron');
+const { initRecurringOrderCronJobs } = require('./cron/recurringOrderCron');
 
 // Initialize express app
 const app = express();
@@ -145,6 +146,11 @@ const footerConfigRoutes = require('./routes/footerConfig');
 const mobileAppConfigRoutes = require('./routes/mobileAppConfig');
 const chatRoutes = require('./routes/chat');
 const popupRoutes = require('./routes/popups');
+const serviceProviderRoutes = require('./routes/serviceProviders');
+const serviceProviderAdRoutes = require('./routes/serviceProviderAds');
+const recurringOrderRoutes = require('./routes/recurringOrders');
+const offersRoutes = require('./routes/offers');
+const demographicsRoutes = require('./routes/demographics');
 
 // Mount API routes FIRST (before static files)
 app.use('/api/auth', authRoutes);
@@ -190,6 +196,11 @@ app.use('/api/footer-config', footerConfigRoutes);
 app.use('/api/mobile-app-config', mobileAppConfigRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/popups', popupRoutes);
+app.use('/api/service-providers', serviceProviderRoutes);
+app.use('/api/service-provider-ads', serviceProviderAdRoutes);
+app.use('/api/recurring-orders', recurringOrderRoutes);
+app.use('/api/offers', offersRoutes);
+app.use('/api/demographics', demographicsRoutes);
 
 // Serve React frontend static files AFTER API routes
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
@@ -262,6 +273,9 @@ initCouponEmailCronJobs();
 
 // Initialize review reminder cron jobs
 initReviewReminderCron();
+
+// Initialize recurring order and service provider cron jobs
+initRecurringOrderCronJobs();
 
 // Process scheduled notifications every 60 seconds
 const notificationService = require('./services/notificationService');
