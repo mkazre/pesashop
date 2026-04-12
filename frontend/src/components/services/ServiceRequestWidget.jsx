@@ -2,39 +2,29 @@ import { useState } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import { Link } from 'react-router-dom';
 import { serviceTypesAPI, serviceRequestsAPI } from '@/services/api';
-import { useAuthStore } from '@/store';
+import { useAuthStore, useUIStore } from '@/store';
 import toast from '@/utils/toast';
 
-const MODES = [
-  { value: 'repair',   label: 'Repair',   icon: '🔨' },
-  { value: 'install',  label: 'Install',  icon: '⚡' },
-  { value: 'maintain', label: 'Maintain', icon: '🔧' },
-];
+const MODE_LABELS = { repair: 'Repair', install: 'Install', maintain: 'Maintain' };
 
 /**
- * ServiceRequestWidget — compact collapsible panel for product detail / checkout.
- * Fetches relevant service types based on product category, lets customer
- * choose service + modes and submits a request using their saved address.
- *
- * Props:
- *   product  — product object (used for category matching and name)
- *   compact  — boolean, if true shows a mini toggle style like LaybyWidget
+ * ServiceRequestWidget — matches InlineLaybyePlans design exactly.
+ * iOS toggle → grid of service-type cards → mode + notes form.
  */
-export default function ServiceRequestWidget({ product, compact = true }) {
+export default function ServiceRequestWidget({ product }) {
   const { user, isAuthenticated } = useAuthStore();
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState('');
+  const { openAuthModal } = useUIStore();
+  const [enabled, setEnabled] = useState(false);
+  const [selectedTypeId, setSelectedTypeId] = useState(null);
   const [selectedModes, setSelectedModes] = useState([]);
   const [description, setDescription] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  // Fetch all active service types (not filtered by category — show everything)
-  const { data, isLoading: typesLoading } = useQuery(
+  const { data, isLoading } = useQuery(
     'service-types-widget',
     () => serviceTypesAPI.getAll().then(r => r.data.data || []),
     { staleTime: 5 * 60 * 1000 }
   );
-
   const serviceTypes = data || [];
 
   const submitMutation = useMutation(
@@ -48,27 +38,42 @@ export default function ServiceRequestWidget({ product, compact = true }) {
     }
   );
 
-  // Don't render if no services available
-  if (!typesLoading && serviceTypes.length === 0) return null;
+  // Don't render if no services
+  if (!isLoading && serviceTypes.length === 0) return null;
+
+  const selectedType = serviceTypes.find(t => t._id === selectedTypeId) || null;
+
+  const handleToggle = (val) => {
+    if (val && !isAuthenticated) {
+      openAuthModal('login');
+      toast('Please sign in to book a professional', { icon: '🔐' });
+      return;
+    }
+    setEnabled(val);
+    if (!val) { setSelectedTypeId(null); setSelectedModes([]); setSubmitted(false); }
+  };
+
+  const handleSelectType = (type) => {
+    setSelectedTypeId(type._id);
+    // Pre-select all modes this type supports
+    setSelectedModes(type.serviceModes || []);
+  };
 
   const toggleMode = (m) => {
-    setSelectedModes(prev =>
-      prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]
-    );
+    setSelectedModes(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!selectedService) { toast.error('Please select a service'); return; }
+    if (!selectedType) { toast.error('Please select a service type'); return; }
 
     const address = user?.addresses?.find(a => a.isDefault) || user?.addresses?.[0];
-
     submitMutation.mutate({
       firstName: user?.firstName || '',
       lastName:  user?.lastName || '',
       email:     user?.email || '',
       phone:     user?.phone || '',
-      serviceTypeId: selectedService,
+      serviceTypeId: selectedType._id,
       serviceModes: selectedModes,
       description,
       address:  address?.address || address?.line1 || '',
@@ -80,126 +85,199 @@ export default function ServiceRequestWidget({ product, compact = true }) {
     });
   };
 
-  if (!compact) return null; // full page handles non-compact
-
   return (
-    <div className="border-t border-gray-200 pt-4">
-      {/* Toggle button — same style as OfferSlot/LaybyWidget */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(prev => !prev)}
-        className="w-full flex items-center justify-between px-4 py-3 border-2 border-dashed border-blue-400/60 rounded-lg text-sm font-medium text-blue-700 hover:bg-blue-50/50 hover:border-blue-500/60 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🔧</span>
-          <span>
-            {typesLoading ? 'Loading services...' : `Book a Professional (${serviceTypes.length} service${serviceTypes.length !== 1 ? 's' : ''} available)`}
-          </span>
+    <div style={{ borderTop: '1px solid #e5eae6', paddingTop: 16, marginTop: 4 }}>
+      {/* Toggle — exact InlineLaybyePlans style */}
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+        <div style={{ position: 'relative', marginTop: 2 }}>
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={e => handleToggle(e.target.checked)}
+            style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+          />
+          <div style={{
+            width: 40, height: 20, borderRadius: 10,
+            background: enabled ? '#1b5e35' : '#ccc',
+            transition: 'background 0.2s',
+          }}>
+            <div style={{
+              width: 16, height: 16, borderRadius: '50%', background: '#fff',
+              position: 'absolute', top: 2, left: enabled ? 22 : 2,
+              transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            }} />
+          </div>
         </div>
-        <svg
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>🔧</span>
+            <span>Book a Professional</span>
+          </div>
+          <div style={{ fontSize: 12, color: '#76889a', marginTop: 2 }}>
+            {isLoading ? 'Loading services...' : `${serviceTypes.length} service${serviceTypes.length !== 1 ? 's' : ''} available — electricians, plumbers & more`}
+          </div>
+        </div>
+      </label>
 
-      {isOpen && (
-        <div className="mt-3 border border-blue-200/60 rounded-xl p-4 bg-blue-50/30 space-y-3">
+      {/* Expanded panel */}
+      {enabled && (
+        <div style={{ marginTop: 14 }}>
           {submitted ? (
-            <div className="flex items-center gap-3 py-2">
-              <span className="text-2xl">✅</span>
-              <div>
-                <p className="font-semibold text-green-800 text-sm">Request submitted!</p>
-                <p className="text-xs text-green-600">We'll contact you shortly to confirm your booking.</p>
-              </div>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
+              <p style={{ fontWeight: 700, color: '#166534', fontSize: 14 }}>Request submitted!</p>
+              <p style={{ color: '#16a34a', fontSize: 12, marginTop: 4 }}>We'll contact you shortly to confirm your booking.</p>
+              <button
+                onClick={() => { setEnabled(false); setSubmitted(false); setSelectedTypeId(null); }}
+                style={{ marginTop: 12, fontSize: 12, color: '#76889a', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Close
+              </button>
             </div>
           ) : (
             <>
-              <p className="text-xs text-gray-500 font-medium">Book a professional for this product</p>
-
-              {!isAuthenticated ? (
-                <p className="text-xs text-gray-500">
-                  <Link to="/service-providers" className="text-blue-600 font-medium hover:underline">View all services</Link> or{' '}
-                  <button onClick={() => {}} className="text-blue-600 font-medium hover:underline">log in</button> to quickly request a service.
-                </p>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  {/* Service selector */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Select Service</label>
-                    <select
-                      value={selectedService}
-                      onChange={e => setSelectedService(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
-                    >
-                      <option value="">— Choose a service —</option>
-                      {serviceTypes.map(st => (
-                        <option key={st._id} value={st._id}>{st.icon} {st.title}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Mode selector */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">What do you need?</label>
-                    <div className="flex gap-2">
-                      {MODES.map(m => (
-                        <button
-                          key={m.value}
-                          type="button"
-                          onClick={() => toggleMode(m.value)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                            selectedModes.includes(m.value)
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'bg-white text-gray-600 border-gray-300 hover:border-blue-300'
-                          }`}
-                        >
-                          <span>{m.icon}</span> {m.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Notes */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Notes (optional)</label>
-                    <textarea
-                      value={description}
-                      onChange={e => setDescription(e.target.value)}
-                      rows={2}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none bg-white"
-                      placeholder="Describe the issue or what you need..."
-                    />
-                  </div>
-
-                  {/* Address info */}
-                  {user?.addresses?.length > 0 && (
-                    <p className="text-xs text-gray-400">
-                      📍 We'll use your saved address:{' '}
-                      {[
-                        user.addresses.find(a => a.isDefault) || user.addresses[0]
-                      ].map(a => [a?.suburb, a?.city, a?.province].filter(Boolean).join(', '))}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-3">
+              {/* Service Type Cards — same grid style as layby plan cards */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: serviceTypes.length <= 4
+                  ? `repeat(${Math.min(serviceTypes.length, 4)}, 1fr)`
+                  : `repeat(${Math.min(serviceTypes.length, 4)}, minmax(100px, 1fr))`,
+                gap: 8,
+                marginBottom: 14,
+                overflowX: serviceTypes.length > 4 ? 'auto' : 'visible',
+              }}>
+                {serviceTypes.map((type) => {
+                  const isSelected = type._id === selectedTypeId;
+                  return (
                     <button
-                      type="submit"
-                      disabled={submitMutation.isLoading}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors"
+                      key={type._id}
+                      type="button"
+                      onClick={() => handleSelectType(type)}
+                      style={{
+                        padding: '12px 10px',
+                        border: isSelected ? '2px solid #1b5e35' : '1px solid #e5eae6',
+                        borderRadius: 8,
+                        background: isSelected ? '#f0fdf4' : '#fff',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        position: 'relative',
+                        minWidth: serviceTypes.length > 4 ? 100 : undefined,
+                      }}
                     >
-                      {submitMutation.isLoading ? 'Submitting...' : 'Request Service'}
+                      {isSelected && (
+                        <div style={{
+                          position: 'absolute', top: -1, right: -1,
+                          background: '#1b5e35', color: '#fff',
+                          fontSize: 9, padding: '2px 6px', fontWeight: 700,
+                          borderBottomLeftRadius: 4, borderTopRightRadius: 6,
+                        }}>
+                          ✓
+                        </div>
+                      )}
+                      {type.imageUrl ? (
+                        <img src={type.imageUrl} alt={type.title} style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 6, margin: '0 auto 4px', display: 'block' }} />
+                      ) : (
+                        <div style={{ fontSize: 24, marginBottom: 4 }}>{type.icon || '🔧'}</div>
+                      )}
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.2 }}>{type.title}</div>
+                      <div style={{ fontSize: 10, color: '#76889a', marginTop: 3 }}>
+                        {(type.serviceModes || []).map(m => MODE_LABELS[m] || m).join(' · ')}
+                      </div>
                     </button>
-                    <Link
-                      to="/service-providers"
-                      className="text-xs text-blue-600 hover:underline whitespace-nowrap"
-                    >
-                      Show ALL →
-                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Form — shown when a type is selected */}
+              {selectedType && (
+                <form onSubmit={handleSubmit}>
+                  <div style={{ background: '#fafbfc', border: '1px solid #e5eae6', borderRadius: 8, padding: 14, marginBottom: 10 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', marginBottom: 10 }}>
+                      {selectedType.icon} {selectedType.title}
+                    </p>
+
+                    {/* Mode selector */}
+                    {selectedType.serviceModes?.length > 0 && (
+                      <div style={{ marginBottom: 10 }}>
+                        <p style={{ fontSize: 11, color: '#76889a', marginBottom: 6, fontWeight: 600 }}>What do you need?</p>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {selectedType.serviceModes.map(m => (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => toggleMode(m)}
+                              style={{
+                                padding: '4px 10px',
+                                border: selectedModes.includes(m) ? '1.5px solid #1b5e35' : '1px solid #e5eae6',
+                                borderRadius: 20,
+                                background: selectedModes.includes(m) ? '#f0fdf4' : '#fff',
+                                color: selectedModes.includes(m) ? '#1b5e35' : '#76889a',
+                                fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                                transition: 'all 0.15s',
+                              }}
+                            >
+                              {MODE_LABELS[m] || m}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    <div>
+                      <p style={{ fontSize: 11, color: '#76889a', marginBottom: 4, fontWeight: 600 }}>Notes (optional)</p>
+                      <textarea
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        rows={2}
+                        placeholder="Describe the issue or what you need..."
+                        style={{
+                          width: '100%', border: '1px solid #e5eae6', borderRadius: 6,
+                          padding: '6px 10px', fontSize: 12, resize: 'none',
+                          boxSizing: 'border-box', fontFamily: 'inherit',
+                        }}
+                      />
+                    </div>
+
+                    {/* Address */}
+                    {user?.addresses?.length > 0 && (
+                      <p style={{ fontSize: 10, color: '#76889a', marginTop: 6 }}>
+                        📍 Using your saved address:{' '}
+                        {(() => {
+                          const a = user.addresses.find(x => x.isDefault) || user.addresses[0];
+                          return [a?.suburb, a?.city, a?.province].filter(Boolean).join(', ');
+                        })()}
+                      </p>
+                    )}
                   </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitMutation.isLoading}
+                    style={{
+                      width: '100%', padding: '10px 0',
+                      background: '#1b5e35', color: '#fff',
+                      border: 'none', borderRadius: 8,
+                      fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                      opacity: submitMutation.isLoading ? 0.6 : 1,
+                      transition: 'opacity 0.2s',
+                    }}
+                  >
+                    {submitMutation.isLoading ? 'Submitting...' : 'Request This Service'}
+                  </button>
                 </form>
               )}
+
+              {/* View all link */}
+              <div style={{ textAlign: 'center', marginTop: 10 }}>
+                <Link
+                  to="/service-providers"
+                  style={{ fontSize: 11, color: '#76889a', textDecoration: 'underline' }}
+                >
+                  View all service providers →
+                </Link>
+              </div>
             </>
           )}
         </div>

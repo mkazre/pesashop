@@ -30,19 +30,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/service-types/:id — single service type (public)
-router.get('/:id', async (req, res) => {
-  try {
-    const type = await ServiceType.findById(req.params.id).populate('linkedCategories', 'name slug');
-    if (!type) return res.status(404).json({ success: false, message: 'Not found' });
-    res.json({ success: true, data: type });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
 // ═══════════════════════════════════════════════════════════
-//  ADMIN
+//  ADMIN — must be defined BEFORE /:id to avoid param capture
 // ═══════════════════════════════════════════════════════════
 
 // GET /api/service-types/admin/all — all (including inactive)
@@ -89,6 +78,17 @@ router.delete('/:id', protect, authorize('admin', 'shop_manager', 'superadmin', 
   try {
     await ServiceType.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// GET /api/service-types/:id — single service type (public) — defined LAST to avoid capturing /admin/all
+router.get('/:id', async (req, res) => {
+  try {
+    const type = await ServiceType.findById(req.params.id).populate('linkedCategories', 'name slug');
+    if (!type) return res.status(404).json({ success: false, message: 'Not found' });
+    res.json({ success: true, data: type });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
   }

@@ -46,14 +46,7 @@ const ServiceProvidersPage = () => {
   const [areaInput, setAreaInput] = useState('');
 
   const createMutation = useMutation(
-    (data) => {
-      const fd = new FormData();
-      Object.entries(data).forEach(([k, v]) => {
-        if (Array.isArray(v)) v.forEach(val => fd.append(k, val));
-        else fd.append(k, v);
-      });
-      return api.post('/service-providers/apply', fd);
-    },
+    (data) => api.post('/service-providers/admin/create', data),
     {
       onSuccess: () => {
         queryClient.invalidateQueries('service-providers');

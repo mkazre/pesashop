@@ -331,4 +331,32 @@ router.put('/admin/slots/:id', protect, authorize('admin', 'shop_manager'), asyn
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
+// POST /api/service-providers/admin/create — Admin creates a provider directly (JSON, pre-approved)
+router.post('/admin/create', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const { businessName, contactName, email, phone, website, bio, categoryId, province, city, serviceAreas, serviceModes, password } = req.body;
+    if (!email || !businessName || !password) {
+      return res.status(400).json({ success: false, message: 'businessName, email and password are required' });
+    }
+    const existing = await ServiceProvider.findOne({ email: email.toLowerCase() });
+    if (existing) return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
+
+    const provider = await ServiceProvider.create({
+      businessName, contactName, email, phone, website, bio,
+      category: categoryId || null,
+      province, city,
+      serviceAreas: Array.isArray(serviceAreas) ? serviceAreas : (serviceAreas ? [serviceAreas] : []),
+      serviceModes: Array.isArray(serviceModes) ? serviceModes : [],
+      password,
+      applicationStatus: 'approved',
+      createdByAdmin: true,
+    });
+
+    res.status(201).json({ success: true, data: provider, message: 'Provider created and pre-approved.' });
+  } catch (err) {
+    console.error('Admin create provider error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Server error' });
+  }
+});
+
 module.exports = router;

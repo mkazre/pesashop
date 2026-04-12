@@ -294,7 +294,8 @@ export const offersAPI = {
 
 // Recurring Orders API (frontend)
 export const recurringOrdersAPI = {
-  getPlansForProduct: (productId) => api.get('/api/recurring-orders/plans/active', { params: { productId } }),
+  getActivePlans: () => api.get('/api/recurring-orders/plans/active'),
+  getPlansForProduct: (productId) => api.get('/api/recurring-orders/plans/active', { params: productId ? { productId } : {} }),
   create: (data) => api.post('/api/recurring-orders', data),
   getMine: (params) => api.get('/api/recurring-orders/mine', { params }),
   pause: (id) => api.put(`/api/recurring-orders/${id}/pause`),

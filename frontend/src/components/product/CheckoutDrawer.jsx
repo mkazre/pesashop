@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'react-query';
-import { ordersAPI, couponsAPI, laybyPlansAPI, loyaltyAPI, giftCardsAPI, laybyAPI, offersAPI } from '@/services/api';
+import { ordersAPI, couponsAPI, laybyPlansAPI, loyaltyAPI, giftCardsAPI, laybyAPI, offersAPI, recurringOrdersAPI } from '@/services/api';
 import { useAuthStore, useCartStore, useCurrencyStore, useUIStore } from '@/store';
 import toast from '@/utils/toast';
 import LaybyWidget from './LaybyWidget';
@@ -89,6 +89,16 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
     staleTime: 5 * 60 * 1000,
     enabled: open,
   });
+
+  // Fetch active recurring plans for checkout recurring toggle
+  const { data: recurringPlansData } = useQuery('recurringPlansActive-checkout', () => recurringOrdersAPI.getActivePlans(), {
+    staleTime: 5 * 60 * 1000,
+    enabled: open,
+  });
+  const allRecurringPlans = useMemo(() => {
+    const raw = recurringPlansData?.data?.data || [];
+    return Array.isArray(raw) ? raw.filter(p => p.isActive !== false) : [];
+  }, [recurringPlansData]);
   const allPlans = useMemo(() => {
     const raw = plansData?.data?.data || plansData?.data || [];
     return Array.isArray(raw) ? raw.filter(p => p.isActive) : [];
@@ -493,6 +503,8 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
                     const itemTotal = price * item.quantity;
                     const plans = getPlansForProduct(item.product);
                     const hasLaybye = !!item.laybye;
+                    const hasRecurring = !!item.recurring;
+                    const FREQ_LABELS = { daily: 'Daily', weekly: 'Weekly', fortnightly: 'Every 2 wks', monthly: 'Monthly', bimonthly: 'Every 2 mo', quarterly: 'Quarterly' };
 
                     return (
                       <div key={`${item.product._id}-${idx}`} style={{ padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
@@ -575,6 +587,82 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
                               <span>{item.laybye.plan.numberOfPayments}× {formatPrice(item.laybye.installment * item.quantity)}/{item.laybye.plan.frequency === 'weekly' ? 'wk' : item.laybye.plan.frequency === 'biweekly' ? '2wk' : 'mo'}</span>
                             </div>
                           </div>
+                        )}
+
+                        {/* Recurring — badge when already set, toggle when not (and no layby) */}
+                        {!hasLaybye && (
+                          <>
+                            {hasRecurring ? (
+                              <div style={{ marginTop: 8, padding: '6px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11 }}>
+                                <div>
+                                  <span style={{ fontWeight: 700, color: '#166534' }}>🔄 Recurring — </span>
+                                  <span style={{ color: '#374151' }}>
+                                    {FREQ_LABELS[item.recurring.frequency] || item.recurring.frequency}
+                                    {item.recurring.paymentMode === 'upfront' && item.recurring.instances ? ` · ${item.recurring.instances} deliveries upfront` : ' · Pay as you go'}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => cart.clearItemRecurring(idx)}
+                                  style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '0 0 0 8px', flexShrink: 0 }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ) : allRecurringPlans.length > 0 && (
+                              <label style={{
+                                display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700,
+                                cursor: 'pointer', marginTop: 6,
+                                padding: '5px 12px', borderRadius: 20,
+                                background: 'transparent',
+                                color: '#166534',
+                                border: '1.5px solid #bbf7d0',
+                                width: 'fit-content',
+                              }}>
+                                <input
+                                  type="checkbox"
+                                  checked={false}
+                                  onChange={() => {
+                                    const plan = allRecurringPlans[0];
+                                    cart.setItemRecurring(idx, {
+                                      frequency: plan.frequency,
+                                      paymentMode: plan.allowedPaymentModes?.[0] || 'pay_as_you_go',
+                                      instances: null,
+                                      recurringPlanId: plan._id,
+                                    });
+                                  }}
+                                  style={{ width: 12, height: 12, accentColor: '#1b5e35' }}
+                                />
+                                🔄 Set up Recurring
+                                <span style={{ fontWeight: 400, color: '#76889a', marginLeft: 2 }}>
+                                  ({allRecurringPlans.map(p => FREQ_LABELS[p.frequency]).join(', ')})
+                                </span>
+                              </label>
+                            )}
+
+                            {/* Recurring plan selector when set from checkout */}
+                            {hasRecurring && allRecurringPlans.length > 1 && (
+                              <div style={{ marginTop: 4, padding: '4px 6px', fontSize: 11 }}>
+                                <select
+                                  value={item.recurring.recurringPlanId || ''}
+                                  onChange={(e) => {
+                                    const plan = allRecurringPlans.find(p => p._id === e.target.value);
+                                    if (plan) {
+                                      cart.setItemRecurring(idx, {
+                                        ...item.recurring,
+                                        frequency: plan.frequency,
+                                        recurringPlanId: plan._id,
+                                      });
+                                    }
+                                  }}
+                                  style={{ fontSize: 11, padding: '3px 6px', border: '1px solid #bbf7d0', borderRadius: 4 }}
+                                >
+                                  {allRecurringPlans.map(p => (
+                                    <option key={p._id} value={p._id}>{FREQ_LABELS[p.frequency] || p.frequency}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     );

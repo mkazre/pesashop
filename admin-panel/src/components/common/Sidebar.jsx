@@ -84,9 +84,10 @@ const menuGroups = [
   {
     label: 'Service Providers',
     items: [
-      { path: '/service-providers', icon: IoBusinessOutline, label: 'Providers & Ads' },
-      { path: '/service-types', icon: IoBusinessOutline, label: 'Service Types' },
-      { path: '/service-requests', icon: IoBusinessOutline, label: 'Service Requests' },
+      { path: '/service-providers', icon: IoBusinessOutline, label: 'All Providers' },
+      { path: '/service-provider-ads', icon: IoFlash, label: 'All Ads' },
+      { path: '/service-types', icon: IoList, label: 'Service Types' },
+      { path: '/service-requests', icon: IoDocumentTextOutline, label: 'Service Requests' },
     ],
   },
   {
