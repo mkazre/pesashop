@@ -1276,6 +1276,9 @@ export default function WalmartProductPage({ product, settings }) {
               {/* Recurring Purchase Widget */}
               <RecurringWidget product={product} />
 
+              {/* Special Offers — collapsible toggle below recurring */}
+              <OfferSlot page="product_detail" />
+
               {/* Trust Badges */}
               {fb.showTrustBadges && fb.trustBadges?.length > 0 && (
                 <div className="wp-trust">
@@ -1399,12 +1402,7 @@ export default function WalmartProductPage({ product, settings }) {
         </div>
       )}
 
-      {/* Offers slot — below product */}
-      <div style={{ maxWidth: lay.maxWidth || 1440, margin: '0 auto', padding: '0 24px 12px' }}>
-        <OfferSlot page="product_detail" />
-      </div>
-
-      {/* Service Provider Ads */}
+      {/* Service Provider Ads — 5-column banner at bottom */}
       <div style={{ maxWidth: lay.maxWidth || 1440, margin: '0 auto', padding: '0 24px 12px' }}>
         <ServiceProviderAdSlot
           slotId="product_detail_below_buy"

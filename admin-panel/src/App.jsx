@@ -64,9 +64,13 @@ import PopupBuilderPage from './pages/PopupBuilderPage';
 import CustomerDemographicsDashboard from './pages/CustomerDemographicsDashboard';
 import OffersPage from './pages/OffersPage';
 import OfferBuilderPage from './pages/OfferBuilderPage';
+import OfferCustomersPage from './pages/OfferCustomersPage';
 import RecurringOrdersPage from './pages/RecurringOrdersPage';
 import RecurringPlansPage from './pages/RecurringPlansPage';
 import ServiceProvidersPage from './pages/ServiceProvidersPage';
+import ServiceProviderCategoriesPage from './pages/ServiceProviderCategoriesPage';
+import ServiceProviderPlansPage from './pages/ServiceProviderPlansPage';
+import ServiceProviderAdSlotsPage from './pages/ServiceProviderAdSlotsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -163,12 +167,16 @@ function App() {
             {/* Offers */}
             <Route path="offers" element={<OffersPage />} />
             <Route path="offers/new" element={<OfferBuilderPage />} />
+            <Route path="offers/:id/customers" element={<OfferCustomersPage />} />
             <Route path="offers/:id" element={<OfferBuilderPage />} />
             {/* Recurring Orders */}
             <Route path="recurring-orders" element={<RecurringOrdersPage />} />
             <Route path="recurring-orders/plans" element={<RecurringPlansPage />} />
             {/* Service Providers */}
             <Route path="service-providers" element={<ServiceProvidersPage />} />
+            <Route path="service-providers/categories" element={<ServiceProviderCategoriesPage />} />
+            <Route path="service-providers/plans" element={<ServiceProviderPlansPage />} />
+            <Route path="service-providers/ad-slots" element={<ServiceProviderAdSlotsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

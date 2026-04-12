@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'react-query';
-import { ordersAPI, couponsAPI, laybyPlansAPI, loyaltyAPI, giftCardsAPI, laybyAPI } from '@/services/api';
+import { ordersAPI, couponsAPI, laybyPlansAPI, loyaltyAPI, giftCardsAPI, laybyAPI, offersAPI } from '@/services/api';
 import { useAuthStore, useCartStore, useCurrencyStore, useUIStore } from '@/store';
 import toast from '@/utils/toast';
 import LaybyWidget from './LaybyWidget';
+import OfferCard from '@/components/offers/OfferCard';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -28,6 +29,14 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState(false);
+
+  // Checkout offers
+  const { data: checkoutOffersData } = useQuery(
+    ['offers-slot', 'checkout'],
+    () => offersAPI.getForPage('checkout'),
+    { staleTime: 5 * 60 * 1000, enabled: open }
+  );
+  const checkoutOffers = checkoutOffersData?.data?.data || [];
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [step, setStep] = useState('cart'); // cart | details | confirmation
@@ -838,6 +847,20 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
                   </div>
                 )}
               </div>
+
+              {/* Checkout offers */}
+              {checkoutOffers.length > 0 && (
+                <div style={{ marginBottom: 12, padding: '10px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: '#166534', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    🏷️ Special Offers
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {checkoutOffers.map(offer => (
+                      <OfferCard key={offer._id} offer={offer} />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Order summary compact */}
               <div style={{ borderTop: '2px solid #e5eae6', paddingTop: 12 }}>

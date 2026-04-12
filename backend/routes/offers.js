@@ -84,8 +84,8 @@ router.post('/:id/take', protect, async (req, res) => {
       $inc: { 'stats.clicks': 1, 'stats.conversions': 1 }
     });
 
-    // Send confirmation email to customer
-    const user = await require('../models/User').findById(req.user.id).select('email firstName').lean();
+    // Send confirmation email to customer + admin notification
+    const user = await require('../models/User').findById(req.user.id).select('email firstName lastName phone').lean();
     try {
       await emailService.sendTemplatedEmail('offer_taken', user.email, {
         customerName: user.firstName,
@@ -93,7 +93,29 @@ router.post('/:id/take', protect, async (req, res) => {
         offerType: offer.offerType,
         providerName: offer.providerName
       });
-    } catch (e) { console.error('Offer taken email error:', e.message); }
+    } catch (e) { console.error('Offer taken customer email error:', e.message); }
+
+    // Admin notification email
+    try {
+      const settings = await Settings.getSettings();
+      const adminEmail = offer.contactEmail || settings.adminEmail || settings.storeEmail;
+      if (adminEmail) {
+        await emailService.sendEmail({
+          to: adminEmail,
+          subject: `Offer Taken: ${offer.title}`,
+          html: `
+            <h2>A customer has taken an offer</h2>
+            <p><strong>Offer:</strong> ${offer.title}</p>
+            <p><strong>Type:</strong> ${offer.offerType}</p>
+            <p><strong>Customer:</strong> ${user.firstName} ${user.lastName}</p>
+            <p><strong>Email:</strong> ${user.email}</p>
+            ${user.phone ? `<p><strong>Phone:</strong> ${user.phone}</p>` : ''}
+            <p><strong>Date:</strong> ${new Date().toLocaleString('en-ZA')}</p>
+            ${offer.offerType === 'contact_request' ? '<p><strong>Action required:</strong> Please contact this customer about the offer.</p>' : ''}
+          `
+        });
+      }
+    } catch (e) { console.error('Offer taken admin email error:', e.message); }
 
     res.status(201).json({ success: true, data: customerOffer, message: 'Offer activated successfully.' });
   } catch (err) {

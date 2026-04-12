@@ -62,8 +62,8 @@ export default function RecurringWidget({ product }) {
   const handleSubmit = () => {
     if (!selectedPlan) return;
     createMutation.mutate({
-      product: product._id,
-      recurringPlan: selectedPlan._id,
+      productId: product._id,
+      recurringPlanId: selectedPlan._id,
       frequency: selectedPlan.frequency,
       quantity,
       paymentMode,
@@ -73,7 +73,7 @@ export default function RecurringWidget({ product }) {
 
   if (!product) return null;
 
-  const price = product.salePrice || product.price || 0;
+  const price = product.salePrice || product.regularPrice || product.price || 0;
   const totalUpfront = price * quantity * instances;
 
   return (
