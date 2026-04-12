@@ -114,7 +114,8 @@ export const useCartStore = create(
       getTotal: () => {
         return get().items.reduce((total, item) => {
           const price = item.product.salePrice || item.product.regularPrice;
-          return total + price * item.quantity;
+          const instances = (item.recurring?.paymentMode === 'upfront' && item.recurring?.instances) ? item.recurring.instances : 1;
+          return total + price * item.quantity * instances;
         }, 0);
       },
       getTotalAfterGiftCard: () => {
@@ -131,7 +132,8 @@ export const useCartStore = create(
       getCashTotal: () => {
         return get().items.filter(i => !i.laybye).reduce((t, item) => {
           const price = item.product.salePrice || item.product.regularPrice;
-          return t + price * item.quantity;
+          const instances = (item.recurring?.paymentMode === 'upfront' && item.recurring?.instances) ? item.recurring.instances : 1;
+          return t + price * item.quantity * instances;
         }, 0);
       },
       getLaybyeDepositTotal: () => {

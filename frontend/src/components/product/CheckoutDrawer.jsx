@@ -196,7 +196,11 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
   const cashItems = items.filter(i => !i.laybye);
   const laybyeItems = items.filter(i => !!i.laybye);
 
-  const cashSubtotal = cashItems.reduce((t, i) => t + (i.product.salePrice || i.product.regularPrice || 0) * i.quantity, 0);
+  const cashSubtotal = cashItems.reduce((t, i) => {
+    const p = i.product.salePrice || i.product.regularPrice || 0;
+    const inst = (i.recurring?.paymentMode === 'upfront' && i.recurring?.instances) ? i.recurring.instances : 1;
+    return t + p * i.quantity * inst;
+  }, 0);
   const laybyeSubtotal = laybyeItems.reduce((t, i) => t + (i.product.salePrice || i.product.regularPrice || 0) * i.quantity, 0);
   const laybyeDepositTotal = laybyeItems.reduce((t, i) => t + (i.laybye?.deposit || 0) * i.quantity, 0);
   const grandSubtotal = cashSubtotal + laybyeSubtotal;
@@ -500,7 +504,8 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
                   {/* ── Cart Items ── */}
                   {items.map((item, idx) => {
                     const price = item.product.salePrice || item.product.regularPrice || 0;
-                    const itemTotal = price * item.quantity;
+                    const recurringInstances = (item.recurring?.paymentMode === 'upfront' && item.recurring?.instances) ? item.recurring.instances : 1;
+                    const itemTotal = price * item.quantity * recurringInstances;
                     const plans = getPlansForProduct(item.product);
                     const hasLaybye = !!item.laybye;
                     const hasRecurring = !!item.recurring;
