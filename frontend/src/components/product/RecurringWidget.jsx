@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { recurringOrdersAPI } from '@/services/api';
-import { useAuthStore, useUIStore, useCurrencyStore } from '@/store';
+import { useAuthStore, useUIStore, useCurrencyStore, useCartStore } from '@/store';
 import toast from '@/utils/toast';
 
 const FREQ_LABELS = {
@@ -14,10 +14,11 @@ const FREQ_LABELS = {
  * Shown below the Layby widget on ProductDetailPage.
  * Lets logged-in customers set up a recurring purchase (upfront or PAYG).
  */
-export default function RecurringWidget({ product }) {
+export default function RecurringWidget({ product, onRecurringChange }) {
   const { isAuthenticated } = useAuthStore();
   const { openAuthModal } = useUIStore();
   const { formatPrice } = useCurrencyStore();
+  const { addItem, items, setItemRecurring } = useCartStore();
   const queryClient = useQueryClient();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -39,10 +40,25 @@ export default function RecurringWidget({ product }) {
   const createMutation = useMutation(
     (data) => recurringOrdersAPI.create(data),
     {
-      onSuccess: () => {
+      onSuccess: (res) => {
         setSubmitted(true);
         queryClient.invalidateQueries('my-recurring-orders');
-        toast.success('Recurring order set up!');
+        // Add product to cart tagged as recurring
+        addItem(product, quantity);
+        // Find the cart item we just added and tag it with recurring data
+        setTimeout(() => {
+          const currentItems = useCartStore.getState().items;
+          const idx = currentItems.findLastIndex(i => i.product._id === product._id && !i.laybye);
+          if (idx > -1) {
+            setItemRecurring(idx, {
+              frequency: selectedPlan?.frequency || 'monthly',
+              paymentMode,
+              instances: paymentMode === 'upfront' ? instances : null,
+              recurringOrderId: res?.data?.data?._id || null,
+            });
+          }
+        }, 50);
+        toast.success('Recurring order set up — added to cart!');
       },
       onError: (err) => {
         toast.error(err.response?.data?.message || 'Failed to set up recurring order');
@@ -57,6 +73,7 @@ export default function RecurringWidget({ product }) {
     }
     setIsOpen(checked ?? (prev => !prev));
     setSubmitted(false);
+    onRecurringChange?.(!!checked);
   };
 
   const handleSubmit = () => {
@@ -247,7 +264,7 @@ export default function RecurringWidget({ product }) {
           <p className="font-semibold text-green-800">Recurring order set up!</p>
           <p className="text-xs text-green-600 mt-1">Manage it anytime in My Account → Recurring Orders</p>
           <button
-            onClick={() => { setIsOpen(false); setSubmitted(false); }}
+            onClick={() => { setIsOpen(false); setSubmitted(false); onRecurringChange?.(false); }}
             className="mt-3 text-xs text-gray-500 underline hover:text-gray-700"
           >
             Close

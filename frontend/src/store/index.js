@@ -92,6 +92,22 @@ export const useCartStore = create(
           set({ items: newItems });
         }
       },
+      // Per-item recurring management
+      setItemRecurring: (index, recurringData) => {
+        // recurringData: { frequency, paymentMode, instances, recurringOrderId } or null to clear
+        const newItems = [...get().items];
+        if (newItems[index]) {
+          newItems[index] = { ...newItems[index], recurring: recurringData };
+          set({ items: newItems });
+        }
+      },
+      clearItemRecurring: (index) => {
+        const newItems = [...get().items];
+        if (newItems[index]) {
+          newItems[index] = { ...newItems[index], recurring: null };
+          set({ items: newItems });
+        }
+      },
       clearCart: () => set({ items: [], giftCardCode: null, giftCardAmount: 0, giftCardBalance: 0 }),
       setGiftCard: (code, amount, balance) => set({ giftCardCode: code, giftCardAmount: amount, giftCardBalance: balance }),
       clearGiftCard: () => set({ giftCardCode: null, giftCardAmount: 0, giftCardBalance: 0 }),

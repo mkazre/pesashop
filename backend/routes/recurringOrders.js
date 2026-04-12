@@ -34,9 +34,9 @@ router.post('/', protect, async (req, res) => {
     const product = await Product.findById(productId);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
 
-    // Check global recurring enabled
+    // Check global recurring enabled (only block if explicitly set to false)
     const settings = await Settings.getSettings();
-    if (!settings.recurringEnabled) {
+    if (settings.recurringEnabled === false) {
       return res.status(400).json({ success: false, message: 'Recurring purchases are not currently available.' });
     }
 

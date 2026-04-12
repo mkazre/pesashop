@@ -263,6 +263,7 @@ export default function WalmartProductPage({ product, settings }) {
   const [quantity, setQuantity] = useState(1);
   const [laybyeSelection, setLaybyeSelection] = useState(null);
   const [laybyeApplicationOpen, setLaybyeApplicationOpen] = useState(false);
+  const [recurringActive, setRecurringActive] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const [openSections, setOpenSections] = useState({});
@@ -1203,13 +1204,13 @@ export default function WalmartProductPage({ product, settings }) {
                 </div>
               )}
 
-              {/* Laybye */}
-              {fb.showLaybye && (ld.displayMode === 'inline-plans' || ld.displayMode === 'both') && ld.showInFulfillmentBox && (
+              {/* Laybye — hidden when recurring is active */}
+              {!recurringActive && fb.showLaybye && (ld.displayMode === 'inline-plans' || ld.displayMode === 'both') && ld.showInFulfillmentBox && (
                 <InlineLaybyePlans product={product} settings={settings} onLaybyeSelect={setLaybyeSelection} />
               )}
 
-              {/* Recurring Purchase Widget — sits directly below Layby, above delivery */}
-              <RecurringWidget product={product} />
+              {/* Recurring Purchase Widget — only shown when layby plan is NOT selected (mutually exclusive) */}
+              {!laybyeSelection && <RecurringWidget product={product} onRecurringChange={setRecurringActive} />}
 
               {/* Delivery Options */}
               {fb.showDeliveryOptions && fb.deliveryOptions?.length > 0 && (
