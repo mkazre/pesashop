@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { emailTemplatesAPI } from '@/services/api';
+import { useLocation } from 'react-router-dom';
+import { emailTemplatesAPI, b2bkingAPI } from '@/services/api';
 import Card from '@/components/common/Card';
 import Table from '@/components/common/Table';
 import Button from '@/components/common/Button';
 import Modal from '@/components/common/Modal';
 import Input from '@/components/common/Input';
 import toast from '@/utils/toast';
-import { IoAdd, IoTrash, IoEye, IoPencil, IoMail, IoCheckmarkCircle, IoCloseCircle, IoSend } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoEye, IoPencil, IoMail, IoCheckmarkCircle, IoCloseCircle, IoSend, IoPeople, IoFlash } from 'react-icons/io5';
 
 const TEMPLATE_TYPES = [
   { value: 'order_confirmation', label: 'Order Confirmation' },
@@ -36,6 +37,29 @@ const TEMPLATE_TYPES = [
   { value: 'coupon_birthday', label: 'Coupon - Birthday' },
   { value: 'review_reminder', label: 'Review Reminder' },
   { value: 'promotional', label: 'Promotional' },
+  // Service Providers
+  { value: 'service_provider_application_received', label: 'SP — Application Received' },
+  { value: 'service_provider_approved', label: 'SP — Application Approved' },
+  { value: 'service_provider_rejected', label: 'SP — Application Rejected' },
+  { value: 'service_provider_subscription_expiring', label: 'SP — Subscription Expiring' },
+  { value: 'service_provider_ad_approved', label: 'SP — Ad Approved' },
+  // Recurring Orders
+  { value: 'recurring_order_created', label: 'Recurring — Order Created' },
+  { value: 'recurring_payment_reminder', label: 'Recurring — Payment Reminder' },
+  { value: 'recurring_delivery_upcoming', label: 'Recurring — Delivery Upcoming' },
+  { value: 'recurring_order_completed', label: 'Recurring — All Delivered' },
+  { value: 'recurring_order_cancelled', label: 'Recurring — Cancelled' },
+  { value: 'recurring_order_paused', label: 'Recurring — Paused' },
+  // Offers
+  { value: 'offer_taken', label: 'Offer — Taken Confirmation' },
+  { value: 'offer_contact_request_admin', label: 'Offer — Contact Request (Admin)' },
+  { value: 'offer_contact_request_customer', label: 'Offer — Contact Request (Customer)' },
+  { value: 'offer_subscription_expiring', label: 'Offer — Subscription Expiring' },
+  // Campaigns / Demographics
+  { value: 'demographic_campaign', label: 'Campaign — General Targeted' },
+  { value: 'hobby_campaign', label: 'Campaign — Hobby-Based' },
+  { value: 'churn_winback', label: 'Campaign — Churn Win-Back' },
+  { value: 'segment_campaign', label: 'Campaign — Segment Targeted' },
   { value: 'custom', label: 'Custom' },
 ];
 
@@ -71,16 +95,46 @@ const DEFAULT_VARIABLES = {
   gift_card_issued: ['recipient_name', 'sender_name', 'sender_message', 'gift_card_code', 'gift_card_balance', 'redeem_url'],
   review_reminder: ['customer_name', 'order_number', 'review_url'],
   promotional: ['customer_name', 'promo_title', 'promo_message', 'promo_url'],
+  // Service Providers
+  service_provider_application_received: ['provider_name', 'business_name', 'category', 'portal_url'],
+  service_provider_approved: ['provider_name', 'business_name', 'portal_url', 'approval_notes'],
+  service_provider_rejected: ['provider_name', 'business_name', 'rejection_reason'],
+  service_provider_subscription_expiring: ['provider_name', 'business_name', 'expiry_date', 'renewal_url'],
+  service_provider_ad_approved: ['provider_name', 'business_name', 'ad_title', 'portal_url'],
+  // Recurring Orders
+  recurring_order_created: ['customer_name', 'product_name', 'quantity', 'frequency', 'payment_mode', 'next_delivery_date', 'account_url'],
+  recurring_payment_reminder: ['customer_name', 'product_name', 'next_delivery_date', 'amount_due', 'account_url'],
+  recurring_delivery_upcoming: ['customer_name', 'product_name', 'delivery_date', 'quantity', 'account_url'],
+  recurring_order_completed: ['customer_name', 'product_name', 'total_deliveries', 'account_url'],
+  recurring_order_cancelled: ['customer_name', 'product_name', 'cancellation_reason'],
+  recurring_order_paused: ['customer_name', 'product_name', 'account_url'],
+  // Offers
+  offer_taken: ['customer_name', 'offer_title', 'provider_name', 'account_url'],
+  offer_contact_request_admin: ['customer_name', 'customer_email', 'offer_title', 'request_date'],
+  offer_contact_request_customer: ['customer_name', 'offer_title', 'provider_name'],
+  offer_subscription_expiring: ['customer_name', 'offer_title', 'expiry_date', 'renewal_url'],
+  // Campaigns
+  demographic_campaign: ['customer_name', 'campaign_title', 'campaign_message', 'cta_url', 'cta_text'],
+  hobby_campaign: ['customer_name', 'hobby_name', 'products_html', 'shop_url'],
+  churn_winback: ['customer_name', 'days_inactive', 'winback_offer', 'shop_url'],
+  segment_campaign: ['customer_name', 'segment_label', 'campaign_message', 'cta_url'],
   custom: [],
 };
 
 const EmailTemplatesPage = () => {
   const queryClient = useQueryClient();
+  const location = useLocation();
   const [typeFilter, setTypeFilter] = useState('');
   const [editModal, setEditModal] = useState(null); // null | 'new' | template object
   const [previewModal, setPreviewModal] = useState(null);
   const [testEmailModal, setTestEmailModal] = useState(null);
   const [testEmail, setTestEmail] = useState('');
+  // Campaign send state
+  const [campaignModal, setCampaignModal] = useState(null); // null | template object
+  const [campaignAudience, setCampaignAudience] = useState('all'); // 'all' | 'group' | 'manual'
+  const [campaignGroupId, setCampaignGroupId] = useState('');
+  const [campaignManualEmails, setCampaignManualEmails] = useState('');
+  const [campaignSending, setCampaignSending] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     subject: '',
@@ -102,6 +156,28 @@ const EmailTemplatesPage = () => {
     () => emailTemplatesAPI.getAll(typeFilter ? { type: typeFilter } : {}),
     { keepPreviousData: true }
   );
+
+  // Load groups for campaign audience selector
+  const { data: groupsData } = useQuery(
+    'customer-groups-all',
+    () => b2bkingAPI.getCustomerGroups({ limit: 100 }),
+    { staleTime: 60000 }
+  );
+  const customerGroups = groupsData?.data?.data || [];
+
+  // Handle ?group=xxx&groupName=yyy query params from CustomerGroupsPage
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const groupId = params.get('group');
+    const groupName = params.get('groupName');
+    if (groupId) {
+      setCampaignAudience('group');
+      setCampaignGroupId(groupId);
+      // Open a prompt to pick which template to send
+      // We'll show the campaign modal with first promotional template selected
+      setCampaignModal({ _name: groupName, _preselectedGroup: groupId });
+    }
+  }, [location.search]);
 
   const createMutation = useMutation(
     (data) => emailTemplatesAPI.create(data),
@@ -318,9 +394,21 @@ const EmailTemplatesPage = () => {
           <button
             onClick={() => { setTestEmailModal(row); setTestEmail(''); }}
             className="p-2 hover:bg-gray-100 rounded"
-            title="Send Test"
+            title="Send Test Email"
           >
             <IoSend size={16} className="text-orange-500" />
+          </button>
+          <button
+            onClick={() => {
+              setCampaignModal(row);
+              setCampaignAudience('all');
+              setCampaignGroupId('');
+              setCampaignManualEmails('');
+            }}
+            className="p-2 hover:bg-gray-100 rounded"
+            title="Send Campaign to Customers"
+          >
+            <IoPeople size={16} className="text-violet-500" />
           </button>
           {!row.isDefault && (
             <button
@@ -624,6 +712,150 @@ const EmailTemplatesPage = () => {
             placeholder="your@email.com"
           />
         </div>
+      </Modal>
+
+      {/* Campaign Send Modal */}
+      <Modal
+        isOpen={!!campaignModal}
+        onClose={() => setCampaignModal(null)}
+        title="Send Email Campaign"
+        size="lg"
+        showFooter={false}
+      >
+        {campaignModal && (
+          <div className="space-y-5">
+            {/* Template info */}
+            {campaignModal.name ? (
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-gray-500">Template</p>
+                <p className="font-medium text-gray-800">{campaignModal.name}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{campaignModal.subject}</p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium mb-1">Select Template *</label>
+                <select
+                  className="select select-bordered w-full"
+                  value={campaignModal._selectedTemplateId || ''}
+                  onChange={(e) => setCampaignModal(prev => ({ ...prev, _selectedTemplateId: e.target.value }))}
+                >
+                  <option value="">— choose a template —</option>
+                  {(data?.data?.data || [])
+                    .filter(t => t.isActive && ['promotional', 'demographic_campaign', 'hobby_campaign', 'churn_winback', 'segment_campaign', 'custom'].includes(t.type))
+                    .map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                </select>
+              </div>
+            )}
+
+            {/* Audience selector */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Audience</label>
+              <div className="join w-full">
+                {[
+                  { value: 'all', label: 'All Customers', icon: <IoPeople size={14} /> },
+                  { value: 'group', label: 'Customer Group', icon: <IoFlash size={14} /> },
+                  { value: 'manual', label: 'Manual List', icon: <IoMail size={14} /> },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={`btn btn-sm join-item flex-1 gap-1 ${campaignAudience === opt.value ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setCampaignAudience(opt.value)}
+                  >
+                    {opt.icon} {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Group selector */}
+            {campaignAudience === 'group' && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Customer Group *</label>
+                <select
+                  className="select select-bordered w-full"
+                  value={campaignGroupId}
+                  onChange={(e) => setCampaignGroupId(e.target.value)}
+                >
+                  <option value="">— select a group —</option>
+                  {customerGroups.map(g => (
+                    <option key={g._id} value={g._id}>
+                      {g.name} {g.isDynamic ? '⚡' : ''} ({g.customerCount || 0} members)
+                    </option>
+                  ))}
+                </select>
+                {campaignGroupId && (
+                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <IoPeople size={12} />
+                    {customerGroups.find(g => g._id === campaignGroupId)?.customerCount || 0} estimated recipients
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Manual email list */}
+            {campaignAudience === 'manual' && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Email Addresses</label>
+                <textarea
+                  className="textarea textarea-bordered w-full text-sm"
+                  rows={4}
+                  placeholder="one@example.com&#10;two@example.com"
+                  value={campaignManualEmails}
+                  onChange={(e) => setCampaignManualEmails(e.target.value)}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {campaignManualEmails.split(/[\n,;]+/).filter(e => e.trim()).length} addresses
+                </p>
+              </div>
+            )}
+
+            {/* Warning */}
+            <div className="alert alert-warning py-2 text-sm">
+              <span>
+                This will send a live email to {campaignAudience === 'all' ? 'all customers' :
+                  campaignAudience === 'group' ? 'the selected customer group' :
+                  'the listed email addresses'}. Make sure you have reviewed the template before sending.
+              </span>
+            </div>
+
+            {/* Send button */}
+            <div className="flex justify-end gap-2">
+              <button className="btn btn-ghost" onClick={() => setCampaignModal(null)}>Cancel</button>
+              <button
+                className="btn btn-primary gap-2"
+                disabled={campaignSending || (campaignAudience === 'group' && !campaignGroupId)}
+                onClick={async () => {
+                  const templateId = campaignModal._id || campaignModal._selectedTemplateId;
+                  if (!templateId) { toast.error('Please select a template'); return; }
+
+                  setCampaignSending(true);
+                  try {
+                    await emailTemplatesAPI.sendCampaign(templateId, {
+                      audience: campaignAudience,
+                      groupId: campaignAudience === 'group' ? campaignGroupId : undefined,
+                      emails: campaignAudience === 'manual'
+                        ? campaignManualEmails.split(/[\n,;]+/).map(e => e.trim()).filter(Boolean)
+                        : undefined,
+                    });
+                    toast.success('Campaign queued for sending.');
+                    setCampaignModal(null);
+                  } catch (e) {
+                    toast.error(e.response?.data?.message || 'Failed to send campaign');
+                  } finally {
+                    setCampaignSending(false);
+                  }
+                }}
+              >
+                {campaignSending
+                  ? <span className="loading loading-spinner loading-sm" />
+                  : <IoPeople size={16} />
+                }
+                Send Campaign
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

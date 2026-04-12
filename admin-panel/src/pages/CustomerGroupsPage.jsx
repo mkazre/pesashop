@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { b2bkingAPI } from '@/services/api';
 import { useForm } from 'react-hook-form';
@@ -9,9 +9,144 @@ import Select from '@/components/common/Select';
 import Table from '@/components/common/Table';
 import Modal from '@/components/common/Modal';
 import toast from '@/utils/toast';
-import { IoAdd, IoTrash, IoCreate, IoPeople, IoSearch } from 'react-icons/io5';
+import { useNavigate } from 'react-router-dom';
+import {
+  IoAdd, IoTrash, IoCreate, IoPeople, IoSearch,
+  IoFlash, IoPaperPlane, IoRefresh, IoClose
+} from 'react-icons/io5';
 
+// ---------------------------------------------------------------------------
+// Rule builder config — defines available fields, their operators, and value
+// input types for the dynamic group membership rule engine.
+// ---------------------------------------------------------------------------
+
+const RULE_FIELDS = [
+  { value: 'gender', label: 'Gender', type: 'select', options: ['male', 'female', 'non-binary', 'prefer_not_to_say'] },
+  { value: 'maritalStatus', label: 'Marital Status', type: 'select', options: ['single', 'married', 'divorced', 'widowed', 'prefer_not_to_say'] },
+  { value: 'householdSize', label: 'Household Size', type: 'number' },
+  { value: 'employmentStatus', label: 'Employment Status', type: 'select', options: ['employed', 'self_employed', 'student', 'retired', 'unemployed', 'prefer_not_to_say'] },
+  { value: 'incomeRange', label: 'Income Range', type: 'select', options: ['<15k', '15k-30k', '30k-60k', '60k-120k', '>120k', 'prefer_not_to_say'] },
+  { value: 'educationLevel', label: 'Education Level', type: 'text' },
+  { value: 'province', label: 'Province', type: 'select', options: ['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'North West', 'Northern Cape', 'Western Cape'] },
+  { value: 'suburb', label: 'Suburb', type: 'text' },
+  { value: 'lifeStage', label: 'Life Stage', type: 'select', options: ['student', 'young_professional', 'new_parent', 'established_family', 'empty_nester', 'retiree'] },
+  { value: 'customerSegment', label: 'Customer Segment', type: 'select', options: ['budget', 'value', 'premium', 'luxury'] },
+  { value: 'churnRisk', label: 'Churn Risk', type: 'select', options: ['low', 'medium', 'high'] },
+  { value: 'hobbies', label: 'Hobbies', type: 'text', arrayField: true },
+  { value: 'interests', label: 'Interests', type: 'text', arrayField: true },
+  { value: 'avgOrderValue', label: 'Avg Order Value (R)', type: 'number' },
+  { value: 'purchaseFrequency', label: 'Purchase Frequency', type: 'select', options: ['daily', 'weekly', 'fortnightly', 'monthly', 'occasionally'] },
+  { value: 'profileCompletionScore', label: 'Profile Completion (%)', type: 'number' },
+  { value: 'marketingOptIn', label: 'Marketing Opt-In', type: 'boolean' },
+];
+
+const getOperatorsForField = (field) => {
+  if (!field) return [];
+  const config = RULE_FIELDS.find(f => f.value === field);
+  if (!config) return [];
+  if (config.type === 'boolean') return [{ value: 'eq', label: 'is' }];
+  if (config.arrayField) return [
+    { value: 'contains', label: 'contains' },
+    { value: 'nin', label: 'does not contain' },
+  ];
+  if (config.type === 'number') return [
+    { value: 'eq', label: '=' },
+    { value: 'neq', label: '≠' },
+    { value: 'gt', label: '>' },
+    { value: 'gte', label: '>=' },
+    { value: 'lt', label: '<' },
+    { value: 'lte', label: '<=' },
+  ];
+  return [
+    { value: 'eq', label: 'is' },
+    { value: 'neq', label: 'is not' },
+    { value: 'in', label: 'is one of' },
+    { value: 'nin', label: 'is not one of' },
+  ];
+};
+
+const emptyRule = () => ({ field: 'gender', operator: 'eq', value: '' });
+
+// ---------------------------------------------------------------------------
+// RuleRow — single rule editor row
+// ---------------------------------------------------------------------------
+const RuleRow = ({ rule, index, onChange, onRemove, canRemove }) => {
+  const fieldConfig = RULE_FIELDS.find(f => f.value === rule.field) || {};
+  const operators = getOperatorsForField(rule.field);
+
+  const handleFieldChange = (newField) => {
+    const newConfig = RULE_FIELDS.find(f => f.value === newField) || {};
+    const newOps = getOperatorsForField(newField);
+    onChange(index, { field: newField, operator: newOps[0]?.value || 'eq', value: newConfig.type === 'boolean' ? 'true' : '' });
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      {/* Field */}
+      <select
+        className="select select-bordered select-sm flex-1"
+        value={rule.field}
+        onChange={(e) => handleFieldChange(e.target.value)}
+      >
+        {RULE_FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+      </select>
+
+      {/* Operator */}
+      <select
+        className="select select-bordered select-sm w-36"
+        value={rule.operator}
+        onChange={(e) => onChange(index, { ...rule, operator: e.target.value })}
+      >
+        {operators.map(op => <option key={op.value} value={op.value}>{op.label}</option>)}
+      </select>
+
+      {/* Value */}
+      {fieldConfig.type === 'boolean' ? (
+        <select
+          className="select select-bordered select-sm w-28"
+          value={rule.value}
+          onChange={(e) => onChange(index, { ...rule, value: e.target.value })}
+        >
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      ) : fieldConfig.type === 'select' ? (
+        <select
+          className="select select-bordered select-sm flex-1"
+          value={rule.value}
+          onChange={(e) => onChange(index, { ...rule, value: e.target.value })}
+        >
+          <option value="">— select —</option>
+          {(fieldConfig.options || []).map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : (
+        <input
+          className="input input-bordered input-sm flex-1"
+          placeholder={fieldConfig.type === 'number' ? '0' : 'value'}
+          type={fieldConfig.type === 'number' ? 'number' : 'text'}
+          value={rule.value}
+          onChange={(e) => onChange(index, { ...rule, value: e.target.value })}
+        />
+      )}
+
+      {/* Remove */}
+      <button
+        type="button"
+        className="btn btn-ghost btn-xs btn-square text-red-400"
+        onClick={() => onRemove(index)}
+        disabled={!canRemove}
+      >
+        <IoClose size={14} />
+      </button>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// CustomerGroupsPage
+// ---------------------------------------------------------------------------
 const CustomerGroupsPage = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -19,6 +154,13 @@ const CustomerGroupsPage = () => {
   const [editingGroup, setEditingGroup] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
   const [isActiveFilter, setIsActiveFilter] = useState('');
+
+  // Dynamic rule state (outside react-hook-form because it's complex nested state)
+  const [isDynamic, setIsDynamic] = useState(false);
+  const [ruleLogic, setRuleLogic] = useState('and');
+  const [rules, setRules] = useState([emptyRule()]);
+  const [previewCount, setPreviewCount] = useState(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: {
@@ -50,16 +192,22 @@ const CustomerGroupsPage = () => {
   );
 
   const saveMutation = useMutation(
-    (data) => editingGroup
-      ? b2bkingAPI.updateCustomerGroup(editingGroup._id, data)
-      : b2bkingAPI.createCustomerGroup(data),
+    (formData) => {
+      const payload = {
+        ...formData,
+        isDynamic,
+        rules: isDynamic ? rules : [],
+        ruleLogic: isDynamic ? ruleLogic : 'and',
+      };
+      return editingGroup
+        ? b2bkingAPI.updateCustomerGroup(editingGroup._id, payload)
+        : b2bkingAPI.createCustomerGroup(payload);
+    },
     {
       onSuccess: () => {
         queryClient.invalidateQueries('customer-groups');
         toast.success(`Customer group ${editingGroup ? 'updated' : 'created'} successfully`);
-        setShowForm(false);
-        setEditingGroup(null);
-        reset();
+        closeForm();
       },
       onError: (error) => {
         toast.error(error.response?.data?.message || 'Failed to save customer group');
@@ -81,8 +229,33 @@ const CustomerGroupsPage = () => {
     }
   );
 
+  const syncMutation = useMutation(
+    (id) => b2bkingAPI.syncGroupMembers(id),
+    {
+      onSuccess: (_, id) => {
+        queryClient.invalidateQueries('customer-groups');
+        toast.success('Group membership synced.');
+      },
+      onError: (e) => toast.error(e.response?.data?.message || 'Sync failed'),
+    }
+  );
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingGroup(null);
+    setIsDynamic(false);
+    setRuleLogic('and');
+    setRules([emptyRule()]);
+    setPreviewCount(null);
+    reset();
+  };
+
   const handleEdit = (group) => {
     setEditingGroup(group);
+    setIsDynamic(group.isDynamic || false);
+    setRuleLogic(group.ruleLogic || 'and');
+    setRules(group.rules?.length ? group.rules : [emptyRule()]);
+    setPreviewCount(null);
     reset({
       name: group.name,
       description: group.description || '',
@@ -103,8 +276,39 @@ const CustomerGroupsPage = () => {
 
   const handleNew = () => {
     setEditingGroup(null);
+    setIsDynamic(false);
+    setRuleLogic('and');
+    setRules([emptyRule()]);
+    setPreviewCount(null);
     reset();
     setShowForm(true);
+  };
+
+  const handleRuleChange = useCallback((index, updated) => {
+    setRules(prev => prev.map((r, i) => i === index ? updated : r));
+    setPreviewCount(null);
+  }, []);
+
+  const handleRuleRemove = useCallback((index) => {
+    setRules(prev => prev.filter((_, i) => i !== index));
+    setPreviewCount(null);
+  }, []);
+
+  const handleAddRule = () => {
+    setRules(prev => [...prev, emptyRule()]);
+    setPreviewCount(null);
+  };
+
+  const handlePreview = async () => {
+    setIsPreviewing(true);
+    try {
+      const res = await b2bkingAPI.previewGroupCount({ rules, ruleLogic });
+      setPreviewCount(res.data?.count ?? 0);
+    } catch (e) {
+      toast.error('Preview failed — check your rules');
+    } finally {
+      setIsPreviewing(false);
+    }
   };
 
   const columns = [
@@ -113,7 +317,14 @@ const CustomerGroupsPage = () => {
       accessor: 'name',
       cell: (row) => (
         <div>
-          <div className="font-medium text-gray-900">{row.name}</div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-gray-900">{row.name}</span>
+            {row.isDynamic && (
+              <span className="badge badge-xs badge-info gap-1">
+                <IoFlash size={10} /> Dynamic
+              </span>
+            )}
+          </div>
           {row.description && (
             <div className="text-sm text-gray-500">{row.description}</div>
           )}
@@ -158,21 +369,38 @@ const CustomerGroupsPage = () => {
       header: 'Actions',
       accessor: 'actions',
       cell: (row) => (
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
+        <div className="flex items-center gap-1">
+          <button
+            className="btn btn-ghost btn-xs btn-square"
+            title="Edit"
             onClick={() => handleEdit(row)}
           >
             <IoCreate size={16} />
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
+          </button>
+          {row.isDynamic && (
+            <button
+              className="btn btn-ghost btn-xs btn-square text-blue-500"
+              title="Sync membership"
+              onClick={() => syncMutation.mutate(row._id)}
+              disabled={syncMutation.isLoading}
+            >
+              <IoRefresh size={14} />
+            </button>
+          )}
+          <button
+            className="btn btn-ghost btn-xs btn-square text-violet-500"
+            title="Send campaign to this group"
+            onClick={() => navigate(`/emails?group=${row._id}&groupName=${encodeURIComponent(row.name)}`)}
+          >
+            <IoPaperPlane size={14} />
+          </button>
+          <button
+            className="btn btn-ghost btn-xs btn-square text-red-500"
+            title="Delete"
             onClick={() => setDeleteModal(row)}
           >
             <IoTrash size={16} />
-          </Button>
+          </button>
         </div>
       )
     }
@@ -186,7 +414,7 @@ const CustomerGroupsPage = () => {
             <IoPeople size={28} />
             Customer Groups
           </h1>
-          <p className="text-gray-600 mt-1">Manage customer groups and B2B pricing tiers</p>
+          <p className="text-gray-600 mt-1">Manage customer groups, B2B pricing tiers, and dynamic segments</p>
         </div>
         <Button onClick={handleNew}>
           <IoAdd size={20} className="mr-2" />
@@ -243,11 +471,7 @@ const CustomerGroupsPage = () => {
       {/* Form Modal */}
       <Modal
         isOpen={showForm}
-        onClose={() => {
-          setShowForm(false);
-          setEditingGroup(null);
-          reset();
-        }}
+        onClose={closeForm}
         title={editingGroup ? 'Edit Customer Group' : 'New Customer Group'}
         size="large"
       >
@@ -261,7 +485,7 @@ const CustomerGroupsPage = () => {
           <Input
             label="Description"
             type="textarea"
-            rows={3}
+            rows={2}
             {...register('description')}
           />
 
@@ -273,7 +497,6 @@ const CustomerGroupsPage = () => {
               max="100"
               {...register('defaultDiscount', { valueAsNumber: true })}
             />
-
             <Input
               label="Priority"
               type="number"
@@ -288,7 +511,6 @@ const CustomerGroupsPage = () => {
               min="0"
               {...register('minimumOrderAmount', { valueAsNumber: true })}
             />
-
             <Input
               label="Minimum Order Quantity"
               type="number"
@@ -317,54 +539,120 @@ const CustomerGroupsPage = () => {
             {...register('creditLimit', { valueAsNumber: true })}
           />
 
-          <div className="space-y-2">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                {...register('taxExempt')}
-                className="rounded"
-              />
-              <span>Tax Exempt</span>
-            </label>
-
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                {...register('showPrices')}
-                className="rounded"
-              />
-              <span>Show Prices</span>
-            </label>
-
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                {...register('showRetailPrices')}
-                className="rounded"
-              />
-              <span>Show Retail Prices</span>
-            </label>
-
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                {...register('isActive')}
-                className="rounded"
-              />
-              <span>Active</span>
-            </label>
+          <div className="flex flex-wrap gap-4">
+            {[
+              { name: 'taxExempt', label: 'Tax Exempt' },
+              { name: 'showPrices', label: 'Show Prices' },
+              { name: 'showRetailPrices', label: 'Show Retail Prices' },
+              { name: 'isActive', label: 'Active' },
+            ].map(({ name, label }) => (
+              <label key={name} className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" {...register(name)} className="checkbox checkbox-primary checkbox-sm" />
+                <span className="text-sm text-gray-700">{label}</span>
+              </label>
+            ))}
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowForm(false);
-                setEditingGroup(null);
-                reset();
-              }}
-            >
+          {/* ----------------------------------------------------------------
+              Dynamic Rule Builder
+          ---------------------------------------------------------------- */}
+          <div className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-800 flex items-center gap-1.5">
+                  <IoFlash size={16} className="text-blue-500" />
+                  Dynamic Membership Rules
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Customers are added/removed automatically based on their demographics
+                </p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isDynamic}
+                  onChange={(e) => {
+                    setIsDynamic(e.target.checked);
+                    setPreviewCount(null);
+                  }}
+                  className="toggle toggle-primary toggle-sm"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  {isDynamic ? 'Dynamic' : 'Manual'}
+                </span>
+              </label>
+            </div>
+
+            {isDynamic && (
+              <div className="space-y-3">
+                {/* Logic toggle */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Match</span>
+                  <div className="join">
+                    <button
+                      type="button"
+                      className={`btn btn-xs join-item ${ruleLogic === 'and' ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => setRuleLogic('and')}
+                    >
+                      ALL rules
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-xs join-item ${ruleLogic === 'or' ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => setRuleLogic('or')}
+                    >
+                      ANY rule
+                    </button>
+                  </div>
+                </div>
+
+                {/* Rule rows */}
+                <div className="space-y-2">
+                  {rules.map((rule, i) => (
+                    <RuleRow
+                      key={i}
+                      rule={rule}
+                      index={i}
+                      onChange={handleRuleChange}
+                      onRemove={handleRuleRemove}
+                      canRemove={rules.length > 1}
+                    />
+                  ))}
+                </div>
+
+                {/* Add rule + Preview */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs gap-1"
+                    onClick={handleAddRule}
+                  >
+                    <IoAdd size={14} /> Add rule
+                  </button>
+                  <div className="flex-1" />
+                  {previewCount !== null && (
+                    <span className="text-sm text-blue-700 font-medium">
+                      ~{previewCount} customers match
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-xs"
+                    onClick={handlePreview}
+                    disabled={isPreviewing}
+                  >
+                    {isPreviewing
+                      ? <span className="loading loading-spinner loading-xs" />
+                      : 'Preview count'
+                    }
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={closeForm}>
               Cancel
             </Button>
             <Button type="submit" loading={saveMutation.isLoading}>

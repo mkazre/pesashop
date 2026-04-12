@@ -152,6 +152,7 @@ export const emailTemplatesAPI = {
   preview: (id, sampleData) => api.post(`/email-templates/${id}/preview`, { sampleData }),
   test: (id, testEmail) => api.post(`/email-templates/${id}/test`, { testEmail }),
   seed: () => api.post('/email-templates/seed'),
+  sendCampaign: (id, data) => api.post(`/email-templates/${id}/send-campaign`, data),
 };
 
 // Layby Transactions API
@@ -261,6 +262,12 @@ export const reviewsAPI = {
   bulkStatus: (reviewIds, status) => api.post('/reviews/bulk-status', { reviewIds, status }),
   getSummary: () => api.get('/reviews/summary/stats'),
   adminResponse: (id, content) => api.post(`/reviews/${id}/admin-response`, { content }),
+  // Review Categories
+  getCategories: () => api.get('/reviews/categories/all'),
+  createCategory: (data) => api.post('/reviews/categories', data),
+  updateCategory: (id, data) => api.put(`/reviews/categories/${id}`, data),
+  deleteCategory: (id) => api.delete(`/reviews/categories/${id}`),
+  reorderCategories: (orderedIds) => api.put('/reviews/categories/reorder', { orderedIds }),
 };
 
 // Code Snippets API
@@ -483,7 +490,9 @@ export const b2bkingAPI = {
   createCustomerGroup: (data) => api.post('/b2bking/customer-groups', data),
   updateCustomerGroup: (id, data) => api.put(`/b2bking/customer-groups/${id}`, data),
   deleteCustomerGroup: (id) => api.delete(`/b2bking/customer-groups/${id}`),
-  
+  previewGroupCount: (data) => api.post('/b2bking/customer-groups/preview-count', data),
+  syncGroupMembers: (id) => api.post(`/b2bking/customer-groups/${id}/sync`),
+
   // Price Lists
   getPriceLists: (params) => api.get('/b2bking/price-lists', { params }),
   getPriceList: (id) => api.get(`/b2bking/price-lists/${id}`),
@@ -595,6 +604,72 @@ export const mobileAppConfigAPI = {
   get: () => api.get('/mobile-app-config'),
   updateSplash: (data) => api.put('/mobile-app-config/splash', data),
   uploadSplashImage: (formData) => api.post('/mobile-app-config/splash/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+};
+
+// ─── Demographics API ──────────────────────────────────────────────
+export const demographicsAPI = {
+  getStats: () => api.get('/demographics/admin/stats'),
+  recompute: (userId) => api.post(`/demographics/admin/recompute/${userId}`),
+};
+
+// ─── Service Providers API ─────────────────────────────────────────
+export const serviceProvidersAPI = {
+  // Providers
+  getAll: (params) => api.get('/service-providers', { params }),
+  getOne: (id) => api.get(`/service-providers/${id}`),
+  update: (id, data) => api.put(`/service-providers/${id}`, data),
+  delete: (id) => api.delete(`/service-providers/${id}`),
+  approve: (id, notes) => api.put(`/service-providers/${id}/approve`, { notes }),
+  reject: (id, reason, notes) => api.put(`/service-providers/${id}/reject`, { reason, notes }),
+  suspend: (id) => api.put(`/service-providers/${id}/suspend`),
+  updateSubscription: (id, data) => api.put(`/service-providers/${id}/subscription`, data),
+  // Categories
+  getCategories: () => api.get('/service-providers/admin/categories'),
+  createCategory: (data) => api.post('/service-providers/admin/categories', data),
+  updateCategory: (id, data) => api.put(`/service-providers/admin/categories/${id}`, data),
+  deleteCategory: (id) => api.delete(`/service-providers/admin/categories/${id}`),
+  // Plans
+  getPlans: () => api.get('/service-providers/admin/plans'),
+  createPlan: (data) => api.post('/service-providers/admin/plans', data),
+  updatePlan: (id, data) => api.put(`/service-providers/admin/plans/${id}`, data),
+  deletePlan: (id) => api.delete(`/service-providers/admin/plans/${id}`),
+  // Ad Slots
+  getSlots: () => api.get('/service-providers/admin/slots'),
+  createSlot: (data) => api.post('/service-providers/admin/slots', data),
+  updateSlot: (id, data) => api.put(`/service-providers/admin/slots/${id}`, data),
+};
+
+// ─── Service Provider Ads API ──────────────────────────────────────
+export const serviceProviderAdsAPI = {
+  getAll: (params) => api.get('/service-provider-ads', { params }),
+  approve: (id) => api.put(`/service-provider-ads/${id}/approve`),
+  reject: (id, reason) => api.put(`/service-provider-ads/${id}/reject`, { reason }),
+  update: (id, data) => api.put(`/service-provider-ads/${id}`, data),
+  delete: (id) => api.delete(`/service-provider-ads/${id}`),
+};
+
+// ─── Recurring Orders API ──────────────────────────────────────────
+export const recurringOrdersAPI = {
+  getAll: (params) => api.get('/recurring-orders', { params }),
+  getOne: (id) => api.get(`/recurring-orders/${id}`),
+  cancel: (id, reason) => api.put(`/recurring-orders/${id}/cancel`, { reason }),
+  sendReminder: (id) => api.post(`/recurring-orders/${id}/send-reminder`),
+  // Plans
+  getPlans: () => api.get('/recurring-orders/plans/all'),
+  createPlan: (data) => api.post('/recurring-orders/plans', data),
+  updatePlan: (id, data) => api.put(`/recurring-orders/plans/${id}`, data),
+  deletePlan: (id) => api.delete(`/recurring-orders/plans/${id}`),
+};
+
+// ─── Offers API ────────────────────────────────────────────────────
+export const offersAPI = {
+  getAll: (params) => api.get('/offers/admin/all', { params }),
+  getOne: (id) => api.get(`/offers/admin/${id}`),
+  create: (data) => api.post('/offers/admin', data),
+  update: (id, data) => api.put(`/offers/admin/${id}`, data),
+  delete: (id) => api.delete(`/offers/admin/${id}`),
+  getCustomers: (id, params) => api.get(`/offers/admin/${id}/customers`, { params }),
+  markContacted: (customerOfferId, notes) => api.put(`/offers/admin/customer-offers/${customerOfferId}/mark-contacted`, { notes }),
 };
 
 export default api;

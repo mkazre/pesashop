@@ -658,4 +658,71 @@ router.post('/:id/admin-response', protect, authorize('admin', 'shop_manager'), 
   }
 });
 
+// ─── Review Categories ─────────────────────────────────────────────
+const ReviewCategory = require('../models/ReviewCategory');
+
+// GET /api/reviews/categories — Active review categories (public)
+router.get('/categories', async (req, res) => {
+  try {
+    const cats = await ReviewCategory.find({ isActive: true }).sort({ displayOrder: 1, name: 1 });
+    res.json({ success: true, data: cats });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/reviews/categories/all — All categories (admin)
+router.get('/categories/all', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const cats = await ReviewCategory.find().sort({ displayOrder: 1, name: 1 });
+    res.json({ success: true, data: cats });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/reviews/categories — Create (admin)
+router.post('/categories', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const cat = await ReviewCategory.create(req.body);
+    res.status(201).json({ success: true, data: cat });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/reviews/categories/reorder — Reorder drag-drop (admin)
+router.put('/categories/reorder', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    await Promise.all(orderedIds.map((id, idx) =>
+      ReviewCategory.findByIdAndUpdate(id, { displayOrder: idx })
+    ));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/reviews/categories/:id — Update (admin)
+router.put('/categories/:id', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const cat = await ReviewCategory.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!cat) return res.status(404).json({ success: false, message: 'Category not found' });
+    res.json({ success: true, data: cat });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// DELETE /api/reviews/categories/:id — Delete (admin)
+router.delete('/categories/:id', protect, authorize('admin'), async (req, res) => {
+  try {
+    await ReviewCategory.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

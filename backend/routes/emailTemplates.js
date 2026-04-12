@@ -256,6 +256,93 @@ router.post('/:id/test', protect, authorize('admin', 'shop_manager', 'superadmin
   }
 });
 
+// ─── Send campaign to audience ───
+router.post('/:id/send-campaign', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const template = await EmailTemplate.findById(req.params.id);
+    if (!template) return res.status(404).json({ success: false, message: 'Template not found' });
+    if (!template.isActive) return res.status(400).json({ success: false, message: 'Template is not active' });
+
+    const { audience = 'all', groupId, emails = [] } = req.body;
+    const User = require('../models/User');
+    const emailService = require('../services/emailService');
+
+    let recipients = [];
+
+    if (audience === 'manual') {
+      recipients = emails.map(email => ({ email, firstName: '' }));
+    } else if (audience === 'group' && groupId) {
+      const CustomerGroup = require('../models/CustomerGroup');
+      const group = await CustomerGroup.findById(groupId);
+      if (!group) return res.status(404).json({ success: false, message: 'Group not found' });
+
+      let query = { role: 'customer', marketingOptIn: true };
+      if (group.isDynamic && group.rules?.length) {
+        // Apply the same rule logic used by the rule engine
+        const buildQuery = (rules, logic) => {
+          const conditions = rules.map(rule => {
+            const { field, operator, value } = rule;
+            let parsed = value;
+            if (!isNaN(value) && value !== '') parsed = Number(value);
+            if (value === 'true') parsed = true;
+            if (value === 'false') parsed = false;
+            switch (operator) {
+              case 'eq':   return { [field]: parsed };
+              case 'neq':  return { [field]: { $ne: parsed } };
+              case 'gt':   return { [field]: { $gt: parsed } };
+              case 'gte':  return { [field]: { $gte: parsed } };
+              case 'lt':   return { [field]: { $lt: parsed } };
+              case 'lte':  return { [field]: { $lte: parsed } };
+              case 'in':   return { [field]: { $in: Array.isArray(value) ? value : [value] } };
+              case 'nin':  return { [field]: { $nin: Array.isArray(value) ? value : [value] } };
+              case 'contains': return { [field]: parsed };
+              default: return {};
+            }
+          });
+          return logic === 'or' ? { $or: conditions } : { $and: conditions };
+        };
+        const ruleQuery = buildQuery(group.rules, group.ruleLogic || 'and');
+        Object.assign(query, ruleQuery);
+      } else if (group.members?.length) {
+        query._id = { $in: group.members };
+      }
+      recipients = await User.find(query).select('email firstName').lean();
+    } else {
+      // All opted-in customers
+      recipients = await User.find({ role: 'customer', marketingOptIn: true }).select('email firstName').lean();
+    }
+
+    if (!recipients.length) {
+      return res.json({ success: true, message: 'No recipients found', sent: 0 });
+    }
+
+    // Queue sends (fire-and-forget batches to avoid timeout)
+    let sent = 0;
+    const batchSize = 50;
+    const sendBatch = async (batch) => {
+      await Promise.allSettled(batch.map(r =>
+        emailService.sendTemplatedEmail(template.slug || template.type, {
+          to: r.email,
+          variables: { customer_name: r.firstName || 'Valued Customer', campaign_title: template.name },
+        }).catch(() => {}) // Soft fail per recipient
+      ));
+      sent += batch.length;
+    };
+
+    // Start async — respond immediately with estimated count
+    (async () => {
+      for (let i = 0; i < recipients.length; i += batchSize) {
+        await sendBatch(recipients.slice(i, i + batchSize));
+      }
+    })();
+
+    res.json({ success: true, message: `Campaign queued for ${recipients.length} recipients`, queued: recipients.length });
+  } catch (error) {
+    console.error('Campaign send error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // ─── Re-seed all templates with branded designs ───
 router.post('/seed', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
   try {

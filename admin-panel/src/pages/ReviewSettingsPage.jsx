@@ -5,9 +5,166 @@ import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import toast from '@/utils/toast';
-import { IoSave, IoArrowBack } from 'react-icons/io5';
+import { IoSave, IoArrowBack, IoAdd, IoTrash, IoPencil, IoCheckmark, IoClose } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 
+// ─── Review Categories Sub-Component ────────────────────────────────
+const ReviewCategoriesManager = () => {
+  const queryClient = useQueryClient();
+  const [newCat, setNewCat] = useState({ name: '', icon: '', description: '' });
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
+
+  const { data, isLoading } = useQuery('review-categories-admin', () => reviewsAPI.getCategories());
+  const categories = data?.data?.data || [];
+
+  const createMutation = useMutation((d) => reviewsAPI.createCategory(d), {
+    onSuccess: () => {
+      queryClient.invalidateQueries('review-categories-admin');
+      setNewCat({ name: '', icon: '', description: '' });
+      toast.success('Category created');
+    },
+    onError: (e) => toast.error(e.response?.data?.message || 'Error creating category')
+  });
+
+  const updateMutation = useMutation(({ id, data }) => reviewsAPI.updateCategory(id, data), {
+    onSuccess: () => { queryClient.invalidateQueries('review-categories-admin'); setEditingId(null); toast.success('Category updated'); },
+    onError: (e) => toast.error(e.response?.data?.message || 'Error updating category')
+  });
+
+  const deleteMutation = useMutation((id) => reviewsAPI.deleteCategory(id), {
+    onSuccess: () => { queryClient.invalidateQueries('review-categories-admin'); toast.success('Category deleted'); },
+    onError: (e) => toast.error(e.response?.data?.message || 'Error deleting category')
+  });
+
+  const toggleActiveMutation = useMutation(({ id, isActive }) => reviewsAPI.updateCategory(id, { isActive }), {
+    onSuccess: () => queryClient.invalidateQueries('review-categories-admin'),
+  });
+
+  return (
+    <Card>
+      <div className="p-6">
+        <h3 className="text-lg font-semibold mb-1">Review Rating Categories</h3>
+        <p className="text-sm text-gray-500 mb-5">
+          Define criteria customers can rate separately when writing a review (e.g. Value for Money, Delivery Speed).
+          These appear as optional star-rating rows below the main review form.
+        </p>
+
+        {/* Existing categories */}
+        {isLoading ? (
+          <div className="text-center py-4 text-gray-400">Loading categories...</div>
+        ) : (
+          <div className="space-y-2 mb-6">
+            {categories.length === 0 && (
+              <p className="text-sm text-gray-400 italic">No review categories defined yet. Add your first one below.</p>
+            )}
+            {categories.map((cat) => (
+              <div key={cat._id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                {editingId === cat._id ? (
+                  <>
+                    <input
+                      className="input input-bordered input-sm w-16"
+                      value={editData.icon || ''}
+                      onChange={(e) => setEditData({ ...editData, icon: e.target.value })}
+                      placeholder="Icon"
+                    />
+                    <input
+                      className="input input-bordered input-sm flex-1"
+                      value={editData.name || ''}
+                      onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                      placeholder="Name"
+                    />
+                    <input
+                      className="input input-bordered input-sm flex-1"
+                      value={editData.description || ''}
+                      onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                      placeholder="Description (tooltip)"
+                    />
+                    <button
+                      className="btn btn-success btn-sm btn-square"
+                      onClick={() => updateMutation.mutate({ id: cat._id, data: editData })}
+                    ><IoCheckmark /></button>
+                    <button
+                      className="btn btn-ghost btn-sm btn-square"
+                      onClick={() => setEditingId(null)}
+                    ><IoClose /></button>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xl w-8 text-center">{cat.icon || '⭐'}</span>
+                    <span className="flex-1 font-medium text-sm">{cat.name}</span>
+                    <span className="flex-1 text-xs text-gray-500">{cat.description || '—'}</span>
+                    <label className="flex items-center gap-1 text-xs text-gray-500">
+                      <input
+                        type="checkbox"
+                        checked={cat.isActive}
+                        onChange={(e) => toggleActiveMutation.mutate({ id: cat._id, isActive: e.target.checked })}
+                        className="checkbox checkbox-xs checkbox-primary"
+                      />
+                      Active
+                    </label>
+                    <button
+                      className="btn btn-ghost btn-sm btn-square"
+                      onClick={() => { setEditingId(cat._id); setEditData({ name: cat.name, icon: cat.icon, description: cat.description }); }}
+                    ><IoPencil size={14} /></button>
+                    <button
+                      className="btn btn-ghost btn-sm btn-square text-red-500"
+                      onClick={() => { if (window.confirm(`Delete "${cat.name}"?`)) deleteMutation.mutate(cat._id); }}
+                    ><IoTrash size={14} /></button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add new category */}
+        <div className="border-t border-gray-200 pt-4">
+          <p className="text-sm font-medium text-gray-700 mb-3">Add New Category</p>
+          <div className="flex gap-3 items-end">
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Icon (emoji)</label>
+              <input
+                className="input input-bordered input-sm w-20"
+                value={newCat.icon}
+                onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })}
+                placeholder="⭐"
+                maxLength={4}
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-gray-500 mb-1 block">Category Name *</label>
+              <input
+                className="input input-bordered input-sm w-full"
+                value={newCat.name}
+                onChange={(e) => setNewCat({ ...newCat, name: e.target.value })}
+                placeholder="e.g. Value for Money"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-gray-500 mb-1 block">Description (tooltip)</label>
+              <input
+                className="input input-bordered input-sm w-full"
+                value={newCat.description}
+                onChange={(e) => setNewCat({ ...newCat, description: e.target.value })}
+                placeholder="Shown as tooltip to reviewers"
+              />
+            </div>
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={!newCat.name.trim() || createMutation.isLoading}
+              onClick={() => createMutation.mutate(newCat)}
+            >
+              <IoAdd size={16} className="mr-1" /> Add
+            </button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+// ─── Main Page ───────────────────────────────────────────────────────
 const ReviewSettingsPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -384,6 +541,9 @@ const ReviewSettingsPage = () => {
               </div>
             </div>
           </Card>
+
+          {/* Review Rating Categories */}
+          <ReviewCategoriesManager />
 
           {/* Save Button */}
           <div className="flex justify-end">

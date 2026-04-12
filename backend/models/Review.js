@@ -31,34 +31,15 @@ const reviewSchema = new mongoose.Schema({
     min: 1,
     max: 5
   },
-  // Category Ratings
-  categoryRatings: {
-    productQuality: {
-      type: Number,
-      min: 1,
-      max: 5
+  // Dynamic Category Ratings (driven by admin-defined ReviewCategory records)
+  categoryRatings: [{
+    categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ReviewCategory'
     },
-    valueForMoney: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    accuracyOfDescription: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    shippingPackaging: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    customerService: {
-      type: Number,
-      min: 1,
-      max: 5
-    }
-  },
+    categoryName: String, // denormalised snapshot for display
+    rating: { type: Number, min: 1, max: 5 }
+  }],
   title: String,
   content: {
     type: String,

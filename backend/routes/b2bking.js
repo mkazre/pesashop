@@ -135,6 +135,69 @@ router.delete('/customer-groups/:id', protect, authorize('admin', 'shop_manager'
   }
 });
 
+// POST preview dynamic group member count
+router.post('/customer-groups/preview-count', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+  try {
+    const { rules = [], ruleLogic = 'and' } = req.body;
+    if (!rules.length) return res.json({ success: true, count: 0 });
+
+    const buildQuery = (rules, logic) => {
+      const conditions = rules.map(rule => {
+        const { field, operator, value } = rule;
+        let parsedValue = value;
+        // Coerce numeric-looking values
+        if (!isNaN(value) && value !== '') parsedValue = Number(value);
+        if (value === 'true') parsedValue = true;
+        if (value === 'false') parsedValue = false;
+
+        switch (operator) {
+          case 'eq':   return { [field]: parsedValue };
+          case 'neq':  return { [field]: { $ne: parsedValue } };
+          case 'gt':   return { [field]: { $gt: parsedValue } };
+          case 'gte':  return { [field]: { $gte: parsedValue } };
+          case 'lt':   return { [field]: { $lt: parsedValue } };
+          case 'lte':  return { [field]: { $lte: parsedValue } };
+          case 'in':   return { [field]: { $in: Array.isArray(value) ? value : [value] } };
+          case 'nin':  return { [field]: { $nin: Array.isArray(value) ? value : [value] } };
+          case 'contains': return { [field]: parsedValue };
+          default: return {};
+        }
+      });
+      return logic === 'or' ? { $or: conditions } : { $and: conditions };
+    };
+
+    const query = buildQuery(rules, ruleLogic);
+    const count = await User.countDocuments({ role: 'customer', ...query });
+    res.json({ success: true, count });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST sync dynamic group membership
+router.post('/customer-groups/:id/sync', protect, authorize('admin', 'shop_manager'), async (req, res, next) => {
+  try {
+    const group = await CustomerGroup.findById(req.params.id);
+    if (!group) return res.status(404).json({ success: false, message: 'Group not found' });
+    if (!group.isDynamic) return res.status(400).json({ success: false, message: 'Group is not dynamic' });
+
+    const { evaluateDynamicGroups } = require('../services/customerProfileAI');
+    // Find all customers and re-evaluate membership
+    const customers = await User.find({ role: 'customer' }).select('_id').lean();
+    let count = 0;
+    for (const c of customers) {
+      await evaluateDynamicGroups(c._id);
+      count++;
+    }
+    group.lastMembershipSyncAt = new Date();
+    await group.save();
+
+    res.json({ success: true, message: `Synced ${count} customers`, count });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ==================== PRICE LISTS ====================
 
 // GET all price lists

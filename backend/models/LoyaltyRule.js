@@ -11,7 +11,7 @@ const loyaltyRuleSchema = new mongoose.Schema({
   // Rule Type
   ruleType: {
     type: String,
-    enum: ['earning', 'redemption'],
+    enum: ['earning', 'redemption', 'profile_complete'],
     required: true
   },
   

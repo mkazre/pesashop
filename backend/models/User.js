@@ -145,7 +145,73 @@ const userSchema = new mongoose.Schema({
     currency: { type: String, default: 'ZAR' },
     language: { type: String, default: 'en' },
     newsletter: { type: Boolean, default: true }
-  }
+  },
+
+  // ── Demographics ─────────────────────────────────────────────────
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'non-binary', 'prefer_not_to_say']
+  },
+  dateOfBirth: Date,
+  maritalStatus: {
+    type: String,
+    enum: ['single', 'married', 'divorced', 'widowed', 'prefer_not_to_say']
+  },
+  householdSize: { type: Number, min: 1 },
+  employmentStatus: {
+    type: String,
+    enum: ['employed', 'self_employed', 'student', 'retired', 'unemployed', 'prefer_not_to_say']
+  },
+  incomeRange: {
+    type: String,
+    enum: ['<15k', '15k-30k', '30k-60k', '60k-120k', '>120k', 'prefer_not_to_say']
+  },
+  educationLevel: {
+    type: String,
+    enum: ['no_schooling', 'primary', 'secondary', 'matric', 'diploma', 'degree', 'postgraduate', 'prefer_not_to_say']
+  },
+  province: String,
+  suburb: String,
+
+  // ── Interests & Lifestyle ─────────────────────────────────────────
+  hobbies: [{ type: String }],
+  interests: [{ type: String }],
+  lifeStage: {
+    type: String,
+    enum: ['student', 'young_professional', 'new_parent', 'established_family', 'empty_nester', 'retiree']
+  },
+
+  // ── AI-Computed Shopping Behaviour ────────────────────────────────
+  preferredCategories: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category'
+  }],
+  avgOrderValue: { type: Number, default: 0 },
+  purchaseFrequency: String,
+  lastPurchaseDate: Date,
+  customerSegment: {
+    type: String,
+    enum: ['budget', 'value', 'premium', 'luxury']
+  },
+  churnRisk: {
+    type: String,
+    enum: ['low', 'medium', 'high']
+  },
+
+  // ── Profile Completion ────────────────────────────────────────────
+  profileCompletionScore: { type: Number, default: 0, min: 0, max: 100 },
+  profileCompletionFields: [{ type: String }],
+  profileCompletionRewardClaimed: { type: Boolean, default: false },
+
+  // ── Consent & Marketing ───────────────────────────────────────────
+  marketingOptIn: { type: Boolean, default: false },
+  demographicsConsentGiven: { type: Boolean, default: false },
+
+  // ── Dynamic Customer Group Memberships ────────────────────────────
+  dynamicGroupIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CustomerGroup'
+  }]
 }, {
   timestamps: true
 });

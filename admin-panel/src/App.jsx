@@ -60,6 +60,13 @@ import PODCapturePage from './pages/PODCapturePage';
 import FooterBuilderPage from './pages/FooterBuilderPage';
 import MobileAppSplashPage from './pages/MobileAppSplashPage';
 import PopupBuilderPage from './pages/PopupBuilderPage';
+// New feature modules
+import CustomerDemographicsDashboard from './pages/CustomerDemographicsDashboard';
+import OffersPage from './pages/OffersPage';
+import OfferBuilderPage from './pages/OfferBuilderPage';
+import RecurringOrdersPage from './pages/RecurringOrdersPage';
+import RecurringPlansPage from './pages/RecurringPlansPage';
+import ServiceProvidersPage from './pages/ServiceProvidersPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -151,6 +158,17 @@ function App() {
             <Route path="shipping/mobile/:action" element={<MobileScannerPage />} />
             <Route path="shipping/mobile/:action/:waybillNumber" element={<MobileScannerPage />} />
             <Route path="shipping/pod/:waybillNumber" element={<PODCapturePage />} />
+            {/* Demographics */}
+            <Route path="customers/demographics" element={<CustomerDemographicsDashboard />} />
+            {/* Offers */}
+            <Route path="offers" element={<OffersPage />} />
+            <Route path="offers/new" element={<OfferBuilderPage />} />
+            <Route path="offers/:id" element={<OfferBuilderPage />} />
+            {/* Recurring Orders */}
+            <Route path="recurring-orders" element={<RecurringOrdersPage />} />
+            <Route path="recurring-orders/plans" element={<RecurringPlansPage />} />
+            {/* Service Providers */}
+            <Route path="service-providers" element={<ServiceProvidersPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

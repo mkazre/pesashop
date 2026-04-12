@@ -83,6 +83,29 @@ const customerGroupSchema = new mongoose.Schema({
   customerCount: {
     type: Number,
     default: 0
+  },
+
+  // ── Dynamic Rule-Based Membership ────────────────────────────────
+  // If isDynamic is true, membership is auto-computed from rules
+  isDynamic: { type: Boolean, default: false },
+  rules: [{
+    field: { type: String }, // e.g. 'gender', 'province', 'customerSegment', 'churnRisk', 'lifeStage', 'incomeRange'
+    operator: {
+      type: String,
+      enum: ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'nin', 'contains']
+    },
+    value: { type: mongoose.Schema.Types.Mixed } // string | number | string[]
+  }],
+  // Logic: 'and' = all rules must match, 'or' = any rule matches
+  ruleLogic: { type: String, enum: ['and', 'or'], default: 'and' },
+  // Cached member IDs (refreshed by cron or on demand)
+  members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  lastMembershipSyncAt: Date,
+
+  // Stats (computed)
+  stats: {
+    avgOrderValue: { type: Number, default: 0 },
+    totalRevenue: { type: Number, default: 0 }
   }
 }, {
   timestamps: true

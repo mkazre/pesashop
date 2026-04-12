@@ -114,11 +114,12 @@ const LoyaltyRulesPage = () => {
     {
       key: 'ruleType',
       title: 'Type',
-      render: (type) => (
-        <span className={`badge ${type === 'earning' ? 'badge-success' : 'badge-info'}`}>
-          {type === 'earning' ? 'Earning' : 'Redemption'}
-        </span>
-      ),
+      render: (type) => {
+        if (type === 'earning') return <span className="badge badge-success">Earning</span>;
+        if (type === 'redemption') return <span className="badge badge-info">Redemption</span>;
+        if (type === 'profile_complete') return <span className="badge badge-warning">Profile Complete</span>;
+        return <span className="badge badge-ghost">{type}</span>;
+      },
     },
     {
       key: 'priority',
@@ -282,6 +283,7 @@ const LoyaltyRulesPage = () => {
                     >
                       <option value="earning">Earning Rule</option>
                       <option value="redemption">Redemption Rule</option>
+                      <option value="profile_complete">Profile Completion Reward</option>
                     </select>
                   </div>
                   <div>
@@ -386,6 +388,38 @@ const LoyaltyRulesPage = () => {
               </div>
             )}
 
+            {/* Profile Completion Reward Settings */}
+            {editingRule.ruleType === 'profile_complete' && (
+              <div>
+                <h3 className="font-semibold mb-4">Profile Completion Reward</h3>
+                <div className="space-y-4">
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-800">
+                      <strong>How it works:</strong> When a customer fills in all required demographic fields and reaches
+                      100% profile completion for the first time, they automatically receive the points set below.
+                      Only one active Profile Completion Reward rule is used at a time.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">PESA Coins Reward Amount *</label>
+                    <Input
+                      type="number"
+                      value={editingRule.fixedPoints || ''}
+                      onChange={(e) => setEditingRule({
+                        ...editingRule,
+                        fixedPoints: e.target.value ? parseInt(e.target.value) : null,
+                        pointsPerCurrency: null,
+                        pointsPerCurrencyPercentage: null
+                      })}
+                      min="1"
+                      placeholder="e.g. 500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Points awarded once when profile reaches 100% completion.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Redemption Rule Settings */}
             {editingRule.ruleType === 'redemption' && (
               <div>
@@ -470,8 +504,8 @@ const LoyaltyRulesPage = () => {
               </div>
             )}
 
-            {/* Conditions */}
-            <div>
+            {/* Conditions — not applicable for profile_complete rules */}
+            {editingRule.ruleType !== 'profile_complete' && <div>
               <h3 className="font-semibold mb-4">Conditions</h3>
               <div className="space-y-4">
                 {/* Products */}
@@ -709,7 +743,7 @@ const LoyaltyRulesPage = () => {
                   </div>
                 )}
               </div>
-            </div>
+            </div>}
           </div>
         )}
       </Modal>

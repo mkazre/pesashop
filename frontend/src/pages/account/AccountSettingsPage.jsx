@@ -38,7 +38,8 @@ function ProfileCompletionBanner({ score, missingFields, rewardPoints }) {
 export default function AccountSettingsPage() {
   const queryClient = useQueryClient();
   const { user, updateUser } = useAuthStore();
-  const { formatPrice } = useCurrencyStore();
+  const { formatPrice, selectedCurrency } = useCurrencyStore();
+  const currSymbol = selectedCurrency?.symbol || 'R';
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -380,11 +381,11 @@ export default function AccountSettingsPage() {
               <label className={labelClass}>Monthly Income Range</label>
               <select value={demoData.incomeRange} onChange={(e) => setDemoData(p => ({ ...p, incomeRange: e.target.value }))} className={selectClass}>
                 <option value="">— select —</option>
-                <option value="<15k">Under R15,000</option>
-                <option value="15k-30k">R15,000 – R30,000</option>
-                <option value="30k-60k">R30,000 – R60,000</option>
-                <option value="60k-120k">R60,000 – R120,000</option>
-                <option value=">120k">Over R120,000</option>
+                <option value="<15k">Under {currSymbol}15,000</option>
+                <option value="15k-30k">{currSymbol}15,000 – {currSymbol}30,000</option>
+                <option value="30k-60k">{currSymbol}30,000 – {currSymbol}60,000</option>
+                <option value="60k-120k">{currSymbol}60,000 – {currSymbol}120,000</option>
+                <option value=">120k">Over {currSymbol}120,000</option>
                 <option value="prefer_not_to_say">Prefer not to say</option>
               </select>
             </div>

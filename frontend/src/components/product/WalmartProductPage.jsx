@@ -18,6 +18,9 @@ import CustomersAlsoViewed from './CustomersAlsoViewed';
 import FrequentlyBoughtTogether from './FrequentlyBoughtTogether';
 import WriteReview from './WriteReview';
 import ProductQA from './ProductQA';
+import RecurringWidget from './RecurringWidget';
+import OfferSlot from '@/components/offers/OfferSlot';
+import ServiceProviderAdSlot from '@/components/ads/ServiceProviderAdSlot';
 import toast from '@/utils/toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -1270,6 +1273,9 @@ export default function WalmartProductPage({ product, settings }) {
                 />
               )}
 
+              {/* Recurring Purchase Widget */}
+              <RecurringWidget product={product} />
+
               {/* Trust Badges */}
               {fb.showTrustBadges && fb.trustBadges?.length > 0 && (
                 <div className="wp-trust">
@@ -1392,6 +1398,21 @@ export default function WalmartProductPage({ product, settings }) {
           </div>
         </div>
       )}
+
+      {/* Offers slot — below product */}
+      <div style={{ maxWidth: lay.maxWidth || 1440, margin: '0 auto', padding: '0 24px 12px' }}>
+        <OfferSlot page="product_detail" />
+      </div>
+
+      {/* Service Provider Ads */}
+      <div style={{ maxWidth: lay.maxWidth || 1440, margin: '0 auto', padding: '0 24px 12px' }}>
+        <ServiceProviderAdSlot
+          slotId="product_detail_below_buy"
+          pageType="product"
+          productId={product?._id}
+          categorySlug={product?.categories?.[0]?.slug}
+        />
+      </div>
 
       {/* Checkout Drawer */}
       <CheckoutDrawer
