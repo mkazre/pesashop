@@ -19,10 +19,6 @@ const HOBBIES = [
   "Arts & Crafts", "Sports", "Yoga", "Technology", "Cars", "Pets",
 ];
 
-const SA_PROVINCES = [
-  "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal",
-  "Limpopo", "Mpumalanga", "North West", "Northern Cape", "Western Cape",
-];
 
 export default function DemographicsScreen() {
   const router = useRouter();
@@ -36,6 +32,7 @@ export default function DemographicsScreen() {
     householdSize: user?.householdSize ? String(user.householdSize) : "",
     employmentStatus: user?.employmentStatus || "",
     incomeRange: user?.incomeRange || "",
+    country: user?.country || "",
     province: user?.province || "",
     suburb: user?.suburb || "",
     lifeStage: user?.lifeStage || "",
@@ -72,7 +69,11 @@ export default function DemographicsScreen() {
   }, []);
 
   const handleSave = () => {
-    saveMutation.mutate({ ...form, householdSize: form.householdSize ? parseInt(form.householdSize) : undefined });
+    saveMutation.mutate({
+      ...form,
+      householdSize: form.householdSize ? parseInt(form.householdSize) : undefined,
+      country: form.country.trim() || undefined,
+    });
   };
 
   return (
@@ -137,23 +138,35 @@ export default function DemographicsScreen() {
           wrap
         />
 
-        {/* Province */}
-        <SectionLabel label="Province" />
-        <ChipRow
-          options={SA_PROVINCES}
-          labels={SA_PROVINCES}
-          selected={form.province}
-          onSelect={(v) => setForm(p => ({ ...p, province: v }))}
-          wrap
-        />
+        {/* Country */}
+        <View style={s.field}>
+          <Text style={s.fieldLabel}>Country</Text>
+          <TextInput
+            value={form.country}
+            onChangeText={(v) => setForm(p => ({ ...p, country: v }))}
+            placeholder="e.g. South Africa, Zimbabwe, Namibia"
+            style={s.input}
+          />
+        </View>
+
+        {/* Province / Region */}
+        <View style={s.field}>
+          <Text style={s.fieldLabel}>Province / State / Region</Text>
+          <TextInput
+            value={form.province}
+            onChangeText={(v) => setForm(p => ({ ...p, province: v }))}
+            placeholder="e.g. Gauteng, Harare, Khomas"
+            style={s.input}
+          />
+        </View>
 
         {/* Suburb */}
         <View style={s.field}>
-          <Text style={s.fieldLabel}>Suburb / Area</Text>
+          <Text style={s.fieldLabel}>City / Suburb / Area</Text>
           <TextInput
             value={form.suburb}
             onChangeText={(v) => setForm(p => ({ ...p, suburb: v }))}
-            placeholder="e.g. Sandton"
+            placeholder="e.g. Sandton, Borrowdale"
             style={s.input}
           />
         </View>

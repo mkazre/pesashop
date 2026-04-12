@@ -131,6 +131,7 @@ const CustomerDetailPage = () => {
 
   const tabs = [
     { id: 'details', label: 'Personal Details', icon: IoPerson },
+    { id: 'demographics', label: 'Demographics', icon: IoPerson },
     { id: 'orders', label: 'Orders', icon: IoCart, count: relatedData.orders?.length || 0 },
     { id: 'points', label: 'PESA Coins', icon: IoStar, count: relatedData.loyaltyPoints?.length || 0 },
     { id: 'laybyes', label: 'Laybyes', icon: IoCalendar, count: relatedData.laybyes?.length || 0 },
@@ -849,6 +850,61 @@ const CustomerDetailPage = () => {
                 <div className="text-center py-12 text-gray-500">
                   <IoCard size={48} className="mx-auto mb-4 text-gray-300" />
                   <p>No gift cards found</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'demographics' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                  { label: 'Gender', value: customer?.gender },
+                  { label: 'Date of Birth', value: customer?.dateOfBirth ? new Date(customer.dateOfBirth).toLocaleDateString('en-ZA') : null },
+                  { label: 'Marital Status', value: customer?.maritalStatus },
+                  { label: 'Household Size', value: customer?.householdSize },
+                  { label: 'Employment', value: customer?.employmentStatus },
+                  { label: 'Income Range', value: customer?.incomeRange },
+                  { label: 'Education', value: customer?.educationLevel },
+                  { label: 'Life Stage', value: customer?.lifeStage },
+                  { label: 'Country', value: customer?.country },
+                  { label: 'Province / Region', value: customer?.province },
+                  { label: 'City / Suburb', value: customer?.suburb },
+                  { label: 'Customer Segment', value: customer?.customerSegment },
+                  { label: 'Churn Risk', value: customer?.churnRisk },
+                  { label: 'Profile Score', value: customer?.profileCompletionScore != null ? `${customer.profileCompletionScore}%` : null },
+                  { label: 'Marketing Opt-In', value: customer?.marketingOptIn ? 'Yes' : 'No' },
+                  { label: 'Consent Given', value: customer?.demographicsConsentGiven ? 'Yes' : 'No' },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 mb-1">{label}</p>
+                    <p className="text-sm font-medium text-gray-900 capitalize">{value || <span className="text-gray-400 font-normal">Not set</span>}</p>
+                  </div>
+                ))}
+              </div>
+              {customer?.hobbies?.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Hobbies &amp; Interests</p>
+                  <div className="flex flex-wrap gap-2">
+                    {customer.hobbies.map(h => (
+                      <span key={h} className="px-2.5 py-1 bg-gray-900 text-white text-xs rounded-full">{h}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {customer?.preferredCategories?.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">AI — Preferred Categories</p>
+                  <div className="flex flex-wrap gap-2">
+                    {customer.preferredCategories.map(c => (
+                      <span key={c._id || c} className="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">{c.name || c}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {!customer?.gender && !customer?.country && !customer?.province && (
+                <div className="text-center py-8 text-gray-400">
+                  <p>This customer has not completed their demographic profile yet.</p>
                 </div>
               )}
             </div>

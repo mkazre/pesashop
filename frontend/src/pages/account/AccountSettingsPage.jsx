@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '@/store';
+import { useAuthStore, useCurrencyStore } from '@/store';
 import { userAPI, authAPI, demographicsAPI } from '@/services/api';
 
 const HOBBIES = [
@@ -9,11 +9,6 @@ const HOBBIES = [
   'Swimming', 'Photography', 'Reading', 'Music', 'Gaming', 'DIY/Home Improvement',
   'Fashion', 'Beauty', 'Travel', 'Fishing', 'Arts & Crafts', 'Sports', 'Yoga',
   'Meditation', 'Technology', 'Cars', 'Pets', 'Kids Activities',
-];
-
-const SA_PROVINCES = [
-  'Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal',
-  'Limpopo', 'Mpumalanga', 'North West', 'Northern Cape', 'Western Cape',
 ];
 
 const inputClass = 'w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-colors';
@@ -43,6 +38,7 @@ function ProfileCompletionBanner({ score, missingFields, rewardPoints }) {
 export default function AccountSettingsPage() {
   const queryClient = useQueryClient();
   const { user, updateUser } = useAuthStore();
+  const { formatPrice } = useCurrencyStore();
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -57,27 +53,58 @@ export default function AccountSettingsPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Demographics state
+  // Demographics state — initialised empty, populated from fresh API fetch below
   const [demoData, setDemoData] = useState({
-    gender: user?.gender || '',
-    dateOfBirth: user?.dateOfBirth ? user.dateOfBirth.substring(0, 10) : '',
-    maritalStatus: user?.maritalStatus || '',
-    householdSize: user?.householdSize || '',
-    employmentStatus: user?.employmentStatus || '',
-    incomeRange: user?.incomeRange || '',
-    educationLevel: user?.educationLevel || '',
-    province: user?.province || '',
-    suburb: user?.suburb || '',
-    lifeStage: user?.lifeStage || '',
-    hobbies: user?.hobbies || [],
-    interests: user?.interests || [],
-    marketingOptIn: user?.marketingOptIn ?? false,
-    demographicsConsentGiven: user?.demographicsConsentGiven ?? false,
+    gender: '',
+    dateOfBirth: '',
+    maritalStatus: '',
+    householdSize: '',
+    employmentStatus: '',
+    incomeRange: '',
+    educationLevel: '',
+    country: '',
+    province: '',
+    suburb: '',
+    lifeStage: '',
+    hobbies: [],
+    interests: [],
+    marketingOptIn: false,
+    demographicsConsentGiven: false,
   });
+  const [demoLoaded, setDemoLoaded] = useState(false);
   const [demoSuccess, setDemoSuccess] = useState('');
   const [demoError, setDemoError] = useState('');
   const [debouncedHobbies, setDebouncedHobbies] = useState(demoData.hobbies);
   const hobbyDebounceRef = useRef(null);
+
+  // Fetch fresh profile from API on mount to get saved demographics
+  useQuery('me-full', () => authAPI.getMe(), {
+    staleTime: 0,
+    onSuccess: (res) => {
+      const freshUser = res?.data?.data || res?.data?.user || res?.data;
+      if (freshUser && !demoLoaded) {
+        updateUser(freshUser);
+        setDemoData({
+          gender: freshUser.gender || '',
+          dateOfBirth: freshUser.dateOfBirth ? freshUser.dateOfBirth.substring(0, 10) : '',
+          maritalStatus: freshUser.maritalStatus || '',
+          householdSize: freshUser.householdSize || '',
+          employmentStatus: freshUser.employmentStatus || '',
+          incomeRange: freshUser.incomeRange || '',
+          educationLevel: freshUser.educationLevel || '',
+          country: freshUser.country || '',
+          province: freshUser.province || '',
+          suburb: freshUser.suburb || '',
+          lifeStage: freshUser.lifeStage || '',
+          hobbies: freshUser.hobbies || [],
+          interests: freshUser.interests || [],
+          marketingOptIn: freshUser.marketingOptIn ?? false,
+          demographicsConsentGiven: freshUser.demographicsConsentGiven ?? false,
+        });
+        setDemoLoaded(true);
+      }
+    }
+  });
 
   // Profile completion
   const { data: completionData, refetch: refetchCompletion } = useQuery(
@@ -108,8 +135,28 @@ export default function AccountSettingsPage() {
     (data) => demographicsAPI.updateProfile(data),
     {
       onSuccess: (res) => {
-        const updated = res?.data?.data?.user || res?.data?.user;
-        if (updated) updateUser(updated);
+        const updated = res?.data?.data || res?.data?.user;
+        if (updated) {
+          updateUser(updated);
+          // Re-sync demoData from the saved response so form stays populated
+          setDemoData(prev => ({
+            ...prev,
+            gender: updated.gender || prev.gender,
+            dateOfBirth: updated.dateOfBirth ? updated.dateOfBirth.substring(0, 10) : prev.dateOfBirth,
+            maritalStatus: updated.maritalStatus || prev.maritalStatus,
+            householdSize: updated.householdSize || prev.householdSize,
+            employmentStatus: updated.employmentStatus || prev.employmentStatus,
+            incomeRange: updated.incomeRange || prev.incomeRange,
+            educationLevel: updated.educationLevel || prev.educationLevel,
+            country: updated.country || prev.country,
+            province: updated.province || prev.province,
+            suburb: updated.suburb || prev.suburb,
+            lifeStage: updated.lifeStage || prev.lifeStage,
+            hobbies: updated.hobbies || prev.hobbies,
+            marketingOptIn: updated.marketingOptIn ?? prev.marketingOptIn,
+            demographicsConsentGiven: updated.demographicsConsentGiven ?? prev.demographicsConsentGiven,
+          }));
+        }
         setDemoSuccess('Demographics saved!');
         setDemoError('');
         refetchCompletion();
@@ -367,17 +414,24 @@ export default function AccountSettingsPage() {
           {/* Location */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Province</label>
-              <select value={demoData.province} onChange={(e) => setDemoData(p => ({ ...p, province: e.target.value }))} className={selectClass}>
-                <option value="">— select —</option>
-                {SA_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
+              <label className={labelClass}>Country</label>
+              <input type="text" value={demoData.country}
+                onChange={(e) => setDemoData(p => ({ ...p, country: e.target.value }))}
+                placeholder="e.g. South Africa, Zimbabwe, Namibia" className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Suburb / Area</label>
+              <label className={labelClass}>Province / State / Region</label>
+              <input type="text" value={demoData.province}
+                onChange={(e) => setDemoData(p => ({ ...p, province: e.target.value }))}
+                placeholder="e.g. Gauteng, Harare, Khomas" className={inputClass} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>City / Suburb / Area</label>
               <input type="text" value={demoData.suburb}
                 onChange={(e) => setDemoData(p => ({ ...p, suburb: e.target.value }))}
-                placeholder="e.g. Sandton" className={inputClass} />
+                placeholder="e.g. Sandton, Borrowdale" className={inputClass} />
             </div>
           </div>
 
@@ -416,18 +470,20 @@ export default function AccountSettingsPage() {
                 Products related to your hobbies
               </p>
               {hobbyProducts.length > 0 ? (
-                <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-wrap gap-2">
                   {hobbyProducts.map(p => (
-                    <Link key={p._id} to={`/product/${p.slug}`} className="group">
-                      <div className="aspect-square rounded-lg overflow-hidden bg-white border border-gray-200 mb-1.5">
+                    <Link key={p._id} to={`/product/${p.slug}`} className="group flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2 py-1.5 hover:border-gray-400 transition-colors" style={{ maxWidth: '48%', flex: '1 1 160px' }}>
+                      <div className="w-10 h-10 rounded overflow-hidden bg-gray-100 flex-shrink-0">
                         {p.featuredImage ? (
-                          <img src={p.featuredImage} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          <img src={p.featuredImage} alt={p.name} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-300 text-2xl">📦</div>
+                          <div className="w-full h-full flex items-center justify-center text-gray-300 text-lg">📦</div>
                         )}
                       </div>
-                      <p className="text-xs text-gray-700 font-medium truncate">{p.name}</p>
-                      <p className="text-xs text-gray-500">R{p.price?.toFixed(2)}</p>
+                      <div className="min-w-0">
+                        <p className="text-xs text-gray-700 font-medium truncate leading-tight">{p.name}</p>
+                        <p className="text-xs text-gray-900 font-semibold mt-0.5">{p.price != null ? formatPrice(p.price) : '—'}</p>
+                      </div>
                     </Link>
                   ))}
                 </div>

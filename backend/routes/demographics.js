@@ -50,7 +50,7 @@ router.put('/update', protect, async (req, res) => {
   try {
     const allowedFields = [
       'gender', 'dateOfBirth', 'maritalStatus', 'householdSize',
-      'employmentStatus', 'incomeRange', 'educationLevel', 'province', 'suburb',
+      'employmentStatus', 'incomeRange', 'educationLevel', 'country', 'province', 'suburb',
       'hobbies', 'interests', 'lifeStage', 'marketingOptIn', 'demographicsConsentGiven'
     ];
 

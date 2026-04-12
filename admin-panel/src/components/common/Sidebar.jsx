@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  IoHomeOutline, 
-  IoCubeOutline, 
-  IoReceiptOutline, 
+import {
+  IoHomeOutline,
+  IoCubeOutline,
+  IoReceiptOutline,
   IoPeopleOutline,
   IoWalletOutline,
   IoStarOutline,
@@ -35,58 +35,132 @@ import {
   IoCarOutline,
   IoPhonePortraitOutline,
   IoMegaphoneOutline,
+  IoChevronDownOutline,
+  IoChevronForwardOutline,
 } from 'react-icons/io5';
 import { useUIStore } from '@/store';
 import classNames from 'classnames';
 import pesashopLogo from '@/assets/pesashop-logo.png';
 
+const menuGroups = [
+  {
+    label: 'Core',
+    items: [
+      { path: '/', icon: IoHomeOutline, label: 'Dashboard', exact: true },
+      { path: '/products', icon: IoCubeOutline, label: 'Products' },
+      { path: '/categories', icon: IoFolderOutline, label: 'Categories' },
+      { path: '/orders', icon: IoReceiptOutline, label: 'Orders' },
+      { path: '/shipping', icon: IoCarOutline, label: 'Shipping' },
+      { path: '/customers', icon: IoPeopleOutline, label: 'Customers' },
+    ],
+  },
+  {
+    label: 'Offers & Recurring',
+    items: [
+      { path: '/offers', icon: IoGiftOutline, label: 'Offers' },
+      { path: '/recurring-orders', icon: IoRefresh, label: 'Recurring Orders' },
+      { path: '/coupons', icon: IoPricetagOutline, label: 'Coupons' },
+      { path: '/gift-cards', icon: IoGiftOutline, label: 'Gift Cards' },
+    ],
+  },
+  {
+    label: 'Layby',
+    items: [
+      { path: '/laybyes', icon: IoWalletOutline, label: 'Laybyes' },
+      { path: '/layby-plans', icon: IoCalendarOutline, label: 'Layby Plans' },
+      { path: '/layby-applications', icon: IoDocumentTextOutline, label: 'Applications' },
+      { path: '/layby-transactions', icon: IoSwapHorizontalOutline, label: 'Transaction Log' },
+    ],
+  },
+  {
+    label: 'Loyalty & Reviews',
+    items: [
+      { path: '/loyalty', icon: IoStarOutline, label: 'PESA Coins' },
+      { path: '/reviews', icon: IoStarOutline, label: 'Reviews' },
+      { path: '/questions', icon: IoChatbubblesOutline, label: 'Q&A' },
+      { path: '/badges', icon: IoRibbonOutline, label: 'Badges' },
+    ],
+  },
+  {
+    label: 'Service Providers',
+    items: [
+      { path: '/service-providers', icon: IoBusinessOutline, label: 'Providers & Ads' },
+    ],
+  },
+  {
+    label: 'Customers & Segments',
+    items: [
+      { path: '/customers/demographics', icon: IoAnalyticsOutline, label: 'Demographics' },
+      { path: '/b2bking/customer-groups', icon: IoBusinessOutline, label: 'Customer Groups' },
+      { path: '/b2bking/price-lists', icon: IoList, label: 'Price Lists' },
+      { path: '/b2bking/pricing-rules', icon: IoFlash, label: 'Pricing Rules' },
+    ],
+  },
+  {
+    label: 'Marketing',
+    items: [
+      { path: '/emails', icon: IoMailOutline, label: 'Email Templates' },
+      { path: '/popups', icon: IoMegaphoneOutline, label: 'Popup Builder' },
+      { path: '/notifications', icon: IoNotificationsOutline, label: 'Notifications' },
+    ],
+  },
+  {
+    label: 'Storefront',
+    items: [
+      { path: '/currencies', icon: IoCashOutline, label: 'Currencies' },
+      { path: '/home-page-builder', icon: IoHomeOutline, label: 'Home Page Builder' },
+      { path: '/product-page-settings', icon: IoLayersOutline, label: 'Product Page' },
+      { path: '/product-archive-settings', icon: IoGridOutline, label: 'Product Archive' },
+      { path: '/menu-builder', icon: IoMenu, label: 'Menu Builder' },
+      { path: '/menu-assignment', icon: IoMenu, label: 'Menu Assignment' },
+      { path: '/footer-builder', icon: IoLayersOutline, label: 'Footer Builder' },
+      { path: '/page-manager', icon: IoLayersOutline, label: 'Page Manager' },
+    ],
+  },
+  {
+    label: 'Content & Media',
+    items: [
+      { path: '/snippets', icon: IoCodeSlashOutline, label: 'Code Snippets' },
+      { path: '/import-export', icon: IoCloudUploadOutline, label: 'Import/Export' },
+      { path: '/media-library', icon: IoFolderOutline, label: 'Media Library' },
+      { path: '/images', icon: IoImagesOutline, label: 'Image Manager' },
+      { path: '/images/regenerate', icon: IoRefresh, label: 'Regenerate Images' },
+      { path: '/stats', icon: IoAnalyticsOutline, label: 'Stats & Analytics' },
+    ],
+  },
+  {
+    label: 'Mobile App',
+    items: [
+      { path: '/mobile-app/splash', icon: IoPhonePortraitOutline, label: 'Mobile App' },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { path: '/users', icon: IoPeopleOutline, label: 'Users' },
+      { path: '/roles', icon: IoShieldCheckmarkOutline, label: 'Roles & Permissions' },
+      { path: '/settings', icon: IoSettingsOutline, label: 'Settings' },
+      { path: '/profile', icon: IoPersonOutline, label: 'My Profile' },
+    ],
+  },
+];
+
+// Groups expanded by default
+const DEFAULT_OPEN = new Set(['Core', 'Offers & Recurring', 'Layby', 'Loyalty & Reviews', 'Service Providers', 'Customers & Segments']);
+
 const Sidebar = () => {
   const { sidebarOpen } = useUIStore();
   const [logoError, setLogoError] = React.useState(false);
+  const [openGroups, setOpenGroups] = useState(DEFAULT_OPEN);
 
-  const menuItems = [
-    { path: '/', icon: IoHomeOutline, label: 'Dashboard' },
-    { path: '/products', icon: IoCubeOutline, label: 'Products' },
-    { path: '/categories', icon: IoFolderOutline, label: 'Categories' },
-    { path: '/orders', icon: IoReceiptOutline, label: 'Orders' },
-    { path: '/shipping', icon: IoCarOutline, label: 'Shipping' },
-    { path: '/customers', icon: IoPeopleOutline, label: 'Customers' },
-    { path: '/laybyes', icon: IoWalletOutline, label: 'Laybyes' },
-    { path: '/layby-plans', icon: IoCalendarOutline, label: 'Layby Plans' },
-    { path: '/layby-applications', icon: IoDocumentTextOutline, label: 'Layby Applications' },
-    { path: '/layby-transactions', icon: IoSwapHorizontalOutline, label: 'Transaction Log' },
-    { path: '/loyalty', icon: IoStarOutline, label: 'PESA Coins' },
-    { path: '/coupons', icon: IoPricetagOutline, label: 'Coupons' },
-    { path: '/gift-cards', icon: IoGiftOutline, label: 'Gift Cards' },
-    { path: '/reviews', icon: IoStarOutline, label: 'Reviews' },
-    { path: '/questions', icon: IoChatbubblesOutline, label: 'Q&A' },
-    { path: '/currencies', icon: IoCashOutline, label: 'Currencies' },
-    { path: '/b2bking/customer-groups', icon: IoBusinessOutline, label: 'Customer Groups' },
-    { path: '/b2bking/price-lists', icon: IoList, label: 'Price Lists' },
-    { path: '/b2bking/pricing-rules', icon: IoFlash, label: 'Pricing Rules' },
-    { path: '/badges', icon: IoRibbonOutline, label: 'Badges' },
-    { path: '/product-page-settings', icon: IoLayersOutline, label: 'Product Page' },
-    { path: '/product-archive-settings', icon: IoGridOutline, label: 'Product Archive' },
-    { path: '/stats', icon: IoAnalyticsOutline, label: 'Stats & Analytics' },
-    { path: '/home-page-builder', icon: IoHomeOutline, label: 'Home Page Builder' },
-    { path: '/footer-builder', icon: IoLayersOutline, label: 'Footer Builder' },
-    { path: '/mobile-app/splash', icon: IoPhonePortraitOutline, label: 'Mobile App' },
-    { path: '/page-manager', icon: IoLayersOutline, label: 'Page Manager' },
-    { path: '/menu-builder', icon: IoMenu, label: 'Menu Builder' },
-    { path: '/menu-assignment', icon: IoMenu, label: 'Menu Assignment' },
-    { path: '/notifications', icon: IoNotificationsOutline, label: 'Notifications' },
-    { path: '/users', icon: IoPeopleOutline, label: 'Users' },
-    { path: '/roles', icon: IoShieldCheckmarkOutline, label: 'Roles & Permissions' },
-    { path: '/profile', icon: IoPersonOutline, label: 'My Profile' },
-    { path: '/emails', icon: IoMailOutline, label: 'Email Templates' },
-    { path: '/snippets', icon: IoCodeSlashOutline, label: 'Code Snippets' },
-    { path: '/popups', icon: IoMegaphoneOutline, label: 'Popup Builder' },
-    { path: '/import-export', icon: IoCloudUploadOutline, label: 'Import/Export' },
-    { path: '/media-library', icon: IoFolderOutline, label: 'Media Library' },
-    { path: '/images', icon: IoImagesOutline, label: 'Image Manager' },
-    { path: '/images/regenerate', icon: IoRefresh, label: 'Regenerate Images' },
-    { path: '/settings', icon: IoSettingsOutline, label: 'Settings' },
-  ];
+  const toggleGroup = (label) => {
+    setOpenGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  };
 
   return (
     <aside
@@ -101,16 +175,16 @@ const Sidebar = () => {
       {/* Logo */}
       <div className="h-16 flex items-center justify-center border-b-2 border-gray-200 bg-white px-2">
         {logoError ? (
-          <h1 className={classNames('font-bold text-white transition-all', {
+          <h1 className={classNames('font-bold text-gray-900 transition-all', {
             'text-xl': sidebarOpen,
             'text-sm': !sidebarOpen,
           })}>
-            {sidebarOpen ? 'E-Commerce Admin' : 'EA'}
+            {sidebarOpen ? 'PESA Admin' : 'PA'}
           </h1>
         ) : (
-          <img 
-            src={pesashopLogo} 
-            alt="PESASHOP" 
+          <img
+            src={pesashopLogo}
+            alt="PESASHOP"
             className={classNames('object-contain transition-all', {
               'h-12 w-auto': sidebarOpen,
               'h-10 w-auto': !sidebarOpen,
@@ -121,29 +195,57 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="p-4 overflow-y-auto h-[calc(100vh-4rem)]">
-        <ul className="space-y-2">
-          {menuItems.map((item) => (
-            <li key={item.path}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) =>
-                  classNames(
-                    'flex items-center gap-3 px-4 py-3 transition-colors',
-                    {
-                      'bg-primary text-white': isActive,
-                      'text-gray-700 hover:bg-gray-100': !isActive,
-                      'justify-center': !sidebarOpen,
-                    }
-                  )
-                }
-              >
-                <item.icon size={20} className="flex-shrink-0" />
-                {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+      <nav className="overflow-y-auto h-[calc(100vh-4rem)]">
+        {menuGroups.map((group) => {
+          const isOpen = openGroups.has(group.label);
+          return (
+            <div key={group.label}>
+              {/* Group header — only shown when sidebar is expanded */}
+              {sidebarOpen ? (
+                <button
+                  onClick={() => toggleGroup(group.label)}
+                  className="w-full flex items-center justify-between px-4 py-2 mt-2 text-left"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{group.label}</span>
+                  {isOpen
+                    ? <IoChevronDownOutline size={12} className="text-gray-400" />
+                    : <IoChevronForwardOutline size={12} className="text-gray-400" />}
+                </button>
+              ) : (
+                <div className="border-t border-gray-100 mt-1" />
+              )}
+
+              {/* Group items */}
+              {(isOpen || !sidebarOpen) && (
+                <ul className={sidebarOpen ? 'pb-1' : 'py-1'}>
+                  {group.items.map((item) => (
+                    <li key={item.path}>
+                      <NavLink
+                        to={item.path}
+                        end={item.exact}
+                        className={({ isActive }) =>
+                          classNames(
+                            'flex items-center gap-3 px-4 py-2.5 transition-colors text-sm',
+                            {
+                              'bg-primary text-white': isActive,
+                              'text-gray-700 hover:bg-gray-100': !isActive,
+                              'justify-center': !sidebarOpen,
+                            }
+                          )
+                        }
+                        title={!sidebarOpen ? item.label : undefined}
+                      >
+                        <item.icon size={19} className="flex-shrink-0" />
+                        {sidebarOpen && <span className="font-medium leading-none">{item.label}</span>}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+        <div className="h-8" />
       </nav>
     </aside>
   );
