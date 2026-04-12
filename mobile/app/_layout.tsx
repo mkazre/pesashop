@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { View, Animated, StyleSheet, Dimensions } from "react-native";
 import { Image } from "expo-image";
 import { Stack } from "expo-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import Toast from "react-native-toast-message";
@@ -20,6 +21,10 @@ import { CheckoutSuccessOverlay } from "@/components/CheckoutSuccessOverlay";
 const LOGO = require("@/../assets/pesashop-logo.png");
 
 SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1, staleTime: 30000 } },
+});
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -115,15 +120,15 @@ export default function RootLayout() {
   // Show onboarding if not yet completed
   if (showOnboarding === true) {
     return (
-      <>
+      <QueryClientProvider client={queryClient}>
         <StatusBar style="light" />
         <OnboardingScreen onComplete={() => setShowOnboarding(false)} />
-      </>
+      </QueryClientProvider>
     );
   }
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -232,6 +237,18 @@ export default function RootLayout() {
           name="account/buy-gift-card"
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="account/demographics"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/recurring-orders"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/my-offers"
+          options={{ headerShown: false }}
+        />
       </Stack>
       <CartSidebar />
       <CheckoutDrawer />
@@ -241,6 +258,6 @@ export default function RootLayout() {
       <CartSuccessOverlay />
       <CheckoutSuccessOverlay />
       <Toast />
-    </>
+    </QueryClientProvider>
   );
 }
