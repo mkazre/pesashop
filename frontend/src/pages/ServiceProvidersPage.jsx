@@ -11,10 +11,6 @@ const MODES = [
   { value: 'maintain', label: 'Maintain', icon: '🔧', desc: 'Regular upkeep and servicing' },
 ];
 
-const PROVINCES = [
-  'Gauteng', 'Western Cape', 'KwaZulu-Natal', 'Eastern Cape',
-  'Limpopo', 'Mpumalanga', 'Free State', 'Northern Cape', 'North West',
-];
 
 export default function ServiceProvidersPage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -314,11 +310,8 @@ function ServiceRequestForm({ serviceTypes, user, isAuthenticated, onClose }) {
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Suburb" />
                   <input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="City" />
-                  <select value={form.province} onChange={e => setForm(f => ({ ...f, province: e.target.value }))}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-                    <option value="">Province</option>
-                    {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                  <input value={form.province} onChange={e => setForm(f => ({ ...f, province: e.target.value }))}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Province / Region" />
                 </div>
               </div>
 
@@ -476,11 +469,8 @@ function ProviderApplicationForm({ serviceTypes, onClose }) {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Province *</label>
-                  <select required value={form.province} onChange={e => setForm(f => ({ ...f, province: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-                    <option value="">Select province</option>
-                    {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                  <input required value={form.province} onChange={e => setForm(f => ({ ...f, province: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Gauteng, Western Cape" />
                 </div>
               </div>
 

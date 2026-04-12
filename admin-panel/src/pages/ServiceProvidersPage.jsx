@@ -26,11 +26,6 @@ const SUB_STYLES = {
   pending_payment: { badge: 'badge-warning', label: 'Pending Payment' }
 };
 
-const PROVINCES = [
-  'Gauteng', 'Western Cape', 'KwaZulu-Natal', 'Eastern Cape',
-  'Limpopo', 'Mpumalanga', 'Free State', 'Northern Cape', 'North West',
-];
-
 const EMPTY_PROVIDER = {
   businessName: '', contactName: '', email: '', phone: '', website: '', bio: '',
   categoryId: '', province: '', city: '', password: '',
@@ -191,12 +186,9 @@ const ServiceProvidersPage = () => {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Province</label>
-                <select value={createForm.province}
+                <input value={createForm.province}
                   onChange={e => setCreateForm(f => ({ ...f, province: e.target.value }))}
-                  className="select select-bordered select-sm w-full">
-                  <option value="">Select province</option>
-                  {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+                  className="input input-bordered input-sm w-full" placeholder="e.g. Gauteng, Western Cape" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">City</label>

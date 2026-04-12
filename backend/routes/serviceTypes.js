@@ -8,20 +8,37 @@ const Category = require('../models/Category');
 //  PUBLIC
 // ═══════════════════════════════════════════════════════════
 
-// GET /api/service-types — all active service types (public)
+// GET /api/service-types — active service types (public)
+// Query params:
+//   categoryIds — comma-separated list of the product's category IDs
+//                  When provided: returns 'all_products' types PLUS
+//                  'linked_categories_only' types whose linkedCategories overlap.
+//                  Without: returns all active types.
 router.get('/', async (req, res) => {
   try {
-    const { categoryId } = req.query;
+    const { categoryIds } = req.query;
     const filter = { isActive: true };
 
-    // Filter by linked category (used by widget on product page)
-    if (categoryId) {
-      filter.linkedCategories = categoryId;
+    let types;
+    if (categoryIds) {
+      const ids = categoryIds.split(',').filter(Boolean);
+      // Return types that show on all products OR are linked to one of the provided categories
+      types = await ServiceType.find({
+        isActive: true,
+        $or: [
+          { filterBehavior: 'all_products' },
+          { filterBehavior: 'linked_categories_only', linkedCategories: { $in: ids } },
+          // Legacy: linkedCategories empty = treat as all_products
+          { filterBehavior: 'linked_categories_only', linkedCategories: { $size: 0 } },
+        ],
+      })
+        .populate('linkedCategories', 'name slug')
+        .sort({ displayOrder: 1, createdAt: -1 });
+    } else {
+      types = await ServiceType.find(filter)
+        .populate('linkedCategories', 'name slug')
+        .sort({ displayOrder: 1, createdAt: -1 });
     }
-
-    const types = await ServiceType.find(filter)
-      .populate('linkedCategories', 'name slug')
-      .sort({ displayOrder: 1, createdAt: -1 });
 
     res.json({ success: true, data: types });
   } catch (err) {

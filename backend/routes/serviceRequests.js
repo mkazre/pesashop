@@ -97,13 +97,30 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/service-requests/mine — logged-in customer's requests
+// GET /api/service-requests/mine — logged-in customer's requests only
 router.get('/mine', protect, async (req, res) => {
   try {
-    const requests = await ServiceRequest.find({ customer: req.user.id })
+    const user = req.user;
+    // Find by customer ID (linked requests) OR by email (guest/unlinked submissions)
+    const requests = await ServiceRequest.find({
+      $or: [
+        { customer: user.id },
+        { email: user.email, customer: null },
+      ],
+    })
       .populate('serviceType', 'title icon')
       .populate('assignedProvider', 'businessName contactName phone')
       .sort({ createdAt: -1 });
+
+    // Backfill customer link on any unlinked requests found by email
+    const unlinked = requests.filter(r => !r.customer);
+    if (unlinked.length > 0) {
+      await ServiceRequest.updateMany(
+        { _id: { $in: unlinked.map(r => r._id) } },
+        { $set: { customer: user.id } }
+      );
+    }
+
     res.json({ success: true, data: requests });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
@@ -155,6 +172,12 @@ router.get('/:id', protect, authorize('admin', 'shop_manager', 'superadmin', 'su
 router.put('/:id', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
   try {
     const { status, assignedProvider, adminNotes, scheduledDate } = req.body;
+
+    // Fetch old request to detect changes
+    const old = await ServiceRequest.findById(req.params.id)
+      .populate('assignedProvider', 'businessName contactName email phone')
+      .populate('serviceType', 'title');
+
     const update = {};
     if (status) update.status = status;
     if (assignedProvider !== undefined) update.assignedProvider = assignedProvider || null;
@@ -165,10 +188,74 @@ router.put('/:id', protect, authorize('admin', 'shop_manager', 'superadmin', 'su
     const request = await ServiceRequest.findByIdAndUpdate(req.params.id, update, { new: true })
       .populate('serviceType', 'title icon')
       .populate('customer', 'firstName lastName email')
-      .populate('assignedProvider', 'businessName contactName phone');
+      .populate('assignedProvider', 'businessName contactName phone email');
 
     if (!request) return res.status(404).json({ success: false, message: 'Not found' });
+
+    // ── Email triggers ────────────────────────────────────
+    const vars = {
+      customerName: `${request.firstName} ${request.lastName}`,
+      serviceType: request.serviceType?.title || '',
+      providerName: request.assignedProvider?.businessName || '',
+      providerContact: request.assignedProvider?.contactName || '',
+      providerPhone: request.assignedProvider?.phone || '',
+      scheduledDate: scheduledDate ? new Date(scheduledDate).toLocaleDateString('en-ZA') : '',
+      adminNotes: adminNotes || '',
+      productName: request.productName || '',
+    };
+
+    // Notify provider when newly assigned
+    const providerChanged = assignedProvider && old?.assignedProvider?.toString() !== assignedProvider;
+    if (providerChanged && request.assignedProvider?.email) {
+      try {
+        await emailService.sendTemplatedEmail('service_request_assigned_to_provider', request.assignedProvider.email, {
+          ...vars,
+          requestId: request._id,
+          customerEmail: request.email,
+          customerPhone: request.phone,
+          address: [request.address, request.suburb, request.city, request.province].filter(Boolean).join(', '),
+          description: request.description,
+        });
+      } catch (e) { console.error('Provider assignment email error:', e.message); }
+    }
+
+    // Notify customer of status change
+    if (status && status !== old?.status && request.email) {
+      const customerTemplateMap = {
+        assigned: 'service_request_provider_assigned',
+        scheduled: 'service_request_scheduled',
+        completed: 'service_request_completed',
+        cancelled: 'service_request_cancelled',
+      };
+      const tmpl = customerTemplateMap[status];
+      if (tmpl) {
+        try {
+          await emailService.sendTemplatedEmail(tmpl, request.email, vars);
+        } catch (e) { console.error('Status change email error:', e.message); }
+      }
+    }
+    // ─────────────────────────────────────────────────────
+
     res.json({ success: true, data: request });
+  } catch (err) {
+    console.error('ServiceRequest update error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// GET /api/service-requests/my-jobs — service provider sees jobs assigned to them
+// Uses ServiceProvider auth (provider logs in with their own credentials)
+router.get('/my-jobs', protect, async (req, res) => {
+  try {
+    // The provider's user account is linked via email or a ServiceProvider record
+    const ServiceProvider = require('../models/ServiceProvider');
+    const provider = await ServiceProvider.findOne({ email: req.user.email });
+    if (!provider) return res.status(403).json({ success: false, message: 'No service provider account found for this user' });
+
+    const requests = await ServiceRequest.find({ assignedProvider: provider._id })
+      .populate('serviceType', 'title icon')
+      .sort({ createdAt: -1 });
+    res.json({ success: true, data: requests });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
   }

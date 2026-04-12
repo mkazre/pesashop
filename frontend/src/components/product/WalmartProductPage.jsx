@@ -1212,6 +1212,9 @@ export default function WalmartProductPage({ product, settings }) {
               {/* Recurring Purchase Widget — only shown when layby plan is NOT selected (mutually exclusive) */}
               {!laybyeSelection && <RecurringWidget product={product} onRecurringChange={setRecurringActive} />}
 
+              {/* Service Request Widget — directly below recurring */}
+              <ServiceRequestWidget product={product} />
+
               {/* Delivery Options */}
               {fb.showDeliveryOptions && fb.deliveryOptions?.length > 0 && (
                 <div style={{ margin: '14px 0', borderTop: '1px solid var(--wp-border)', paddingTop: 14 }}>
@@ -1280,9 +1283,6 @@ export default function WalmartProductPage({ product, settings }) {
 
               {/* Special Offers — collapsible toggle */}
               <OfferSlot page="product_detail" />
-
-              {/* Book a Service Professional */}
-              <ServiceRequestWidget product={product} />
 
               {/* Trust Badges */}
               {fb.showTrustBadges && fb.trustBadges?.length > 0 && (

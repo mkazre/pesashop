@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import { Link } from 'react-router-dom';
 import { serviceTypesAPI, serviceRequestsAPI } from '@/services/api';
@@ -20,9 +20,15 @@ export default function ServiceRequestWidget({ product }) {
   const [description, setDescription] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  // Build comma-separated category IDs from the product
+  const categoryIds = useMemo(() => {
+    const cats = product?.categories || [];
+    return cats.map(c => (typeof c === 'object' ? c._id : c)).filter(Boolean).join(',');
+  }, [product]);
+
   const { data, isLoading } = useQuery(
-    'service-types-widget',
-    () => serviceTypesAPI.getAll().then(r => r.data.data || []),
+    ['service-types-widget', categoryIds],
+    () => serviceTypesAPI.getAll({ categoryIds: categoryIds || undefined }).then(r => r.data.data || []),
     { staleTime: 5 * 60 * 1000 }
   );
   const serviceTypes = data || [];

@@ -16,6 +16,7 @@ const SettingsPage = () => {
   const [showGoogleSecret, setShowGoogleSecret] = useState(false);
   const [showFacebookSecret, setShowFacebookSecret] = useState(false);
   const [bankDetails, setBankDetails] = useState([]);
+  const [servicePageHero, setServicePageHero] = useState({ imageUrl: '', title: 'Professional Services', subtitle: 'Book trusted professionals for repairs, installations & maintenance' });
   const [testEmailAddress, setTestEmailAddress] = useState('');
   const [testingEmail, setTestingEmail] = useState(false);
   const [verifyingEmail, setVerifyingEmail] = useState(false);
@@ -208,6 +209,13 @@ const SettingsPage = () => {
         });
         setBankDetails(settings.bankDetails || []);
         setBrevoKeyConfigured(settings.brevoApiKey === '***configured***');
+        if (settings.servicePageHero) {
+          setServicePageHero({
+            imageUrl: settings.servicePageHero.imageUrl || '',
+            title: settings.servicePageHero.title || 'Professional Services',
+            subtitle: settings.servicePageHero.subtitle || 'Book trusted professionals for repairs, installations & maintenance',
+          });
+        }
       }
     }
   );
@@ -302,6 +310,7 @@ const SettingsPage = () => {
       showStockQuantities: data.showStockQuantities || false,
       allowBackorders: data.allowBackorders || false,
       bankDetails: bankDetails.filter(b => b.bankName || b.accountNumber),
+      servicePageHero,
       layby: {
         enabled: data.laybyEnabled || false,
         globalMinimumProductValue: parseFloat(data.laybyGlobalMinimumProductValue) || 0,
@@ -916,6 +925,44 @@ const SettingsPage = () => {
                   </select>
                 </div>
               </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Service Page Hero */}
+        <Card title="Service Page Hero">
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">Configure the hero banner that appears at the top of the /service-providers page.</p>
+            <div>
+              <label className="block text-sm font-medium mb-1">Hero Image URL</label>
+              <Input
+                value={servicePageHero.imageUrl}
+                onChange={e => setServicePageHero(h => ({ ...h, imageUrl: e.target.value }))}
+                placeholder="https://..."
+                fullWidth
+              />
+              {servicePageHero.imageUrl && (
+                <img src={servicePageHero.imageUrl} alt="Hero preview" className="mt-2 h-32 w-full object-cover rounded-lg border border-gray-200" />
+              )}
+              <p className="text-xs text-gray-500 mt-1">Paste a direct image URL. Recommended: 1920×600px or wider.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Hero Title</label>
+              <Input
+                value={servicePageHero.title}
+                onChange={e => setServicePageHero(h => ({ ...h, title: e.target.value }))}
+                placeholder="Professional Services"
+                fullWidth
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Hero Subtitle</label>
+              <Input
+                value={servicePageHero.subtitle}
+                onChange={e => setServicePageHero(h => ({ ...h, subtitle: e.target.value }))}
+                placeholder="Book trusted professionals for repairs, installations & maintenance"
+                fullWidth
+              />
             </div>
           </div>
         </Card>

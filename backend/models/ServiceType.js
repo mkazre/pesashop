@@ -38,6 +38,14 @@ const serviceTypeSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
   }],
+  // Controls where this service type appears
+  // 'all_products' — show on every product regardless of category
+  // 'linked_categories_only' — only show when product belongs to a linked category
+  filterBehavior: {
+    type: String,
+    enum: ['all_products', 'linked_categories_only'],
+    default: 'linked_categories_only',
+  },
   isActive: {
     type: Boolean,
     default: true,

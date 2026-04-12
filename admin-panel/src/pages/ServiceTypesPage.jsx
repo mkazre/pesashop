@@ -14,6 +14,7 @@ const EMPTY = {
   serviceModes: ['repair', 'install', 'maintain'],
   areasServiced: [],
   linkedCategories: [],
+  filterBehavior: 'linked_categories_only',
   isActive: true, displayOrder: 0,
 };
 
@@ -220,11 +221,44 @@ export default function ServiceTypesPage() {
               )}
             </div>
 
+            {/* Visibility / Filter Behavior */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Where to show this service</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="filterBehavior"
+                    value="all_products"
+                    checked={form.filterBehavior === 'all_products'}
+                    onChange={() => setForm(f => ({ ...f, filterBehavior: 'all_products' }))}
+                    className="rounded"
+                  />
+                  <span className="text-sm text-gray-700">All products & categories</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="filterBehavior"
+                    value="linked_categories_only"
+                    checked={form.filterBehavior === 'linked_categories_only'}
+                    onChange={() => setForm(f => ({ ...f, filterBehavior: 'linked_categories_only' }))}
+                    className="rounded"
+                  />
+                  <span className="text-sm text-gray-700">Only in selected categories below</span>
+                </label>
+              </div>
+            </div>
+
             {/* Linked Categories */}
             {categories.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Linked Product Categories</label>
-                <p className="text-xs text-gray-500 mb-2">These categories trigger the service widget on product pages</p>
+                <p className="text-xs text-gray-500 mb-2">
+                  {form.filterBehavior === 'all_products'
+                    ? 'Categories are ignored when "All products" is selected above'
+                    : 'Service widget shows only on products in these categories'}
+                </p>
                 <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3 grid grid-cols-2 md:grid-cols-3 gap-2">
                   {categories.map(c => (
                     <label key={c._id} className="flex items-center gap-2 cursor-pointer">
