@@ -73,6 +73,7 @@ import ServiceProviderPlansPage from './pages/ServiceProviderPlansPage';
 import ServiceProviderAdSlotsPage from './pages/ServiceProviderAdSlotsPage';
 import ServiceTypesPage from './pages/ServiceTypesPage';
 import ServiceRequestsPage from './pages/ServiceRequestsPage';
+import ImportBatchesPage from './pages/ImportBatchesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -181,6 +182,7 @@ function App() {
             <Route path="service-providers/ad-slots" element={<ServiceProviderAdSlotsPage />} />
             <Route path="service-types" element={<ServiceTypesPage />} />
             <Route path="service-requests" element={<ServiceRequestsPage />} />
+            <Route path="import-batches" element={<ImportBatchesPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

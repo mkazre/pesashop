@@ -34,18 +34,18 @@ export default function ServiceRequestsPage() {
 
   const { data, isLoading } = useQuery(
     ['admin-service-requests', statusFilter],
-    () => api.get('/api/service-requests', { params: { status: statusFilter || undefined, limit: 50 } }).then(r => r.data)
+    () => api.get('/service-requests', { params: { status: statusFilter || undefined, limit: 50 } }).then(r => r.data)
   );
 
   const requests = data?.data || [];
 
   const { data: providersData } = useQuery('sp-list-active', () =>
-    api.get('/api/service-providers', { params: { status: 'approved', limit: 100 } }).then(r => r.data.data || [])
+    api.get('/service-providers', { params: { status: 'approved', limit: 100 } }).then(r => r.data.data || [])
   );
   const providers = providersData || [];
 
   const updateMutation = useMutation(
-    ({ id, payload }) => api.put(`/api/service-requests/${id}`, payload),
+    ({ id, payload }) => api.put(`/service-requests/${id}`, payload),
     {
       onSuccess: (res) => {
         qc.invalidateQueries('admin-service-requests');
@@ -57,7 +57,7 @@ export default function ServiceRequestsPage() {
   );
 
   const deleteMutation = useMutation(
-    (id) => api.delete(`/api/service-requests/${id}`),
+    (id) => api.delete(`/service-requests/${id}`),
     {
       onSuccess: () => { qc.invalidateQueries('admin-service-requests'); setSelected(null); toast.success('Deleted'); },
     }

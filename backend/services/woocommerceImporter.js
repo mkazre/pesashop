@@ -8,6 +8,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const User = require('../models/User');
 const Order = require('../models/Order');
+const ImportBatch = require('../models/ImportBatch');
 const slugify = require('slugify');
 const imageProcessor = require('./imageProcessor');
 const fsPromises = fs.promises;
@@ -902,6 +903,18 @@ class WooCommerceImporter extends EventEmitter {
     const jobId = `import-${type}-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
     this._createJob(jobId, type);
 
+    // Create a persistent batch record immediately
+    const batchData = {
+      jobId,
+      type,
+      originalFilename: options.originalFilename || path.basename(filePath),
+      importMode: options.importMode || 'add',
+      status: 'running',
+      importedBy: options.importedBy || null,
+      startedAt: new Date(),
+    };
+    ImportBatch.create(batchData).catch(err => console.error('[ImportBatch] Failed to create batch record:', err.message));
+
     // Run in background — DO NOT await
     (async () => {
       try {
@@ -960,12 +973,54 @@ class WooCommerceImporter extends EventEmitter {
         }
         this._completeJob(jobId);
 
+        // Persist batch results to DB (including product IDs for rollback)
+        try {
+          const createdIds = (results.created || [])
+            .map(r => r.id)
+            .filter(Boolean);
+
+          // Derive category names from imported products (sample first 100)
+          let categoryNames = [];
+          if (type === 'products' && createdIds.length > 0) {
+            const sample = await Product.find({ _id: { $in: createdIds.slice(0, 100) } })
+              .select('categories')
+              .populate('categories', 'name');
+            const catSet = new Set();
+            sample.forEach(p => (p.categories || []).forEach(c => catSet.add(c.name || c)));
+            categoryNames = [...catSet];
+          }
+
+          await ImportBatch.findOneAndUpdate(
+            { jobId },
+            {
+              status: 'completed',
+              completedAt: new Date(),
+              results: {
+                created: results.created?.length || 0,
+                updated: results.updated?.length || 0,
+                merged:  results.merged?.length || 0,
+                skipped: results.skipped?.length || 0,
+                errors:  results.errors?.length || 0,
+              },
+              createdProductIds: type === 'products' ? createdIds : [],
+              categories: categoryNames,
+            }
+          );
+        } catch (dbErr) {
+          console.error('[ImportBatch] Failed to update batch record:', dbErr.message);
+        }
+
         // Clean up temp file
         try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (_) {}
 
       } catch (error) {
         console.error(`[Import] Job ${jobId} failed:`, error);
         this._failJob(jobId, error);
+
+        // Mark batch as failed
+        ImportBatch.findOneAndUpdate({ jobId }, { status: 'failed', errorMessage: error.message, completedAt: new Date() })
+          .catch(() => {});
+
         try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (_) {}
       }
     })();

@@ -25,18 +25,18 @@ export default function ServiceTypesPage() {
   const [areaInput, setAreaInput] = useState('');
 
   const { data, isLoading } = useQuery('admin-service-types', () =>
-    api.get('/api/service-types/admin/all').then(r => r.data.data)
+    api.get('/service-types/admin/all').then(r => r.data.data)
   );
 
   const { data: catData } = useQuery('categories-list', () =>
-    api.get('/api/categories?limit=200').then(r => r.data.categories || r.data.data || [])
+    api.get('/categories?limit=200').then(r => r.data.categories || r.data.data || [])
   );
   const categories = catData || [];
 
   const saveMutation = useMutation(
     (d) => editing
-      ? api.put(`/api/service-types/${editing._id}`, d)
-      : api.post('/api/service-types', d),
+      ? api.put(`/service-types/${editing._id}`, d)
+      : api.post('/service-types', d),
     {
       onSuccess: () => {
         qc.invalidateQueries('admin-service-types');
@@ -48,7 +48,7 @@ export default function ServiceTypesPage() {
   );
 
   const deleteMutation = useMutation(
-    (id) => api.delete(`/api/service-types/${id}`),
+    (id) => api.delete(`/service-types/${id}`),
     {
       onSuccess: () => { qc.invalidateQueries('admin-service-types'); toast.success('Deleted'); },
     }

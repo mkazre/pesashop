@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { serviceProvidersAPI } from '@/services/api';
+import api, { serviceProvidersAPI } from '@/services/api';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import toast from '@/utils/toast';
@@ -26,10 +26,44 @@ const SUB_STYLES = {
   pending_payment: { badge: 'badge-warning', label: 'Pending Payment' }
 };
 
+const PROVINCES = [
+  'Gauteng', 'Western Cape', 'KwaZulu-Natal', 'Eastern Cape',
+  'Limpopo', 'Mpumalanga', 'Free State', 'Northern Cape', 'North West',
+];
+
+const EMPTY_PROVIDER = {
+  businessName: '', contactName: '', email: '', phone: '', website: '', bio: '',
+  categoryId: '', province: '', city: '', password: '',
+  serviceModes: [], serviceAreas: [],
+};
+
 const ServiceProvidersPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({ status: '', search: '', page: 1, limit: 20 });
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState(EMPTY_PROVIDER);
+  const [areaInput, setAreaInput] = useState('');
+
+  const createMutation = useMutation(
+    (data) => {
+      const fd = new FormData();
+      Object.entries(data).forEach(([k, v]) => {
+        if (Array.isArray(v)) v.forEach(val => fd.append(k, val));
+        else fd.append(k, v);
+      });
+      return api.post('/service-providers/apply', fd);
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('service-providers');
+        toast.success('Provider created successfully');
+        setShowCreate(false);
+        setCreateForm(EMPTY_PROVIDER);
+      },
+      onError: (e) => toast.error(e.response?.data?.message || 'Failed to create provider'),
+    }
+  );
 
   const { data: catsData } = useQuery('sp-categories', () => serviceProvidersAPI.getCategories(), { staleTime: 60000 });
   const categories = catsData?.data?.data || [];
@@ -89,7 +123,10 @@ const ServiceProvidersPage = () => {
           <h1 className="text-2xl font-bold text-gray-800">Service Providers</h1>
           <p className="text-sm text-gray-500">Manage electricians, plumbers, and other service providers on the platform</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>
+            <IoAdd size={16} className="mr-1" /> Add Provider
+          </button>
           <button className="btn btn-outline btn-sm" onClick={() => navigate('/service-providers/categories')}>
             <IoOptions size={16} className="mr-2" /> Categories
           </button>
@@ -104,6 +141,156 @@ const ServiceProvidersPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Create Provider Panel */}
+      {showCreate && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-lg font-semibold text-gray-900">Add New Service Provider</h2>
+            <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              createMutation.mutate(createForm);
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Business Name *</label>
+                <input required value={createForm.businessName}
+                  onChange={e => setCreateForm(f => ({ ...f, businessName: e.target.value }))}
+                  className="input input-bordered input-sm w-full" placeholder="e.g. ABC Electrical" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Contact Person *</label>
+                <input required value={createForm.contactName}
+                  onChange={e => setCreateForm(f => ({ ...f, contactName: e.target.value }))}
+                  className="input input-bordered input-sm w-full" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Email *</label>
+                <input required type="email" value={createForm.email}
+                  onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
+                  className="input input-bordered input-sm w-full" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Phone *</label>
+                <input required type="tel" value={createForm.phone}
+                  onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))}
+                  className="input input-bordered input-sm w-full" placeholder="0821234567" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Service Category</label>
+                <select value={createForm.categoryId}
+                  onChange={e => setCreateForm(f => ({ ...f, categoryId: e.target.value }))}
+                  className="select select-bordered select-sm w-full">
+                  <option value="">— Select category —</option>
+                  {categories.map(c => <option key={c._id} value={c._id}>{c.icon} {c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Website</label>
+                <input type="url" value={createForm.website}
+                  onChange={e => setCreateForm(f => ({ ...f, website: e.target.value }))}
+                  className="input input-bordered input-sm w-full" placeholder="https://" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Province</label>
+                <select value={createForm.province}
+                  onChange={e => setCreateForm(f => ({ ...f, province: e.target.value }))}
+                  className="select select-bordered select-sm w-full">
+                  <option value="">Select province</option>
+                  {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">City</label>
+                <input value={createForm.city}
+                  onChange={e => setCreateForm(f => ({ ...f, city: e.target.value }))}
+                  className="input input-bordered input-sm w-full" />
+              </div>
+            </div>
+
+            {/* Service Modes */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Services Offered</label>
+              <div className="flex gap-4">
+                {['repair', 'install', 'maintain'].map(m => (
+                  <label key={m} className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox"
+                      checked={createForm.serviceModes.includes(m)}
+                      onChange={() => setCreateForm(f => ({
+                        ...f,
+                        serviceModes: f.serviceModes.includes(m)
+                          ? f.serviceModes.filter(x => x !== m)
+                          : [...f.serviceModes, m]
+                      }))}
+                      className="checkbox checkbox-xs checkbox-primary" />
+                    <span className="text-sm capitalize">{m}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Service Areas */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Service Areas</label>
+              <div className="flex gap-2 mb-2">
+                <input value={areaInput} onChange={e => setAreaInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const v = areaInput.trim();
+                      if (v && !createForm.serviceAreas.includes(v)) {
+                        setCreateForm(f => ({ ...f, serviceAreas: [...f.serviceAreas, v] }));
+                      }
+                      setAreaInput('');
+                    }
+                  }}
+                  className="input input-bordered input-sm flex-1" placeholder="Type area and press Enter" />
+              </div>
+              {createForm.serviceAreas.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {createForm.serviceAreas.map(a => (
+                    <span key={a} className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs border border-blue-200">
+                      {a}
+                      <button type="button" onClick={() => setCreateForm(f => ({ ...f, serviceAreas: f.serviceAreas.filter(x => x !== a) }))} className="text-blue-400 hover:text-blue-600">×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Bio */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">About / Bio</label>
+              <textarea value={createForm.bio}
+                onChange={e => setCreateForm(f => ({ ...f, bio: e.target.value }))}
+                rows={2} className="textarea textarea-bordered textarea-sm w-full resize-none"
+                placeholder="Brief description of services and experience" />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Temporary Password *</label>
+              <input required type="password" minLength={6} value={createForm.password}
+                onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))}
+                className="input input-bordered input-sm w-full" placeholder="Min. 6 characters" />
+              <p className="text-xs text-gray-400 mt-1">Provider can change this after logging in</p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button type="submit" disabled={createMutation.isLoading}
+                className="btn btn-primary btn-sm">
+                {createMutation.isLoading ? 'Creating...' : 'Create Provider'}
+              </button>
+              <button type="button" onClick={() => setShowCreate(false)} className="btn btn-ghost btn-sm">Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-4">

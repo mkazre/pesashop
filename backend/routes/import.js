@@ -67,7 +67,11 @@ router.post('/products', protect, authorize('admin'), upload.single('file'), asy
       imageProcessingType: processImages === 'true' ? imageProcessingType : undefined,
       duplicateResolution: resolutionMap,
       updateExisting: updateExisting === 'true' || replaceAll === 'true',
-      stripHtml: stripHtml === 'true'
+      stripHtml: stripHtml === 'true',
+      // Batch tracking metadata
+      originalFilename: req.file.originalname || req.file.filename,
+      importMode: replaceAll === 'true' ? 'replace' : (updateExisting === 'true' ? 'update' : 'add'),
+      importedBy: req.user?._id || null,
     };
 
     if (useJob === 'true') {

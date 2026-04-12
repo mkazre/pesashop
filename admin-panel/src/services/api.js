@@ -612,6 +612,16 @@ export const demographicsAPI = {
   recompute: (userId) => api.post(`/demographics/admin/recompute/${userId}`),
 };
 
+// ─── Import Batches API ─────────────────────────────────────────────
+export const importBatchesAPI = {
+  getAll:   (params) => api.get('/import-batches', { params }),
+  getOne:   (id) => api.get(`/import-batches/${id}`),
+  rollback: (id) => api.delete(`/import-batches/${id}/rollback`),
+  setDraft: (id) => api.put(`/import-batches/${id}/draft`),
+  publish:  (id) => api.put(`/import-batches/${id}/publish`),
+  delete:   (id) => api.delete(`/import-batches/${id}`),
+};
+
 // ─── Service Providers API ─────────────────────────────────────────
 // ─── Service Types & Requests API ─────────────────────────────────
 export const serviceTypesAdminAPI = {

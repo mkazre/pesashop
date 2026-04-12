@@ -1208,6 +1208,9 @@ export default function WalmartProductPage({ product, settings }) {
                 <InlineLaybyePlans product={product} settings={settings} onLaybyeSelect={setLaybyeSelection} />
               )}
 
+              {/* Recurring Purchase Widget — sits directly below Layby, above delivery */}
+              <RecurringWidget product={product} />
+
               {/* Delivery Options */}
               {fb.showDeliveryOptions && fb.deliveryOptions?.length > 0 && (
                 <div style={{ margin: '14px 0', borderTop: '1px solid var(--wp-border)', paddingTop: 14 }}>
@@ -1274,10 +1277,7 @@ export default function WalmartProductPage({ product, settings }) {
                 />
               )}
 
-              {/* Recurring Purchase Widget */}
-              <RecurringWidget product={product} />
-
-              {/* Special Offers — collapsible toggle below recurring */}
+              {/* Special Offers — collapsible toggle */}
               <OfferSlot page="product_detail" />
 
               {/* Book a Service Professional */}

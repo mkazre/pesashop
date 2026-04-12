@@ -28,12 +28,10 @@ export default function ServiceRequestWidget({ product, compact = true }) {
   const [description, setDescription] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  // Get category IDs from product
-  const categoryId = product?.categories?.[0]?._id || product?.categories?.[0] || null;
-
+  // Fetch all active service types (not filtered by category — show everything)
   const { data, isLoading: typesLoading } = useQuery(
-    ['service-types-widget', categoryId],
-    () => serviceTypesAPI.getAll(categoryId ? { categoryId } : {}).then(r => r.data.data || []),
+    'service-types-widget',
+    () => serviceTypesAPI.getAll().then(r => r.data.data || []),
     { staleTime: 5 * 60 * 1000 }
   );
 
