@@ -205,6 +205,13 @@ const settingsSchema = new mongoose.Schema({
     }
   },
 
+  // Service Providers Page Hero
+  servicePageHero: {
+    imageUrl: { type: String, default: '' },
+    title: { type: String, default: 'Professional Services' },
+    subtitle: { type: String, default: 'Book trusted professionals for repairs, installations & maintenance' },
+  },
+
   // Bank Details (for EFT payments)
   bankDetails: [{
     bankName: { type: String, default: '' },

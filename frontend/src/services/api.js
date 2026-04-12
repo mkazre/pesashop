@@ -310,4 +310,15 @@ export const serviceProviderAdsAPI = {
   recordClick: (id) => api.post(`/api/service-provider-ads/${id}/click`),
 };
 
+// Service Types & Requests API (frontend)
+export const serviceTypesAPI = {
+  getAll: (params) => api.get('/api/service-types', { params }),
+  getOne: (id) => api.get(`/api/service-types/${id}`),
+};
+
+export const serviceRequestsAPI = {
+  submit: (data) => api.post('/api/service-requests', data),
+  getMine: () => api.get('/api/service-requests/mine'),
+};
+
 export default api;

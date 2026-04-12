@@ -71,6 +71,8 @@ import ServiceProvidersPage from './pages/ServiceProvidersPage';
 import ServiceProviderCategoriesPage from './pages/ServiceProviderCategoriesPage';
 import ServiceProviderPlansPage from './pages/ServiceProviderPlansPage';
 import ServiceProviderAdSlotsPage from './pages/ServiceProviderAdSlotsPage';
+import ServiceTypesPage from './pages/ServiceTypesPage';
+import ServiceRequestsPage from './pages/ServiceRequestsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -177,6 +179,8 @@ function App() {
             <Route path="service-providers/categories" element={<ServiceProviderCategoriesPage />} />
             <Route path="service-providers/plans" element={<ServiceProviderPlansPage />} />
             <Route path="service-providers/ad-slots" element={<ServiceProviderAdSlotsPage />} />
+            <Route path="service-types" element={<ServiceTypesPage />} />
+            <Route path="service-requests" element={<ServiceRequestsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

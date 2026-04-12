@@ -50,12 +50,12 @@ export default function RecurringWidget({ product }) {
     }
   );
 
-  const handleToggle = () => {
-    if (!isAuthenticated) {
+  const handleToggle = (checked) => {
+    if (checked && !isAuthenticated) {
       openAuthModal('login');
       return;
     }
-    setIsOpen(prev => !prev);
+    setIsOpen(checked ?? (prev => !prev));
     setSubmitted(false);
   };
 
@@ -77,28 +77,43 @@ export default function RecurringWidget({ product }) {
   const totalUpfront = price * quantity * instances;
 
   return (
-    <div className="border-t border-gray-200 pt-4">
-      {/* Toggle button — same style as Layby */}
-      <button
-        type="button"
-        onClick={handleToggle}
-        className="w-full flex items-center justify-between px-4 py-3 border-2 border-dashed border-emerald-300 rounded-lg text-sm font-medium text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🔄</span>
-          <span>Set up Recurring Purchase</span>
+    <div style={{ borderTop: '1px solid #e5eae6', paddingTop: 16, marginTop: 4 }}>
+      {/* Toggle — exact same style as InlineLaybyePlans */}
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+        <div style={{ position: 'relative', marginTop: 2, flexShrink: 0 }}>
+          <input
+            type="checkbox"
+            checked={isOpen}
+            onChange={(e) => handleToggle(e.target.checked !== false)}
+            style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+          />
+          <div style={{
+            width: 40, height: 20, borderRadius: 10,
+            background: isOpen ? '#1b5e35' : '#ccc',
+            transition: 'background 0.2s',
+            position: 'relative',
+          }}>
+            <div style={{
+              width: 16, height: 16, borderRadius: '50%', background: '#fff',
+              position: 'absolute', top: 2, left: isOpen ? 22 : 2,
+              transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            }} />
+          </div>
         </div>
-        <svg
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>🔄</span>
+            <span>Set Up Recurring Purchase</span>
+          </div>
+          <div style={{ fontSize: 12, color: '#76889a', marginTop: 2 }}>
+            Auto-repeat delivery at your chosen interval — manage anytime
+          </div>
+        </div>
+      </label>
 
       {/* Expanded panel */}
       {isOpen && !submitted && (
-        <div className="mt-3 border border-emerald-200 rounded-xl p-5 bg-emerald-50 space-y-4">
+        <div style={{ marginTop: 14, border: '1px solid #bbf7d0', borderRadius: 12, padding: '16px', background: '#f0fdf4' }} className="space-y-4">
           <div>
             <p className="font-semibold text-gray-900 text-sm">Recurring Purchase Setup</p>
             <p className="text-xs text-gray-500 mt-0.5">Get this product delivered automatically at your chosen interval</p>

@@ -613,6 +613,21 @@ export const demographicsAPI = {
 };
 
 // ─── Service Providers API ─────────────────────────────────────────
+// ─── Service Types & Requests API ─────────────────────────────────
+export const serviceTypesAdminAPI = {
+  getAll: () => api.get('/service-types/admin/all'),
+  create: (data) => api.post('/service-types', data),
+  update: (id, data) => api.put(`/service-types/${id}`, data),
+  delete: (id) => api.delete(`/service-types/${id}`),
+};
+
+export const serviceRequestsAdminAPI = {
+  getAll: (params) => api.get('/service-requests', { params }),
+  getOne: (id) => api.get(`/service-requests/${id}`),
+  update: (id, data) => api.put(`/service-requests/${id}`, data),
+  delete: (id) => api.delete(`/service-requests/${id}`),
+};
+
 export const serviceProvidersAPI = {
   // Providers
   getAll: (params) => api.get('/service-providers', { params }),

@@ -151,6 +151,8 @@ const serviceProviderAdRoutes = require('./routes/serviceProviderAds');
 const recurringOrderRoutes = require('./routes/recurringOrders');
 const offersRoutes = require('./routes/offers');
 const demographicsRoutes = require('./routes/demographics');
+const serviceTypesRoutes = require('./routes/serviceTypes');
+const serviceRequestsRoutes = require('./routes/serviceRequests');
 
 // Mount API routes FIRST (before static files)
 app.use('/api/auth', authRoutes);
@@ -201,6 +203,8 @@ app.use('/api/service-provider-ads', serviceProviderAdRoutes);
 app.use('/api/recurring-orders', recurringOrderRoutes);
 app.use('/api/offers', offersRoutes);
 app.use('/api/demographics', demographicsRoutes);
+app.use('/api/service-types', serviceTypesRoutes);
+app.use('/api/service-requests', serviceRequestsRoutes);
 
 // Serve React frontend static files AFTER API routes
 app.use(express.static(path.join(__dirname, '../frontend/dist')));

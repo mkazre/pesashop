@@ -21,6 +21,7 @@ import ProductQA from './ProductQA';
 import RecurringWidget from './RecurringWidget';
 import OfferSlot from '@/components/offers/OfferSlot';
 import ServiceProviderAdSlot from '@/components/ads/ServiceProviderAdSlot';
+import ServiceRequestWidget from '@/components/services/ServiceRequestWidget';
 import toast from '@/utils/toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -1278,6 +1279,9 @@ export default function WalmartProductPage({ product, settings }) {
 
               {/* Special Offers — collapsible toggle below recurring */}
               <OfferSlot page="product_detail" />
+
+              {/* Book a Service Professional */}
+              <ServiceRequestWidget product={product} />
 
               {/* Trust Badges */}
               {fb.showTrustBadges && fb.trustBadges?.length > 0 && (

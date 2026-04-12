@@ -27,6 +27,7 @@ import CategoriesPage from './pages/CategoriesPage';
 import AddressesPage from './pages/account/AddressesPage';
 import RecurringOrdersAccountPage from './pages/account/RecurringOrdersPage';
 import MyOffersPage from './pages/account/MyOffersPage';
+import ServiceProvidersPage from './pages/ServiceProvidersPage';
 import DynamicPage from './pages/DynamicPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import ChatAdmin from './pages/chat/ChatAdmin';
@@ -87,6 +88,7 @@ function App() {
           </Route>
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="categories" element={<CategoriesPage />} />
+          <Route path="service-providers" element={<ServiceProvidersPage />} />
           <Route path="compare" element={<ComparePage />} />
           <Route path="page/:slug" element={<DynamicPage />} />
           {/* Catch-all: try to render as a dynamic page by slug */}
