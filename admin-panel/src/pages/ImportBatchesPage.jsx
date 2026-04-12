@@ -46,7 +46,10 @@ export default function ImportBatchesPage() {
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [expanded, setExpanded] = useState(null);
-  const [confirmAction, setConfirmAction] = useState(null); // { batchId, action }
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [showReconstruct, setShowReconstruct] = useState(false);
+  const [gapMinutes, setGapMinutes] = useState(30);
+  const [reconstructResult, setReconstructResult] = useState(null);
 
   const { data, isLoading, refetch } = useQuery(
     ['import-batches', typeFilter, statusFilter],
@@ -104,6 +107,18 @@ export default function ImportBatchesPage() {
 
   const isWorking = rollbackMutation.isLoading || draftMutation.isLoading || publishMutation.isLoading || deleteMutation.isLoading;
 
+  const reconstructMutation = useMutation(
+    (gap) => api.post('/import-batches/reconstruct', { gapMinutes: gap }),
+    {
+      onSuccess: (res) => {
+        qc.invalidateQueries('import-batches');
+        setReconstructResult(res.data);
+        setShowReconstruct(false);
+      },
+      onError: (e) => toast.error(e.response?.data?.message || 'Reconstruction failed'),
+    }
+  );
+
   const ACTION_LABELS = {
     rollback: { label: 'Roll Back (Delete Products)', color: 'bg-red-600', desc: 'This will permanently DELETE all products created in this batch. This cannot be undone.' },
     draft:    { label: 'Set to Draft', color: 'bg-yellow-600', desc: 'All products from this batch will be set to DRAFT (hidden from your store).' },
@@ -152,10 +167,64 @@ export default function ImportBatchesPage() {
         </div>
       </div>
 
-      {/* Important note about historical batches */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
-        <strong>Note:</strong> Batch tracking started from the moment this feature was deployed. Earlier imports are not tracked here — for those, use Products → Filter by date to find and manage them manually.
-      </div>
+      {/* Reconstruct result banner */}
+      {reconstructResult && (
+        <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-green-800">✅ {reconstructResult.message}</p>
+            <p className="text-xs text-green-600 mt-0.5">Scroll down to see all reconstructed batches — you can now roll back, draft or restore any of them.</p>
+          </div>
+          <button onClick={() => setReconstructResult(null)} className="text-green-400 hover:text-green-600 text-lg ml-4">×</button>
+        </div>
+      )}
+
+      {/* Reconstruct Panel */}
+      {showReconstruct && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+          <h3 className="font-semibold text-blue-900 text-sm mb-1">Reconstruct Past Import Batches</h3>
+          <p className="text-xs text-blue-700 mb-4">
+            Scans all products in your database and groups them into import sessions based on when they were created.
+            Products already tracked in an existing batch are skipped. Any products created within the session gap of each
+            other are treated as part of the same import session.
+          </p>
+          <div className="flex items-end gap-4 flex-wrap">
+            <div>
+              <label className="block text-xs font-semibold text-blue-800 mb-1">Session gap (minutes)</label>
+              <p className="text-xs text-blue-600 mb-2">If two products were created more than this many minutes apart, they're treated as separate import sessions.</p>
+              <div className="flex gap-2">
+                {[15, 30, 60, 120].map(g => (
+                  <button
+                    key={g}
+                    onClick={() => setGapMinutes(g)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                      gapMinutes === g
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50'
+                    }`}
+                  >
+                    {g < 60 ? `${g}m` : `${g / 60}h`}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => reconstructMutation.mutate(gapMinutes)}
+                disabled={reconstructMutation.isLoading}
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors"
+              >
+                {reconstructMutation.isLoading ? '⏳ Scanning...' : '🔍 Scan & Reconstruct'}
+              </button>
+              <button
+                onClick={() => setShowReconstruct(false)}
+                className="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg text-sm hover:bg-blue-100"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirm Modal */}
       {confirmAction && (

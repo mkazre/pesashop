@@ -134,4 +134,101 @@ router.delete('/:id', protect, authorize(...ADMIN), async (req, res) => {
   }
 });
 
+// ── POST /api/import-batches/reconstruct — scan all products, group by time ──
+// Groups products into import sessions based on createdAt clustering.
+// Products already tracked in an existing batch are skipped.
+// Gap threshold: if two consecutive products (sorted by createdAt) were created
+// more than `gapMinutes` apart, they belong to different import sessions.
+router.post('/reconstruct', protect, authorize(...ADMIN), async (req, res) => {
+  try {
+    const gapMinutes = parseInt(req.body.gapMinutes) || 30;
+    const gapMs = gapMinutes * 60 * 1000;
+
+    // Get all product IDs already tracked in a batch so we don't double-count
+    const existingBatches = await ImportBatch.find({ type: 'products' }).select('createdProductIds');
+    const alreadyTracked = new Set(
+      existingBatches.flatMap(b => b.createdProductIds.map(id => id.toString()))
+    );
+
+    // Fetch all products sorted by createdAt (only _id, createdAt, categories)
+    // Use lean() + streaming for memory efficiency on large DBs
+    const allProducts = await Product.find({})
+      .select('_id createdAt categories')
+      .sort({ createdAt: 1 })
+      .lean();
+
+    // Filter out already-tracked products
+    const untracked = allProducts.filter(p => !alreadyTracked.has(p._id.toString()));
+
+    if (untracked.length === 0) {
+      return res.json({ success: true, batchesCreated: 0, message: 'All products are already tracked in existing batches.' });
+    }
+
+    // Cluster into sessions based on time gap
+    const sessions = [];
+    let currentSession = [untracked[0]];
+
+    for (let i = 1; i < untracked.length; i++) {
+      const prev = untracked[i - 1];
+      const curr = untracked[i];
+      const gap = new Date(curr.createdAt) - new Date(prev.createdAt);
+      if (gap > gapMs) {
+        sessions.push(currentSession);
+        currentSession = [curr];
+      } else {
+        currentSession.push(curr);
+      }
+    }
+    sessions.push(currentSession);
+
+    // Create ImportBatch records for each session
+    let batchesCreated = 0;
+    const createdBatches = [];
+
+    for (const session of sessions) {
+      const startedAt = session[0].createdAt;
+      const completedAt = session[session.length - 1].createdAt;
+      const productIds = session.map(p => p._id);
+
+      // Derive category names from a sample of the products
+      const sample = await Product.find({ _id: { $in: productIds.slice(0, 50) } })
+        .select('categories')
+        .populate('categories', 'name')
+        .lean();
+      const catSet = new Set();
+      sample.forEach(p => (p.categories || []).forEach(c => {
+        if (c && c.name) catSet.add(c.name);
+      }));
+
+      const jobId = `reconstructed-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+      const batch = await ImportBatch.create({
+        jobId,
+        type: 'products',
+        originalFilename: `Reconstructed session (${session.length} products)`,
+        importMode: 'add',
+        status: 'completed',
+        results: { created: session.length, updated: 0, merged: 0, skipped: 0, errors: 0 },
+        createdProductIds: productIds,
+        categories: [...catSet],
+        startedAt,
+        completedAt,
+        importedBy: req.user?._id || null,
+      });
+
+      createdBatches.push(batch);
+      batchesCreated++;
+    }
+
+    res.json({
+      success: true,
+      batchesCreated,
+      totalProducts: untracked.length,
+      message: `Found ${batchesCreated} import session${batchesCreated !== 1 ? 's' : ''} covering ${untracked.length.toLocaleString()} products.`,
+    });
+  } catch (err) {
+    console.error('Reconstruct error:', err);
+    res.status(500).json({ success: false, message: 'Reconstruction failed: ' + err.message });
+  }
+});
+
 module.exports = router;
