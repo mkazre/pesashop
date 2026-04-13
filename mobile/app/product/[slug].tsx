@@ -25,6 +25,7 @@ import LaybyeApplicationModal from "@/components/LaybyeApplicationModal";
 import ProductBadges from "@/components/ProductBadges";
 import WriteReview from "@/components/WriteReview";
 import ProductQA from "@/components/ProductQA";
+import OfferSlot from "@/components/OfferSlot";
 import ProductAIAssistant from "@/components/ProductAIAssistant";
 import ProductRecommendations from "@/components/ProductRecommendations";
 import BottomTabBar from "@/components/BottomTabBar";
@@ -639,6 +640,7 @@ export default function ProductDetailScreen() {
                             })
                           )}
 
+                          <OfferSlot page="product_detail" />
                           {/* Write review form */}
                           <WriteReview
                             productId={product._id}

@@ -37,6 +37,18 @@ export default function ServiceRequestsScreen() {
         <Text style={s.title}>My Service Requests</Text>
       </View>
 
+      {/* Quick Actions */}
+      <View style={s.actions}>
+        <Pressable onPress={() => router.push("/service-providers" as any)} style={s.actionBtn}>
+          <Ionicons name="add-circle-outline" size={16} color={colors.white} />
+          <Text style={s.actionBtnText}>Request Service</Text>
+        </Pressable>
+        <Pressable onPress={() => router.push("/service-providers-portal" as any)} style={[s.actionBtn, s.actionBtnOutline]}>
+          <Ionicons name="business-outline" size={16} color={colors.primary} />
+          <Text style={[s.actionBtnText, { color: colors.primary }]}>Provider Portal</Text>
+        </Pressable>
+      </View>
+
       {loading ? (
         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
       ) : (
@@ -99,6 +111,10 @@ const s = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", backgroundColor: colors.white, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
   backBtn: { marginRight: 12 },
   title: { fontSize: 18, fontWeight: "700", color: colors.gray900 },
+  actions: { flexDirection: "row", gap: 10, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: colors.primary, paddingVertical: 10, borderRadius: 0 },
+  actionBtnOutline: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.primary },
+  actionBtnText: { fontSize: 13, fontWeight: "700", color: colors.white },
   content: { padding: 16, paddingBottom: 80 },
   empty: { alignItems: "center", paddingTop: 60, paddingHorizontal: 32 },
   emptyTitle: { fontSize: 16, fontWeight: "700", color: colors.gray700, marginTop: 16 },

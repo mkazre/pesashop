@@ -354,7 +354,8 @@ function ProviderApplicationForm({ serviceTypes, onClose }) {
     password: '', confirmPassword: '',
   });
   const [areaInput, setAreaInput] = useState('');
-  const [files, setFiles] = useState([]);
+  const [idFile, setIdFile] = useState(null);
+  const [companyFiles, setCompanyFiles] = useState([]);
   const [submitted, setSubmitted] = useState(false);
 
   const submitMutation = useMutation(
@@ -385,10 +386,18 @@ function ProviderApplicationForm({ serviceTypes, onClose }) {
       if (Array.isArray(v)) v.forEach(val => fd.append(k, val));
       else fd.append(k, v);
     });
-    files.forEach((f, i) => {
+    let docIdx = 0;
+    if (idFile) {
+      fd.append('documents', idFile);
+      fd.append(`docType_${docIdx}`, 'id_document');
+      fd.append(`docLabel_${docIdx}`, idFile.name);
+      docIdx++;
+    }
+    companyFiles.forEach((f) => {
       fd.append('documents', f);
-      fd.append(`docType_${i}`, f.docType || 'other');
-      fd.append(`docLabel_${i}`, f.name);
+      fd.append(`docType_${docIdx}`, 'company_document');
+      fd.append(`docLabel_${docIdx}`, f.name);
+      docIdx++;
     });
 
     submitMutation.mutate(fd);
@@ -510,14 +519,37 @@ function ProviderApplicationForm({ serviceTypes, onClose }) {
               </div>
 
               {/* Document Upload */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Documents <span className="text-gray-400 font-normal">(ID, Trade Certificate, Proof of Business)</span></label>
-                <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={e => setFiles(Array.from(e.target.files))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-gray-100 file:text-gray-700" />
-                {files.length > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">{files.length} file{files.length !== 1 ? 's' : ''} selected</p>
-                )}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    ID / Passport Document <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-xs text-gray-400 mb-1.5">Upload a clear photo or scan of your South African ID, passport, or driver's licence.</p>
+                  <input
+                    type="file"
+                    required
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={e => setIdFile(e.target.files[0] || null)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-gray-100 file:text-gray-700"
+                  />
+                  {idFile && <p className="text-xs text-green-600 mt-1">✓ {idFile.name}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Business / Company Documents <span className="text-gray-400 font-normal">(Optional)</span>
+                  </label>
+                  <p className="text-xs text-gray-400 mb-1.5">Upload any trade certificates, business registration, accreditations, or proof of qualifications. You may upload multiple files.</p>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={e => setCompanyFiles(Array.from(e.target.files))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-gray-100 file:text-gray-700"
+                  />
+                  {companyFiles.length > 0 && (
+                    <p className="text-xs text-green-600 mt-1">✓ {companyFiles.length} file{companyFiles.length !== 1 ? 's' : ''} selected</p>
+                  )}
+                </div>
               </div>
 
               {/* Password */}

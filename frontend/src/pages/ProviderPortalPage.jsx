@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import api from '@/services/api';
+import axios from 'axios';
 import toast from '@/utils/toast';
+
+const PORTAL_BASE = import.meta.env.VITE_API_URL || '';
+const portalHttp = axios.create({ baseURL: PORTAL_BASE });
 
 const PORTAL_TOKEN_KEY = 'sp_portal_token';
 const PORTAL_PROVIDER_KEY = 'sp_portal_provider';
@@ -20,7 +23,7 @@ function clearPortalSession() {
 }
 function portalApi() {
   const token = getPortalToken();
-  return { headers: { Authorization: `Bearer ${token}` } };
+  return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 }
 
 // ─── Status badges ─────────────────────────────────────────
@@ -51,7 +54,7 @@ function LoginScreen({ onLogin }) {
     setErr('');
     setLoading(true);
     try {
-      const res = await api.post('/api/service-providers/portal/login', { email, password });
+      const res = await portalHttp.post('/api/service-providers/portal/login', { email, password });
       const { token, provider } = res.data;
       setPortalSession(token, provider);
       onLogin(provider);
@@ -128,7 +131,7 @@ function Dashboard({ provider: initialProvider, onLogout }) {
   // Refresh provider profile
   const { data: profileData } = useQuery(
     'sp-portal-me',
-    () => api.get('/api/service-providers/me', portalApi()).then(r => r.data.data),
+    () => portalHttp.get('/api/service-providers/me', portalApi()).then(r => r.data.data),
     { staleTime: 60000, initialData: initialProvider }
   );
   const provider = profileData || initialProvider;
@@ -136,7 +139,7 @@ function Dashboard({ provider: initialProvider, onLogout }) {
   // Ads
   const { data: adsData, isLoading: adsLoading } = useQuery(
     'sp-portal-ads',
-    () => api.get('/api/service-providers/me/ads', portalApi()).then(r => r.data.data || []),
+    () => portalHttp.get('/api/service-providers/me/ads', portalApi()).then(r => r.data.data || []),
     { staleTime: 30000 }
   );
   const ads = adsData || [];
@@ -144,7 +147,7 @@ function Dashboard({ provider: initialProvider, onLogout }) {
   // Slots (for new ad form)
   const { data: slotsData } = useQuery(
     'sp-portal-slots',
-    () => api.get('/api/service-providers/portal/slots', portalApi()).then(r => r.data.data || []),
+    () => portalHttp.get('/api/service-providers/portal/slots', portalApi()).then(r => r.data.data || []),
     { staleTime: 5 * 60 * 1000 }
   );
   const slots = slotsData || [];
@@ -152,7 +155,7 @@ function Dashboard({ provider: initialProvider, onLogout }) {
   // Plans
   const { data: plansData } = useQuery(
     'sp-portal-plans',
-    () => api.get('/api/service-providers/plans/public').then(r => r.data.data || []),
+    () => portalHttp.get('/api/service-providers/plans/public').then(r => r.data.data || []),
     { staleTime: 5 * 60 * 1000 }
   );
   const plans = plansData || [];
@@ -401,7 +404,7 @@ function NewAdForm({ slots, onSuccess }) {
         endDate: form.endDate || undefined,
         aiKeywords: form.aiKeywords ? form.aiKeywords.split(',').map(k => k.trim()).filter(Boolean) : []
       };
-      await api.post('/api/service-providers/me/ads', payload, portalApi());
+      await portalHttp.post('/api/service-providers/me/ads', payload, portalApi());
       toast.success('Ad submitted! We\'ll review it within 24 hours.');
       onSuccess();
     } catch (ex) {

@@ -48,6 +48,9 @@ const NAV_ITEMS = [
   { path: '/account/settings', label: 'Account Settings', badge: 'profile', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
   )},
+  { path: '/service-providers/portal', label: 'Service Provider Portal', icon: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+  ), external: true },
 ];
 
 export default function AccountPage() {
@@ -96,7 +99,17 @@ export default function AccountPage() {
             {/* Navigation */}
             <nav className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="p-2">
-                {NAV_ITEMS.map((item) => (
+                {NAV_ITEMS.map((item) =>
+                  item.external ? (
+                    <a
+                      key={item.path}
+                      href={item.path}
+                      className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    >
+                      {item.icon}
+                      <span className="flex-1">{item.label}</span>
+                    </a>
+                  ) : (
                   <NavLink
                     key={item.path}
                     to={item.path}
@@ -115,7 +128,8 @@ export default function AccountPage() {
                       <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
                     )}
                   </NavLink>
-                ))}
+                  )
+                )}
               </div>
               <div className="border-t border-gray-200 p-2">
                 <button

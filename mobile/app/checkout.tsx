@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import ScreenHeader from "@/components/ScreenHeader";
+import OfferSlot from "@/components/OfferSlot";
 import {
   ordersAPI,
   productPageSettingsAPI,
@@ -407,6 +408,7 @@ export default function CheckoutScreen() {
           </View>
         </View>
 
+        <OfferSlot page="checkout" />
         <View style={{ height: 128 }} />
       </ScrollView>
 
