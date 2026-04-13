@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const ServiceProvider = require('../models/ServiceProvider');
 
 /**
  * Protect routes - require authentication
@@ -113,6 +114,34 @@ exports.optionalAuth = async (req, res, next) => {
   }
 
   next();
+};
+
+/**
+ * Protect routes for service providers
+ */
+exports.protectProvider = async (req, res, next) => {
+  let token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Provider not authenticated' });
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.type !== 'service_provider') {
+      return res.status(401).json({ success: false, message: 'Invalid token type' });
+    }
+    const provider = await ServiceProvider.findById(decoded.id).select('-password');
+    if (!provider) return res.status(401).json({ success: false, message: 'Provider account not found' });
+    if (provider.applicationStatus !== 'approved') {
+      return res.status(403).json({ success: false, message: 'Your application is not yet approved.' });
+    }
+    req.provider = provider;
+    next();
+  } catch (error) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+  }
 };
 
 /**

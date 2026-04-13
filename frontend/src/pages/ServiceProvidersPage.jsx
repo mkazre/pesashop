@@ -64,7 +64,7 @@ export default function ServiceProvidersPage() {
         )}
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
           <button
             onClick={() => setActiveSection(activeSection === 'request' ? null : 'request')}
             className="px-8 py-3.5 bg-primary text-white rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors shadow-sm"
@@ -77,6 +77,12 @@ export default function ServiceProvidersPage() {
           >
             💼 Apply as a Service Provider
           </button>
+          <a
+            href="/service-providers/portal"
+            className="px-8 py-3.5 bg-white border border-gray-300 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors shadow-sm text-center"
+          >
+            🏢 Provider Login & Ad Portal
+          </a>
         </div>
       </section>
 

@@ -3,7 +3,8 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, protectProvider, generateToken } = require('../middleware/auth');
+const ServiceProviderAd = require('../models/ServiceProviderAd');
 const ServiceProvider = require('../models/ServiceProvider');
 const ServiceProviderCategory = require('../models/ServiceProviderCategory');
 const ServiceProviderSubscriptionPlan = require('../models/ServiceProviderSubscriptionPlan');
@@ -92,11 +93,106 @@ router.get('/plans/public', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════
+//  PROVIDER PORTAL — Self-Service Auth & Dashboard
+// ═══════════════════════════════════════════════════════════
+
+// POST /api/service-providers/portal/login
+router.post('/portal/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ success: false, message: 'Email and password required' });
+    const provider = await ServiceProvider.findOne({ email: email.toLowerCase() });
+    if (!provider) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    const match = await provider.comparePassword(password);
+    if (!match) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    if (provider.applicationStatus !== 'approved') {
+      return res.status(403).json({ success: false, message: `Your application status is "${provider.applicationStatus}". Only approved providers can access the portal.` });
+    }
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(
+      { id: provider._id, type: 'service_provider' },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    res.json({
+      success: true,
+      token,
+      provider: {
+        _id: provider._id,
+        businessName: provider.businessName,
+        contactName: provider.contactName,
+        email: provider.email,
+        logo: provider.logo,
+        applicationStatus: provider.applicationStatus,
+        subscriptionStatus: provider.subscriptionStatus,
+        subscriptionExpiry: provider.subscriptionExpiry
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/service-providers/me — Provider's own profile
+router.get('/me', protectProvider, async (req, res) => {
+  try {
+    const provider = await ServiceProvider.findById(req.provider._id)
+      .populate('category', 'name icon')
+      .populate('subscriptionPlan', 'name price billingCycle featuresIncluded maxActiveAds')
+      .select('-password');
+    res.json({ success: true, data: provider });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/service-providers/me/ads — Provider's own ads
+router.get('/me/ads', protectProvider, async (req, res) => {
+  try {
+    const ads = await ServiceProviderAd.find({ provider: req.provider._id })
+      .sort({ createdAt: -1 })
+      .populate('placementSlot', 'slotLabel slotPage');
+    res.json({ success: true, data: ads });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/service-providers/me/ads — Create ad request
+router.post('/me/ads', protectProvider, async (req, res) => {
+  try {
+    const { title, body, ctaText, ctaUrl, imageUrl, placementSlot, startDate, endDate, aiKeywords } = req.body;
+    const ad = await ServiceProviderAd.create({
+      provider: req.provider._id,
+      title, body, ctaText, ctaUrl, imageUrl,
+      placementSlot,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      aiKeywords: aiKeywords || [],
+      status: 'pending'
+    });
+    res.status(201).json({ success: true, data: ad, message: 'Ad submitted for review. You will be notified when it is approved.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/service-providers/portal/slots — Available ad slots (for providers)
+router.get('/portal/slots', protectProvider, async (req, res) => {
+  try {
+    const slots = await ServiceProviderAdPlacement.find({ isActive: true }).sort({ slotPage: 1, slotLabel: 1 });
+    res.json({ success: true, data: slots });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
 //  ADMIN — Provider Management
 // ═══════════════════════════════════════════════════════════
 
 // GET /api/service-providers — All providers (admin)
-router.get('/', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+router.get('/', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
   try {
     const query = {};
     if (req.query.status) query.applicationStatus = req.query.status;
@@ -133,7 +229,7 @@ router.get('/', protect, authorize('admin', 'shop_manager'), async (req, res) =>
 });
 
 // GET /api/service-providers/:id — Single provider detail (admin)
-router.get('/:id', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+router.get('/:id', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
   try {
     const provider = await ServiceProvider.findById(req.params.id)
       .populate('category', 'name icon keywords')
@@ -147,7 +243,7 @@ router.get('/:id', protect, authorize('admin', 'shop_manager'), async (req, res)
 });
 
 // PUT /api/service-providers/:id/approve — Approve application
-router.put('/:id/approve', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+router.put('/:id/approve', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
   try {
     const provider = await ServiceProvider.findByIdAndUpdate(req.params.id, {
       applicationStatus: 'approved',
@@ -173,7 +269,7 @@ router.put('/:id/approve', protect, authorize('admin', 'shop_manager'), async (r
 });
 
 // PUT /api/service-providers/:id/reject — Reject application
-router.put('/:id/reject', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+router.put('/:id/reject', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
   try {
     const provider = await ServiceProvider.findByIdAndUpdate(req.params.id, {
       applicationStatus: 'rejected',

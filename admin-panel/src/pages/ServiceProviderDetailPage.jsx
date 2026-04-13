@@ -61,7 +61,12 @@ export default function ServiceProviderDetailPage() {
 
   if (error || !provider) return (
     <div className="p-8 text-center text-gray-500">
-      <p>Provider not found.</p>
+      <p className="font-medium text-gray-700">
+        {error ? (error.response?.data?.message || error.message || 'Failed to load provider') : 'Provider not found.'}
+      </p>
+      {error?.response?.status === 403 && (
+        <p className="text-sm text-red-500 mt-1">Access denied — insufficient permissions.</p>
+      )}
       <button onClick={() => navigate('/service-providers')} className="mt-4 text-blue-600 hover:underline text-sm">← Back to providers</button>
     </div>
   );

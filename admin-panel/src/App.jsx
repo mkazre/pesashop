@@ -177,12 +177,12 @@ function App() {
             {/* Recurring Orders */}
             <Route path="recurring-orders" element={<RecurringOrdersPage />} />
             <Route path="recurring-orders/plans" element={<RecurringPlansPage />} />
-            {/* Service Providers */}
+            {/* Service Providers — static sub-routes MUST come before :id */}
             <Route path="service-providers" element={<ServiceProvidersPage />} />
-            <Route path="service-providers/:id" element={<ServiceProviderDetailPage />} />
             <Route path="service-providers/categories" element={<ServiceProviderCategoriesPage />} />
             <Route path="service-providers/plans" element={<ServiceProviderPlansPage />} />
             <Route path="service-providers/ad-slots" element={<ServiceProviderAdSlotsPage />} />
+            <Route path="service-providers/:id" element={<ServiceProviderDetailPage />} />
             <Route path="service-provider-ads" element={<ServiceProviderAdsPage />} />
             <Route path="service-types" element={<ServiceTypesPage />} />
             <Route path="service-requests" element={<ServiceRequestsPage />} />
