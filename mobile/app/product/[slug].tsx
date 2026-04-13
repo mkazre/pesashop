@@ -19,6 +19,8 @@ import Toast from "react-native-toast-message";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ProductCard from "@/components/ProductCard";
 import InlineLaybyePlans from "@/components/InlineLaybyePlans";
+import RecurringWidget from "@/components/RecurringWidget";
+import ServiceRequestWidget from "@/components/ServiceRequestWidget";
 import LaybyeApplicationModal from "@/components/LaybyeApplicationModal";
 import ProductBadges from "@/components/ProductBadges";
 import WriteReview from "@/components/WriteReview";
@@ -62,6 +64,7 @@ export default function ProductDetailScreen() {
   const [pageSettings, setPageSettings] = useState<any>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [laybyeSelection, setLaybyeSelection] = useState<any>(null);
+  const [recurringActive, setRecurringActive] = useState(false);
   const [laybyeModalVisible, setLaybyeModalVisible] = useState(false);
   const [loyaltyData, setLoyaltyData] = useState<any>(null);
   const [descExpanded, setDescExpanded] = useState(false);
@@ -434,6 +437,10 @@ export default function ProductDetailScreen() {
               <Text style={ps.laybyeApplyText}>GET IT ON LAYBY</Text>
             </Pressable>
           )}
+
+          <RecurringWidget product={product} onRecurringChange={setRecurringActive} />
+
+          {!recurringActive && <ServiceRequestWidget product={product} />}
 
           {pageSettings?.mobileFeatures?.freeShippingBarOnProductPage !== false && (
             <FreeShippingBar extraAmount={(product.salePrice || product.regularPrice || 0) * quantity} />

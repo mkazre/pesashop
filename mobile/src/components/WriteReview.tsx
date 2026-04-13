@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -26,6 +26,16 @@ export default function WriteReview({ productId, productName, onReviewSubmitted 
   const [title, setTitle] = useState("");
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [reviewCategories, setReviewCategories] = useState<any[]>([]);
+  const [categoryRatings, setCategoryRatings] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (expanded) {
+      reviewsAPI.getCategories()
+        .then((res) => setReviewCategories(res.data?.data || []))
+        .catch(() => {});
+    }
+  }, [expanded]);
 
   if (!isAuthenticated) {
     return (
@@ -61,12 +71,16 @@ export default function WriteReview({ productId, productName, onReviewSubmitted 
       formData.append("rating", String(rating));
       if (title.trim()) formData.append("title", title.trim());
       formData.append("content", comment.trim());
+      if (Object.keys(categoryRatings).length > 0) {
+        formData.append("categoryRatings", JSON.stringify(categoryRatings));
+      }
       await reviewsAPI.create(formData);
       Toast.show({ type: "success", text1: "Review submitted!", text2: "Thank you for your feedback" });
       setExpanded(false);
       setRating(0);
       setTitle("");
       setComment("");
+      setCategoryRatings({});
       onReviewSubmitted?.();
     } catch (err: any) {
       Toast.show({ type: "error", text1: "Failed to submit", text2: err.response?.data?.message || "Please try again" });
@@ -91,6 +105,32 @@ export default function WriteReview({ productId, productName, onReviewSubmitted 
           </Pressable>
         ))}
       </View>
+
+      {/* Category Ratings */}
+      {reviewCategories.length > 0 && (
+        <View style={s.catSection}>
+          <Text style={s.catSectionTitle}>Rate Specific Aspects (Optional)</Text>
+          {reviewCategories.map((cat) => (
+            <View key={cat._id} style={s.catRow}>
+              <Text style={s.catName}>{cat.icon ? `${cat.icon} ` : ""}{cat.name}</Text>
+              <View style={s.catStars}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Pressable
+                    key={star}
+                    onPress={() => setCategoryRatings((prev) => ({ ...prev, [cat._id]: star }))}
+                  >
+                    <Ionicons
+                      name={star <= (categoryRatings[cat._id] || 0) ? "star" : "star-outline"}
+                      size={20}
+                      color={star <= (categoryRatings[cat._id] || 0) ? colors.amber500 : colors.gray300}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
 
       <Text style={s.label}>Title (optional)</Text>
       <TextInput
@@ -140,6 +180,11 @@ const s = StyleSheet.create({
   starRow: { flexDirection: "row", gap: 4 },
   input: { borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.gray800, backgroundColor: colors.gray50 },
   textArea: { minHeight: 100 },
+  catSection: { marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.gray100 },
+  catSectionTitle: { fontSize: 12, fontWeight: "600", color: colors.gray500, marginBottom: 10 },
+  catRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+  catName: { fontSize: 13, color: colors.gray700, flex: 1 },
+  catStars: { flexDirection: "row", gap: 2 },
   btnRow: { flexDirection: "row", gap: 12, marginTop: 16 },
   cancelBtn: { flex: 1, paddingVertical: 12, alignItems: "center", borderWidth: 1, borderColor: colors.gray200 },
   cancelText: { fontSize: 14, fontWeight: "600", color: colors.gray600 },

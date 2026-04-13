@@ -233,6 +233,7 @@ export const reviewsAPI = {
     uploadFormData('/api/reviews', formData),
   vote: (reviewId: string, vote: string) =>
     api.post(`/api/reviews/${reviewId}/vote`, { vote }),
+  getCategories: () => api.get('/api/reviews/categories'),
 };
 
 // ─── Q&A API ─────────────────────────────────────────────────────
@@ -347,6 +348,17 @@ export const recurringOrdersAPI = {
   cancel: (id: string, reason: string) => api.put(`/api/recurring-orders/${id}/cancel`, { reason }),
   updateFrequency: (id: string, frequency: string) =>
     api.put(`/api/recurring-orders/${id}/update-frequency`, { frequency }),
+};
+
+// ─── Service Types API ───────────────────────────────────────────
+export const serviceTypesAPI = {
+  getAll: (params?: any) => api.get('/api/service-types', { params }),
+};
+
+// ─── Service Requests API ────────────────────────────────────────
+export const serviceRequestsAPI = {
+  submit: (data: any) => api.post('/api/service-requests', data),
+  getMine: () => api.get('/api/service-requests/mine'),
 };
 
 // ─── Service Provider Ads API ────────────────────────────────────

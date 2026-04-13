@@ -39,18 +39,22 @@ export default function AccountScreen() {
   }
 
   const menuItems = [
-    { icon: "grid-outline" as const,     label: "My Dashboard",        onPress: () => router.push("/account/dashboard" as any) },
-    { icon: "receipt-outline" as const,  label: "My Orders",            onPress: () => router.push("/orders" as any) },
-    { icon: "navigate-outline" as const, label: "Track Order",          onPress: () => router.push("/account/track-order" as any) },
-    { icon: "card-outline" as const,     label: "My Laybyes",           onPress: () => router.push("/account/laybyes" as any) },
-    { icon: "cash-outline" as const,     label: "Payments",             onPress: () => router.push("/account/payments" as any) },
-    { icon: "list-outline" as const,     label: "Transaction History",  onPress: () => router.push("/account/transactions" as any) },
-    { icon: "heart-outline" as const,    label: "Wishlist",             onPress: () => router.push("/(tabs)/wishlist" as any) },
-    { icon: "star-outline" as const,     label: "PESA Coins",           onPress: () => router.push("/account/loyalty-points" as any) },
-    { icon: "pricetag-outline" as const, label: "My Coupons",           onPress: () => router.push("/account/coupons" as any) },
-    { icon: "gift-outline" as const,     label: "Gift Cards",           onPress: () => router.push("/account/gift-cards" as any) },
-    { icon: "location-outline" as const, label: "Addresses",            onPress: () => router.push("/account/addresses" as any) },
-    { icon: "settings-outline" as const, label: "Settings",             onPress: () => router.push("/account/settings" as any) },
+    { icon: "grid-outline" as const,          label: "My Dashboard",          onPress: () => router.push("/account/dashboard" as any) },
+    { icon: "receipt-outline" as const,       label: "My Orders",             onPress: () => router.push("/orders" as any) },
+    { icon: "navigate-outline" as const,      label: "Track Order",           onPress: () => router.push("/account/track-order" as any) },
+    { icon: "card-outline" as const,          label: "My Laybyes",            onPress: () => router.push("/account/laybyes" as any) },
+    { icon: "refresh-outline" as const,       label: "Recurring Orders",      onPress: () => router.push("/account/recurring-orders" as any) },
+    { icon: "construct-outline" as const,     label: "My Service Requests",   onPress: () => router.push("/account/service-requests" as any) },
+    { icon: "sparkles-outline" as const,      label: "My Offers",             onPress: () => router.push("/account/my-offers" as any) },
+    { icon: "cash-outline" as const,          label: "Payments",              onPress: () => router.push("/account/payments" as any) },
+    { icon: "list-outline" as const,          label: "Transaction History",   onPress: () => router.push("/account/transactions" as any) },
+    { icon: "heart-outline" as const,         label: "Wishlist",              onPress: () => router.push("/(tabs)/wishlist" as any) },
+    { icon: "star-outline" as const,          label: "PESA Coins",            onPress: () => router.push("/account/loyalty-points" as any) },
+    { icon: "pricetag-outline" as const,      label: "My Coupons",            onPress: () => router.push("/account/coupons" as any) },
+    { icon: "gift-outline" as const,          label: "Gift Cards",            onPress: () => router.push("/account/gift-cards" as any) },
+    { icon: "person-outline" as const,        label: "Complete My Profile",   onPress: () => router.push("/account/demographics" as any) },
+    { icon: "location-outline" as const,      label: "Addresses",             onPress: () => router.push("/account/addresses" as any) },
+    { icon: "settings-outline" as const,      label: "Settings",              onPress: () => router.push("/account/settings" as any) },
   ];
 
   return (

@@ -71,6 +71,7 @@ interface CartItem {
   quantity: number;
   variant: any;
   laybye: any;
+  recurring?: any;
 }
 
 interface CartState {
@@ -83,6 +84,8 @@ interface CartState {
   removeItem: (index: number) => void;
   setItemLaybye: (index: number, laybyeData: any) => void;
   clearItemLaybye: (index: number) => void;
+  setItemRecurring: (index: number, recurringData: any) => void;
+  clearItemRecurring: (index: number) => void;
   clearCart: () => void;
   setGiftCard: (code: string, amount: number, balance: number) => void;
   clearGiftCard: () => void;
@@ -167,6 +170,20 @@ export const useCartStore = create<CartState>()(
           set({ items: newItems });
         }
       },
+      setItemRecurring: (index, recurringData) => {
+        const newItems = [...get().items];
+        if (newItems[index]) {
+          newItems[index] = { ...newItems[index], recurring: recurringData };
+          set({ items: newItems });
+        }
+      },
+      clearItemRecurring: (index) => {
+        const newItems = [...get().items];
+        if (newItems[index]) {
+          newItems[index] = { ...newItems[index], recurring: null };
+          set({ items: newItems });
+        }
+      },
       clearCart: () =>
         set({
           items: [],
@@ -185,7 +202,8 @@ export const useCartStore = create<CartState>()(
       getTotal: () =>
         get().items.reduce((total, item) => {
           const price = item.product.salePrice || item.product.regularPrice;
-          return total + price * item.quantity;
+          const instances = (item.recurring?.paymentMode === 'upfront' && item.recurring?.instances) ? item.recurring.instances : 1;
+          return total + price * item.quantity * instances;
         }, 0),
       getTotalAfterGiftCard: () => {
         const total = get().getTotal();
@@ -201,7 +219,8 @@ export const useCartStore = create<CartState>()(
           .items.filter((i) => !i.laybye)
           .reduce((t, item) => {
             const price = item.product.salePrice || item.product.regularPrice;
-            return t + price * item.quantity;
+            const instances = (item.recurring?.paymentMode === 'upfront' && item.recurring?.instances) ? item.recurring.instances : 1;
+            return t + price * item.quantity * instances;
           }, 0),
       getLaybyeDepositTotal: () =>
         get()

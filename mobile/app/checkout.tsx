@@ -375,7 +375,7 @@ export default function CheckoutScreen() {
           {items.map((item, i) => (
             <View key={i} style={co.summaryRow}>
               <Text style={co.summaryName} numberOfLines={1}>{item.product.name} × {item.quantity}</Text>
-              <Text style={co.summaryPrice}>{formatPrice((item.product.salePrice || item.product.regularPrice) * item.quantity)}</Text>
+              <Text style={co.summaryPrice}>{formatPrice((item.product.salePrice || item.product.regularPrice) * item.quantity * ((item.recurring?.paymentMode === 'upfront' && item.recurring?.instances) ? item.recurring.instances : 1))}</Text>
             </View>
           ))}
           <View style={co.divider} />
