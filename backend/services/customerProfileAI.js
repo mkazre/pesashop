@@ -29,8 +29,7 @@ const COMPLETION_FIELDS = [
   { field: 'educationLevel',    label: 'Education Level',    weight: 5 },
   { field: 'province',          label: 'Province',           weight: 6 },
   { field: 'suburb',            label: 'Suburb',             weight: 4 },
-  { field: 'hobbies',           label: 'Hobbies',            weight: 10 }, // array, need length > 0
-  { field: 'interests',         label: 'Interests',          weight: 8 },
+  { field: 'hobbies',           label: 'Hobbies',            weight: 18 }, // array, need length > 0 (absorbed interests weight — no separate UI for interests)
   { field: 'lifeStage',         label: 'Life Stage',         weight: 8 },
   { field: 'phone',             label: 'Phone Number',       weight: 7 },
   { field: 'marketingOptIn',    label: 'Marketing Preferences', weight: 5 }, // just needs to be set
