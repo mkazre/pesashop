@@ -101,7 +101,7 @@ router.post('/portal/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ success: false, message: 'Email and password required' });
-    const provider = await ServiceProvider.findOne({ email: email.toLowerCase() });
+    const provider = await ServiceProvider.findOne({ email: email.toLowerCase() }).select('+password');
     if (!provider) return res.status(401).json({ success: false, message: 'Invalid credentials' });
     const match = await provider.comparePassword(password);
     if (!match) return res.status(401).json({ success: false, message: 'Invalid credentials' });
