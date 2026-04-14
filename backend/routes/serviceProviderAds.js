@@ -8,6 +8,23 @@ const emailService = require('../services/emailService');
 
 // ─── Public / Frontend ────────────────────────────────────────────
 
+// GET /api/service-provider-ads/debug — temporary: diagnose why ads don't show
+router.get('/debug', async (req, res) => {
+  try {
+    const ServiceProvider = require('../models/ServiceProvider');
+    const ads = await ServiceProviderAd.find({}).lean();
+    const placements = await ServiceProviderAdPlacement.find({}).lean();
+    const providers = await ServiceProvider.find({}).select('businessName applicationStatus subscriptionStatus').lean();
+    res.json({
+      ads: ads.map(a => ({ _id: a._id, title: a.title, status: a.status, placementSlot: a.placementSlot, startDate: a.startDate, endDate: a.endDate, provider: a.provider })),
+      placements: placements.map(p => ({ _id: p._id, slotId: p.slotId, isActive: p.isActive })),
+      providers: providers.map(p => ({ _id: p._id, name: p.businessName, appStatus: p.applicationStatus, subStatus: p.subscriptionStatus })),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/service-provider-ads/contextual
 // Query: slotId, pageType, productId, categorySlug, maxAds
 router.get('/contextual', optionalAuth, async (req, res) => {

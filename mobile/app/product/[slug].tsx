@@ -39,6 +39,7 @@ import {
   statsAPI,
   productPageSettingsAPI,
   loyaltyAPI,
+  serviceProviderAdsAPI,
 } from "@/services/api";
 import {
   useCartStore,
@@ -70,6 +71,7 @@ export default function ProductDetailScreen() {
   const [loyaltyData, setLoyaltyData] = useState<any>(null);
   const [descExpanded, setDescExpanded] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<Record<string, string>>({});
+  const [providerAds, setProviderAds] = useState<any[]>([]);
 
   const addToCart = useCartStore((s) => s.addItem);
   const setItemLaybye = useCartStore((s) => s.setItemLaybye);
@@ -123,6 +125,20 @@ export default function ProductDetailScreen() {
     };
     if (slug) fetchProduct();
   }, [slug]);
+
+  // Fetch contextual service provider ads for this product
+  useEffect(() => {
+    if (!product?._id) return;
+    serviceProviderAdsAPI.getContextual({
+      slotId: "product_detail_below_buy",
+      pageType: "product",
+      productId: product._id,
+      categorySlug: product.categories?.[0]?.slug,
+      maxAds: 6,
+    })
+      .then((res) => setProviderAds(res.data?.data?.data || res.data?.data || []))
+      .catch(() => setProviderAds([]));
+  }, [product?._id]);
 
   // Fetch loyalty points for product
   useEffect(() => {
@@ -686,6 +702,25 @@ export default function ProductDetailScreen() {
           );
         })()}
 
+        {/* ════ FEATURED SERVICES (Service Provider Ads Carousel) ════ */}
+        {providerAds.length > 0 && (
+          <View style={ps.spAdsSection}>
+            <View style={ps.spAdsHeader}>
+              <Text style={ps.spAdsTitle}>Featured Services</Text>
+              <Text style={ps.spAdsSponsored}>SPONSORED</Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={ps.spAdsTrack}
+            >
+              {providerAds.map((ad: any) => (
+                <SpAdCard key={ad._id} ad={ad} />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {/* ════ RECENTLY VIEWED ════ */}
         <RecentlyViewedRow currentId={product._id} />
 
@@ -844,4 +879,90 @@ const ps = StyleSheet.create({
   // Recently viewed
   recentSection: { marginTop: 8, paddingVertical: 16, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.gray100 },
   recentTitle: { fontSize: 14, fontWeight: "700", color: colors.gray900, textTransform: "uppercase", letterSpacing: 0.5, paddingHorizontal: 16, marginBottom: 12 },
+  // Service Provider Ads
+  spAdsSection: { borderTopWidth: 1, borderTopColor: colors.gray100, paddingTop: 14, marginTop: 4, backgroundColor: colors.white },
+  spAdsHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginBottom: 12 },
+  spAdsTitle: { fontSize: 14, fontWeight: "700", color: colors.gray900 },
+  spAdsSponsored: { fontSize: 9, fontWeight: "700", color: colors.gray400, letterSpacing: 0.8 },
+  spAdsTrack: { paddingHorizontal: 16, paddingRight: 8, gap: 10 },
 });
+
+// ─── Service Provider Ad Card (inline) ───────────────────────────────────────
+import { Linking, TouchableOpacity } from "react-native";
+
+function SpAdCard({ ad }: { ad: any }) {
+  const trackedRef = useRef(false);
+
+  useEffect(() => {
+    if (!trackedRef.current && ad?._id) {
+      trackedRef.current = true;
+      serviceProviderAdsAPI.recordImpression(ad._id).catch(() => {});
+    }
+  }, [ad?._id]);
+
+  const handlePress = () => {
+    serviceProviderAdsAPI.recordClick(ad._id).catch(() => {});
+    if (ad.ctaUrl) Linking.openURL(ad.ctaUrl).catch(() => {});
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={ad.ctaUrl ? handlePress : undefined}
+      activeOpacity={0.85}
+      style={{
+        width: 180,
+        borderWidth: 1,
+        borderColor: colors.gray100,
+        backgroundColor: colors.white,
+        overflow: "hidden",
+        marginBottom: 12,
+      }}
+    >
+      {/* Banner */}
+      {ad.imageUrl ? (
+        <Image source={{ uri: ad.imageUrl }} style={{ width: "100%", height: 90 }} contentFit="cover" />
+      ) : (
+        <View style={{ width: "100%", height: 90, backgroundColor: "#1b5e35", alignItems: "center", justifyContent: "center" }}>
+          {ad.provider?.logoUrl ? (
+            <Image source={{ uri: ad.provider.logoUrl }} style={{ width: 44, height: 44, borderRadius: 22 }} contentFit="cover" />
+          ) : (
+            <Text style={{ fontSize: 26 }}>🏢</Text>
+          )}
+        </View>
+      )}
+
+      {/* Ad label */}
+      <View style={{ position: "absolute", top: 5, right: 5, backgroundColor: "rgba(255,255,255,0.85)", paddingHorizontal: 4, paddingVertical: 1 }}>
+        <Text style={{ fontSize: 8, fontWeight: "700", color: colors.gray400, letterSpacing: 0.5 }}>AD</Text>
+      </View>
+
+      <View style={{ padding: 10, gap: 3 }}>
+        {/* Provider */}
+        {ad.provider?.businessName && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            {ad.provider?.logoUrl && (
+              <Image source={{ uri: ad.provider.logoUrl }} style={{ width: 16, height: 16, borderRadius: 8 }} contentFit="cover" />
+            )}
+            <Text style={{ fontSize: 10, color: colors.gray400 }} numberOfLines={1}>{ad.provider.businessName}</Text>
+          </View>
+        )}
+        {/* Title */}
+        <Text style={{ fontSize: 13, fontWeight: "700", color: colors.gray900, lineHeight: 17 }} numberOfLines={2}>{ad.title}</Text>
+        {/* Body */}
+        {ad.body && (
+          <Text style={{ fontSize: 11, color: colors.gray500, lineHeight: 15 }} numberOfLines={2}>{ad.body}</Text>
+        )}
+        {/* CTA */}
+        {ad.ctaText && (
+          <TouchableOpacity
+            onPress={handlePress}
+            style={{ marginTop: 6, backgroundColor: "#1b5e35", paddingVertical: 7, alignItems: "center" }}
+            activeOpacity={0.8}
+          >
+            <Text style={{ fontSize: 11, fontWeight: "700", color: "#a8ffca", letterSpacing: 0.3 }}>{ad.ctaText} →</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}
