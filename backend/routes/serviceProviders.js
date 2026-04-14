@@ -170,7 +170,7 @@ router.post('/me/ads', protectProvider, async (req, res) => {
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
       aiKeywords: aiKeywords || [],
-      status: 'pending'
+      status: 'pending_approval'
     });
     res.status(201).json({ success: true, data: ad, message: 'Ad submitted for review. You will be notified when it is approved.' });
   } catch (err) {

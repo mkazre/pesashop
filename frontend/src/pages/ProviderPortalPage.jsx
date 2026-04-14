@@ -36,7 +36,7 @@ const SUB_BADGE = {
   pending_payment: 'bg-amber-100 text-amber-700',
 };
 const AD_BADGE = {
-  pending: 'bg-amber-100 text-amber-700',
+  pending_approval: 'bg-amber-100 text-amber-700',
   active: 'bg-green-100 text-green-700',
   paused: 'bg-gray-100 text-gray-500',
   expired: 'bg-red-100 text-red-600',
@@ -219,7 +219,7 @@ function Dashboard({ provider: initialProvider, onLogout }) {
 // ─── Overview Tab ──────────────────────────────────────────
 function OverviewTab({ provider, subStatus, subPlan, subExpiry, ads, adOrders, onGoToAds, onGoToBook, onGoToOrders }) {
   const activeAds = ads.filter(a => a.status === 'active').length;
-  const pendingAds = ads.filter(a => a.status === 'pending').length;
+  const pendingAds = ads.filter(a => a.status === 'pending_approval').length;
   const pendingOrders = adOrders.filter(o => o.status === 'pending_payment').length;
   const activeOrders = adOrders.filter(o => o.status === 'active').length;
 

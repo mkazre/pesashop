@@ -24,10 +24,10 @@ const serviceProviderAdSchema = new mongoose.Schema({
   rentPeriod: {
     type: String,
     enum: ['day', 'week', 'month', 'year'],
-    required: true
+    default: null
   },
-  startDate: { type: Date, required: true },
-  endDate: { type: Date, required: true },
+  startDate: { type: Date, default: null },
+  endDate: { type: Date, default: null },
 
   // Approval workflow
   status: {
