@@ -584,9 +584,10 @@ class WooCommerceImporter extends EventEmitter {
       status: (row.post_status === 'publish' || row.Published === '1') ? 'active' : 'draft'
     };
 
-    // Process images
-    if (row.images) {
-      const imageDataArray = this.parseWooCommerceImages(row.images);
+    // Process images (handle both lowercase and WooCommerce standard capital-I column)
+    const imagesRawSync = row.images || row.Images || row.image || row.Image || '';
+    if (imagesRawSync) {
+      const imageDataArray = this.parseWooCommerceImages(imagesRawSync);
       if (imageDataArray.length > 0) {
         if (options.processImages) {
           try {
@@ -671,8 +672,9 @@ class WooCommerceImporter extends EventEmitter {
     };
 
     // Store raw image URLs — actual processing happens in image queue
-    if (row.images) {
-      const imageDataArray = this.parseWooCommerceImages(row.images);
+    const imagesRaw = row.images || row.Images || row.image || row.Image || '';
+    if (imagesRaw) {
+      const imageDataArray = this.parseWooCommerceImages(imagesRaw);
       if (imageDataArray.length > 0) {
         productData.featuredImage = imageDataArray[0].url;
         productData.images = imageDataArray.map(img => img.url);
@@ -791,11 +793,25 @@ class WooCommerceImporter extends EventEmitter {
             pendingInserts.map(p => p.productData),
             { ordered: false }
           );
-          for (let j = 0; j < docs.length; j++) {
-            const pi = pendingInserts[j];
-            const docId = docs[j]?._id?.toString() || 'unknown';
-            results.created.push({ row: pi.rowNumber, sku: pi.productData.sku, id: docId });
-            this._queueImageProcessing(imageQueue, imageStats, processImages, pi, docs[j]);
+          // Build a SKU→{doc,pi} map so we match by identity, not by positional index.
+          // insertMany with ordered:false may internally reorder operations; relying on
+          // docs[j] === pendingInserts[j] causes images from product A to be saved on product B.
+          const skuToInsert = new Map();
+          const slugToInsert = new Map();
+          for (const pi of pendingInserts) {
+            if (pi.productData.sku)  skuToInsert.set(pi.productData.sku.toUpperCase(), pi);
+            if (pi.productData.slug) slugToInsert.set(pi.productData.slug, pi);
+          }
+          for (const doc of docs) {
+            const key = doc.sku ? doc.sku.toUpperCase() : null;
+            const pi = (key && skuToInsert.get(key)) || (doc.slug && slugToInsert.get(doc.slug));
+            const docId = doc._id?.toString() || 'unknown';
+            if (pi) {
+              results.created.push({ row: pi.rowNumber, sku: pi.productData.sku, id: docId });
+              this._queueImageProcessing(imageQueue, imageStats, processImages, pi, doc);
+            } else {
+              results.created.push({ row: 0, sku: doc.sku, id: docId });
+            }
           }
         } catch (bulkError) {
           // insertMany({ordered:false}) throws BulkWriteError but still inserts non-conflicting docs.

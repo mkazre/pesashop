@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useMutation } from 'react-query';
-import api, { importAPI } from '@/services/api';
+import { useMutation, useQuery } from 'react-query';
+import api, { importAPI, importBatchesAPI } from '@/services/api';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import toast from '@/utils/toast';
-import { IoCloudUpload, IoCloudDownload, IoCheckmarkCircle, IoCloseCircle, IoWarning, IoRefresh, IoTrash } from 'react-icons/io5';
+import { IoCloudUpload, IoCloudDownload, IoCheckmarkCircle, IoCloseCircle, IoWarning, IoRefresh, IoTrash, IoTime, IoEye, IoArchive } from 'react-icons/io5';
 
 const ImportExportPage = () => {
   const [importType, setImportType] = useState('products');
@@ -24,6 +24,27 @@ const ImportExportPage = () => {
   const [jobPolling, setJobPolling] = useState(false);
   const pollIntervalRef = useRef(null);
   const eventSourceRef = useRef(null);
+
+  // Import history state
+  const [showHistory, setShowHistory] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState(null);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [batchActionLoading, setBatchActionLoading] = useState(null);
+  const [reconstructing, setReconstructing] = useState(false);
+
+  const { data: batchesData, isLoading: batchesLoading, refetch: refetchBatches } = useQuery(
+    ['import-batches', historyRefreshKey],
+    () => importBatchesAPI.getAll({ limit: 100 }),
+    { enabled: showHistory, staleTime: 30000 }
+  );
+  const batches = batchesData?.data?.data || [];
+
+  const { data: batchDetailData, isLoading: batchDetailLoading } = useQuery(
+    ['import-batch', selectedBatch],
+    () => importBatchesAPI.getOne(selectedBatch),
+    { enabled: !!selectedBatch, staleTime: 60000 }
+  );
+  const batchDetail = batchDetailData?.data;
 
   // Job polling — polls every 2 seconds while a job is active
   const startJobPolling = useCallback((jobId) => {
@@ -67,6 +88,7 @@ const ImportExportPage = () => {
             _resultDetails: job.resultDetails
           });
           toast.success(`Import completed: ${r.created} created, ${r.updated} updated, ${r.merged} merged, ${r.skipped} skipped, ${r.errors} errors`);
+          setHistoryRefreshKey(k => k + 1); // refresh batch history
           setFile(null);
           setValidationResults(null);
           setDuplicateResolutions({});
@@ -295,6 +317,39 @@ const ImportExportPage = () => {
   };
 
   const progressPercent = importProgress ? Math.round((importProgress.current / importProgress.total) * 100) : 0;
+
+  const handleBatchAction = async (action, batchId, label) => {
+    if (!window.confirm(`${label}? This cannot be undone.`)) return;
+    setBatchActionLoading(batchId + action);
+    try {
+      const res = await (action === 'rollback' ? importBatchesAPI.rollback(batchId)
+        : action === 'draft' ? importBatchesAPI.setDraft(batchId)
+        : importBatchesAPI.delete(batchId));
+      toast.success(res.data?.message || 'Done');
+      if (selectedBatch === batchId && action === 'rollback') setSelectedBatch(null);
+      setHistoryRefreshKey(k => k + 1);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Action failed');
+    } finally {
+      setBatchActionLoading(null);
+    }
+  };
+
+  const handleReconstruct = async () => {
+    setReconstructing(true);
+    try {
+      const res = await importBatchesAPI.reconstruct(30);
+      toast.success(res.data?.message || 'Reconstruction complete');
+      setHistoryRefreshKey(k => k + 1);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Reconstruction failed');
+    } finally {
+      setReconstructing(false);
+    }
+  };
+
+  const fmtDate = (d) => d ? new Date(d).toLocaleString() : '—';
+  const statusColor = (s) => s === 'completed' ? 'text-green-600 bg-green-50' : s === 'failed' ? 'text-red-600 bg-red-50' : s === 'rolled_back' ? 'text-gray-500 bg-gray-100' : 'text-yellow-600 bg-yellow-50';
 
   return (
     <div className="space-y-6">
@@ -838,6 +893,163 @@ const ImportExportPage = () => {
           </div>
         </Card>
       )}
+
+      {/* Import History */}
+      <Card
+        title={
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <IoTime size={18} />
+              <span>Import History</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleReconstruct}
+                disabled={reconstructing}
+                className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                title="Group existing products by creation timestamp into import batches"
+              >
+                {reconstructing ? 'Reconstructing…' : 'Reconstruct Past Imports'}
+              </button>
+              <button
+                onClick={() => { setShowHistory(h => !h); if (!showHistory) refetchBatches(); }}
+                className="text-xs px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700"
+              >
+                {showHistory ? 'Hide' : 'Show History'}
+              </button>
+            </div>
+          </div>
+        }
+      >
+        {!showHistory ? (
+          <p className="text-sm text-gray-500">Click "Show History" to see all past import batches. From there you can roll back (delete) products from a bad import, or set them to draft while you fix images.</p>
+        ) : batchesLoading ? (
+          <div className="py-6 text-center text-gray-400 text-sm">Loading batches…</div>
+        ) : batches.length === 0 ? (
+          <div className="py-6 text-center">
+            <p className="text-gray-500 text-sm mb-3">No import batches found. If you have existing products from past imports, click "Reconstruct Past Imports" to group them by timestamp.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Batch list */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wide">
+                    <th className="py-2 pr-4">Date</th>
+                    <th className="py-2 pr-4">File</th>
+                    <th className="py-2 pr-4">Mode</th>
+                    <th className="py-2 pr-4">Status</th>
+                    <th className="py-2 pr-4 text-right">Created</th>
+                    <th className="py-2 pr-4 text-right">Updated</th>
+                    <th className="py-2 pr-4 text-right">Errors</th>
+                    <th className="py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {batches.map(batch => (
+                    <tr key={batch._id} className={`hover:bg-gray-50 ${selectedBatch === batch._id ? 'bg-blue-50' : ''}`}>
+                      <td className="py-2 pr-4 text-xs text-gray-500 whitespace-nowrap">{fmtDate(batch.startedAt)}</td>
+                      <td className="py-2 pr-4 max-w-[180px] truncate" title={batch.originalFilename}>{batch.originalFilename}</td>
+                      <td className="py-2 pr-4 text-xs capitalize">{batch.importMode}</td>
+                      <td className="py-2 pr-4">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(batch.status)}`}>
+                          {batch.status}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-4 text-right font-mono text-xs text-green-700">{batch.results?.created || 0}</td>
+                      <td className="py-2 pr-4 text-right font-mono text-xs text-blue-700">{batch.results?.updated || 0}</td>
+                      <td className="py-2 pr-4 text-right font-mono text-xs text-red-700">{batch.results?.errors || 0}</td>
+                      <td className="py-2">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setSelectedBatch(selectedBatch === batch._id ? null : batch._id)}
+                            className="p-1.5 rounded hover:bg-gray-100 text-gray-500" title="View sample products"
+                          ><IoEye size={14} /></button>
+                          {batch.createdProductIds?.length > 0 && batch.status !== 'rolled_back' && (
+                            <>
+                              <button
+                                onClick={() => handleBatchAction('draft', batch._id, `Set ${batch.results?.created || 0} products to Draft`)}
+                                disabled={batchActionLoading === batch._id + 'draft'}
+                                className="p-1.5 rounded hover:bg-yellow-50 text-yellow-600" title="Set all to Draft (hide but keep)"
+                              ><IoArchive size={14} /></button>
+                              <button
+                                onClick={() => handleBatchAction('rollback', batch._id, `DELETE all ${batch.createdProductIds.length} products from this import`)}
+                                disabled={batchActionLoading === batch._id + 'rollback'}
+                                className="p-1.5 rounded hover:bg-red-50 text-red-600" title="Delete all products from this import"
+                              ><IoTrash size={14} /></button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Batch detail / sample products */}
+            {selectedBatch && (
+              <div className="border rounded-xl p-4 bg-gray-50">
+                {batchDetailLoading ? (
+                  <p className="text-sm text-gray-400">Loading products…</p>
+                ) : batchDetail ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-sm">
+                        Sample Products — {batchDetail.data?.originalFilename}
+                        <span className="ml-2 text-gray-400 font-normal text-xs">({batchDetail.data?.createdProductIds?.length || 0} total)</span>
+                      </h4>
+                      {batchDetail.data?.categories?.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {batchDetail.data.categories.slice(0, 8).map(c => (
+                            <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-white border text-gray-600">{c}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {batchDetail.sampleProducts?.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-left text-gray-500 border-b">
+                              <th className="py-1 pr-3">Image</th>
+                              <th className="py-1 pr-3">Name</th>
+                              <th className="py-1 pr-3">SKU</th>
+                              <th className="py-1 pr-3">Status</th>
+                              <th className="py-1">Categories</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {batchDetail.sampleProducts.map(p => (
+                              <tr key={p._id} className="hover:bg-white">
+                                <td className="py-1 pr-3">
+                                  {p.images?.[0] ? (
+                                    <img src={p.images[0]} alt={p.name} className="w-10 h-10 object-cover rounded" />
+                                  ) : <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">—</div>}
+                                </td>
+                                <td className="py-1 pr-3 max-w-[200px] truncate font-medium" title={p.name}>{p.name}</td>
+                                <td className="py-1 pr-3 font-mono text-gray-500">{p.sku}</td>
+                                <td className="py-1 pr-3">
+                                  <span className={`px-1.5 py-0.5 rounded text-xs ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{p.status}</span>
+                                </td>
+                                <td className="py-1 text-gray-500">{(p.categories || []).map(c => c.name).join(', ')}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <p className="text-xs text-gray-400 mt-2">Showing first 20 of {batchDetail.data?.createdProductIds?.length} products</p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400">No products found (may have been rolled back)</p>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
 
       {/* Instructions */}
       <Card title="Import Instructions">

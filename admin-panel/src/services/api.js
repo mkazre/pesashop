@@ -614,12 +614,13 @@ export const demographicsAPI = {
 
 // ─── Import Batches API ─────────────────────────────────────────────
 export const importBatchesAPI = {
-  getAll:   (params) => api.get('/import-batches', { params }),
-  getOne:   (id) => api.get(`/import-batches/${id}`),
-  rollback: (id) => api.delete(`/import-batches/${id}/rollback`),
-  setDraft: (id) => api.put(`/import-batches/${id}/draft`),
-  publish:  (id) => api.put(`/import-batches/${id}/publish`),
-  delete:   (id) => api.delete(`/import-batches/${id}`),
+  getAll:       (params) => api.get('/import-batches', { params }),
+  getOne:       (id) => api.get(`/import-batches/${id}`),
+  rollback:     (id) => api.delete(`/import-batches/${id}/rollback`),
+  setDraft:     (id) => api.put(`/import-batches/${id}/draft`),
+  publish:      (id) => api.put(`/import-batches/${id}/publish`),
+  delete:       (id) => api.delete(`/import-batches/${id}`),
+  reconstruct:  (gapMinutes = 30) => api.post('/import-batches/reconstruct', { gapMinutes }),
 };
 
 // ─── Service Providers API ─────────────────────────────────────────
