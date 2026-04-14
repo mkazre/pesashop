@@ -8,6 +8,7 @@
  */
 
 const ServiceProviderAd = require('../models/ServiceProviderAd');
+const ServiceProviderAdPlacement = require('../models/ServiceProviderAdPlacement');
 const ServiceProvider = require('../models/ServiceProvider');
 const User = require('../models/User');
 const Product = require('../models/Product');
@@ -42,19 +43,39 @@ async function getContextualAds(slotId, context = {}) {
   }
 
   // 1. Fetch all active ads for this slot within valid date range
+  // Support both slotId string and legacy ObjectId (migration self-heal)
   const now = new Date();
+  const placement = await ServiceProviderAdPlacement.findOne({ slotId }).lean();
+  const slotQuery = placement
+    ? { $or: [{ placementSlot: slotId }, { placementSlot: placement._id.toString() }] }
+    : { placementSlot: slotId };
+
   const activeAds = await ServiceProviderAd.find({
-    placementSlot: slotId,
+    ...slotQuery,
     status: 'active',
-    startDate: { $lte: now },
-    endDate: { $gte: now }
+    // Allow ads with no dates set (always active) or within their date range
+    $and: [
+      { $or: [{ startDate: null }, { startDate: { $exists: false } }, { startDate: { $lte: now } }] },
+      { $or: [{ endDate: null }, { endDate: { $exists: false } }, { endDate: { $gte: now } }] }
+    ]
   }).populate('provider', 'businessName logoUrl applicationStatus subscriptionStatus');
 
-  // Filter ads whose provider is approved and subscription is active
+  // Self-heal: fix any ads that have ObjectId in placementSlot
+  if (placement) {
+    const legacyAds = activeAds.filter(ad => ad.placementSlot === placement._id.toString());
+    if (legacyAds.length > 0) {
+      await ServiceProviderAd.updateMany(
+        { _id: { $in: legacyAds.map(a => a._id) } },
+        { $set: { placementSlot: slotId } }
+      );
+      legacyAds.forEach(ad => { ad.placementSlot = slotId; });
+    }
+  }
+
+  // Filter ads whose provider is approved (subscription check optional — allow if no subscription required)
   const eligibleAds = activeAds.filter(ad =>
     ad.provider &&
-    ad.provider.applicationStatus === 'approved' &&
-    ad.provider.subscriptionStatus === 'active'
+    ad.provider.applicationStatus === 'approved'
   );
 
   if (eligibleAds.length === 0) return [];

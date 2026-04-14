@@ -355,7 +355,7 @@ function AdsTab({ ads, adsLoading, onCreateNew }) {
                   </div>
                   {ad.body && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{ad.body}</p>}
                   <div className="flex gap-4 mt-2 text-xs text-gray-400">
-                    {ad.placementSlot?.slotLabel && <span>📍 {ad.placementSlot.slotLabel}</span>}
+                    {ad.placementSlot && <span>📍 {ad.placementSlot}</span>}
                     {ad.startDate && <span>📅 From {new Date(ad.startDate).toLocaleDateString()}</span>}
                     {ad.endDate && <span>→ {new Date(ad.endDate).toLocaleDateString()}</span>}
                   </div>
@@ -509,7 +509,7 @@ function NewAdForm({ slots, onSuccess }) {
             {Object.entries(groupedSlots).map(([page, pageSlots]) => (
               <optgroup key={page} label={page}>
                 {pageSlots.map(s => (
-                  <option key={s._id} value={s._id}>
+                  <option key={s._id} value={s.slotId}>
                     {s.slotLabel} {s.monthlyRate ? `(R${s.monthlyRate}/month)` : ''}
                   </option>
                 ))}

@@ -97,6 +97,15 @@ router.post('/', protect, async (req, res) => {
 // PUT /api/service-provider-ads/:id/approve — Approve ad creative
 router.put('/:id/approve', protect, authorize('admin', 'shop_manager'), async (req, res) => {
   try {
+    // Self-heal: if placementSlot is stored as a MongoDB ObjectId (old bug), replace with slotId string
+    const existing = await ServiceProviderAd.findById(req.params.id);
+    if (existing && /^[a-f\d]{24}$/i.test(existing.placementSlot)) {
+      const placement = await ServiceProviderAdPlacement.findById(existing.placementSlot);
+      if (placement) {
+        await ServiceProviderAd.updateOne({ _id: existing._id }, { $set: { placementSlot: placement.slotId } });
+      }
+    }
+
     const ad = await ServiceProviderAd.findByIdAndUpdate(req.params.id, {
       status: 'active',
       approvedBy: req.user.id,
@@ -110,8 +119,8 @@ router.put('/:id/approve', protect, authorize('admin', 'shop_manager'), async (r
       await emailService.sendTemplatedEmail('service_provider_ad_approved', ad.provider.email, {
         businessName: ad.provider.businessName,
         adTitle: ad.title,
-        startDate: ad.startDate.toLocaleDateString(),
-        endDate: ad.endDate.toLocaleDateString()
+        startDate: ad.startDate ? ad.startDate.toLocaleDateString() : 'N/A',
+        endDate: ad.endDate ? ad.endDate.toLocaleDateString() : 'N/A'
       });
     } catch (e) { console.error('Ad approval email error:', e.message); }
 

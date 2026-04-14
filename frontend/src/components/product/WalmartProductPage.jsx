@@ -1177,6 +1177,15 @@ export default function WalmartProductPage({ product, settings }) {
                 )}
               </div>
             ))}
+
+          {/* Service Provider Ads — carousel after last center section (Q&A) */}
+          <ServiceProviderAdSlot
+            slotId="product_detail_below_buy"
+            pageType="product"
+            productId={product?._id}
+            categorySlug={product?.categories?.[0]?.slug}
+            maxAds={6}
+          />
           </div>
         </div>
 
@@ -1406,16 +1415,6 @@ export default function WalmartProductPage({ product, settings }) {
           </div>
         </div>
       )}
-
-      {/* Service Provider Ads — 5-column banner at bottom */}
-      <div style={{ maxWidth: lay.maxWidth || 1440, margin: '0 auto', padding: '0 24px 12px' }}>
-        <ServiceProviderAdSlot
-          slotId="product_detail_below_buy"
-          pageType="product"
-          productId={product?._id}
-          categorySlug={product?.categories?.[0]?.slug}
-        />
-      </div>
 
       {/* Checkout Drawer */}
       <CheckoutDrawer

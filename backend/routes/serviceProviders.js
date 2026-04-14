@@ -151,8 +151,7 @@ router.get('/me', protectProvider, async (req, res) => {
 router.get('/me/ads', protectProvider, async (req, res) => {
   try {
     const ads = await ServiceProviderAd.find({ provider: req.provider._id })
-      .sort({ createdAt: -1 })
-      .populate('placementSlot', 'slotLabel slotPage');
+      .sort({ createdAt: -1 });
     res.json({ success: true, data: ads });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
