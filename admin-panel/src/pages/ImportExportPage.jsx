@@ -323,15 +323,32 @@ const ImportExportPage = () => {
 
   const progressPercent = importProgress ? Math.round((importProgress.current / importProgress.total) * 100) : 0;
 
-  const handleBatchAction = async (action, batchId, label) => {
-    if (!window.confirm(`${label}? This cannot be undone.`)) return;
+  const handleBatchAction = async (action, batchId, batchObj) => {
+    const productCount = (batchObj.createdProductIds?.length || batchObj.results?.created || 0).toLocaleString();
+    if (action === 'rollback') {
+      const ok = window.confirm(
+        `PERMANENTLY DELETE ${productCount} products from this batch?\n\n` +
+        `• Products will be removed from your store\n` +
+        `• Their Cloudinary images will also be deleted\n` +
+        `• This CANNOT be undone — make sure you have the original CSV to re-import\n\n` +
+        `Only products in THIS batch will be deleted. All other products are safe.`
+      );
+      if (!ok) return;
+    } else if (action === 'draft') {
+      if (!window.confirm(`Set ${productCount} products from this batch to Draft (hidden from store, but kept in database)?`)) return;
+    } else {
+      if (!window.confirm('Delete this batch record? (Products are NOT deleted — only the tracking record is removed.)')) return;
+    }
+
     setBatchActionLoading(batchId + action);
     try {
-      const res = await (action === 'rollback' ? importBatchesAPI.rollback(batchId)
-        : action === 'draft' ? importBatchesAPI.setDraft(batchId)
-        : importBatchesAPI.delete(batchId));
+      const res = await (
+        action === 'rollback' ? importBatchesAPI.rollback(batchId, true)
+        : action === 'draft'  ? importBatchesAPI.setDraft(batchId)
+        :                       importBatchesAPI.delete(batchId)
+      );
       toast.success(res.data?.message || 'Done');
-      if (selectedBatch === batchId && action === 'rollback') setSelectedBatch(null);
+      if (selectedBatch === batchId) setSelectedBatch(null);
       setHistoryRefreshKey(k => k + 1);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Action failed');
@@ -1115,14 +1132,14 @@ const ImportExportPage = () => {
                                 {batch.createdProductIds?.length > 0 && batch.status !== 'rolled_back' && (
                                   <>
                                     <button
-                                      onClick={() => handleBatchAction('draft', batch._id, `Set ${(batch.results?.created || batch.createdProductIds.length).toLocaleString()} products to Draft (hidden but kept)`)}
+                                      onClick={() => handleBatchAction('draft', batch._id, batch)}
                                       disabled={!!batchActionLoading}
                                       className="p-1.5 rounded hover:bg-yellow-50 text-yellow-600 disabled:opacity-40" title="Set all to Draft — hides from storefront but keeps the products"
                                     ><IoArchive size={14} /></button>
                                     <button
-                                      onClick={() => handleBatchAction('rollback', batch._id, `PERMANENTLY DELETE all ${batch.createdProductIds.length.toLocaleString()} products from this batch`)}
+                                      onClick={() => handleBatchAction('rollback', batch._id, batch)}
                                       disabled={!!batchActionLoading}
-                                      className="p-1.5 rounded hover:bg-red-50 text-red-600 disabled:opacity-40" title="Roll back — permanently deletes all products in this batch"
+                                      className="p-1.5 rounded hover:bg-red-50 text-red-600 disabled:opacity-40" title="Delete all products + their Cloudinary images permanently"
                                     ><IoTrash size={14} /></button>
                                   </>
                                 )}

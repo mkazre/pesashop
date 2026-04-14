@@ -616,7 +616,7 @@ export const demographicsAPI = {
 export const importBatchesAPI = {
   getAll:       (params) => api.get('/import-batches', { params }),
   getOne:       (id) => api.get(`/import-batches/${id}`),
-  rollback:     (id) => api.delete(`/import-batches/${id}/rollback`),
+  rollback:     (id, deleteImages = true) => api.delete(`/import-batches/${id}/rollback`, { params: { deleteImages } }),
   setDraft:     (id) => api.put(`/import-batches/${id}/draft`),
   publish:      (id) => api.put(`/import-batches/${id}/publish`),
   delete:       (id) => api.delete(`/import-batches/${id}`),
