@@ -134,6 +134,52 @@ router.delete('/:id', protect, authorize(...ADMIN), async (req, res) => {
   }
 });
 
+// ── GET /api/import-batches/reconstruct/preview — dry run, no DB writes ──────
+// Same logic as /reconstruct but only returns session summary without saving.
+router.get('/reconstruct/preview', protect, authorize(...ADMIN), async (req, res) => {
+  try {
+    const gapMinutes = parseInt(req.query.gapMinutes) || 30;
+    const gapMs = gapMinutes * 60 * 1000;
+
+    const existingBatches = await ImportBatch.find({ type: 'products' }).select('createdProductIds');
+    const alreadyTracked = new Set(
+      existingBatches.flatMap(b => b.createdProductIds.map(id => id.toString()))
+    );
+
+    const allProducts = await Product.find({})
+      .select('_id createdAt')
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const untracked = allProducts.filter(p => !alreadyTracked.has(p._id.toString()));
+
+    if (untracked.length === 0) {
+      return res.json({ success: true, sessions: [], totalUntracked: 0, message: 'All products are already tracked.' });
+    }
+
+    const sessions = [];
+    let current = [untracked[0]];
+    for (let i = 1; i < untracked.length; i++) {
+      const gap = new Date(untracked[i].createdAt) - new Date(untracked[i - 1].createdAt);
+      if (gap > gapMs) { sessions.push(current); current = [untracked[i]]; }
+      else current.push(untracked[i]);
+    }
+    sessions.push(current);
+
+    const preview = sessions.map((s, idx) => ({
+      index: idx + 1,
+      productCount: s.length,
+      startedAt: s[0].createdAt,
+      completedAt: s[s.length - 1].createdAt,
+      durationMinutes: Math.round((new Date(s[s.length - 1].createdAt) - new Date(s[0].createdAt)) / 60000),
+    }));
+
+    res.json({ success: true, sessions: preview, totalUntracked: untracked.length, gapMinutes });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Preview failed: ' + err.message });
+  }
+});
+
 // ── POST /api/import-batches/reconstruct — scan all products, group by time ──
 // Groups products into import sessions based on createdAt clustering.
 // Products already tracked in an existing batch are skipped.

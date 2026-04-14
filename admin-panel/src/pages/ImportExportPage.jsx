@@ -26,15 +26,19 @@ const ImportExportPage = () => {
   const eventSourceRef = useRef(null);
 
   // Import history state
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [batchActionLoading, setBatchActionLoading] = useState(null);
   const [reconstructing, setReconstructing] = useState(false);
+  const [gapMinutes, setGapMinutes] = useState(60);
+  const [reconstructPreview, setReconstructPreview] = useState(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [showReconstructPanel, setShowReconstructPanel] = useState(false);
 
   const { data: batchesData, isLoading: batchesLoading, refetch: refetchBatches } = useQuery(
     ['import-batches', historyRefreshKey],
-    () => importBatchesAPI.getAll({ limit: 100 }),
+    () => importBatchesAPI.getAll({ limit: 200 }),
     { enabled: showHistory, staleTime: 30000 }
   );
   const batches = batchesData?.data?.data || [];
@@ -335,11 +339,31 @@ const ImportExportPage = () => {
     }
   };
 
+  const handlePreviewReconstruct = async () => {
+    setPreviewing(true);
+    setReconstructPreview(null);
+    try {
+      const res = await importBatchesAPI.reconstructPreview(gapMinutes);
+      setReconstructPreview(res.data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Preview failed');
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
   const handleReconstruct = async () => {
+    if (!reconstructPreview) return;
+    const confirmed = window.confirm(
+      `This will create ${reconstructPreview.sessions.length} reconstructed batch${reconstructPreview.sessions.length !== 1 ? 'es' : ''} covering ${reconstructPreview.totalUntracked.toLocaleString()} products.\n\nYou can then roll back or draft individual batches. Continue?`
+    );
+    if (!confirmed) return;
     setReconstructing(true);
     try {
-      const res = await importBatchesAPI.reconstruct(30);
+      const res = await importBatchesAPI.reconstruct(gapMinutes);
       toast.success(res.data?.message || 'Reconstruction complete');
+      setReconstructPreview(null);
+      setShowReconstructPanel(false);
       setHistoryRefreshKey(k => k + 1);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Reconstruction failed');
@@ -349,6 +373,7 @@ const ImportExportPage = () => {
   };
 
   const fmtDate = (d) => d ? new Date(d).toLocaleString() : '—';
+  const fmtDuration = (mins) => mins < 60 ? `${mins}m` : `${Math.round(mins / 60 * 10) / 10}h`;
   const statusColor = (s) => s === 'completed' ? 'text-green-600 bg-green-50' : s === 'failed' ? 'text-red-600 bg-red-50' : s === 'rolled_back' ? 'text-gray-500 bg-gray-100' : 'text-yellow-600 bg-yellow-50';
 
   return (
@@ -895,156 +920,258 @@ const ImportExportPage = () => {
       )}
 
       {/* Import History */}
-      <Card
-        title={
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2">
-              <IoTime size={18} />
-              <span>Import History</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleReconstruct}
-                disabled={reconstructing}
-                className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-                title="Group existing products by creation timestamp into import batches"
-              >
-                {reconstructing ? 'Reconstructing…' : 'Reconstruct Past Imports'}
-              </button>
-              <button
-                onClick={() => { setShowHistory(h => !h); if (!showHistory) refetchBatches(); }}
-                className="text-xs px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700"
-              >
-                {showHistory ? 'Hide' : 'Show History'}
-              </button>
-            </div>
-          </div>
-        }
-      >
-        {!showHistory ? (
-          <p className="text-sm text-gray-500">Click "Show History" to see all past import batches. From there you can roll back (delete) products from a bad import, or set them to draft while you fix images.</p>
-        ) : batchesLoading ? (
-          <div className="py-6 text-center text-gray-400 text-sm">Loading batches…</div>
-        ) : batches.length === 0 ? (
-          <div className="py-6 text-center">
-            <p className="text-gray-500 text-sm mb-3">No import batches found. If you have existing products from past imports, click "Reconstruct Past Imports" to group them by timestamp.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Batch list */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wide">
-                    <th className="py-2 pr-4">Date</th>
-                    <th className="py-2 pr-4">File</th>
-                    <th className="py-2 pr-4">Mode</th>
-                    <th className="py-2 pr-4">Status</th>
-                    <th className="py-2 pr-4 text-right">Created</th>
-                    <th className="py-2 pr-4 text-right">Updated</th>
-                    <th className="py-2 pr-4 text-right">Errors</th>
-                    <th className="py-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {batches.map(batch => (
-                    <tr key={batch._id} className={`hover:bg-gray-50 ${selectedBatch === batch._id ? 'bg-blue-50' : ''}`}>
-                      <td className="py-2 pr-4 text-xs text-gray-500 whitespace-nowrap">{fmtDate(batch.startedAt)}</td>
-                      <td className="py-2 pr-4 max-w-[180px] truncate" title={batch.originalFilename}>{batch.originalFilename}</td>
-                      <td className="py-2 pr-4 text-xs capitalize">{batch.importMode}</td>
-                      <td className="py-2 pr-4">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(batch.status)}`}>
-                          {batch.status}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4 text-right font-mono text-xs text-green-700">{batch.results?.created || 0}</td>
-                      <td className="py-2 pr-4 text-right font-mono text-xs text-blue-700">{batch.results?.updated || 0}</td>
-                      <td className="py-2 pr-4 text-right font-mono text-xs text-red-700">{batch.results?.errors || 0}</td>
-                      <td className="py-2">
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setSelectedBatch(selectedBatch === batch._id ? null : batch._id)}
-                            className="p-1.5 rounded hover:bg-gray-100 text-gray-500" title="View sample products"
-                          ><IoEye size={14} /></button>
-                          {batch.createdProductIds?.length > 0 && batch.status !== 'rolled_back' && (
-                            <>
-                              <button
-                                onClick={() => handleBatchAction('draft', batch._id, `Set ${batch.results?.created || 0} products to Draft`)}
-                                disabled={batchActionLoading === batch._id + 'draft'}
-                                className="p-1.5 rounded hover:bg-yellow-50 text-yellow-600" title="Set all to Draft (hide but keep)"
-                              ><IoArchive size={14} /></button>
-                              <button
-                                onClick={() => handleBatchAction('rollback', batch._id, `DELETE all ${batch.createdProductIds.length} products from this import`)}
-                                disabled={batchActionLoading === batch._id + 'rollback'}
-                                className="p-1.5 rounded hover:bg-red-50 text-red-600" title="Delete all products from this import"
-                              ><IoTrash size={14} /></button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      <Card title={
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2"><IoTime size={18} /><span>Import History &amp; Rollback</span></div>
+          <button onClick={() => setShowHistory(h => !h)} className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50">
+            {showHistory ? 'Hide' : 'Show'}
+          </button>
+        </div>
+      }>
+        {showHistory && (
+          <div className="space-y-5">
 
-            {/* Batch detail / sample products */}
-            {selectedBatch && (
-              <div className="border rounded-xl p-4 bg-gray-50">
-                {batchDetailLoading ? (
-                  <p className="text-sm text-gray-400">Loading products…</p>
-                ) : batchDetail ? (
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-sm">
-                        Sample Products — {batchDetail.data?.originalFilename}
-                        <span className="ml-2 text-gray-400 font-normal text-xs">({batchDetail.data?.createdProductIds?.length || 0} total)</span>
-                      </h4>
-                      {batchDetail.data?.categories?.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {batchDetail.data.categories.slice(0, 8).map(c => (
-                            <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-white border text-gray-600">{c}</span>
-                          ))}
-                        </div>
+            {/* ── Reconstruct past imports ── */}
+            <div className="border border-dashed border-amber-300 rounded-xl bg-amber-50 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-sm text-amber-900">Reconstruct Past Imports from Timestamps</p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Products imported before batch tracking was enabled aren't listed below. Click Preview to scan all untracked products
+                    and group them into batches based on how close their creation times are.
+                    Once reconstructed, you can roll back or draft individual batches just like new imports.
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setShowReconstructPanel(p => !p); setReconstructPreview(null); }}
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700"
+                >
+                  {showReconstructPanel ? 'Cancel' : 'Reconstruct…'}
+                </button>
+              </div>
+
+              {showReconstructPanel && (
+                <div className="mt-4 space-y-4">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div>
+                      <label className="block text-xs font-semibold text-amber-800 mb-1">
+                        Session Gap Threshold
+                      </label>
+                      <select
+                        value={gapMinutes}
+                        onChange={e => { setGapMinutes(Number(e.target.value)); setReconstructPreview(null); }}
+                        className="text-sm border border-amber-300 rounded-lg px-3 py-1.5 bg-white"
+                      >
+                        <option value={15}>15 minutes — tightest grouping</option>
+                        <option value={30}>30 minutes</option>
+                        <option value={60}>1 hour (recommended)</option>
+                        <option value={120}>2 hours</option>
+                        <option value={360}>6 hours — loosest grouping</option>
+                      </select>
+                      <p className="text-xs text-amber-600 mt-1">
+                        Products created within this gap of each other are treated as one import session.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handlePreviewReconstruct}
+                      disabled={previewing}
+                      className="self-end px-4 py-1.5 text-sm rounded-lg border border-amber-400 bg-white text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+                    >
+                      {previewing ? 'Scanning…' : 'Preview Sessions'}
+                    </button>
+                  </div>
+
+                  {reconstructPreview && (
+                    <div className="space-y-3">
+                      {reconstructPreview.totalUntracked === 0 ? (
+                        <p className="text-sm text-green-700 font-medium">All products are already tracked — nothing to reconstruct.</p>
+                      ) : (
+                        <>
+                          <p className="text-sm font-semibold text-amber-900">
+                            Found {reconstructPreview.sessions.length} import session{reconstructPreview.sessions.length !== 1 ? 's' : ''} covering{' '}
+                            <strong>{reconstructPreview.totalUntracked.toLocaleString()}</strong> untracked products.
+                            Review the sessions below, then click Confirm to create the batch records.
+                          </p>
+                          <div className="overflow-x-auto rounded-lg border border-amber-200 bg-white">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b text-left text-gray-500 uppercase tracking-wide bg-gray-50">
+                                  <th className="py-2 px-3">#</th>
+                                  <th className="py-2 px-3">Import Started</th>
+                                  <th className="py-2 px-3">Import Ended</th>
+                                  <th className="py-2 px-3">Duration</th>
+                                  <th className="py-2 px-3 text-right">Products</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y">
+                                {reconstructPreview.sessions.map(s => (
+                                  <tr key={s.index} className="hover:bg-gray-50">
+                                    <td className="py-2 px-3 font-mono text-gray-400">{s.index}</td>
+                                    <td className="py-2 px-3 whitespace-nowrap">{fmtDate(s.startedAt)}</td>
+                                    <td className="py-2 px-3 whitespace-nowrap">{fmtDate(s.completedAt)}</td>
+                                    <td className="py-2 px-3 text-gray-500">{fmtDuration(s.durationMinutes)}</td>
+                                    <td className="py-2 px-3 text-right font-semibold text-green-700">{s.productCount.toLocaleString()}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot>
+                                <tr className="border-t bg-gray-50 font-semibold">
+                                  <td colSpan={4} className="py-2 px-3 text-xs text-gray-600">Total</td>
+                                  <td className="py-2 px-3 text-right text-green-700">{reconstructPreview.totalUntracked.toLocaleString()}</td>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={handleReconstruct}
+                              disabled={reconstructing}
+                              className="px-5 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50"
+                            >
+                              {reconstructing ? 'Creating batches…' : `Confirm — Create ${reconstructPreview.sessions.length} Batch${reconstructPreview.sessions.length !== 1 ? 'es' : ''}`}
+                            </button>
+                            <p className="text-xs text-gray-500">Batch records are created in the database. No products are deleted.</p>
+                          </div>
+                        </>
                       )}
                     </div>
-                    {batchDetail.sampleProducts?.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="text-left text-gray-500 border-b">
-                              <th className="py-1 pr-3">Image</th>
-                              <th className="py-1 pr-3">Name</th>
-                              <th className="py-1 pr-3">SKU</th>
-                              <th className="py-1 pr-3">Status</th>
-                              <th className="py-1">Categories</th>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ── Batch list ── */}
+            {batchesLoading ? (
+              <div className="py-6 text-center text-gray-400 text-sm">Loading batches…</div>
+            ) : batches.length === 0 ? (
+              <div className="py-6 text-center">
+                <p className="text-gray-500 text-sm">No tracked batches yet. Use "Reconstruct Past Imports" above to group your existing products.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-gray-500">{batches.length} batch{batches.length !== 1 ? 'es' : ''} — most recent first</p>
+                <div className="overflow-x-auto rounded-xl border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wide bg-gray-50">
+                        <th className="py-2.5 px-3">Date &amp; Time</th>
+                        <th className="py-2.5 px-3">File / Label</th>
+                        <th className="py-2.5 px-3">Status</th>
+                        <th className="py-2.5 px-3 text-right">Products</th>
+                        <th className="py-2.5 px-3 text-right">Updated</th>
+                        <th className="py-2.5 px-3 text-right">Errors</th>
+                        <th className="py-2.5 px-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {batches.map(batch => (
+                        <React.Fragment key={batch._id}>
+                          <tr className={`hover:bg-gray-50 ${selectedBatch === batch._id ? 'bg-blue-50' : ''}`}>
+                            <td className="py-2.5 px-3 text-xs text-gray-500 whitespace-nowrap">{fmtDate(batch.startedAt)}</td>
+                            <td className="py-2.5 px-3 max-w-[220px]">
+                              <span className="block truncate font-medium text-sm" title={batch.originalFilename}>{batch.originalFilename}</span>
+                              {batch.categories?.length > 0 && (
+                                <span className="text-xs text-gray-400">{batch.categories.slice(0, 3).join(', ')}{batch.categories.length > 3 ? ` +${batch.categories.length - 3}` : ''}</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(batch.status)}`}>{batch.status}</span>
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-xs text-green-700 font-semibold">{(batch.results?.created || 0).toLocaleString()}</td>
+                            <td className="py-2.5 px-3 text-right font-mono text-xs text-blue-700">{(batch.results?.updated || 0).toLocaleString()}</td>
+                            <td className="py-2.5 px-3 text-right font-mono text-xs text-red-700">{(batch.results?.errors || 0).toLocaleString()}</td>
+                            <td className="py-2.5 px-3">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setSelectedBatch(selectedBatch === batch._id ? null : batch._id)}
+                                  className="p-1.5 rounded hover:bg-gray-100 text-gray-500" title="Preview products"
+                                ><IoEye size={14} /></button>
+                                {batch.createdProductIds?.length > 0 && batch.status !== 'rolled_back' && (
+                                  <>
+                                    <button
+                                      onClick={() => handleBatchAction('draft', batch._id, `Set ${(batch.results?.created || batch.createdProductIds.length).toLocaleString()} products to Draft (hidden but kept)`)}
+                                      disabled={!!batchActionLoading}
+                                      className="p-1.5 rounded hover:bg-yellow-50 text-yellow-600 disabled:opacity-40" title="Set all to Draft — hides from storefront but keeps the products"
+                                    ><IoArchive size={14} /></button>
+                                    <button
+                                      onClick={() => handleBatchAction('rollback', batch._id, `PERMANENTLY DELETE all ${batch.createdProductIds.length.toLocaleString()} products from this batch`)}
+                                      disabled={!!batchActionLoading}
+                                      className="p-1.5 rounded hover:bg-red-50 text-red-600 disabled:opacity-40" title="Roll back — permanently deletes all products in this batch"
+                                    ><IoTrash size={14} /></button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Expanded product preview */}
+                          {selectedBatch === batch._id && (
+                            <tr>
+                              <td colSpan={7} className="bg-blue-50 px-4 py-4 border-b">
+                                {batchDetailLoading ? (
+                                  <p className="text-sm text-gray-400">Loading products…</p>
+                                ) : batchDetail ? (
+                                  <div>
+                                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                      <div>
+                                        <span className="font-semibold text-sm">{batchDetail.data?.originalFilename}</span>
+                                        <span className="ml-2 text-gray-400 text-xs">{(batchDetail.data?.createdProductIds?.length || 0).toLocaleString()} products in this batch</span>
+                                      </div>
+                                      {batchDetail.data?.categories?.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {batchDetail.data.categories.map(c => (
+                                            <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-white border text-gray-600">{c}</span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                    {batchDetail.sampleProducts?.length > 0 ? (
+                                      <>
+                                        <div className="overflow-x-auto rounded-lg border bg-white">
+                                          <table className="w-full text-xs">
+                                            <thead>
+                                              <tr className="text-left text-gray-400 border-b bg-gray-50 uppercase tracking-wide text-[10px]">
+                                                <th className="py-2 px-3">Image</th>
+                                                <th className="py-2 px-3">Name</th>
+                                                <th className="py-2 px-3">SKU</th>
+                                                <th className="py-2 px-3">Status</th>
+                                                <th className="py-2 px-3">Categories</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                              {batchDetail.sampleProducts.map(p => (
+                                                <tr key={p._id} className="hover:bg-gray-50">
+                                                  <td className="py-2 px-3">
+                                                    {p.images?.[0]
+                                                      ? <img src={p.images[0]} alt={p.name} className="w-10 h-10 object-cover rounded border" />
+                                                      : <div className="w-10 h-10 bg-gray-200 rounded border flex items-center justify-center text-gray-300 text-[10px]">no img</div>}
+                                                  </td>
+                                                  <td className="py-2 px-3 max-w-[200px] truncate font-medium" title={p.name}>{p.name}</td>
+                                                  <td className="py-2 px-3 font-mono text-gray-500">{p.sku}</td>
+                                                  <td className="py-2 px-3">
+                                                    <span className={`px-1.5 py-0.5 rounded ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>{p.status}</span>
+                                                  </td>
+                                                  <td className="py-2 px-3 text-gray-500">{(p.categories || []).map(c => c.name).join(', ')}</td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                        <p className="text-xs text-gray-400 mt-1.5">Showing first 20 of {(batchDetail.data?.createdProductIds?.length || 0).toLocaleString()} products</p>
+                                      </>
+                                    ) : (
+                                      <p className="text-xs text-gray-400">No products found — they may have already been rolled back.</p>
+                                    )}
+                                  </div>
+                                ) : null}
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody className="divide-y">
-                            {batchDetail.sampleProducts.map(p => (
-                              <tr key={p._id} className="hover:bg-white">
-                                <td className="py-1 pr-3">
-                                  {p.images?.[0] ? (
-                                    <img src={p.images[0]} alt={p.name} className="w-10 h-10 object-cover rounded" />
-                                  ) : <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">—</div>}
-                                </td>
-                                <td className="py-1 pr-3 max-w-[200px] truncate font-medium" title={p.name}>{p.name}</td>
-                                <td className="py-1 pr-3 font-mono text-gray-500">{p.sku}</td>
-                                <td className="py-1 pr-3">
-                                  <span className={`px-1.5 py-0.5 rounded text-xs ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{p.status}</span>
-                                </td>
-                                <td className="py-1 text-gray-500">{(p.categories || []).map(c => c.name).join(', ')}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        <p className="text-xs text-gray-400 mt-2">Showing first 20 of {batchDetail.data?.createdProductIds?.length} products</p>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-400">No products found (may have been rolled back)</p>
-                    )}
-                  </div>
-                ) : null}
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
