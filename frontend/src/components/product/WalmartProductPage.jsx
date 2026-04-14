@@ -1181,7 +1181,7 @@ export default function WalmartProductPage({ product, settings }) {
           {/* Service Provider Ads — carousel after last center section (Q&A) */}
           <ServiceProviderAdSlot
             slotId="product_detail_below_buy"
-            pageType="product"
+            pageType="product_detail"
             productId={product?._id}
             categorySlug={product?.categories?.[0]?.slug}
             maxAds={6}

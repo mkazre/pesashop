@@ -42,13 +42,32 @@ async function getContextualAds(slotId, context = {}) {
     }
   }
 
-  // 1. Fetch all active ads for this slot within valid date range
-  // Support both slotId string and legacy ObjectId (migration self-heal)
+  // 1. Build slot query — supports exact slotId, legacy ObjectId, and page-level fallback
   const now = new Date();
-  const placement = await ServiceProviderAdPlacement.findOne({ slotId }).lean();
-  const slotQuery = placement
-    ? { $or: [{ placementSlot: slotId }, { placementSlot: placement._id.toString() }] }
-    : { placementSlot: slotId };
+
+  // Find placement by exact slotId first
+  let matchedPlacements = await ServiceProviderAdPlacement.find({ slotId, isActive: true }).lean();
+
+  // Fallback: if no placement found with that exact slotId, find ALL active placements
+  // for the same page (pageType maps to slotPage) so any admin-named slot on that page shows ads
+  if (matchedPlacements.length === 0 && pageType) {
+    // Normalise pageType: 'product' → 'product_detail', 'home' → 'home', etc.
+    const pageMap = { product: 'product_detail', shop: 'archive', category: 'category', checkout: 'checkout', account: 'account' };
+    const slotPage = pageMap[pageType] || pageType;
+    matchedPlacements = await ServiceProviderAdPlacement.find({ slotPage, isActive: true }).lean();
+  }
+
+  // Build the slot value list: all matching slotId strings + their ObjectId strings (legacy)
+  const slotValues = [];
+  for (const p of matchedPlacements) {
+    slotValues.push(p.slotId, p._id.toString());
+  }
+  // Also always include the original slotId in case it's stored directly
+  if (!slotValues.includes(slotId)) slotValues.push(slotId);
+
+  const slotQuery = slotValues.length > 1
+    ? { placementSlot: { $in: slotValues } }
+    : { placementSlot: slotValues[0] || slotId };
 
   const activeAds = await ServiceProviderAd.find({
     ...slotQuery,
@@ -60,15 +79,16 @@ async function getContextualAds(slotId, context = {}) {
     ]
   }).populate('provider', 'businessName logoUrl applicationStatus subscriptionStatus');
 
-  // Self-heal: fix any ads that have ObjectId in placementSlot
-  if (placement) {
-    const legacyAds = activeAds.filter(ad => ad.placementSlot === placement._id.toString());
-    if (legacyAds.length > 0) {
-      await ServiceProviderAd.updateMany(
-        { _id: { $in: legacyAds.map(a => a._id) } },
-        { $set: { placementSlot: slotId } }
-      );
-      legacyAds.forEach(ad => { ad.placementSlot = slotId; });
+  // Self-heal: fix any ads that have ObjectId in placementSlot → replace with the slotId string
+  const objectIdPattern = /^[a-f\d]{24}$/i;
+  const legacyAds = activeAds.filter(ad => objectIdPattern.test(ad.placementSlot));
+  if (legacyAds.length > 0) {
+    for (const ad of legacyAds) {
+      const matchingPlacement = matchedPlacements.find(p => p._id.toString() === ad.placementSlot);
+      if (matchingPlacement) {
+        await ServiceProviderAd.updateOne({ _id: ad._id }, { $set: { placementSlot: matchingPlacement.slotId } });
+        ad.placementSlot = matchingPlacement.slotId;
+      }
     }
   }
 

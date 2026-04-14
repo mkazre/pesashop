@@ -131,7 +131,7 @@ export default function ProductDetailScreen() {
     if (!product?._id) return;
     serviceProviderAdsAPI.getContextual({
       slotId: "product_detail_below_buy",
-      pageType: "product",
+      pageType: "product_detail",
       productId: product._id,
       categorySlug: product.categories?.[0]?.slug,
       maxAds: 6,
