@@ -10,7 +10,7 @@ const importBatchSchema = new mongoose.Schema({
   importMode: { type: String, default: 'add' }, // 'add' | 'update' | 'replace'
 
   // Results
-  status: { type: String, enum: ['running', 'completed', 'failed'], default: 'running' },
+  status: { type: String, enum: ['running', 'completed', 'failed', 'rolled_back', 'rolling_back', 'rollback_failed'], default: 'running' },
   results: {
     created: { type: Number, default: 0 },
     updated: { type: Number, default: 0 },
@@ -27,6 +27,15 @@ const importBatchSchema = new mongoose.Schema({
 
   // Error info
   errorMessage: { type: String, default: '' },
+
+  // Rollback result (populated after background deletion completes)
+  rollbackResult: {
+    deleted:          { type: Number },
+    cloudinaryDeleted:{ type: Number },
+    cloudinaryFailed: { type: Number },
+    error:            { type: String },
+    completedAt:      { type: Date },
+  },
 
   // Who imported
   importedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },

@@ -347,7 +347,11 @@ const ImportExportPage = () => {
         : action === 'draft'  ? importBatchesAPI.setDraft(batchId)
         :                       importBatchesAPI.delete(batchId)
       );
-      toast.success(res.data?.message || 'Done');
+      if (action === 'rollback' && res.data?.background) {
+        toast.success('Rollback started — running in the background. You can safely leave this page. The status will update automatically when done.');
+      } else {
+        toast.success(res.data?.message || 'Done');
+      }
       if (selectedBatch === batchId) setSelectedBatch(null);
       setHistoryRefreshKey(k => k + 1);
     } catch (err) {
@@ -392,7 +396,22 @@ const ImportExportPage = () => {
 
   const fmtDate = (d) => d ? new Date(d).toLocaleString() : '—';
   const fmtDuration = (mins) => mins < 60 ? `${mins}m` : `${Math.round(mins / 60 * 10) / 10}h`;
-  const statusColor = (s) => s === 'completed' ? 'text-green-600 bg-green-50' : s === 'failed' ? 'text-red-600 bg-red-50' : s === 'rolled_back' ? 'text-gray-500 bg-gray-100' : 'text-yellow-600 bg-yellow-50';
+  const statusColor = (s) => {
+    if (s === 'completed')       return 'text-green-600 bg-green-50';
+    if (s === 'rolled_back')     return 'text-gray-500 bg-gray-100';
+    if (s === 'rolling_back')    return 'text-blue-600 bg-blue-50 animate-pulse';
+    if (s === 'rollback_failed') return 'text-red-600 bg-red-100';
+    if (s === 'failed')          return 'text-red-600 bg-red-50';
+    return 'text-yellow-600 bg-yellow-50';
+  };
+
+  // Auto-refresh while any batch is in rolling_back state
+  useEffect(() => {
+    const hasActive = batches.some(b => b.status === 'rolling_back');
+    if (!hasActive) return;
+    const t = setTimeout(() => setHistoryRefreshKey(k => k + 1), 4000);
+    return () => clearTimeout(t);
+  }, [batches]);
 
   return (
     <div className="space-y-6">
@@ -1118,7 +1137,12 @@ const ImportExportPage = () => {
                               )}
                             </td>
                             <td className="py-2.5 px-3">
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(batch.status)}`}>{batch.status}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(batch.status)}`}>
+                                {batch.status === 'rolling_back'    ? '⏳ deleting…'
+                                : batch.status === 'rollback_failed' ? '⚠ rollback failed'
+                                : batch.status === 'rolled_back'     ? 'rolled back'
+                                : batch.status}
+                              </span>
                             </td>
                             <td className="py-2.5 px-3 text-right font-mono text-xs text-green-700 font-semibold">{(batch.results?.created || 0).toLocaleString()}</td>
                             <td className="py-2.5 px-3 text-right font-mono text-xs text-blue-700">{(batch.results?.updated || 0).toLocaleString()}</td>

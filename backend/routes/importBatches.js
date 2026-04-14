@@ -47,6 +47,8 @@ router.get('/:id', protect, authorize(...ADMIN), async (req, res) => {
 });
 
 // ── DELETE /api/import-batches/:id/rollback — delete all products in batch ──
+// Responds immediately (202) and runs deletion in the background so the user
+// can safely close or navigate away without interrupting the process.
 router.delete('/:id/rollback', protect, authorize(...ADMIN), async (req, res) => {
   try {
     const batch = await ImportBatch.findById(req.params.id);
@@ -54,70 +56,92 @@ router.delete('/:id/rollback', protect, authorize(...ADMIN), async (req, res) =>
     if (batch.createdProductIds.length === 0) {
       return res.status(400).json({ success: false, message: 'No products to roll back (batch may have been updates only)' });
     }
-
-    const ids = batch.createdProductIds;
-    let deleted = 0;
-    let cloudinaryDeleted = 0;
-    let cloudinaryFailed = 0;
-    const deleteCloudinaryImages = req.query.deleteImages !== 'false'; // default: true
-
-    // Process in chunks of 500
-    for (let i = 0; i < ids.length; i += 500) {
-      const chunk = ids.slice(i, i + 500);
-
-      // Step 1: Collect all Cloudinary image URLs from products in this chunk BEFORE deleting
-      if (deleteCloudinaryImages) {
-        const products = await Product.find({ _id: { $in: chunk } })
-          .select('images featuredImage')
-          .lean();
-
-        // Extract all unique Cloudinary public IDs across all images of all products
-        const publicIds = new Set();
-        for (const product of products) {
-          const allUrls = [
-            ...(product.images || []),
-            product.featuredImage ? [product.featuredImage] : [],
-          ].flat().filter(Boolean);
-
-          for (const url of allUrls) {
-            const pid = getPublicIdFromUrl(url);
-            if (pid) publicIds.add(pid);
-          }
-        }
-
-        // Delete from Cloudinary in sub-batches of 100 (Cloudinary API limit)
-        const pidArray = [...publicIds];
-        for (let j = 0; j < pidArray.length; j += 100) {
-          const pidChunk = pidArray.slice(j, j + 100);
-          try {
-            const result = await cloudinary.api.delete_resources(pidChunk, { resource_type: 'image' });
-            cloudinaryDeleted += Object.keys(result.deleted || {}).length;
-            // Count anything not 'deleted' as failed (e.g. 'not_found' means already gone — still fine)
-            cloudinaryFailed += Object.values(result.deleted || {}).filter(v => v !== 'deleted').length;
-          } catch (cloudErr) {
-            console.error('[Rollback] Cloudinary delete error:', cloudErr.message);
-            cloudinaryFailed += pidChunk.length;
-          }
-        }
-      }
-
-      // Step 2: Delete the products from MongoDB
-      const result = await Product.deleteMany({ _id: { $in: chunk } });
-      deleted += result.deletedCount;
+    if (batch.status === 'rolling_back') {
+      return res.status(409).json({ success: false, message: 'Rollback already in progress for this batch.' });
     }
 
-    batch.createdProductIds = [];
-    batch.status = 'rolled_back';
+    const deleteCloudinaryImages = req.query.deleteImages !== 'false';
+    const totalProducts = batch.createdProductIds.length;
+
+    // Mark as in-progress immediately so duplicate requests are blocked
+    batch.status = 'rolling_back';
     await batch.save();
 
-    const msg = deleteCloudinaryImages
-      ? `Rolled back: ${deleted} products deleted. Cloudinary: ${cloudinaryDeleted} images removed${cloudinaryFailed > 0 ? `, ${cloudinaryFailed} already gone or failed` : ''}.`
-      : `Rolled back: ${deleted} products deleted (Cloudinary images kept).`;
+    // Respond immediately — client can safely navigate away
+    res.status(202).json({
+      success: true,
+      message: `Rollback started for ${totalProducts.toLocaleString()} products. You can safely close this page — deletion continues on the server.`,
+      totalProducts,
+      background: true,
+    });
 
-    res.json({ success: true, message: msg, deleted, cloudinaryDeleted, cloudinaryFailed });
+    // ── Background deletion (runs after response is sent) ─────────────
+    setImmediate(async () => {
+      let deleted = 0;
+      let cloudinaryDeleted = 0;
+      let cloudinaryFailed = 0;
+      const ids = batch.createdProductIds;
+
+      try {
+        for (let i = 0; i < ids.length; i += 500) {
+          const chunk = ids.slice(i, i + 500);
+
+          // Step 1: Collect Cloudinary public IDs from this chunk BEFORE deleting
+          if (deleteCloudinaryImages) {
+            const products = await Product.find({ _id: { $in: chunk } })
+              .select('images featuredImage')
+              .lean();
+
+            const publicIds = new Set();
+            for (const product of products) {
+              const allUrls = [...(product.images || []), product.featuredImage].filter(Boolean);
+              for (const url of allUrls) {
+                const pid = getPublicIdFromUrl(url);
+                if (pid) publicIds.add(pid);
+              }
+            }
+
+            // Cloudinary bulk delete — max 100 per call
+            const pidArray = [...publicIds];
+            for (let j = 0; j < pidArray.length; j += 100) {
+              try {
+                const result = await cloudinary.api.delete_resources(pidArray.slice(j, j + 100), { resource_type: 'image' });
+                cloudinaryDeleted += Object.values(result.deleted || {}).filter(v => v === 'deleted').length;
+                cloudinaryFailed  += Object.values(result.deleted || {}).filter(v => v !== 'deleted').length;
+              } catch (cloudErr) {
+                console.error('[Rollback] Cloudinary error:', cloudErr.message);
+                cloudinaryFailed += Math.min(100, pidArray.length - j);
+              }
+            }
+          }
+
+          // Step 2: Delete the products from MongoDB
+          const result = await Product.deleteMany({ _id: { $in: chunk } });
+          deleted += result.deletedCount;
+        }
+
+        // Mark batch as fully rolled back
+        await ImportBatch.findByIdAndUpdate(batch._id, {
+          status: 'rolled_back',
+          createdProductIds: [],
+          rollbackResult: { deleted, cloudinaryDeleted, cloudinaryFailed, completedAt: new Date() },
+        });
+
+        console.log(`[Rollback] Batch ${batch._id} complete: ${deleted} products, ${cloudinaryDeleted} Cloudinary images deleted.`);
+
+      } catch (err) {
+        console.error(`[Rollback] Batch ${batch._id} failed mid-way:`, err.message);
+        // Mark as failed so the user can see it in the UI and retry
+        await ImportBatch.findByIdAndUpdate(batch._id, {
+          status: 'rollback_failed',
+          rollbackResult: { deleted, cloudinaryDeleted, cloudinaryFailed, error: err.message, completedAt: new Date() },
+        });
+      }
+    });
+
   } catch (err) {
     console.error('Rollback error:', err);
-    res.status(500).json({ success: false, message: 'Rollback failed: ' + err.message });
+    res.status(500).json({ success: false, message: 'Rollback failed to start: ' + err.message });
   }
 });
 
