@@ -620,8 +620,8 @@ export const importBatchesAPI = {
   setDraft:     (id) => api.put(`/import-batches/${id}/draft`),
   publish:      (id) => api.put(`/import-batches/${id}/publish`),
   delete:       (id) => api.delete(`/import-batches/${id}`),
-  reconstruct:        (gapMinutes = 30) => api.post('/import-batches/reconstruct', { gapMinutes }),
-  reconstructPreview: (gapMinutes = 30) => api.get('/import-batches/reconstruct/preview', { params: { gapMinutes } }),
+  reconstruct:        (gapMinutes = 60, groupByDate = false) => api.post('/import-batches/reconstruct', { gapMinutes, groupByDate }),
+  reconstructPreview: (gapMinutes = 60, groupByDate = false) => api.get('/import-batches/reconstruct/preview', { params: { gapMinutes, groupByDate } }),
 };
 
 // ─── Service Providers API ─────────────────────────────────────────

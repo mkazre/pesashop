@@ -32,6 +32,7 @@ const ImportExportPage = () => {
   const [batchActionLoading, setBatchActionLoading] = useState(null);
   const [reconstructing, setReconstructing] = useState(false);
   const [gapMinutes, setGapMinutes] = useState(60);
+  const [groupByDate, setGroupByDate] = useState(false);
   const [reconstructPreview, setReconstructPreview] = useState(null);
   const [previewing, setPreviewing] = useState(false);
   const [showReconstructPanel, setShowReconstructPanel] = useState(false);
@@ -343,7 +344,7 @@ const ImportExportPage = () => {
     setPreviewing(true);
     setReconstructPreview(null);
     try {
-      const res = await importBatchesAPI.reconstructPreview(gapMinutes);
+      const res = await importBatchesAPI.reconstructPreview(gapMinutes, groupByDate);
       setReconstructPreview(res.data);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Preview failed');
@@ -360,7 +361,7 @@ const ImportExportPage = () => {
     if (!confirmed) return;
     setReconstructing(true);
     try {
-      const res = await importBatchesAPI.reconstruct(gapMinutes);
+      const res = await importBatchesAPI.reconstruct(gapMinutes, groupByDate);
       toast.success(res.data?.message || 'Reconstruction complete');
       setReconstructPreview(null);
       setShowReconstructPanel(false);
@@ -952,30 +953,55 @@ const ImportExportPage = () => {
 
               {showReconstructPanel && (
                 <div className="mt-4 space-y-4">
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <div>
-                      <label className="block text-xs font-semibold text-amber-800 mb-1">
-                        Session Gap Threshold
-                      </label>
-                      <select
-                        value={gapMinutes}
-                        onChange={e => { setGapMinutes(Number(e.target.value)); setReconstructPreview(null); }}
-                        className="text-sm border border-amber-300 rounded-lg px-3 py-1.5 bg-white"
-                      >
-                        <option value={15}>15 minutes — tightest grouping</option>
-                        <option value={30}>30 minutes</option>
-                        <option value={60}>1 hour (recommended)</option>
-                        <option value={120}>2 hours</option>
-                        <option value={360}>6 hours — loosest grouping</option>
-                      </select>
-                      <p className="text-xs text-amber-600 mt-1">
-                        Products created within this gap of each other are treated as one import session.
-                      </p>
+                  <div className="space-y-3">
+                    {/* Group by date toggle */}
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white border border-amber-200">
+                      <input
+                        type="checkbox"
+                        id="groupByDate"
+                        checked={groupByDate}
+                        onChange={e => { setGroupByDate(e.target.checked); setReconstructPreview(null); }}
+                        className="w-4 h-4 accent-amber-600"
+                      />
+                      <div>
+                        <label htmlFor="groupByDate" className="text-sm font-semibold text-amber-900 cursor-pointer">
+                          Group by calendar date (recommended for your situation)
+                        </label>
+                        <p className="text-xs text-amber-700 mt-0.5">
+                          One batch per day — ignores time gaps. Best when you imported products on clearly different dates.
+                          The timestamps used are taken from the MongoDB document ID (always accurate, cannot be null).
+                        </p>
+                      </div>
                     </div>
+
+                    {/* Gap threshold — only shown when not grouping by date */}
+                    {!groupByDate && (
+                      <div>
+                        <label className="block text-xs font-semibold text-amber-800 mb-1">
+                          Session Gap Threshold
+                        </label>
+                        <select
+                          value={gapMinutes}
+                          onChange={e => { setGapMinutes(Number(e.target.value)); setReconstructPreview(null); }}
+                          className="text-sm border border-amber-300 rounded-lg px-3 py-1.5 bg-white"
+                        >
+                          <option value={30}>30 minutes</option>
+                          <option value={60}>1 hour</option>
+                          <option value={120}>2 hours</option>
+                          <option value={360}>6 hours</option>
+                          <option value={720}>12 hours</option>
+                          <option value={1440}>24 hours (same as one batch per day)</option>
+                        </select>
+                        <p className="text-xs text-amber-600 mt-1">
+                          If two consecutive products were inserted more than this gap apart, they're split into separate batches.
+                        </p>
+                      </div>
+                    )}
+
                     <button
                       onClick={handlePreviewReconstruct}
                       disabled={previewing}
-                      className="self-end px-4 py-1.5 text-sm rounded-lg border border-amber-400 bg-white text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+                      className="px-4 py-1.5 text-sm rounded-lg border border-amber-400 bg-white text-amber-800 hover:bg-amber-50 disabled:opacity-50"
                     >
                       {previewing ? 'Scanning…' : 'Preview Sessions'}
                     </button>

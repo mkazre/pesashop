@@ -134,11 +134,26 @@ router.delete('/:id', protect, authorize(...ADMIN), async (req, res) => {
   }
 });
 
+// ── Shared helper: get the true insertion timestamp from a product ──────────
+// ObjectId embeds a Unix timestamp (seconds precision) that is ALWAYS set at
+// insertion time and cannot be null — unlike the createdAt field which can be
+// missing or identical across a bulk insertMany batch.
+function getProductTimestamp(p) {
+  // Primary: ObjectId timestamp (guaranteed, second-precision)
+  try {
+    return p._id.getTimestamp();
+  } catch (_) {
+    // Fallback: createdAt field
+    const d = new Date(p.createdAt);
+    return isNaN(d.getTime()) ? new Date(0) : d;
+  }
+}
+
 // ── GET /api/import-batches/reconstruct/preview — dry run, no DB writes ──────
-// Same logic as /reconstruct but only returns session summary without saving.
 router.get('/reconstruct/preview', protect, authorize(...ADMIN), async (req, res) => {
   try {
-    const gapMinutes = parseInt(req.query.gapMinutes) || 30;
+    const gapMinutes = parseInt(req.query.gapMinutes) || 60;
+    const groupByDate = req.query.groupByDate === 'true';
     const gapMs = gapMinutes * 60 * 1000;
 
     const existingBatches = await ImportBatch.find({ type: 'products' }).select('createdProductIds');
@@ -146,9 +161,10 @@ router.get('/reconstruct/preview', protect, authorize(...ADMIN), async (req, res
       existingBatches.flatMap(b => b.createdProductIds.map(id => id.toString()))
     );
 
+    // Sort by _id (ObjectId order = insertion order) — NOT createdAt
     const allProducts = await Product.find({})
-      .select('_id createdAt')
-      .sort({ createdAt: 1 })
+      .select('_id')
+      .sort({ _id: 1 })
       .lean();
 
     const untracked = allProducts.filter(p => !alreadyTracked.has(p._id.toString()));
@@ -157,84 +173,105 @@ router.get('/reconstruct/preview', protect, authorize(...ADMIN), async (req, res
       return res.json({ success: true, sessions: [], totalUntracked: 0, message: 'All products are already tracked.' });
     }
 
-    const sessions = [];
-    let current = [untracked[0]];
-    for (let i = 1; i < untracked.length; i++) {
-      const gap = new Date(untracked[i].createdAt) - new Date(untracked[i - 1].createdAt);
-      if (gap > gapMs) { sessions.push(current); current = [untracked[i]]; }
-      else current.push(untracked[i]);
+    let sessions;
+    if (groupByDate) {
+      // Group by calendar date (UTC) of ObjectId timestamp
+      const byDate = new Map();
+      for (const p of untracked) {
+        const ts = getProductTimestamp(p);
+        const key = ts.toISOString().slice(0, 10); // "YYYY-MM-DD"
+        if (!byDate.has(key)) byDate.set(key, []);
+        byDate.get(key).push(p);
+      }
+      sessions = [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, prods]) => prods);
+    } else {
+      // Group by time gap between consecutive products (by ObjectId timestamp)
+      sessions = [];
+      let current = [untracked[0]];
+      for (let i = 1; i < untracked.length; i++) {
+        const gap = getProductTimestamp(untracked[i]) - getProductTimestamp(untracked[i - 1]);
+        if (gap > gapMs) { sessions.push(current); current = [untracked[i]]; }
+        else current.push(untracked[i]);
+      }
+      sessions.push(current);
     }
-    sessions.push(current);
 
-    const preview = sessions.map((s, idx) => ({
-      index: idx + 1,
-      productCount: s.length,
-      startedAt: s[0].createdAt,
-      completedAt: s[s.length - 1].createdAt,
-      durationMinutes: Math.round((new Date(s[s.length - 1].createdAt) - new Date(s[0].createdAt)) / 60000),
-    }));
+    const preview = sessions.map((s, idx) => {
+      const startTs = getProductTimestamp(s[0]);
+      const endTs   = getProductTimestamp(s[s.length - 1]);
+      return {
+        index: idx + 1,
+        productCount: s.length,
+        startedAt: startTs,
+        completedAt: endTs,
+        durationMinutes: Math.round((endTs - startTs) / 60000),
+      };
+    });
 
-    res.json({ success: true, sessions: preview, totalUntracked: untracked.length, gapMinutes });
+    res.json({ success: true, sessions: preview, totalUntracked: untracked.length, gapMinutes, groupByDate });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Preview failed: ' + err.message });
   }
 });
 
 // ── POST /api/import-batches/reconstruct — scan all products, group by time ──
-// Groups products into import sessions based on createdAt clustering.
-// Products already tracked in an existing batch are skipped.
-// Gap threshold: if two consecutive products (sorted by createdAt) were created
-// more than `gapMinutes` apart, they belong to different import sessions.
 router.post('/reconstruct', protect, authorize(...ADMIN), async (req, res) => {
   try {
-    const gapMinutes = parseInt(req.body.gapMinutes) || 30;
+    const gapMinutes = parseInt(req.body.gapMinutes) || 60;
+    const groupByDate = req.body.groupByDate === true || req.body.groupByDate === 'true';
     const gapMs = gapMinutes * 60 * 1000;
 
-    // Get all product IDs already tracked in a batch so we don't double-count
     const existingBatches = await ImportBatch.find({ type: 'products' }).select('createdProductIds');
     const alreadyTracked = new Set(
       existingBatches.flatMap(b => b.createdProductIds.map(id => id.toString()))
     );
 
-    // Fetch all products sorted by createdAt (only _id, createdAt, categories)
-    // Use lean() + streaming for memory efficiency on large DBs
+    // Sort by _id (ObjectId = insertion order) — more reliable than createdAt for bulk imports
     const allProducts = await Product.find({})
-      .select('_id createdAt categories')
-      .sort({ createdAt: 1 })
+      .select('_id categories')
+      .sort({ _id: 1 })
       .lean();
 
-    // Filter out already-tracked products
     const untracked = allProducts.filter(p => !alreadyTracked.has(p._id.toString()));
 
     if (untracked.length === 0) {
       return res.json({ success: true, batchesCreated: 0, message: 'All products are already tracked in existing batches.' });
     }
 
-    // Cluster into sessions based on time gap
-    const sessions = [];
-    let currentSession = [untracked[0]];
-
-    for (let i = 1; i < untracked.length; i++) {
-      const prev = untracked[i - 1];
-      const curr = untracked[i];
-      const gap = new Date(curr.createdAt) - new Date(prev.createdAt);
-      if (gap > gapMs) {
-        sessions.push(currentSession);
-        currentSession = [curr];
-      } else {
-        currentSession.push(curr);
+    let sessions;
+    if (groupByDate) {
+      const byDate = new Map();
+      for (const p of untracked) {
+        const ts = getProductTimestamp(p);
+        const key = ts.toISOString().slice(0, 10);
+        if (!byDate.has(key)) byDate.set(key, []);
+        byDate.get(key).push(p);
       }
+      sessions = [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, prods]) => prods);
+    } else {
+      sessions = [];
+      let currentSession = [untracked[0]];
+      for (let i = 1; i < untracked.length; i++) {
+        const gap = getProductTimestamp(untracked[i]) - getProductTimestamp(untracked[i - 1]);
+        if (gap > gapMs) { sessions.push(currentSession); currentSession = [untracked[i]]; }
+        else currentSession.push(untracked[i]);
+      }
+      sessions.push(currentSession);
     }
-    sessions.push(currentSession);
 
     // Create ImportBatch records for each session
     let batchesCreated = 0;
     const createdBatches = [];
 
     for (const session of sessions) {
-      const startedAt = session[0].createdAt;
-      const completedAt = session[session.length - 1].createdAt;
-      const productIds = session.map(p => p._id);
+      // Use ObjectId-embedded timestamps for accurate start/end dates
+      const startedAt   = getProductTimestamp(session[0]);
+      const completedAt = getProductTimestamp(session[session.length - 1]);
+      const productIds  = session.map(p => p._id);
+
+      // Label: include date so the user can identify batches easily
+      const dateLabel = startedAt.toISOString().slice(0, 10);
+      const label = `Reconstructed — ${dateLabel} (${session.length.toLocaleString()} products)`;
 
       // Derive category names from a sample of the products
       const sample = await Product.find({ _id: { $in: productIds.slice(0, 50) } })
@@ -250,7 +287,7 @@ router.post('/reconstruct', protect, authorize(...ADMIN), async (req, res) => {
       const batch = await ImportBatch.create({
         jobId,
         type: 'products',
-        originalFilename: `Reconstructed session (${session.length} products)`,
+        originalFilename: label,
         importMode: 'add',
         status: 'completed',
         results: { created: session.length, updated: 0, merged: 0, skipped: 0, errors: 0 },
