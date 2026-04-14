@@ -189,9 +189,11 @@ export default function ServiceProviderDetailPage() {
           </div>
 
           {/* Documents */}
-          {(provider.documents || []).length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-bold text-gray-700 mb-3">Application Documents</h3>
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-bold text-gray-700 mb-3">Application Documents</h3>
+            {(provider.documents || []).length === 0 ? (
+              <p className="text-sm text-gray-400">No documents uploaded.</p>
+            ) : (
               <div className="space-y-2">
                 {provider.documents.map((doc, i) => (
                   <div key={i} className="flex items-center gap-3 p-2 border border-gray-100 rounded-lg">
@@ -204,8 +206,8 @@ export default function ServiceProviderDetailPage() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Assigned Requests */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">

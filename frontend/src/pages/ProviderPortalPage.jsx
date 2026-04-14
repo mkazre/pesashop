@@ -126,7 +126,7 @@ function LoginScreen({ onLogin }) {
 // ─── Dashboard ─────────────────────────────────────────────
 function Dashboard({ provider: initialProvider, onLogout }) {
   const qc = useQueryClient();
-  const [tab, setTab] = useState('overview'); // 'overview' | 'ads' | 'new-ad' | 'plans'
+  const [tab, setTab] = useState('overview'); // 'overview' | 'ads' | 'new-ad' | 'book-slot' | 'orders'
 
   // Refresh provider profile
   const { data: profileData } = useQuery(
@@ -144,7 +144,7 @@ function Dashboard({ provider: initialProvider, onLogout }) {
   );
   const ads = adsData || [];
 
-  // Slots (for new ad form)
+  // Slots (for new ad form + booking)
   const { data: slotsData } = useQuery(
     'sp-portal-slots',
     () => portalHttp.get('/api/service-providers/portal/slots', portalApi()).then(r => r.data.data || []),
@@ -152,13 +152,14 @@ function Dashboard({ provider: initialProvider, onLogout }) {
   );
   const slots = slotsData || [];
 
-  // Plans
-  const { data: plansData } = useQuery(
-    'sp-portal-plans',
-    () => portalHttp.get('/api/service-providers/plans/public').then(r => r.data.data || []),
-    { staleTime: 5 * 60 * 1000 }
+  // Ad Orders
+  const { data: ordersData, isLoading: ordersLoading } = useQuery(
+    'sp-portal-ad-orders',
+    () => portalHttp.get('/api/service-providers/portal/ad-orders', portalApi()).then(r => r.data.data || []),
+    { staleTime: 30000 }
   );
-  const plans = plansData || [];
+  const adOrders = ordersData || [];
+  const pendingOrders = adOrders.filter(o => o.status === 'pending_payment').length;
 
   const subStatus = provider?.subscriptionStatus || 'none';
   const subPlan = provider?.subscriptionPlan;
@@ -166,9 +167,10 @@ function Dashboard({ provider: initialProvider, onLogout }) {
 
   const tabs = [
     { id: 'overview', label: '📊 Overview' },
+    { id: 'book-slot', label: '🛒 Book Ad Slot' },
+    { id: 'orders', label: `📋 My Orders${pendingOrders > 0 ? ` (${pendingOrders} pending)` : ''}` },
     { id: 'ads', label: `📢 My Ads (${ads.length})` },
     { id: 'new-ad', label: '➕ Create Ad' },
-    { id: 'plans', label: '📋 Subscription Plans' },
   ];
 
   return (
@@ -203,19 +205,22 @@ function Dashboard({ provider: initialProvider, onLogout }) {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        {tab === 'overview' && <OverviewTab provider={provider} subStatus={subStatus} subPlan={subPlan} subExpiry={subExpiry} ads={ads} onGoToAds={() => setTab('ads')} onGoToPlans={() => setTab('plans')} />}
+        {tab === 'overview' && <OverviewTab provider={provider} subStatus={subStatus} subPlan={subPlan} subExpiry={subExpiry} ads={ads} adOrders={adOrders} onGoToAds={() => setTab('ads')} onGoToBook={() => setTab('book-slot')} onGoToOrders={() => setTab('orders')} />}
+        {tab === 'book-slot' && <BookSlotTab slots={slots} onOrderPlaced={() => { qc.invalidateQueries('sp-portal-ad-orders'); setTab('orders'); }} />}
+        {tab === 'orders' && <MyOrdersTab orders={adOrders} loading={ordersLoading} onBookSlot={() => setTab('book-slot')} />}
         {tab === 'ads' && <AdsTab ads={ads} adsLoading={adsLoading} onCreateNew={() => setTab('new-ad')} />}
         {tab === 'new-ad' && <NewAdForm slots={slots} onSuccess={() => { qc.invalidateQueries('sp-portal-ads'); setTab('ads'); }} />}
-        {tab === 'plans' && <PlansTab plans={plans} currentPlan={subPlan} />}
       </div>
     </div>
   );
 }
 
 // ─── Overview Tab ──────────────────────────────────────────
-function OverviewTab({ provider, subStatus, subPlan, subExpiry, ads, onGoToAds, onGoToPlans }) {
+function OverviewTab({ provider, subStatus, subPlan, subExpiry, ads, adOrders, onGoToAds, onGoToBook, onGoToOrders }) {
   const activeAds = ads.filter(a => a.status === 'active').length;
   const pendingAds = ads.filter(a => a.status === 'pending').length;
+  const pendingOrders = adOrders.filter(o => o.status === 'pending_payment').length;
+  const activeOrders = adOrders.filter(o => o.status === 'active').length;
 
   return (
     <div className="space-y-6">
@@ -237,16 +242,16 @@ function OverviewTab({ provider, subStatus, subPlan, subExpiry, ads, onGoToAds, 
             )}
           </div>
           {subStatus !== 'active' && (
-            <button onClick={onGoToPlans} className="px-4 py-2 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800">
-              View Plans
+            <button onClick={onGoToBook} className="px-4 py-2 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800">
+              Book an Ad Slot
             </button>
           )}
         </div>
-        {subStatus !== 'active' && (
-          <div className="mt-3 p-3 bg-white/70 rounded text-xs text-gray-600">
-            <strong>To activate a subscription:</strong> View the available plans below and contact us at{' '}
-            <a href="mailto:providers@pesashop.co.za" className="text-primary underline">providers@pesashop.co.za</a>{' '}
-            to arrange payment. Your account will be activated within 24 hours.
+        {pendingOrders > 0 && (
+          <div className="mt-3 p-3 bg-white/70 rounded text-xs text-amber-700">
+            <strong>{pendingOrders} order{pendingOrders > 1 ? 's' : ''} awaiting payment confirmation.</strong>{' '}
+            <button onClick={onGoToOrders} className="underline font-semibold">View your orders</button>.
+            Once we confirm your payment, your subscription will be activated within 24 hours.
           </div>
         )}
       </div>
@@ -257,7 +262,7 @@ function OverviewTab({ provider, subStatus, subPlan, subExpiry, ads, onGoToAds, 
           { label: 'Total Ads', value: ads.length, icon: '📢' },
           { label: 'Active Ads', value: activeAds, icon: '✅' },
           { label: 'Pending Review', value: pendingAds, icon: '⏳' },
-          { label: 'Max Allowed', value: subPlan?.maxActiveAds ?? '—', icon: '🎯' },
+          { label: 'Active Orders', value: activeOrders, icon: '🎯' },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-200 rounded-lg p-4 text-center">
             <div className="text-2xl mb-1">{s.icon}</div>
@@ -271,11 +276,14 @@ function OverviewTab({ provider, subStatus, subPlan, subExpiry, ads, onGoToAds, 
       <div className="bg-white border border-gray-200 rounded-lg p-5">
         <h3 className="text-sm font-bold text-gray-700 mb-4">Quick Actions</h3>
         <div className="flex flex-wrap gap-3">
-          <button onClick={onGoToAds} className="px-4 py-2 bg-primary text-white text-sm font-semibold hover:bg-primary/90">
-            📢 Manage My Ads
+          <button onClick={onGoToBook} className="px-4 py-2 bg-primary text-white text-sm font-semibold hover:bg-primary/90">
+            🛒 Book an Ad Slot
           </button>
-          <button onClick={onGoToPlans} className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50">
-            📋 View Subscription Plans
+          <button onClick={onGoToOrders} className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50">
+            📋 My Orders
+          </button>
+          <button onClick={onGoToAds} className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50">
+            📢 Manage My Ads
           </button>
           <a href="/service-providers" className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50 inline-flex items-center">
             🔙 Back to Services Page
@@ -285,14 +293,14 @@ function OverviewTab({ provider, subStatus, subPlan, subExpiry, ads, onGoToAds, 
 
       {/* How It Works */}
       <div className="bg-white border border-gray-200 rounded-lg p-5">
-        <h3 className="text-sm font-bold text-gray-700 mb-4">How Ad Subscriptions Work</h3>
+        <h3 className="text-sm font-bold text-gray-700 mb-4">How Ad Booking Works</h3>
         <ol className="space-y-3">
           {[
-            { n: '1', t: 'Choose a subscription plan', d: 'Each plan defines how many active ads you can run at once.' },
-            { n: '2', t: 'Contact us to activate', d: 'Email providers@pesashop.co.za to arrange payment. We activate within 24 hours.' },
-            { n: '3', t: 'Create your ads', d: 'Design your ad (title, image, CTA) and choose which page slots to advertise on.' },
-            { n: '4', t: 'Admin reviews & approves', d: 'We review your ad creative (usually within 24 hours) then publish it live.' },
-            { n: '5', t: 'Your ads go live', d: 'Your ads appear contextually on relevant pages to customers matching your target audience.' },
+            { n: '1', t: 'Browse available ad slots', d: 'Each slot appears on a specific page (home, product detail, checkout, etc.) with daily/weekly/monthly/yearly rates.' },
+            { n: '2', t: 'Place your order', d: 'Select a slot, duration, quantity and payment method. Your order is saved immediately.' },
+            { n: '3', t: 'Make payment', d: 'For EFT, transfer to our bank account using your order reference. We also accept cash and card.' },
+            { n: '4', t: 'Admin confirms & activates', d: 'Once we verify your payment, your subscription is activated within 24 hours.' },
+            { n: '5', t: 'Create your ad creatives', d: 'With an active subscription, create and submit your ad (title, image, CTA) for review. We publish within 24 hours.' },
           ].map(s => (
             <li key={s.n} className="flex gap-3">
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">{s.n}</span>
@@ -563,66 +571,378 @@ function NewAdForm({ slots, onSuccess }) {
   );
 }
 
-// ─── Plans Tab ─────────────────────────────────────────────
-function PlansTab({ plans, currentPlan }) {
+// ─── Book Slot Tab ─────────────────────────────────────────
+const DURATION_OPTIONS = [
+  { value: 'daily', label: 'Daily', rateKey: 'dailyRate' },
+  { value: 'weekly', label: 'Weekly', rateKey: 'weeklyRate' },
+  { value: 'monthly', label: 'Monthly', rateKey: 'monthlyRate' },
+  { value: 'yearly', label: 'Yearly', rateKey: 'yearlyRate' },
+];
+
+function BookSlotTab({ slots, onOrderPlaced }) {
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ durationType: 'monthly', quantity: 1, paymentMethod: 'eft', notes: '' });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+  const [success, setSuccess] = useState(null);
+
+  const setField = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
+
+  const getRate = (slot, durationType) => {
+    const opt = DURATION_OPTIONS.find(o => o.value === durationType);
+    return opt ? (slot[opt.rateKey] || 0) : 0;
+  };
+
+  const unitPrice = selectedSlot ? getRate(selectedSlot, form.durationType) : 0;
+  const totalAmount = unitPrice * Math.max(1, parseInt(form.quantity) || 1);
+
+  const handleBook = (slot) => {
+    setSelectedSlot(slot);
+    setShowForm(true);
+    setErr('');
+    setSuccess(null);
+    setForm({ durationType: 'monthly', quantity: 1, paymentMethod: 'eft', notes: '' });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedSlot) return;
+    if (unitPrice <= 0) {
+      setErr(`No rate configured for "${form.durationType}" on this slot. Choose a different duration.`);
+      return;
+    }
+    setErr('');
+    setLoading(true);
+    try {
+      const res = await portalHttp.post('/api/service-providers/portal/ad-orders', {
+        slotId: selectedSlot.slotId,
+        durationType: form.durationType,
+        quantity: parseInt(form.quantity) || 1,
+        paymentMethod: form.paymentMethod,
+        notes: form.notes,
+      }, portalApi());
+      setSuccess(res.data.data);
+      setShowForm(false);
+    } catch (ex) {
+      setErr(ex.response?.data?.message || 'Failed to place order. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const groupedSlots = slots.reduce((acc, s) => {
+    const page = s.slotPage || 'other';
+    if (!acc[page]) acc[page] = [];
+    acc[page].push(s);
+    return acc;
+  }, {});
+
+  if (success) {
+    return (
+      <div className="max-w-xl">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+          <div className="text-4xl mb-3">✅</div>
+          <h2 className="text-lg font-bold text-green-800 mb-2">Order Placed Successfully!</h2>
+          <p className="text-sm text-green-700 mb-4">
+            Your order reference is: <strong className="font-mono">{success._id?.slice(-8).toUpperCase()}</strong>
+          </p>
+          <div className="bg-white rounded border border-green-200 p-4 text-left text-sm text-gray-700 space-y-1.5 mb-4">
+            <div className="flex justify-between"><span className="text-gray-500">Slot:</span><span className="font-medium">{success.slotLabel}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Duration:</span><span className="font-medium">{success.durationType} × {success.quantity}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Total:</span><span className="font-bold text-gray-900">R{(success.totalAmount || 0).toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Payment:</span><span className="font-medium">{success.paymentMethod?.toUpperCase()}</span></div>
+          </div>
+          {success.paymentMethod === 'eft' && (
+            <div className="bg-blue-50 border border-blue-200 rounded p-3 text-xs text-blue-700 text-left mb-4">
+              <strong>EFT Payment Instructions:</strong><br />
+              Please transfer <strong>R{(success.totalAmount || 0).toLocaleString()}</strong> to:<br />
+              Bank: FNB · Account: 62XXXXXXXX · Branch: 250655<br />
+              Reference: <strong className="font-mono">{success._id?.slice(-8).toUpperCase()}</strong><br />
+              Email proof of payment to <a href="mailto:providers@pesashop.co.za" className="underline">providers@pesashop.co.za</a>
+            </div>
+          )}
+          <div className="flex gap-3 justify-center">
+            <button onClick={onOrderPlaced} className="px-5 py-2 bg-primary text-white text-sm font-semibold hover:bg-primary/90">
+              View My Orders
+            </button>
+            <button onClick={() => { setSuccess(null); setSelectedSlot(null); }} className="px-5 py-2 border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50">
+              Book Another Slot
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-900">Subscription Plans</h2>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-gray-900">Available Ad Slots</h2>
+        <p className="text-sm text-gray-500 mt-1">Select a slot to book. Each slot appears on a specific page of the platform.</p>
       </div>
 
-      {plans.length === 0 ? (
+      {slots.length === 0 && (
         <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
-          <p className="text-gray-400 text-sm">No plans published yet. Contact us for pricing.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {plans.map(plan => {
-            const isCurrent = currentPlan?._id === plan._id || currentPlan?.name === plan.name;
-            return (
-              <div key={plan._id} className={`bg-white border-2 rounded-lg p-5 ${isCurrent ? 'border-primary' : 'border-gray-200'}`}>
-                {isCurrent && (
-                  <span className="inline-block mb-2 px-2 py-0.5 bg-primary text-white text-xs font-bold rounded-full">
-                    CURRENT PLAN
-                  </span>
-                )}
-                <h3 className="text-base font-bold text-gray-900">{plan.name}</h3>
-                <div className="mt-1">
-                  <span className="text-2xl font-bold text-primary">R{plan.price}</span>
-                  <span className="text-sm text-gray-500">/{plan.billingCycle || 'month'}</span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Up to {plan.maxActiveAds || 1} active ads</p>
-
-                {(plan.featuresIncluded || []).length > 0 && (
-                  <ul className="mt-3 space-y-1.5">
-                    {plan.featuresIncluded.map((f, i) => (
-                      <li key={i} className="flex items-start gap-1.5 text-xs text-gray-600">
-                        <span className="text-green-500 mt-0.5">✓</span>
-                        <span>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {!isCurrent && (
-                  <a
-                    href={`mailto:providers@pesashop.co.za?subject=Subscribe to ${plan.name}&body=Hi, I would like to subscribe to the ${plan.name} plan (R${plan.price}/${plan.billingCycle}).`}
-                    className="mt-4 block text-center py-2 border border-gray-900 text-gray-900 text-xs font-semibold hover:bg-gray-900 hover:text-white transition-colors"
-                  >
-                    Subscribe to This Plan →
-                  </a>
-                )}
-              </div>
-            );
-          })}
+          <p className="text-gray-400 text-sm">No ad slots configured yet. Contact us to set up available slots.</p>
         </div>
       )}
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
-        <strong>How to subscribe:</strong> Click "Subscribe to This Plan" to send us an email, or contact{' '}
-        <a href="mailto:providers@pesashop.co.za" className="underline">providers@pesashop.co.za</a> directly.
-        Include your business name and preferred plan. We'll confirm payment details and activate your subscription within 24 hours.
+      {Object.entries(groupedSlots).map(([page, pageSlots]) => (
+        <div key={page} className="space-y-3">
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            {page.replace('_', ' ')} Page
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {pageSlots.map(slot => (
+              <div key={slot._id} className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm">{slot.slotLabel}</h4>
+                    {slot.description && <p className="text-xs text-gray-500 mt-0.5">{slot.description}</p>}
+                    <p className="text-xs text-gray-400 mt-0.5">Max {slot.maxAds || 1} ad{slot.maxAds !== 1 ? 's' : ''} simultaneously</p>
+                  </div>
+                </div>
+                {/* Rates */}
+                <div className="mt-3 grid grid-cols-2 gap-1.5">
+                  {DURATION_OPTIONS.map(opt => {
+                    const rate = slot[opt.rateKey] || 0;
+                    if (!rate) return null;
+                    return (
+                      <div key={opt.value} className="text-xs text-gray-600">
+                        <span className="text-gray-400">{opt.label}: </span>
+                        <span className="font-semibold text-gray-800">R{rate.toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => handleBook(slot)}
+                  className="mt-3 w-full py-2 border border-gray-900 text-gray-900 text-xs font-semibold hover:bg-gray-900 hover:text-white transition-colors"
+                >
+                  Book This Slot
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Inline Checkout Form */}
+      {showForm && selectedSlot && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-xl overflow-y-auto max-h-[90vh]">
+            <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-gray-900">Book: {selectedSlot.slotLabel}</h3>
+                <p className="text-xs text-gray-500">{selectedSlot.slotPage} page</p>
+              </div>
+              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-5 space-y-4">
+              {err && <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded">{err}</div>}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Duration Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {DURATION_OPTIONS.map(opt => {
+                    const rate = selectedSlot[opt.rateKey] || 0;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setField('durationType', opt.value)}
+                        disabled={!rate}
+                        className={`px-3 py-2 text-sm border rounded transition-colors text-left ${
+                          form.durationType === opt.value
+                            ? 'border-primary bg-primary/5 text-primary font-semibold'
+                            : rate
+                            ? 'border-gray-200 text-gray-700 hover:border-gray-400'
+                            : 'border-gray-100 text-gray-300 cursor-not-allowed'
+                        }`}
+                      >
+                        <span className="block font-medium">{opt.label}</span>
+                        <span className="text-xs">{rate ? `R${rate.toLocaleString()}` : 'N/A'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                  Quantity (number of {form.durationType || 'periods'})
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="24"
+                  required
+                  value={form.quantity}
+                  onChange={e => setField('quantity', e.target.value)}
+                  className="w-full border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
+                />
+                <p className="text-xs text-gray-400 mt-1">e.g. 3 = 3 {form.durationType}s</p>
+              </div>
+
+              {/* Price summary */}
+              <div className="bg-gray-50 border border-gray-200 rounded p-3 space-y-1.5 text-sm">
+                <div className="flex justify-between text-gray-600">
+                  <span>Rate per {form.durationType}:</span>
+                  <span>R{unitPrice.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                  <span>Quantity:</span>
+                  <span>× {form.quantity || 1}</span>
+                </div>
+                <div className="flex justify-between font-bold text-gray-900 pt-1 border-t border-gray-200">
+                  <span>Total:</span>
+                  <span>R{totalAmount.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Payment Method</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[{ v: 'eft', l: 'EFT' }, { v: 'cash', l: 'Cash' }, { v: 'card', l: 'Card' }].map(pm => (
+                    <button
+                      key={pm.v}
+                      type="button"
+                      onClick={() => setField('paymentMethod', pm.v)}
+                      className={`py-2 text-sm border rounded font-medium transition-colors ${
+                        form.paymentMethod === pm.v
+                          ? 'border-primary bg-primary/5 text-primary'
+                          : 'border-gray-200 text-gray-700 hover:border-gray-400'
+                      }`}
+                    >
+                      {pm.l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Notes (optional)</label>
+                <textarea
+                  value={form.notes}
+                  onChange={e => setField('notes', e.target.value)}
+                  placeholder="Any special requests or information…"
+                  rows={2}
+                  className="w-full border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="flex-1 py-2.5 border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || unitPrice <= 0}
+                  className="flex-1 py-2.5 bg-primary text-white font-semibold text-sm hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                >
+                  {loading ? 'Placing Order…' : `Place Order — R${totalAmount.toLocaleString()}`}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── My Orders Tab ─────────────────────────────────────────
+const ORDER_BADGE = {
+  pending_payment: 'bg-amber-100 text-amber-700',
+  active: 'bg-green-100 text-green-700',
+  declined: 'bg-red-100 text-red-600',
+  expired: 'bg-gray-100 text-gray-400',
+  cancelled: 'bg-gray-100 text-gray-500',
+};
+
+function MyOrdersTab({ orders, loading, onBookSlot }) {
+  if (loading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-gray-900">My Ad Orders</h2>
+        <button onClick={onBookSlot} className="px-4 py-2 bg-primary text-white text-sm font-semibold hover:bg-primary/90">
+          + Book New Slot
+        </button>
       </div>
+
+      {/* EFT bank details notice */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
+        <strong>EFT Payment Details:</strong> FNB · Account: 62XXXXXXXX · Branch: 250655<br />
+        Use your <strong>order reference</strong> (last 8 chars of Order ID) as payment reference.<br />
+        Email proof of payment to <a href="mailto:providers@pesashop.co.za" className="underline font-medium">providers@pesashop.co.za</a>
+      </div>
+
+      {orders.length === 0 ? (
+        <div className="text-center py-16 bg-white border border-gray-200 rounded-lg">
+          <div className="text-4xl mb-3">📋</div>
+          <p className="text-gray-500 text-sm">No orders yet. Book your first ad slot to get started.</p>
+          <button onClick={onBookSlot} className="mt-4 px-5 py-2 bg-primary text-white text-sm font-semibold hover:bg-primary/90">
+            Book an Ad Slot
+          </button>
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Slot</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Duration</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Qty</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Total</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Payment</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {orders.map(order => (
+                  <tr key={order._id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                      {new Date(order.createdAt).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <p className="text-gray-400 font-mono mt-0.5">{order._id?.slice(-8).toUpperCase()}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm text-gray-800 font-medium">{order.slotLabel || order.slotId}</p>
+                      {order.slotPage && <p className="text-xs text-gray-400">{order.slotPage}</p>}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700 capitalize">{order.durationType}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{order.quantity}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-900">R{(order.totalAmount || 0).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 uppercase">{order.paymentMethod}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${ORDER_BADGE[order.status] || 'bg-gray-100 text-gray-500'}`}>
+                        {order.status?.replace('_', ' ').toUpperCase()}
+                      </span>
+                      {order.status === 'active' && order.endDate && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Until {new Date(order.endDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      )}
+                      {order.status === 'declined' && order.declineReason && (
+                        <p className="text-xs text-red-500 mt-0.5">{order.declineReason}</p>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -134,10 +134,11 @@ router.get('/mine', protect, async (req, res) => {
 // GET /api/service-requests — all requests (admin)
 router.get('/', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
   try {
-    const { status, serviceType, page = 1, limit = 20 } = req.query;
+    const { status, serviceType, providerId, page = 1, limit = 20 } = req.query;
     const filter = {};
     if (status) filter.status = status;
     if (serviceType) filter.serviceType = serviceType;
+    if (providerId) filter.assignedProvider = providerId;
 
     const total = await ServiceRequest.countDocuments(filter);
     const requests = await ServiceRequest.find(filter)

@@ -72,6 +72,7 @@ import ServiceProviderCategoriesPage from './pages/ServiceProviderCategoriesPage
 import ServiceProviderPlansPage from './pages/ServiceProviderPlansPage';
 import ServiceProviderAdSlotsPage from './pages/ServiceProviderAdSlotsPage';
 import ServiceProviderAdsPage from './pages/ServiceProviderAdsPage';
+import ServiceProviderAdOrdersPage from './pages/ServiceProviderAdOrdersPage';
 import ServiceProviderDetailPage from './pages/ServiceProviderDetailPage';
 import ServiceTypesPage from './pages/ServiceTypesPage';
 import ServiceRequestsPage from './pages/ServiceRequestsPage';
@@ -182,6 +183,7 @@ function App() {
             <Route path="service-providers/categories" element={<ServiceProviderCategoriesPage />} />
             <Route path="service-providers/plans" element={<ServiceProviderPlansPage />} />
             <Route path="service-providers/ad-slots" element={<ServiceProviderAdSlotsPage />} />
+            <Route path="service-providers/ad-orders" element={<ServiceProviderAdOrdersPage />} />
             <Route path="service-providers/:id" element={<ServiceProviderDetailPage />} />
             <Route path="service-provider-ads" element={<ServiceProviderAdsPage />} />
             <Route path="service-types" element={<ServiceTypesPage />} />

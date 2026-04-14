@@ -524,7 +524,7 @@ function ProviderApplicationForm({ serviceTypes, onClose }) {
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     ID / Passport Document <span className="text-red-500">*</span>
                   </label>
-                  <p className="text-xs text-gray-400 mb-1.5">Upload a clear photo or scan of your South African ID, passport, or driver's licence.</p>
+                  <p className="text-xs text-gray-400 mb-1.5">Upload a clear photo or scan of your government ID, passport, or driver's licence.</p>
                   <input
                     type="file"
                     required

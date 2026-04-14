@@ -664,6 +664,10 @@ export const serviceProvidersAPI = {
   getSlots: () => api.get('/service-providers/admin/slots'),
   createSlot: (data) => api.post('/service-providers/admin/slots', data),
   updateSlot: (id, data) => api.put(`/service-providers/admin/slots/${id}`, data),
+  // Ad Orders
+  getAdOrders: (params) => api.get('/service-providers/ad-orders', { params }),
+  activateAdOrder: (id) => api.put(`/service-providers/ad-orders/${id}/activate`),
+  declineAdOrder: (id, reason) => api.put(`/service-providers/ad-orders/${id}/decline`, { reason }),
 };
 
 // ─── Service Provider Ads API ──────────────────────────────────────

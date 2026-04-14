@@ -80,20 +80,269 @@ const ls = StyleSheet.create({
   hint: { fontSize: 12, color: colors.gray400, textAlign: "center", marginTop: 16 },
 });
 
+// ─── Slot Booking Screen ───────────────────────────────────
+const DURATION_OPTS = [
+  { value: "daily", label: "Daily", rateKey: "dailyRate" },
+  { value: "weekly", label: "Weekly", rateKey: "weeklyRate" },
+  { value: "monthly", label: "Monthly", rateKey: "monthlyRate" },
+  { value: "yearly", label: "Yearly", rateKey: "yearlyRate" },
+];
+
+function BookSlotScreen({ token, slots, onOrderPlaced, onBack }: { token: string; slots: any[]; onOrderPlaced: () => void; onBack: () => void }) {
+  const [selectedSlot, setSelectedSlot] = useState<any>(null);
+  const [durationType, setDurationType] = useState("monthly");
+  const [quantity, setQuantity] = useState("1");
+  const [paymentMethod, setPaymentMethod] = useState("eft");
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState<any>(null);
+
+  const getRate = (slot: any, dt: string) => {
+    const opt = DURATION_OPTS.find(o => o.value === dt);
+    return opt ? (slot[opt.rateKey] || 0) : 0;
+  };
+
+  const unitPrice = selectedSlot ? getRate(selectedSlot, durationType) : 0;
+  const qty = Math.max(1, parseInt(quantity) || 1);
+  const totalAmount = unitPrice * qty;
+
+  const handlePlaceOrder = async () => {
+    if (!selectedSlot) { setError("Select a slot first"); return; }
+    if (unitPrice <= 0) { setError("No rate for this duration. Pick another."); return; }
+    setError(""); setLoading(true);
+    try {
+      const res = await portalHttp.post("/api/service-providers/portal/ad-orders", {
+        slotId: selectedSlot.slotId,
+        durationType,
+        quantity: qty,
+        paymentMethod,
+        notes,
+      }, authConfig(token));
+      setSuccess(res.data.data);
+    } catch (e: any) {
+      setError(e.response?.data?.message || "Failed to place order");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80 }}>
+        <View style={bs.successCard}>
+          <Text style={bs.successIcon}>✅</Text>
+          <Text style={bs.successTitle}>Order Placed!</Text>
+          <Text style={bs.successRef}>Ref: {success._id?.slice(-8).toUpperCase()}</Text>
+          <View style={bs.summaryBox}>
+            <Text style={bs.summaryRow}><Text style={bs.summaryLabel}>Slot: </Text>{success.slotLabel}</Text>
+            <Text style={bs.summaryRow}><Text style={bs.summaryLabel}>Duration: </Text>{success.durationType} × {success.quantity}</Text>
+            <Text style={bs.summaryRow}><Text style={bs.summaryLabel}>Total: </Text>R{(success.totalAmount || 0).toLocaleString()}</Text>
+            <Text style={bs.summaryRow}><Text style={bs.summaryLabel}>Payment: </Text>{success.paymentMethod?.toUpperCase()}</Text>
+          </View>
+          {success.paymentMethod === "eft" && (
+            <View style={bs.eftBox}>
+              <Text style={bs.eftTitle}>EFT Payment Details</Text>
+              <Text style={bs.eftText}>Bank: FNB{"\n"}Account: 62XXXXXXXX{"\n"}Branch: 250655{"\n"}Reference: {success._id?.slice(-8).toUpperCase()}{"\n"}Amount: R{(success.totalAmount || 0).toLocaleString()}</Text>
+              <Pressable onPress={() => Linking.openURL("mailto:providers@pesashop.co.za?subject=Proof of Payment")} style={bs.eftBtn}>
+                <Text style={bs.eftBtnText}>Email Proof of Payment</Text>
+              </Pressable>
+            </View>
+          )}
+          <Pressable onPress={() => { setSuccess(null); setSelectedSlot(null); onOrderPlaced(); }} style={bs.doneBtn}>
+            <Text style={bs.doneBtnText}>View My Orders</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  if (selectedSlot) {
+    return (
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80 }}>
+        <Pressable onPress={() => setSelectedSlot(null)} style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+          <Ionicons name="chevron-back" size={18} color={colors.gray700} />
+          <Text style={{ fontSize: 13, color: colors.gray700, marginLeft: 4 }}>Back to Slots</Text>
+        </Pressable>
+        <Text style={bs.slotName}>{selectedSlot.slotLabel}</Text>
+        <Text style={bs.slotPage}>{selectedSlot.slotPage} page</Text>
+
+        {!!error && <View style={bs.errBox}><Text style={bs.errText}>{error}</Text></View>}
+
+        {/* Duration */}
+        <Text style={bs.sectionLabel}>Duration Type</Text>
+        <View style={bs.durationRow}>
+          {DURATION_OPTS.map(opt => {
+            const rate = selectedSlot[opt.rateKey] || 0;
+            const active = durationType === opt.value;
+            return (
+              <Pressable key={opt.value} onPress={() => rate && setDurationType(opt.value)} style={[bs.durationBtn, active && bs.durationBtnActive, !rate && { opacity: 0.3 }]}>
+                <Text style={[bs.durationLabel, active && bs.durationLabelActive]}>{opt.label}</Text>
+                <Text style={[bs.durationRate, active && bs.durationLabelActive]}>{rate ? `R${rate}` : "N/A"}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Quantity */}
+        <Text style={bs.sectionLabel}>Quantity ({durationType}s)</Text>
+        <TextInput
+          style={bs.input}
+          value={quantity}
+          onChangeText={setQuantity}
+          keyboardType="number-pad"
+          placeholder="e.g. 3"
+          placeholderTextColor={colors.gray400}
+        />
+
+        {/* Price summary */}
+        <View style={bs.priceBox}>
+          <Text style={bs.priceRow}>Rate per {durationType}: <Text style={bs.priceVal}>R{unitPrice.toLocaleString()}</Text></Text>
+          <Text style={bs.priceRow}>Quantity: <Text style={bs.priceVal}>× {qty}</Text></Text>
+          <Text style={bs.priceTotal}>Total: R{totalAmount.toLocaleString()}</Text>
+        </View>
+
+        {/* Payment method */}
+        <Text style={bs.sectionLabel}>Payment Method</Text>
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+          {[{ v: "eft", l: "EFT" }, { v: "cash", l: "Cash" }, { v: "card", l: "Card" }].map(pm => (
+            <Pressable key={pm.v} onPress={() => setPaymentMethod(pm.v)} style={[bs.pmBtn, paymentMethod === pm.v && bs.pmBtnActive]}>
+              <Text style={[bs.pmText, paymentMethod === pm.v && bs.pmTextActive]}>{pm.l}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Notes */}
+        <Text style={bs.sectionLabel}>Notes (optional)</Text>
+        <TextInput
+          style={[bs.input, { height: 70, textAlignVertical: "top" }]}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Any special requests…"
+          placeholderTextColor={colors.gray400}
+          multiline
+        />
+
+        <Pressable onPress={handlePlaceOrder} disabled={loading || unitPrice <= 0} style={[bs.orderBtn, (loading || unitPrice <= 0) && { opacity: 0.5 }]}>
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={bs.orderBtnText}>Place Order — R{totalAmount.toLocaleString()}</Text>}
+        </Pressable>
+      </ScrollView>
+    );
+  }
+
+  return (
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80 }}>
+      <Pressable onPress={onBack} style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+        <Ionicons name="chevron-back" size={18} color={colors.gray700} />
+        <Text style={{ fontSize: 13, color: colors.gray700, marginLeft: 4 }}>Back</Text>
+      </Pressable>
+      <Text style={{ fontSize: 17, fontWeight: "700", color: colors.gray900, marginBottom: 4 }}>Available Ad Slots</Text>
+      <Text style={{ fontSize: 13, color: colors.gray500, marginBottom: 16 }}>Tap a slot to book it</Text>
+      {slots.length === 0 && <Text style={{ color: colors.gray400, textAlign: "center", marginTop: 40 }}>No slots configured yet.</Text>}
+      {slots.map(slot => (
+        <View key={slot._id} style={bs.slotCard}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={bs.slotCardName}>{slot.slotLabel}</Text>
+              <Text style={bs.slotCardPage}>{slot.slotPage} page</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+                {DURATION_OPTS.map(opt => {
+                  const rate = slot[opt.rateKey] || 0;
+                  if (!rate) return null;
+                  return <Text key={opt.value} style={bs.slotRate}>{opt.label}: <Text style={{ fontWeight: "700" }}>R{rate}</Text></Text>;
+                })}
+              </View>
+            </View>
+            <Pressable onPress={() => setSelectedSlot(slot)} style={bs.bookBtn}>
+              <Text style={bs.bookBtnText}>Book</Text>
+            </Pressable>
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
+
+// ─── Orders Screen ─────────────────────────────────────────
+function OrdersScreen({ token, onBack }: { token: string; onBack: () => void }) {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    portalHttp.get("/api/service-providers/portal/ad-orders", authConfig(token))
+      .then(r => setOrders(r.data?.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  const getBadgeColors = (status: string) => {
+    if (status === "active") return { bg: "#dcfce7", text: "#166534" };
+    if (status === "pending_payment") return { bg: "#fef3c7", text: "#854d0e" };
+    if (status === "declined") return { bg: "#fee2e2", text: "#991b1b" };
+    return { bg: "#f3f4f6", text: "#6b7280" };
+  };
+
+  return (
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80 }}>
+      <Pressable onPress={onBack} style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+        <Ionicons name="chevron-back" size={18} color={colors.gray700} />
+        <Text style={{ fontSize: 13, color: colors.gray700, marginLeft: 4 }}>Back</Text>
+      </Pressable>
+      <Text style={{ fontSize: 17, fontWeight: "700", color: colors.gray900, marginBottom: 4 }}>My Ad Orders</Text>
+
+      {/* EFT details notice */}
+      <View style={os.eftNotice}>
+        <Text style={os.eftNoticeText}>EFT: FNB · 62XXXXXXXX · Branch 250655{"\n"}Use order reference as payment ref.{"\n"}Email proof to providers@pesashop.co.za</Text>
+      </View>
+
+      {loading ? <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} /> : (
+        orders.length === 0 ? (
+          <Text style={{ color: colors.gray400, textAlign: "center", marginTop: 40 }}>No orders yet.</Text>
+        ) : (
+          orders.map(order => {
+            const bc = getBadgeColors(order.status);
+            return (
+              <View key={order._id} style={os.orderCard}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={os.slotName}>{order.slotLabel || order.slotId}</Text>
+                    <Text style={os.slotPage}>{order.slotPage}</Text>
+                    <Text style={os.orderMeta}>{order.durationType} × {order.quantity} · R{(order.totalAmount || 0).toLocaleString()} · {order.paymentMethod?.toUpperCase()}</Text>
+                    <Text style={os.orderRef}>Ref: {order._id?.slice(-8).toUpperCase()}</Text>
+                    {order.status === "active" && order.endDate && (
+                      <Text style={os.orderExpiry}>Active until {new Date(order.endDate).toLocaleDateString()}</Text>
+                    )}
+                    {order.status === "declined" && order.declineReason && (
+                      <Text style={os.declineReason}>Reason: {order.declineReason}</Text>
+                    )}
+                  </View>
+                  <View style={[os.badge, { backgroundColor: bc.bg }]}>
+                    <Text style={[os.badgeText, { color: bc.text }]}>{order.status?.replace("_", " ").toUpperCase()}</Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })
+        )
+      )}
+    </ScrollView>
+  );
+}
+
 // ─── Dashboard ─────────────────────────────────────────────
 function Dashboard({ provider, token, onLogout }: { provider: any; token: string; onLogout: () => void }) {
-  const [tab, setTab] = useState<"overview" | "ads" | "plans">("overview");
+  const [tab, setTab] = useState<"overview" | "book" | "orders" | "ads">("overview");
   const [ads, setAds] = useState<any[]>([]);
-  const [plans, setPlans] = useState<any[]>([]);
+  const [slots, setSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       portalHttp.get("/api/service-providers/me/ads", authConfig(token)).catch(() => ({ data: { data: [] } })),
-      portalHttp.get("/api/service-providers/plans/public").catch(() => ({ data: { data: [] } })),
-    ]).then(([adsRes, plansRes]) => {
+      portalHttp.get("/api/service-providers/portal/slots", authConfig(token)).catch(() => ({ data: { data: [] } })),
+    ]).then(([adsRes, slotsRes]) => {
       setAds(adsRes.data?.data || []);
-      setPlans(plansRes.data?.data || []);
+      setSlots(slotsRes.data?.data || []);
     }).finally(() => setLoading(false));
   }, [token]);
 
@@ -101,13 +350,40 @@ function Dashboard({ provider, token, onLogout }: { provider: any; token: string
   const subBadgeColor = subStatus === "active" ? colors.green600 : "#d97706";
   const subBg = subStatus === "active" ? "#dcfce7" : "#fef3c7";
 
+  // For book/orders we use full-screen sub-views within the scroll
+  if (tab === "book") {
+    return (
+      <View style={{ flex: 1 }}>
+        <BookSlotScreen
+          token={token}
+          slots={slots}
+          onOrderPlaced={() => setTab("orders")}
+          onBack={() => setTab("overview")}
+        />
+      </View>
+    );
+  }
+
+  if (tab === "orders") {
+    return (
+      <View style={{ flex: 1 }}>
+        <OrdersScreen token={token} onBack={() => setTab("overview")} />
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1 }}>
       {/* Sub-tab bar */}
       <View style={ds.tabBar}>
-        {(["overview", "ads", "plans"] as const).map((t) => (
-          <Pressable key={t} onPress={() => setTab(t)} style={[ds.tabBtn, tab === t && ds.tabBtnActive]}>
-            <Text style={[ds.tabText, tab === t && ds.tabTextActive]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
+        {([
+          { id: "overview", label: "Overview" },
+          { id: "book", label: "Book Slot" },
+          { id: "orders", label: "Orders" },
+          { id: "ads", label: "Ads" },
+        ] as const).map((t) => (
+          <Pressable key={t.id} onPress={() => setTab(t.id)} style={[ds.tabBtn, tab === t.id && ds.tabBtnActive]}>
+            <Text style={[ds.tabText, tab === t.id && ds.tabTextActive]}>{t.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -145,15 +421,15 @@ function Dashboard({ provider, token, onLogout }: { provider: any; token: string
               </View>
 
               <View style={ds.infoCard}>
-                <Text style={ds.infoTitle}>How to subscribe to ad slots</Text>
+                <Text style={ds.infoTitle}>How ad booking works</Text>
                 <Text style={ds.infoText}>
-                  1. View available plans in the Plans tab{"\n"}
-                  2. Email providers@pesashop.co.za with your preferred plan{"\n"}
-                  3. We activate your subscription within 24 hours{"\n"}
-                  4. Create ads from pesashop.com/service-providers/portal
+                  1. Book a slot → select duration & pay method{"\n"}
+                  2. Transfer payment using your order ref{"\n"}
+                  3. We confirm & activate within 24 hours{"\n"}
+                  4. Create your ad creative in the Ads tab
                 </Text>
-                <Pressable onPress={() => Linking.openURL("mailto:providers@pesashop.co.za")} style={ds.emailBtn}>
-                  <Text style={ds.emailBtnText}>📧 Contact Us to Subscribe</Text>
+                <Pressable onPress={() => setTab("book")} style={ds.emailBtn}>
+                  <Text style={ds.emailBtnText}>🛒 Book an Ad Slot</Text>
                 </Pressable>
               </View>
             </View>
@@ -190,31 +466,6 @@ function Dashboard({ provider, token, onLogout }: { provider: any; token: string
               )}
             </View>
           )}
-
-          {tab === "plans" && (
-            <View style={{ gap: 12 }}>
-              {plans.length === 0 ? (
-                <Text style={{ color: colors.gray400, textAlign: "center", marginTop: 40 }}>No plans published yet.</Text>
-              ) : (
-                plans.map((plan) => (
-                  <View key={plan._id} style={ds.planCard}>
-                    <Text style={ds.planName}>{plan.name}</Text>
-                    <Text style={ds.planPrice}>R{plan.price}<Text style={ds.planCycle}>/{plan.billingCycle || "month"}</Text></Text>
-                    <Text style={ds.planAds}>Up to {plan.maxActiveAds || 1} active ads</Text>
-                    {(plan.featuresIncluded || []).map((f: string, i: number) => (
-                      <Text key={i} style={ds.planFeature}>✓ {f}</Text>
-                    ))}
-                    <Pressable
-                      onPress={() => Linking.openURL(`mailto:providers@pesashop.co.za?subject=Subscribe to ${plan.name}`)}
-                      style={ds.planBtn}
-                    >
-                      <Text style={ds.planBtnText}>Subscribe →</Text>
-                    </Pressable>
-                  </View>
-                ))
-              )}
-            </View>
-          )}
         </ScrollView>
       )}
     </View>
@@ -225,7 +476,7 @@ const ds = StyleSheet.create({
   tabBar: { flexDirection: "row", backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
   tabBtn: { flex: 1, paddingVertical: 12, alignItems: "center", borderBottomWidth: 2, borderBottomColor: "transparent" },
   tabBtnActive: { borderBottomColor: colors.primary },
-  tabText: { fontSize: 13, fontWeight: "600", color: colors.gray500 },
+  tabText: { fontSize: 12, fontWeight: "600", color: colors.gray500 },
   tabTextActive: { color: colors.primary },
   subCard: { padding: 14, borderWidth: 1, borderColor: colors.gray200 },
   subLabel: { fontSize: 12, color: colors.gray500, fontWeight: "600" },
@@ -254,14 +505,69 @@ const ds = StyleSheet.create({
   adDate: { fontSize: 11, color: colors.gray400, marginTop: 6 },
   adBadge: { paddingHorizontal: 6, paddingVertical: 2 },
   adBadgeText: { fontSize: 10, fontWeight: "700" },
-  planCard: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200, padding: 14 },
-  planName: { fontSize: 15, fontWeight: "700", color: colors.gray900, marginBottom: 4 },
-  planPrice: { fontSize: 22, fontWeight: "800", color: colors.primary },
-  planCycle: { fontSize: 13, fontWeight: "400", color: colors.gray500 },
-  planAds: { fontSize: 12, color: colors.gray500, marginTop: 2, marginBottom: 8 },
-  planFeature: { fontSize: 13, color: colors.gray700, marginBottom: 3 },
-  planBtn: { marginTop: 12, borderWidth: 1, borderColor: colors.gray900, paddingVertical: 10, alignItems: "center" },
-  planBtnText: { fontSize: 13, fontWeight: "700", color: colors.gray900 },
+});
+
+// BookSlotScreen styles
+const bs = StyleSheet.create({
+  errBox: { backgroundColor: "#fee2e2", borderWidth: 1, borderColor: "#fecaca", padding: 10, marginBottom: 12 },
+  errText: { fontSize: 13, color: "#dc2626" },
+  slotName: { fontSize: 16, fontWeight: "700", color: colors.gray900, marginBottom: 2 },
+  slotPage: { fontSize: 12, color: colors.gray500, marginBottom: 12 },
+  sectionLabel: { fontSize: 12, fontWeight: "600", color: colors.gray600, marginBottom: 8 },
+  durationRow: { flexDirection: "row", gap: 8, marginBottom: 16, flexWrap: "wrap" },
+  durationBtn: { flex: 1, minWidth: 70, borderWidth: 1, borderColor: colors.gray200, padding: 8, alignItems: "center" },
+  durationBtnActive: { borderColor: colors.primary, backgroundColor: "#f0f9ff" },
+  durationLabel: { fontSize: 13, fontWeight: "600", color: colors.gray700 },
+  durationLabelActive: { color: colors.primary },
+  durationRate: { fontSize: 11, color: colors.gray500, marginTop: 2 },
+  input: { borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.gray800, marginBottom: 16 },
+  priceBox: { backgroundColor: colors.gray50, borderWidth: 1, borderColor: colors.gray200, padding: 12, marginBottom: 16 },
+  priceRow: { fontSize: 13, color: colors.gray600, marginBottom: 4 },
+  priceVal: { fontWeight: "600", color: colors.gray900 },
+  priceTotal: { fontSize: 15, fontWeight: "800", color: colors.gray900, marginTop: 6 },
+  pmBtn: { flex: 1, borderWidth: 1, borderColor: colors.gray200, paddingVertical: 10, alignItems: "center" },
+  pmBtnActive: { borderColor: colors.primary, backgroundColor: "#f0f9ff" },
+  pmText: { fontSize: 13, fontWeight: "600", color: colors.gray700 },
+  pmTextActive: { color: colors.primary },
+  orderBtn: { backgroundColor: colors.primary, paddingVertical: 14, alignItems: "center", marginTop: 8 },
+  orderBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  // Slot list
+  slotCard: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200, padding: 14, marginBottom: 10 },
+  slotCardName: { fontSize: 14, fontWeight: "700", color: colors.gray900 },
+  slotCardPage: { fontSize: 12, color: colors.gray400, marginBottom: 4 },
+  slotRate: { fontSize: 12, color: colors.gray600 },
+  bookBtn: { backgroundColor: colors.gray900, paddingHorizontal: 14, paddingVertical: 8 },
+  bookBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  // Success
+  successCard: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200, padding: 24, alignItems: "center" },
+  successIcon: { fontSize: 40, marginBottom: 8 },
+  successTitle: { fontSize: 18, fontWeight: "800", color: colors.gray900, marginBottom: 4 },
+  successRef: { fontSize: 13, color: colors.gray500, fontFamily: "monospace", marginBottom: 16 },
+  summaryBox: { width: "100%", backgroundColor: colors.gray50, padding: 12, marginBottom: 12 },
+  summaryRow: { fontSize: 13, color: colors.gray700, marginBottom: 4 },
+  summaryLabel: { fontWeight: "600" },
+  eftBox: { width: "100%", backgroundColor: "#eff6ff", borderWidth: 1, borderColor: "#bfdbfe", padding: 12, marginBottom: 16 },
+  eftTitle: { fontSize: 13, fontWeight: "700", color: "#1d4ed8", marginBottom: 6 },
+  eftText: { fontSize: 12, color: "#1e40af", lineHeight: 18 },
+  eftBtn: { marginTop: 10, backgroundColor: "#1d4ed8", paddingVertical: 8, alignItems: "center" },
+  eftBtnText: { color: "#fff", fontWeight: "600", fontSize: 13 },
+  doneBtn: { backgroundColor: colors.primary, paddingVertical: 12, paddingHorizontal: 32, marginTop: 4 },
+  doneBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+});
+
+// OrdersScreen styles
+const os = StyleSheet.create({
+  eftNotice: { backgroundColor: "#eff6ff", borderWidth: 1, borderColor: "#bfdbfe", padding: 12, marginBottom: 16 },
+  eftNoticeText: { fontSize: 12, color: "#1e40af", lineHeight: 18 },
+  orderCard: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gray200, padding: 12, marginBottom: 10 },
+  slotName: { fontSize: 14, fontWeight: "700", color: colors.gray900 },
+  slotPage: { fontSize: 12, color: colors.gray400 },
+  orderMeta: { fontSize: 12, color: colors.gray600, marginTop: 4 },
+  orderRef: { fontSize: 11, color: colors.gray400, fontFamily: "monospace", marginTop: 2 },
+  orderExpiry: { fontSize: 11, color: "#166534", marginTop: 2 },
+  declineReason: { fontSize: 11, color: "#991b1b", marginTop: 2 },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, flexShrink: 0, marginLeft: 8, alignSelf: "flex-start" },
+  badgeText: { fontSize: 10, fontWeight: "700" },
 });
 
 // ─── Main Screen ────────────────────────────────────────────

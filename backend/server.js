@@ -146,6 +146,7 @@ const footerConfigRoutes = require('./routes/footerConfig');
 const mobileAppConfigRoutes = require('./routes/mobileAppConfig');
 const chatRoutes = require('./routes/chat');
 const popupRoutes = require('./routes/popups');
+require('./models/ServiceProviderAdOrder');
 const serviceProviderRoutes = require('./routes/serviceProviders');
 const serviceProviderAdRoutes = require('./routes/serviceProviderAds');
 const recurringOrderRoutes = require('./routes/recurringOrders');

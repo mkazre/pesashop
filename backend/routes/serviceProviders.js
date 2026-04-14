@@ -9,6 +9,7 @@ const ServiceProvider = require('../models/ServiceProvider');
 const ServiceProviderCategory = require('../models/ServiceProviderCategory');
 const ServiceProviderSubscriptionPlan = require('../models/ServiceProviderSubscriptionPlan');
 const ServiceProviderAdPlacement = require('../models/ServiceProviderAdPlacement');
+const ServiceProviderAdOrder = require('../models/ServiceProviderAdOrder');
 const emailService = require('../services/emailService');
 
 // Multer for document uploads
@@ -452,6 +453,167 @@ router.post('/admin/create', protect, authorize('admin', 'shop_manager'), async 
   } catch (err) {
     console.error('Admin create provider error:', err);
     res.status(500).json({ success: false, message: err.message || 'Server error' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  PROVIDER PORTAL — Ad Orders (Self-Service Checkout)
+// ═══════════════════════════════════════════════════════════
+
+// Helper: calculate end date from start date + quantity * durationType
+function calcEndDate(start, durationType, quantity) {
+  const d = new Date(start);
+  switch (durationType) {
+    case 'daily':   d.setDate(d.getDate() + quantity); break;
+    case 'weekly':  d.setDate(d.getDate() + (quantity * 7)); break;
+    case 'monthly': d.setMonth(d.getMonth() + quantity); break;
+    case 'yearly':  d.setFullYear(d.getFullYear() + quantity); break;
+  }
+  return d;
+}
+
+// POST /api/service-providers/portal/ad-orders — Provider creates an ad order
+router.post('/portal/ad-orders', protectProvider, async (req, res) => {
+  try {
+    const { slotId, durationType, quantity = 1, paymentMethod = 'eft', notes = '' } = req.body;
+
+    if (!slotId || !durationType) {
+      return res.status(400).json({ success: false, message: 'slotId and durationType are required' });
+    }
+
+    // Look up slot
+    const slot = await ServiceProviderAdPlacement.findOne({ slotId, isActive: true });
+    if (!slot) return res.status(404).json({ success: false, message: 'Ad slot not found or inactive' });
+
+    // Resolve unit price from durationType
+    const rateMap = { daily: slot.dailyRate, weekly: slot.weeklyRate, monthly: slot.monthlyRate, yearly: slot.yearlyRate };
+    const unitPrice = rateMap[durationType] || 0;
+    if (unitPrice <= 0) {
+      return res.status(400).json({ success: false, message: `No rate configured for durationType "${durationType}" on this slot` });
+    }
+
+    const qty = Math.max(1, parseInt(quantity));
+    const totalAmount = unitPrice * qty;
+    const startDate = new Date();
+    const endDate = calcEndDate(startDate, durationType, qty);
+
+    const order = await ServiceProviderAdOrder.create({
+      provider: req.provider._id,
+      slotId: slot.slotId,
+      slotLabel: slot.slotLabel,
+      slotPage: slot.slotPage,
+      durationType,
+      quantity: qty,
+      unitPrice,
+      totalAmount,
+      paymentMethod,
+      notes,
+      startDate,
+      endDate,
+      status: 'pending_payment',
+    });
+
+    res.status(201).json({ success: true, data: order, message: 'Ad order placed. Awaiting payment confirmation.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/service-providers/portal/ad-orders — Provider gets their own orders
+router.get('/portal/ad-orders', protectProvider, async (req, res) => {
+  try {
+    const orders = await ServiceProviderAdOrder.find({ provider: req.provider._id })
+      .sort({ createdAt: -1 });
+    res.json({ success: true, data: orders });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  ADMIN — Ad Orders Management
+// ═══════════════════════════════════════════════════════════
+
+// GET /api/service-providers/ad-orders — Admin list all ad orders
+router.get('/ad-orders', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
+  try {
+    const query = {};
+    if (req.query.status) query.status = req.query.status;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 30;
+    const skip = (page - 1) * limit;
+
+    const [orders, total] = await Promise.all([
+      ServiceProviderAdOrder.find(query)
+        .populate('provider', 'businessName contactName email')
+        .populate('activatedBy', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      ServiceProviderAdOrder.countDocuments(query),
+    ]);
+
+    // Stats
+    const [pendingCount, activeCount] = await Promise.all([
+      ServiceProviderAdOrder.countDocuments({ status: 'pending_payment' }),
+      ServiceProviderAdOrder.countDocuments({ status: 'active' }),
+    ]);
+    const revenueAgg = await ServiceProviderAdOrder.aggregate([
+      { $match: { status: 'active' } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+    ]);
+    const totalRevenue = revenueAgg[0]?.total || 0;
+
+    res.json({
+      success: true,
+      data: orders,
+      pagination: { total, page, pages: Math.ceil(total / limit), limit },
+      stats: { pendingCount, activeCount, totalRevenue },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/service-providers/ad-orders/:orderId/activate — Admin activates an order
+router.put('/ad-orders/:orderId/activate', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
+  try {
+    const order = await ServiceProviderAdOrder.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    order.status = 'active';
+    order.activatedBy = req.user.id;
+    order.activatedAt = new Date();
+    await order.save();
+
+    // Update provider subscription status
+    await ServiceProvider.findByIdAndUpdate(order.provider, {
+      subscriptionStatus: 'active',
+      subscriptionExpiry: order.endDate,
+    });
+
+    await order.populate('provider', 'businessName contactName email');
+    res.json({ success: true, data: order, message: 'Ad order activated successfully.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/service-providers/ad-orders/:orderId/decline — Admin declines an order
+router.put('/ad-orders/:orderId/decline', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
+  try {
+    const { reason = '' } = req.body;
+    const order = await ServiceProviderAdOrder.findByIdAndUpdate(
+      req.params.orderId,
+      { status: 'declined', declineReason: reason },
+      { new: true }
+    ).populate('provider', 'businessName contactName email');
+
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    res.json({ success: true, data: order, message: 'Ad order declined.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

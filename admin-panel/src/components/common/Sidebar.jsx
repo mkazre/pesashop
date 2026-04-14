@@ -86,6 +86,7 @@ const menuGroups = [
     items: [
       { path: '/service-providers', icon: IoBusinessOutline, label: 'All Providers' },
       { path: '/service-provider-ads', icon: IoFlash, label: 'All Ads' },
+      { path: '/service-providers/ad-orders', icon: IoReceiptOutline, label: 'Ad Orders' },
       { path: '/service-types', icon: IoList, label: 'Service Types' },
       { path: '/service-requests', icon: IoDocumentTextOutline, label: 'Service Requests' },
     ],

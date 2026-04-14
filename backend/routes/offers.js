@@ -16,13 +16,14 @@ router.get('/', optionalAuth, async (req, res) => {
       query.displayPages = req.query.page;
     }
 
-    // Filter by customer group if logged in
+    // Filter by customer group if logged in — always include offers that target no groups (public)
     if (req.user) {
       const user = await require('../models/User').findById(req.user.id).select('dynamicGroupIds customerGroup').lean();
-      // Include offers that target no groups (public) or any of the customer's groups
       const userGroupIds = user?.dynamicGroupIds || [];
       query.$or = [
+        { targetCustomerGroups: { $exists: false } },
         { targetCustomerGroups: { $size: 0 } },
+        { targetCustomerGroups: null },
         { targetCustomerGroups: { $in: userGroupIds } }
       ];
     }
