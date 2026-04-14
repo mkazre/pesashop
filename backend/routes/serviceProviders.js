@@ -229,6 +229,89 @@ router.get('/', protect, authorize('admin', 'shop_manager', 'superadmin', 'super
   }
 });
 
+// ── NOTE: /ad-orders routes are defined BEFORE /:id to prevent Express matching
+//         'ad-orders' as an :id param.
+
+// GET /api/service-providers/ad-orders — Admin list all ad orders
+router.get('/ad-orders', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
+  try {
+    const query = {};
+    if (req.query.status) query.status = req.query.status;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 30;
+    const skip = (page - 1) * limit;
+
+    const [orders, total] = await Promise.all([
+      ServiceProviderAdOrder.find(query)
+        .populate('provider', 'businessName contactName email')
+        .populate('activatedBy', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      ServiceProviderAdOrder.countDocuments(query),
+    ]);
+
+    const [pendingCount, activeCount] = await Promise.all([
+      ServiceProviderAdOrder.countDocuments({ status: 'pending_payment' }),
+      ServiceProviderAdOrder.countDocuments({ status: 'active' }),
+    ]);
+    const revenueAgg = await ServiceProviderAdOrder.aggregate([
+      { $match: { status: 'active' } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+    ]);
+    const totalRevenue = revenueAgg[0]?.total || 0;
+
+    res.json({
+      success: true,
+      data: orders,
+      pagination: { total, page, pages: Math.ceil(total / limit), limit },
+      stats: { pendingCount, activeCount, totalRevenue },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/service-providers/ad-orders/:orderId/activate
+router.put('/ad-orders/:orderId/activate', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
+  try {
+    const order = await ServiceProviderAdOrder.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    order.status = 'active';
+    order.activatedBy = req.user.id;
+    order.activatedAt = new Date();
+    await order.save();
+
+    await ServiceProvider.findByIdAndUpdate(order.provider, {
+      subscriptionStatus: 'active',
+      subscriptionExpiry: order.endDate,
+    });
+
+    await order.populate('provider', 'businessName contactName email');
+    res.json({ success: true, data: order, message: 'Ad order activated successfully.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/service-providers/ad-orders/:orderId/decline
+router.put('/ad-orders/:orderId/decline', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
+  try {
+    const { reason = '' } = req.body;
+    const order = await ServiceProviderAdOrder.findByIdAndUpdate(
+      req.params.orderId,
+      { status: 'declined', declineReason: reason },
+      { new: true }
+    ).populate('provider', 'businessName contactName email');
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    res.json({ success: true, data: order, message: 'Order declined.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // GET /api/service-providers/:id — Single provider detail (admin)
 router.get('/:id', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
   try {
@@ -530,91 +613,6 @@ router.get('/portal/ad-orders', protectProvider, async (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════
-//  ADMIN — Ad Orders Management
-// ═══════════════════════════════════════════════════════════
-
-// GET /api/service-providers/ad-orders — Admin list all ad orders
-router.get('/ad-orders', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
-  try {
-    const query = {};
-    if (req.query.status) query.status = req.query.status;
-
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 30;
-    const skip = (page - 1) * limit;
-
-    const [orders, total] = await Promise.all([
-      ServiceProviderAdOrder.find(query)
-        .populate('provider', 'businessName contactName email')
-        .populate('activatedBy', 'name email')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
-      ServiceProviderAdOrder.countDocuments(query),
-    ]);
-
-    // Stats
-    const [pendingCount, activeCount] = await Promise.all([
-      ServiceProviderAdOrder.countDocuments({ status: 'pending_payment' }),
-      ServiceProviderAdOrder.countDocuments({ status: 'active' }),
-    ]);
-    const revenueAgg = await ServiceProviderAdOrder.aggregate([
-      { $match: { status: 'active' } },
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
-    ]);
-    const totalRevenue = revenueAgg[0]?.total || 0;
-
-    res.json({
-      success: true,
-      data: orders,
-      pagination: { total, page, pages: Math.ceil(total / limit), limit },
-      stats: { pendingCount, activeCount, totalRevenue },
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// PUT /api/service-providers/ad-orders/:orderId/activate — Admin activates an order
-router.put('/ad-orders/:orderId/activate', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
-  try {
-    const order = await ServiceProviderAdOrder.findById(req.params.orderId);
-    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-
-    order.status = 'active';
-    order.activatedBy = req.user.id;
-    order.activatedAt = new Date();
-    await order.save();
-
-    // Update provider subscription status
-    await ServiceProvider.findByIdAndUpdate(order.provider, {
-      subscriptionStatus: 'active',
-      subscriptionExpiry: order.endDate,
-    });
-
-    await order.populate('provider', 'businessName contactName email');
-    res.json({ success: true, data: order, message: 'Ad order activated successfully.' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// PUT /api/service-providers/ad-orders/:orderId/decline — Admin declines an order
-router.put('/ad-orders/:orderId/decline', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res) => {
-  try {
-    const { reason = '' } = req.body;
-    const order = await ServiceProviderAdOrder.findByIdAndUpdate(
-      req.params.orderId,
-      { status: 'declined', declineReason: reason },
-      { new: true }
-    ).populate('provider', 'businessName contactName email');
-
-    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-    res.json({ success: true, data: order, message: 'Ad order declined.' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
+// (admin ad-orders routes moved above /:id — see top of admin section)
 
 module.exports = router;

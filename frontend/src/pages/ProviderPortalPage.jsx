@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import axios from 'axios';
 import toast from '@/utils/toast';
+import { useCurrencyStore } from '@/store';
 
 const PORTAL_BASE = import.meta.env.VITE_API_URL || '';
 const portalHttp = axios.create({ baseURL: PORTAL_BASE });
@@ -580,9 +581,17 @@ const DURATION_OPTIONS = [
 ];
 
 function BookSlotTab({ slots, onOrderPlaced }) {
+  const { formatPrice } = useCurrencyStore();
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ durationType: 'monthly', quantity: 1, paymentMethod: 'eft', notes: '' });
+  const [form, setForm] = useState({ durationType: 'monthly', quantity: 1, selectedBank: '', notes: '' });
+
+  // Fetch bank details from settings
+  const { data: bankDetailsData } = useQuery(
+    'portal-bank-details',
+    () => portalHttp.get('/api/settings/bank-details').then(r => r.data.data || []),
+    { staleTime: 10 * 60 * 1000 }
+  );
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [success, setSuccess] = useState(null);
@@ -597,12 +606,15 @@ function BookSlotTab({ slots, onOrderPlaced }) {
   const unitPrice = selectedSlot ? getRate(selectedSlot, form.durationType) : 0;
   const totalAmount = unitPrice * Math.max(1, parseInt(form.quantity) || 1);
 
+  const bankDetails = bankDetailsData || [];
+  const selectedBank = bankDetails.find(b => b.accountNumber === form.selectedBank) || bankDetails[0] || null;
+
   const handleBook = (slot) => {
     setSelectedSlot(slot);
     setShowForm(true);
     setErr('');
     setSuccess(null);
-    setForm({ durationType: 'monthly', quantity: 1, paymentMethod: 'eft', notes: '' });
+    setForm({ durationType: 'monthly', quantity: 1, selectedBank: bankDetails[0]?.accountNumber || '', notes: '' });
   };
 
   const handleSubmit = async (e) => {
@@ -619,9 +631,10 @@ function BookSlotTab({ slots, onOrderPlaced }) {
         slotId: selectedSlot.slotId,
         durationType: form.durationType,
         quantity: parseInt(form.quantity) || 1,
-        paymentMethod: form.paymentMethod,
+        paymentMethod: selectedBank ? `bank:${selectedBank.bankName}` : 'eft',
         notes: form.notes,
       }, portalApi());
+      res.data.data._selectedBank = selectedBank;
       setSuccess(res.data.data);
       setShowForm(false);
     } catch (ex) {
@@ -650,16 +663,22 @@ function BookSlotTab({ slots, onOrderPlaced }) {
           <div className="bg-white rounded border border-green-200 p-4 text-left text-sm text-gray-700 space-y-1.5 mb-4">
             <div className="flex justify-between"><span className="text-gray-500">Slot:</span><span className="font-medium">{success.slotLabel}</span></div>
             <div className="flex justify-between"><span className="text-gray-500">Duration:</span><span className="font-medium">{success.durationType} × {success.quantity}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Total:</span><span className="font-bold text-gray-900">R{(success.totalAmount || 0).toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Payment:</span><span className="font-medium">{success.paymentMethod?.toUpperCase()}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Total:</span><span className="font-bold text-gray-900">{formatPrice(success.totalAmount || 0)}</span></div>
           </div>
-          {success.paymentMethod === 'eft' && (
-            <div className="bg-blue-50 border border-blue-200 rounded p-3 text-xs text-blue-700 text-left mb-4">
-              <strong>EFT Payment Instructions:</strong><br />
-              Please transfer <strong>R{(success.totalAmount || 0).toLocaleString()}</strong> to:<br />
-              Bank: FNB · Account: 62XXXXXXXX · Branch: 250655<br />
-              Reference: <strong className="font-mono">{success._id?.slice(-8).toUpperCase()}</strong><br />
-              Email proof of payment to <a href="mailto:providers@pesashop.co.za" className="underline">providers@pesashop.co.za</a>
+          {success._selectedBank && (
+            <div className="bg-blue-50 border border-blue-200 rounded p-4 text-xs text-blue-800 text-left mb-4 space-y-1">
+              <p className="font-bold text-sm mb-2">Payment Instructions</p>
+              <p>Please transfer <strong>{formatPrice(success.totalAmount || 0)}</strong> to:</p>
+              <p><strong>Bank:</strong> {success._selectedBank.bankName}</p>
+              <p><strong>Account Name:</strong> {success._selectedBank.accountName}</p>
+              <p><strong>Account No:</strong> <span className="font-mono font-bold">{success._selectedBank.accountNumber}</span></p>
+              {success._selectedBank.branchCode && <p><strong>Branch Code:</strong> {success._selectedBank.branchCode}</p>}
+              {success._selectedBank.accountType && <p><strong>Account Type:</strong> {success._selectedBank.accountType}</p>}
+              <p><strong>Reference:</strong> <span className="font-mono font-bold">{success._id?.slice(-8).toUpperCase()}</span></p>
+              <p className="pt-1">Email your proof of payment to{' '}
+                <a href="mailto:providers@pesashop.co.za" className="underline">providers@pesashop.co.za</a>{' '}
+                with your reference number.
+              </p>
             </div>
           )}
           <div className="flex gap-3 justify-center">
@@ -763,7 +782,7 @@ function BookSlotTab({ slots, onOrderPlaced }) {
                         }`}
                       >
                         <span className="block font-medium">{opt.label}</span>
-                        <span className="text-xs">{rate ? `R${rate.toLocaleString()}` : 'N/A'}</span>
+                        <span className="text-xs">{rate ? formatPrice(rate) : 'N/A'}</span>
                       </button>
                     );
                   })}
@@ -790,7 +809,7 @@ function BookSlotTab({ slots, onOrderPlaced }) {
               <div className="bg-gray-50 border border-gray-200 rounded p-3 space-y-1.5 text-sm">
                 <div className="flex justify-between text-gray-600">
                   <span>Rate per {form.durationType}:</span>
-                  <span>R{unitPrice.toLocaleString()}</span>
+                  <span>{formatPrice(unitPrice)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Quantity:</span>
@@ -798,29 +817,54 @@ function BookSlotTab({ slots, onOrderPlaced }) {
                 </div>
                 <div className="flex justify-between font-bold text-gray-900 pt-1 border-t border-gray-200">
                   <span>Total:</span>
-                  <span>R{totalAmount.toLocaleString()}</span>
+                  <span>{formatPrice(totalAmount)}</span>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Payment Method</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[{ v: 'eft', l: 'EFT' }, { v: 'cash', l: 'Cash' }, { v: 'card', l: 'Card' }].map(pm => (
-                    <button
-                      key={pm.v}
-                      type="button"
-                      onClick={() => setField('paymentMethod', pm.v)}
-                      className={`py-2 text-sm border rounded font-medium transition-colors ${
-                        form.paymentMethod === pm.v
-                          ? 'border-primary bg-primary/5 text-primary'
-                          : 'border-gray-200 text-gray-700 hover:border-gray-400'
-                      }`}
-                    >
-                      {pm.l}
-                    </button>
-                  ))}
+              {/* Bank details selection */}
+              {bankDetails.length > 0 ? (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Pay to Bank Account</label>
+                  <div className="space-y-2">
+                    {bankDetails.map((bank, i) => (
+                      <label
+                        key={i}
+                        className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                          form.selectedBank === bank.accountNumber
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="selectedBank"
+                          value={bank.accountNumber}
+                          checked={form.selectedBank === bank.accountNumber}
+                          onChange={() => setField('selectedBank', bank.accountNumber)}
+                          className="mt-0.5 accent-primary"
+                        />
+                        <div className="text-xs text-gray-700 leading-relaxed">
+                          <p className="font-semibold text-gray-900">{bank.bankName}</p>
+                          <p>Account Name: {bank.accountName}</p>
+                          <p>Account No: <span className="font-mono font-semibold">{bank.accountNumber}</span></p>
+                          {bank.branchCode && <p>Branch Code: {bank.branchCode}</p>}
+                          {bank.accountType && <p>Account Type: {bank.accountType}</p>}
+                          {bank.reference && <p>Reference: <span className="font-medium">{bank.reference}</span></p>}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Please use your order reference as proof of payment and email it to us after transferring.
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded p-3 text-xs text-amber-700">
+                  No bank accounts configured yet. Contact us at{' '}
+                  <a href="mailto:providers@pesashop.co.za" className="underline">providers@pesashop.co.za</a>{' '}
+                  to arrange payment.
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Notes (optional)</label>
@@ -846,7 +890,7 @@ function BookSlotTab({ slots, onOrderPlaced }) {
                   disabled={loading || unitPrice <= 0}
                   className="flex-1 py-2.5 bg-primary text-white font-semibold text-sm hover:bg-primary/90 disabled:opacity-60 transition-colors"
                 >
-                  {loading ? 'Placing Order…' : `Place Order — R${totalAmount.toLocaleString()}`}
+                  {loading ? 'Placing Order…' : `Place Order — ${formatPrice(totalAmount)}`}
                 </button>
               </div>
             </form>

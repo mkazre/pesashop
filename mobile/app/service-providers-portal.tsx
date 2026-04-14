@@ -92,11 +92,20 @@ function BookSlotScreen({ token, slots, onOrderPlaced, onBack }: { token: string
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [durationType, setDurationType] = useState("monthly");
   const [quantity, setQuantity] = useState("1");
-  const [paymentMethod, setPaymentMethod] = useState("eft");
+  const [selectedBankIdx, setSelectedBankIdx] = useState(0);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<any>(null);
+  const [bankDetails, setBankDetails] = useState<any[]>([]);
+
+  useEffect(() => {
+    portalHttp.get("/api/settings/bank-details")
+      .then(r => setBankDetails(r.data.data || []))
+      .catch(() => {});
+  }, []);
+
+  const selectedBank = bankDetails[selectedBankIdx] || null;
 
   const getRate = (slot: any, dt: string) => {
     const opt = DURATION_OPTS.find(o => o.value === dt);
@@ -107,6 +116,9 @@ function BookSlotScreen({ token, slots, onOrderPlaced, onBack }: { token: string
   const qty = Math.max(1, parseInt(quantity) || 1);
   const totalAmount = unitPrice * qty;
 
+  // Format price using ZAR by default (portal providers always pay in base currency)
+  const fmt = (amount: number) => `R${amount.toLocaleString("en-ZA")}`;
+
   const handlePlaceOrder = async () => {
     if (!selectedSlot) { setError("Select a slot first"); return; }
     if (unitPrice <= 0) { setError("No rate for this duration. Pick another."); return; }
@@ -116,10 +128,12 @@ function BookSlotScreen({ token, slots, onOrderPlaced, onBack }: { token: string
         slotId: selectedSlot.slotId,
         durationType,
         quantity: qty,
-        paymentMethod,
+        paymentMethod: selectedBank ? `bank:${selectedBank.bankName}` : "eft",
         notes,
       }, authConfig(token));
-      setSuccess(res.data.data);
+      const order = res.data.data;
+      order._selectedBank = selectedBank;
+      setSuccess(order);
     } catch (e: any) {
       setError(e.response?.data?.message || "Failed to place order");
     } finally {
@@ -137,14 +151,21 @@ function BookSlotScreen({ token, slots, onOrderPlaced, onBack }: { token: string
           <View style={bs.summaryBox}>
             <Text style={bs.summaryRow}><Text style={bs.summaryLabel}>Slot: </Text>{success.slotLabel}</Text>
             <Text style={bs.summaryRow}><Text style={bs.summaryLabel}>Duration: </Text>{success.durationType} × {success.quantity}</Text>
-            <Text style={bs.summaryRow}><Text style={bs.summaryLabel}>Total: </Text>R{(success.totalAmount || 0).toLocaleString()}</Text>
-            <Text style={bs.summaryRow}><Text style={bs.summaryLabel}>Payment: </Text>{success.paymentMethod?.toUpperCase()}</Text>
+            <Text style={bs.summaryRow}><Text style={bs.summaryLabel}>Total: </Text>{fmt(success.totalAmount || 0)}</Text>
           </View>
-          {success.paymentMethod === "eft" && (
+          {success._selectedBank && (
             <View style={bs.eftBox}>
-              <Text style={bs.eftTitle}>EFT Payment Details</Text>
-              <Text style={bs.eftText}>Bank: FNB{"\n"}Account: 62XXXXXXXX{"\n"}Branch: 250655{"\n"}Reference: {success._id?.slice(-8).toUpperCase()}{"\n"}Amount: R{(success.totalAmount || 0).toLocaleString()}</Text>
-              <Pressable onPress={() => Linking.openURL("mailto:providers@pesashop.co.za?subject=Proof of Payment")} style={bs.eftBtn}>
+              <Text style={bs.eftTitle}>Payment Instructions</Text>
+              <Text style={bs.eftText}>
+                Transfer <Text style={{ fontWeight: "700" }}>{fmt(success.totalAmount || 0)}</Text> to:{"\n\n"}
+                Bank: {success._selectedBank.bankName}{"\n"}
+                Account Name: {success._selectedBank.accountName}{"\n"}
+                Account No: {success._selectedBank.accountNumber}{"\n"}
+                {success._selectedBank.branchCode ? `Branch Code: ${success._selectedBank.branchCode}\n` : ""}
+                {success._selectedBank.accountType ? `Account Type: ${success._selectedBank.accountType}\n` : ""}
+                Reference: {success._id?.slice(-8).toUpperCase()}
+              </Text>
+              <Pressable onPress={() => Linking.openURL("mailto:providers@pesashop.co.za?subject=Proof of Payment - " + success._id?.slice(-8).toUpperCase())} style={bs.eftBtn}>
                 <Text style={bs.eftBtnText}>Email Proof of Payment</Text>
               </Pressable>
             </View>
@@ -178,7 +199,7 @@ function BookSlotScreen({ token, slots, onOrderPlaced, onBack }: { token: string
             return (
               <Pressable key={opt.value} onPress={() => rate && setDurationType(opt.value)} style={[bs.durationBtn, active && bs.durationBtnActive, !rate && { opacity: 0.3 }]}>
                 <Text style={[bs.durationLabel, active && bs.durationLabelActive]}>{opt.label}</Text>
-                <Text style={[bs.durationRate, active && bs.durationLabelActive]}>{rate ? `R${rate}` : "N/A"}</Text>
+                <Text style={[bs.durationRate, active && bs.durationLabelActive]}>{rate ? fmt(rate) : "N/A"}</Text>
               </Pressable>
             );
           })}
@@ -197,20 +218,32 @@ function BookSlotScreen({ token, slots, onOrderPlaced, onBack }: { token: string
 
         {/* Price summary */}
         <View style={bs.priceBox}>
-          <Text style={bs.priceRow}>Rate per {durationType}: <Text style={bs.priceVal}>R{unitPrice.toLocaleString()}</Text></Text>
+          <Text style={bs.priceRow}>Rate per {durationType}: <Text style={bs.priceVal}>{fmt(unitPrice)}</Text></Text>
           <Text style={bs.priceRow}>Quantity: <Text style={bs.priceVal}>× {qty}</Text></Text>
-          <Text style={bs.priceTotal}>Total: R{totalAmount.toLocaleString()}</Text>
+          <Text style={bs.priceTotal}>Total: {fmt(totalAmount)}</Text>
         </View>
 
-        {/* Payment method */}
-        <Text style={bs.sectionLabel}>Payment Method</Text>
-        <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
-          {[{ v: "eft", l: "EFT" }, { v: "cash", l: "Cash" }, { v: "card", l: "Card" }].map(pm => (
-            <Pressable key={pm.v} onPress={() => setPaymentMethod(pm.v)} style={[bs.pmBtn, paymentMethod === pm.v && bs.pmBtnActive]}>
-              <Text style={[bs.pmText, paymentMethod === pm.v && bs.pmTextActive]}>{pm.l}</Text>
-            </Pressable>
-          ))}
-        </View>
+        {/* Bank details */}
+        <Text style={bs.sectionLabel}>Bank Account to Pay</Text>
+        {bankDetails.length === 0 ? (
+          <Text style={{ fontSize: 12, color: colors.gray400, marginBottom: 16 }}>No bank accounts configured. Contact us to arrange payment.</Text>
+        ) : (
+          <View style={{ marginBottom: 16, gap: 8 }}>
+            {bankDetails.map((bank, i) => (
+              <Pressable key={i} onPress={() => setSelectedBankIdx(i)} style={[bs.bankCard, selectedBankIdx === i && bs.bankCardActive]}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <View style={[bs.bankRadio, selectedBankIdx === i && bs.bankRadioActive]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: colors.gray900 }}>{bank.bankName}</Text>
+                    <Text style={{ fontSize: 12, color: colors.gray600 }}>{bank.accountName} · {bank.accountNumber}</Text>
+                    {bank.branchCode ? <Text style={{ fontSize: 11, color: colors.gray400 }}>Branch: {bank.branchCode}</Text> : null}
+                    {bank.accountType ? <Text style={{ fontSize: 11, color: colors.gray400 }}>Type: {bank.accountType}</Text> : null}
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         {/* Notes */}
         <Text style={bs.sectionLabel}>Notes (optional)</Text>
@@ -224,7 +257,7 @@ function BookSlotScreen({ token, slots, onOrderPlaced, onBack }: { token: string
         />
 
         <Pressable onPress={handlePlaceOrder} disabled={loading || unitPrice <= 0} style={[bs.orderBtn, (loading || unitPrice <= 0) && { opacity: 0.5 }]}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={bs.orderBtnText}>Place Order — R{totalAmount.toLocaleString()}</Text>}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={bs.orderBtnText}>Place Order — {fmt(totalAmount)}</Text>}
         </Pressable>
       </ScrollView>
     );
@@ -249,7 +282,7 @@ function BookSlotScreen({ token, slots, onOrderPlaced, onBack }: { token: string
                 {DURATION_OPTS.map(opt => {
                   const rate = slot[opt.rateKey] || 0;
                   if (!rate) return null;
-                  return <Text key={opt.value} style={bs.slotRate}>{opt.label}: <Text style={{ fontWeight: "700" }}>R{rate}</Text></Text>;
+                  return <Text key={opt.value} style={bs.slotRate}>{opt.label}: <Text style={{ fontWeight: "700" }}>R{rate.toLocaleString("en-ZA")}</Text></Text>;
                 })}
               </View>
             </View>
@@ -553,6 +586,10 @@ const bs = StyleSheet.create({
   eftBtnText: { color: "#fff", fontWeight: "600", fontSize: 13 },
   doneBtn: { backgroundColor: colors.primary, paddingVertical: 12, paddingHorizontal: 32, marginTop: 4 },
   doneBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  bankCard: { borderWidth: 1, borderColor: colors.gray200, padding: 12, borderRadius: 8, backgroundColor: colors.white },
+  bankCardActive: { borderColor: colors.primary, backgroundColor: "#f0f9ff" },
+  bankRadio: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.gray300, backgroundColor: colors.white },
+  bankRadioActive: { borderColor: colors.primary, backgroundColor: colors.primary },
 });
 
 // OrdersScreen styles
