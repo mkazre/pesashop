@@ -887,11 +887,12 @@ const ps = StyleSheet.create({
   spAdsTrack: { paddingHorizontal: 16, paddingRight: 8, gap: 10 },
 });
 
-// ─── Service Provider Ad Card (inline) ───────────────────────────────────────
-import { Linking, TouchableOpacity } from "react-native";
+// ─── Service Provider Ad Card + Enquiry Modal (inline) ───────────────────────
+import { TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, Alert } from "react-native";
 
 function SpAdCard({ ad }: { ad: any }) {
   const trackedRef = useRef(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     if (!trackedRef.current && ad?._id) {
@@ -900,69 +901,165 @@ function SpAdCard({ ad }: { ad: any }) {
     }
   }, [ad?._id]);
 
-  const handlePress = () => {
+  const handleEnquire = () => {
     serviceProviderAdsAPI.recordClick(ad._id).catch(() => {});
-    if (ad.ctaUrl) Linking.openURL(ad.ctaUrl).catch(() => {});
+    setModalOpen(true);
   };
 
   return (
-    <TouchableOpacity
-      onPress={ad.ctaUrl ? handlePress : undefined}
-      activeOpacity={0.85}
-      style={{
-        width: 180,
-        borderWidth: 1,
-        borderColor: colors.gray100,
-        backgroundColor: colors.white,
-        overflow: "hidden",
-        marginBottom: 12,
-      }}
-    >
-      {/* Banner */}
-      {ad.imageUrl ? (
-        <Image source={{ uri: ad.imageUrl }} style={{ width: "100%", height: 90 }} contentFit="cover" />
-      ) : (
-        <View style={{ width: "100%", height: 90, backgroundColor: "#1b5e35", alignItems: "center", justifyContent: "center" }}>
-          {ad.provider?.logoUrl ? (
-            <Image source={{ uri: ad.provider.logoUrl }} style={{ width: 44, height: 44, borderRadius: 22 }} contentFit="cover" />
-          ) : (
-            <Text style={{ fontSize: 26 }}>🏢</Text>
-          )}
-        </View>
-      )}
-
-      {/* Ad label */}
-      <View style={{ position: "absolute", top: 5, right: 5, backgroundColor: "rgba(255,255,255,0.85)", paddingHorizontal: 4, paddingVertical: 1 }}>
-        <Text style={{ fontSize: 8, fontWeight: "700", color: colors.gray400, letterSpacing: 0.5 }}>AD</Text>
-      </View>
-
-      <View style={{ padding: 10, gap: 3 }}>
-        {/* Provider */}
-        {ad.provider?.businessName && (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-            {ad.provider?.logoUrl && (
-              <Image source={{ uri: ad.provider.logoUrl }} style={{ width: 16, height: 16, borderRadius: 8 }} contentFit="cover" />
-            )}
-            <Text style={{ fontSize: 10, color: colors.gray400 }} numberOfLines={1}>{ad.provider.businessName}</Text>
+    <>
+      <TouchableOpacity
+        onPress={handleEnquire}
+        activeOpacity={0.85}
+        style={{ width: 180, borderWidth: 1, borderColor: colors.gray100, backgroundColor: colors.white, overflow: "hidden", marginBottom: 12 }}
+      >
+        {ad.imageUrl ? (
+          <Image source={{ uri: ad.imageUrl }} style={{ width: "100%", height: 90 }} contentFit="cover" />
+        ) : (
+          <View style={{ width: "100%", height: 90, backgroundColor: "#1b5e35", alignItems: "center", justifyContent: "center" }}>
+            {ad.provider?.logoUrl
+              ? <Image source={{ uri: ad.provider.logoUrl }} style={{ width: 44, height: 44, borderRadius: 22 }} contentFit="cover" />
+              : <Text style={{ fontSize: 26 }}>🏢</Text>}
           </View>
         )}
-        {/* Title */}
-        <Text style={{ fontSize: 13, fontWeight: "700", color: colors.gray900, lineHeight: 17 }} numberOfLines={2}>{ad.title}</Text>
-        {/* Body */}
-        {ad.body && (
-          <Text style={{ fontSize: 11, color: colors.gray500, lineHeight: 15 }} numberOfLines={2}>{ad.body}</Text>
-        )}
-        {/* CTA */}
-        {ad.ctaText && (
-          <TouchableOpacity
-            onPress={handlePress}
-            style={{ marginTop: 6, backgroundColor: "#1b5e35", paddingVertical: 7, alignItems: "center" }}
-            activeOpacity={0.8}
-          >
-            <Text style={{ fontSize: 11, fontWeight: "700", color: "#a8ffca", letterSpacing: 0.3 }}>{ad.ctaText} →</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </TouchableOpacity>
+        <View style={{ position: "absolute", top: 5, right: 5, backgroundColor: "rgba(255,255,255,0.85)", paddingHorizontal: 4, paddingVertical: 1 }}>
+          <Text style={{ fontSize: 8, fontWeight: "700", color: colors.gray400, letterSpacing: 0.5 }}>AD</Text>
+        </View>
+        <View style={{ padding: 10, gap: 3 }}>
+          <Text style={{ fontSize: 13, fontWeight: "700", color: colors.gray900, lineHeight: 17 }} numberOfLines={2}>{ad.title}</Text>
+          {ad.body && <Text style={{ fontSize: 11, color: colors.gray500, lineHeight: 15 }} numberOfLines={2}>{ad.body}</Text>}
+          <View style={{ marginTop: 6, backgroundColor: "#1b5e35", paddingVertical: 7, alignItems: "center" }}>
+            <Text style={{ fontSize: 11, fontWeight: "700", color: "#a8ffca", letterSpacing: 0.3 }}>Enquire</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      <SpEnquiryModal ad={ad} visible={modalOpen} onClose={() => setModalOpen(false)} />
+    </>
+  );
+}
+
+function SpEnquiryModal({ ad, visible, onClose }: { ad: any; visible: boolean; onClose: () => void }) {
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState({ name: "", phone: "", email: "", location: "", additionalInfo: "", preferredDate: "" });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const set = (field: string, val: string) => setForm(prev => ({ ...prev, [field]: val }));
+
+  const handleNext = () => {
+    if (!form.name.trim() || !form.phone.trim() || !form.email.trim()) {
+      Alert.alert("Missing Info", "Please fill in your name, phone and email.");
+      return;
+    }
+    setStep(1);
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      await serviceProviderAdsAPI.submitEnquiry(ad._id, form);
+      setSuccess(true);
+    } catch (e: any) {
+      Alert.alert("Error", e?.response?.data?.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setStep(0);
+    setForm({ name: "", phone: "", email: "", location: "", additionalInfo: "", preferredDate: "" });
+    setSuccess(false);
+    onClose();
+  };
+
+  const inputStyle = { borderWidth: 1, borderColor: "#e5eae6", padding: 12, fontSize: 14, color: "#1a1a1a", backgroundColor: "#fff", marginBottom: 12 };
+  const labelStyle = { fontSize: 11, fontWeight: "700" as const, color: "#555", textTransform: "uppercase" as const, letterSpacing: 0.8, marginBottom: 6 };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: "#fff" }}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: "#e5eae6" }}>
+            <Text style={{ fontSize: 16, fontWeight: "800", color: "#1a1a1a" }}>Enquiry</Text>
+            <TouchableOpacity onPress={handleClose} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#f6f7f8", alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ fontSize: 18, color: "#555" }}>×</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Ad preview */}
+          {ad.imageUrl && <Image source={{ uri: ad.imageUrl }} style={{ width: "100%", height: 140 }} contentFit="cover" />}
+          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: "#f0f2f0" }}>
+            <Text style={{ fontSize: 17, fontWeight: "800", color: "#1a1a1a" }}>{ad.title}</Text>
+            {ad.body && <Text style={{ fontSize: 13, color: "#76889a", marginTop: 6, lineHeight: 18 }}>{ad.body}</Text>}
+          </View>
+
+          {success ? (
+            <View style={{ padding: 32, alignItems: "center" }}>
+              <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "#f0fdf4", borderWidth: 2, borderColor: "#16a34a", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                <Text style={{ fontSize: 24 }}>✓</Text>
+              </View>
+              <Text style={{ fontSize: 18, fontWeight: "800", color: "#1a1a1a", marginBottom: 8 }}>Enquiry Submitted!</Text>
+              <Text style={{ fontSize: 14, color: "#76889a", textAlign: "center", lineHeight: 20, marginBottom: 24 }}>
+                Thank you! We've received your enquiry and will review it shortly.
+              </Text>
+              <TouchableOpacity onPress={handleClose} style={{ backgroundColor: "#1b5e35", paddingVertical: 14, paddingHorizontal: 40 }}>
+                <Text style={{ color: "#a8ffca", fontWeight: "700", fontSize: 14 }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ padding: 16 }}>
+              {/* Step indicator */}
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
+                {["Your Details", "Request Info"].map((label, i) => (
+                  <View key={i} style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: i <= step ? "#1b5e35" : "#e5eae6", alignItems: "center", justifyContent: "center" }}>
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: i <= step ? "#a8ffca" : "#76889a" }}>{i < step ? "✓" : String(i + 1)}</Text>
+                      </View>
+                      <Text style={{ fontSize: 12, fontWeight: i === step ? "700" : "500", color: i === step ? "#1a1a1a" : "#76889a" }}>{label}</Text>
+                    </View>
+                    {i < 1 && <View style={{ flex: 1, height: 1, backgroundColor: i < step ? "#1b5e35" : "#e5eae6", marginHorizontal: 8 }} />}
+                  </View>
+                ))}
+              </View>
+
+              {step === 0 ? (
+                <>
+                  <Text style={labelStyle}>Full Name *</Text>
+                  <TextInput style={inputStyle} value={form.name} onChangeText={v => set("name", v)} placeholder="e.g. John Smith" placeholderTextColor="#aaa" />
+                  <Text style={labelStyle}>Phone Number *</Text>
+                  <TextInput style={inputStyle} value={form.phone} onChangeText={v => set("phone", v)} placeholder="e.g. 0712 345 678" placeholderTextColor="#aaa" keyboardType="phone-pad" />
+                  <Text style={labelStyle}>Email Address *</Text>
+                  <TextInput style={inputStyle} value={form.email} onChangeText={v => set("email", v)} placeholder="you@example.com" placeholderTextColor="#aaa" keyboardType="email-address" autoCapitalize="none" />
+                  <TouchableOpacity onPress={handleNext} style={{ backgroundColor: "#1b5e35", paddingVertical: 14, alignItems: "center", marginTop: 4 }}>
+                    <Text style={{ color: "#a8ffca", fontWeight: "700", fontSize: 14 }}>Next →</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={labelStyle}>Your Location</Text>
+                  <TextInput style={inputStyle} value={form.location} onChangeText={v => set("location", v)} placeholder="e.g. Sandton, Johannesburg" placeholderTextColor="#aaa" />
+                  <Text style={labelStyle}>Preferred Date</Text>
+                  <TextInput style={inputStyle} value={form.preferredDate} onChangeText={v => set("preferredDate", v)} placeholder="YYYY-MM-DD" placeholderTextColor="#aaa" />
+                  <Text style={labelStyle}>Additional Information</Text>
+                  <TextInput style={[inputStyle, { height: 80, textAlignVertical: "top" }]} value={form.additionalInfo} onChangeText={v => set("additionalInfo", v)} placeholder="Describe what you need help with…" placeholderTextColor="#aaa" multiline />
+                  <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
+                    <TouchableOpacity onPress={() => setStep(0)} style={{ flex: 1, paddingVertical: 14, borderWidth: 1, borderColor: "#e5eae6", alignItems: "center" }}>
+                      <Text style={{ fontWeight: "600", color: "#555", fontSize: 14 }}>← Back</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleSubmit} disabled={loading} style={{ flex: 2, paddingVertical: 14, backgroundColor: loading ? "#76889a" : "#1b5e35", alignItems: "center" }}>
+                      <Text style={{ color: "#a8ffca", fontWeight: "700", fontSize: 14 }}>{loading ? "Submitting…" : "Submit Enquiry"}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }

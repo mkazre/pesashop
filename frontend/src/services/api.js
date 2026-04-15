@@ -309,6 +309,8 @@ export const serviceProviderAdsAPI = {
   getContextual: (params) => api.get('/api/service-provider-ads/contextual', { params }),
   recordImpression: (id) => api.post(`/api/service-provider-ads/${id}/impression`),
   recordClick: (id) => api.post(`/api/service-provider-ads/${id}/click`),
+  submitEnquiry: (id, data) => api.post(`/api/service-provider-ads/${id}/enquire`, data),
+  getAdSettings: () => api.get('/api/service-provider-ads/settings'),
 };
 
 // Service Types & Requests API (frontend)

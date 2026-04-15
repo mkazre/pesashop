@@ -369,6 +369,10 @@ export const serviceProviderAdsAPI = {
     api.post(`/api/service-provider-ads/${id}/impression`),
   recordClick: (id: string) =>
     api.post(`/api/service-provider-ads/${id}/click`),
+  submitEnquiry: (id: string, data: any) =>
+    api.post(`/api/service-provider-ads/${id}/enquire`, data),
+  getAdSettings: () =>
+    api.get('/api/service-provider-ads/settings'),
 };
 
 export default api;

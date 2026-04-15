@@ -127,7 +127,7 @@ function LoginScreen({ onLogin }) {
 // ─── Dashboard ─────────────────────────────────────────────
 function Dashboard({ provider: initialProvider, onLogout }) {
   const qc = useQueryClient();
-  const [tab, setTab] = useState('overview'); // 'overview' | 'ads' | 'new-ad' | 'book-slot' | 'orders'
+  const [tab, setTab] = useState('overview'); // 'overview' | 'ads' | 'new-ad' | 'book-slot' | 'orders' | 'enquiries'
 
   // Refresh provider profile
   const { data: profileData } = useQuery(
@@ -162,6 +162,15 @@ function Dashboard({ provider: initialProvider, onLogout }) {
   const adOrders = ordersData || [];
   const pendingOrders = adOrders.filter(o => o.status === 'pending_payment').length;
 
+  // Enquiries (pushed-forward by admin)
+  const { data: enquiriesData, isLoading: enquiriesLoading } = useQuery(
+    'sp-portal-enquiries',
+    () => portalHttp.get('/api/service-provider-ads/enquiries/mine', portalApi()).then(r => r.data.data || []),
+    { staleTime: 30000 }
+  );
+  const enquiries = enquiriesData || [];
+  const newEnquiries = enquiries.filter(e => !e.providerViewedAt).length;
+
   const subStatus = provider?.subscriptionStatus || 'none';
   const subPlan = provider?.subscriptionPlan;
   const subExpiry = provider?.subscriptionExpiry;
@@ -172,6 +181,7 @@ function Dashboard({ provider: initialProvider, onLogout }) {
     { id: 'orders', label: `📋 My Orders${pendingOrders > 0 ? ` (${pendingOrders} pending)` : ''}` },
     { id: 'ads', label: `📢 My Ads (${ads.length})` },
     { id: 'new-ad', label: '➕ Create Ad' },
+    { id: 'enquiries', label: `📩 Enquiries${newEnquiries > 0 ? ` (${newEnquiries} new)` : enquiries.length > 0 ? ` (${enquiries.length})` : ''}` },
   ];
 
   return (
@@ -211,6 +221,7 @@ function Dashboard({ provider: initialProvider, onLogout }) {
         {tab === 'orders' && <MyOrdersTab orders={adOrders} loading={ordersLoading} onBookSlot={() => setTab('book-slot')} />}
         {tab === 'ads' && <AdsTab ads={ads} adsLoading={adsLoading} onCreateNew={() => setTab('new-ad')} />}
         {tab === 'new-ad' && <NewAdForm slots={slots} onSuccess={() => { qc.invalidateQueries('sp-portal-ads'); setTab('ads'); }} />}
+        {tab === 'enquiries' && <EnquiriesTab enquiries={enquiries} loading={enquiriesLoading} />}
       </div>
     </div>
   );
@@ -385,7 +396,7 @@ function AdsTab({ ads, adsLoading, onCreateNew }) {
 // ─── New Ad Form ───────────────────────────────────────────
 function NewAdForm({ slots, onSuccess }) {
   const [form, setForm] = useState({
-    title: '', body: '', ctaText: '', ctaUrl: '', imageUrl: '',
+    title: '', body: '', imageUrl: '',
     placementSlot: '', startDate: '', endDate: '', aiKeywords: ''
   });
   const [loading, setLoading] = useState(false);
@@ -405,8 +416,6 @@ function NewAdForm({ slots, onSuccess }) {
       const payload = {
         title: form.title,
         body: form.body,
-        ctaText: form.ctaText,
-        ctaUrl: form.ctaUrl,
         imageUrl: form.imageUrl,
         placementSlot: form.placementSlot,
         startDate: form.startDate || undefined,
@@ -458,29 +467,6 @@ function NewAdForm({ slots, onSuccess }) {
             rows={3}
             className="w-full border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-primary resize-none"
           />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">CTA Button Text</label>
-            <input
-              type="text"
-              value={form.ctaText}
-              onChange={e => set('ctaText', e.target.value)}
-              placeholder="e.g. Get a Free Quote"
-              className="w-full border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">CTA Link URL</label>
-            <input
-              type="url"
-              value={form.ctaUrl}
-              onChange={e => set('ctaUrl', e.target.value)}
-              placeholder="https://yourwebsite.com"
-              className="w-full border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
-            />
-          </div>
         </div>
 
         <div>
@@ -984,6 +970,106 @@ function MyOrdersTab({ orders, loading, onBookSlot }) {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Enquiries Tab ─────────────────────────────────────────
+function EnquiriesTab({ enquiries, loading }) {
+  const [selected, setSelected] = useState(null);
+
+  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+
+  if (enquiries.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <div className="text-5xl mb-4">📩</div>
+        <h3 className="text-lg font-bold text-gray-900 mb-2">No enquiries yet</h3>
+        <p className="text-sm text-gray-500 max-w-sm mx-auto">When customers enquire about your ads and our team approves the request, you'll see the customer's details here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-gray-900">Customer Enquiries</h2>
+        <span className="text-sm text-gray-500">{enquiries.length} enquiries</span>
+      </div>
+      <p className="text-sm text-gray-500 bg-amber-50 border border-amber-200 rounded-lg p-3">
+        These enquiries have been reviewed and approved by our team. Please follow up with each customer directly.
+      </p>
+
+      <div className="space-y-3">
+        {enquiries.map(eq => (
+          <div
+            key={eq._id}
+            onClick={() => setSelected(eq)}
+            className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary hover:shadow-sm transition-all"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-gray-900 text-sm">{eq.name}</span>
+                  {!eq.providerViewedAt && (
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 font-bold">NEW</span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400">{eq.ad?.title || 'Ad'} · {eq.phone}</p>
+                {eq.additionalInfo && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{eq.additionalInfo}</p>}
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-xs text-gray-400">{new Date(eq.pushedForwardAt || eq.createdAt).toLocaleDateString()}</p>
+                {eq.preferredDate && <p className="text-xs text-primary font-medium mt-0.5">📅 {new Date(eq.preferredDate).toLocaleDateString()}</p>}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Detail modal */}
+      {selected && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-primary/10 border-b border-primary/20 px-6 py-4">
+              <h3 className="font-bold text-gray-900">Customer Enquiry</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Ad: {selected.ad?.title}</p>
+            </div>
+            <div className="p-6 space-y-3 text-sm">
+              {[
+                ['Name', selected.name],
+                ['Phone', selected.phone],
+                ['Email', selected.email],
+                ['Location', selected.location || 'Not provided'],
+                ['Preferred Date', selected.preferredDate ? new Date(selected.preferredDate).toLocaleDateString() : 'Not specified'],
+                ['Received', new Date(selected.pushedForwardAt || selected.createdAt).toLocaleString()],
+              ].map(([label, value]) => (
+                <div key={label} className="flex gap-3">
+                  <span className="text-gray-400 w-28 flex-shrink-0">{label}</span>
+                  <span className="text-gray-800 font-medium">{value}</span>
+                </div>
+              ))}
+              {selected.additionalInfo && (
+                <div className="pt-3 border-t border-gray-100">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Additional Information</p>
+                  <p className="text-gray-700">{selected.additionalInfo}</p>
+                </div>
+              )}
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <a href={`tel:${selected.phone}`} className="flex-1 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg text-center hover:bg-primary/90 transition-colors">
+                📞 Call Customer
+              </a>
+              <a href={`mailto:${selected.email}`} className="flex-1 py-2.5 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg text-center hover:bg-gray-200 transition-colors">
+                ✉️ Email
+              </a>
+            </div>
+            <div className="px-6 pb-5">
+              <button onClick={() => setSelected(null)} className="w-full text-sm text-gray-400 hover:text-gray-600 py-1">Close</button>
+            </div>
           </div>
         </div>
       )}

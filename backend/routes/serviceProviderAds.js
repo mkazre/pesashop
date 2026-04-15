@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const ServiceProviderAd = require('../models/ServiceProviderAd');
 const ServiceProviderAdPlacement = require('../models/ServiceProviderAdPlacement');
+const ServiceProviderAdEnquiry = require('../models/ServiceProviderAdEnquiry');
 const { getContextualAds, recordImpression, recordClick } = require('../services/adContextEngine');
 const emailService = require('../services/emailService');
 
@@ -183,6 +184,200 @@ router.delete('/:id', protect, authorize('admin', 'shop_manager'), async (req, r
   try {
     await ServiceProviderAd.findByIdAndDelete(req.params.id);
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ─── Ad Enquiries ──────────────────────────────────────────────────
+
+// POST /api/service-provider-ads/:id/enquire — Public: customer submits enquiry
+router.post('/:id/enquire', async (req, res) => {
+  try {
+    const ad = await ServiceProviderAd.findById(req.params.id).populate('provider', 'businessName email');
+    if (!ad || ad.status !== 'active') {
+      return res.status(404).json({ success: false, message: 'Ad not found or inactive' });
+    }
+    const { name, phone, email, location, additionalInfo, preferredDate } = req.body;
+    if (!name || !phone || !email) {
+      return res.status(400).json({ success: false, message: 'Name, phone and email are required' });
+    }
+
+    const enquiry = await ServiceProviderAdEnquiry.create({
+      ad: ad._id,
+      provider: ad.provider._id,
+      name, phone, email, location, additionalInfo,
+      preferredDate: preferredDate ? new Date(preferredDate) : undefined,
+    });
+
+    // Email admin
+    try {
+      const Settings = require('../models/Settings');
+      const settings = await Settings.findOne().lean();
+      const adminEmail = settings?.adminEmail || process.env.ADMIN_EMAIL || 'admin@pesashop.com';
+      await emailService.sendEmail({
+        to: adminEmail,
+        subject: `New Ad Enquiry: ${ad.title}`,
+        html: `
+          <h2>New Service Provider Ad Enquiry</h2>
+          <p><strong>Ad:</strong> ${ad.title}</p>
+          <p><strong>Provider:</strong> ${ad.provider?.businessName || 'N/A'}</p>
+          <hr/>
+          <p><strong>Customer Name:</strong> ${name}</p>
+          <p><strong>Phone:</strong> ${phone}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Location:</strong> ${location || 'Not provided'}</p>
+          <p><strong>Preferred Date:</strong> ${preferredDate ? new Date(preferredDate).toLocaleDateString() : 'Not specified'}</p>
+          <p><strong>Additional Info:</strong> ${additionalInfo || 'None'}</p>
+          <hr/>
+          <p>Log in to the admin panel to review and push forward this enquiry to the service provider.</p>
+        `
+      });
+    } catch (e) { console.error('Enquiry admin email error:', e.message); }
+
+    res.status(201).json({ success: true, data: enquiry, message: 'Enquiry submitted successfully. We will be in touch shortly.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/service-provider-ads/enquiries — Admin: list all enquiries
+router.get('/enquiries', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const { status, page = 1, limit = 20 } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+
+    const total = await ServiceProviderAdEnquiry.countDocuments(filter);
+    const enquiries = await ServiceProviderAdEnquiry.find(filter)
+      .populate('ad', 'title placementSlot imageUrl')
+      .populate('provider', 'businessName email')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    res.json({ success: true, data: enquiries, pagination: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / limit) } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/service-provider-ads/enquiries/:enquiryId/push-forward — Admin: approve + notify provider
+router.put('/enquiries/:enquiryId/push-forward', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const enquiry = await ServiceProviderAdEnquiry.findById(req.params.enquiryId)
+      .populate('ad', 'title imageUrl')
+      .populate('provider', 'businessName email');
+
+    if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found' });
+
+    enquiry.status = 'pushed_forward';
+    enquiry.adminNotes = req.body.notes || '';
+    enquiry.pushedForwardAt = new Date();
+    enquiry.pushedForwardBy = req.user.id;
+    await enquiry.save();
+
+    // Email service provider
+    try {
+      if (enquiry.provider?.email) {
+        await emailService.sendEmail({
+          to: enquiry.provider.email,
+          subject: `New Customer Enquiry for: ${enquiry.ad?.title}`,
+          html: `
+            <h2>You have a new customer enquiry!</h2>
+            <p>A customer has enquired about your ad: <strong>${enquiry.ad?.title}</strong></p>
+            <hr/>
+            <p><strong>Customer Name:</strong> ${enquiry.name}</p>
+            <p><strong>Phone:</strong> ${enquiry.phone}</p>
+            <p><strong>Email:</strong> ${enquiry.email}</p>
+            <p><strong>Location:</strong> ${enquiry.location || 'Not provided'}</p>
+            <p><strong>Preferred Date:</strong> ${enquiry.preferredDate ? new Date(enquiry.preferredDate).toLocaleDateString() : 'Not specified'}</p>
+            <p><strong>Additional Info:</strong> ${enquiry.additionalInfo || 'None'}</p>
+            ${req.body.notes ? `<p><strong>Admin Notes:</strong> ${req.body.notes}</p>` : ''}
+            <hr/>
+            <p>Log in to your service provider portal to view this enquiry and follow up with the customer.</p>
+          `
+        });
+      }
+    } catch (e) { console.error('Push-forward email error:', e.message); }
+
+    res.json({ success: true, data: enquiry });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/service-provider-ads/enquiries/:enquiryId/reject — Admin: reject enquiry
+router.put('/enquiries/:enquiryId/reject', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const enquiry = await ServiceProviderAdEnquiry.findByIdAndUpdate(req.params.enquiryId, {
+      status: 'rejected',
+      adminNotes: req.body.notes || '',
+      rejectedAt: new Date(),
+      rejectedBy: req.user.id,
+    }, { new: true });
+    if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found' });
+    res.json({ success: true, data: enquiry });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/service-provider-ads/enquiries/mine — Provider: see only pushed-forward enquiries
+router.get('/enquiries/mine', async (req, res) => {
+  try {
+    // Auth via provider token (same as protectProvider middleware)
+    const jwt = require('jsonwebtoken');
+    const ServiceProvider = require('../models/ServiceProvider');
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Not authorised' });
+    }
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const provider = await ServiceProvider.findById(decoded.id);
+    if (!provider) return res.status(401).json({ success: false, message: 'Provider not found' });
+
+    const enquiries = await ServiceProviderAdEnquiry.find({
+      provider: provider._id,
+      status: 'pushed_forward'
+    })
+      .populate('ad', 'title placementSlot imageUrl')
+      .sort({ pushedForwardAt: -1 });
+
+    // Mark as viewed
+    await ServiceProviderAdEnquiry.updateMany(
+      { provider: provider._id, status: 'pushed_forward', providerViewedAt: null },
+      { $set: { providerViewedAt: new Date() } }
+    );
+
+    res.json({ success: true, data: enquiries });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/service-provider-ads/settings — Public: get ad display settings
+router.get('/settings', async (req, res) => {
+  try {
+    const Settings = require('../models/Settings');
+    const settings = await Settings.findOne().select('serviceProviderAdSettings').lean();
+    res.json({ success: true, data: settings?.serviceProviderAdSettings || {} });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/service-provider-ads/settings — Admin: update ad display settings
+router.put('/settings', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const Settings = require('../models/Settings');
+    const settings = await Settings.findOneAndUpdate(
+      {},
+      { $set: { serviceProviderAdSettings: req.body } },
+      { new: true, upsert: true }
+    );
+    res.json({ success: true, data: settings.serviceProviderAdSettings });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

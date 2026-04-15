@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
+import ServiceProviderAdEnquiriesTab from './ServiceProviderAdEnquiriesTab';
+import ServiceProviderAdSettingsTab from './ServiceProviderAdSettingsTab';
 
 const STATUS_STYLES = {
   pending_approval: 'bg-amber-100 text-amber-700',
@@ -29,6 +31,7 @@ const FILTER_TABS = [
 ];
 
 export default function ServiceProviderAdsPage() {
+  const [mainTab, setMainTab] = useState('ads'); // 'ads' | 'enquiries' | 'settings'
   const qc = useQueryClient();
   const [filter, setFilter] = useState({ status: '', page: 1, limit: 30 });
   const [selectedAd, setSelectedAd] = useState(null);
@@ -91,10 +94,27 @@ export default function ServiceProviderAdsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Service Provider Ads</h1>
-          <p className="text-sm text-gray-500 mt-1">Review and manage ads submitted by service providers</p>
+          <p className="text-sm text-gray-500 mt-1">Review ads, manage enquiries, and configure display settings</p>
         </div>
-        <div className="text-sm text-gray-500">{total} total ads</div>
+        {mainTab === 'ads' && <div className="text-sm text-gray-500">{total} total ads</div>}
       </div>
+
+      {/* Main tabs */}
+      <div className="flex gap-1 border-b border-gray-200">
+        {[{ id: 'ads', label: 'All Ads' }, { id: 'enquiries', label: 'Enquiries' }, { id: 'settings', label: 'Ad Display Settings' }].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setMainTab(t.id)}
+            className={`px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors ${mainTab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {mainTab === 'enquiries' && <ServiceProviderAdEnquiriesTab />}
+      {mainTab === 'settings' && <ServiceProviderAdSettingsTab />}
+      {mainTab === 'ads' && (<>
 
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">
@@ -372,6 +392,7 @@ export default function ServiceProviderAdsPage() {
           </div>
         </div>
       )}
+      </>)}
     </div>
   );
 }
