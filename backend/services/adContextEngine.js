@@ -44,17 +44,30 @@ async function getContextualAds(slotId, context = {}) {
 
   // 1. Build slot query — supports exact slotId, legacy ObjectId, and page-level fallback
   const now = new Date();
+  // End-of-day boundary: treat endDate as "active through the END of that day" (inclusive)
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
 
   // Find placement by exact slotId first
   let matchedPlacements = await ServiceProviderAdPlacement.find({ slotId, isActive: true }).lean();
 
   // Fallback: if no placement found with that exact slotId, find ALL active placements
-  // for the same page (pageType maps to slotPage) so any admin-named slot on that page shows ads
+  // — first by slotPage, then by slotId prefix (e.g. "product_detail_1" matches "product_detail")
   if (matchedPlacements.length === 0 && pageType) {
     // Normalise pageType: 'product' → 'product_detail', 'home' → 'home', etc.
     const pageMap = { product: 'product_detail', shop: 'archive', category: 'category', checkout: 'checkout', account: 'account' };
     const slotPage = pageMap[pageType] || pageType;
+    // Try slotPage match first
     matchedPlacements = await ServiceProviderAdPlacement.find({ slotPage, isActive: true }).lean();
+    // If still nothing, match on slotId prefix (e.g. frontend sends "product_detail_below_buy"
+    // but DB has "product_detail_1" — both start with "product_detail")
+    if (matchedPlacements.length === 0) {
+      const prefix = slotPage; // e.g. "product_detail"
+      matchedPlacements = await ServiceProviderAdPlacement.find({
+        slotId: { $regex: `^${prefix}`, $options: 'i' },
+        isActive: true
+      }).lean();
+    }
   }
 
   // Build the slot value list: all matching slotId strings + their ObjectId strings (legacy)
@@ -72,10 +85,12 @@ async function getContextualAds(slotId, context = {}) {
   const activeAds = await ServiceProviderAd.find({
     ...slotQuery,
     status: 'active',
-    // Allow ads with no dates set (always active) or within their date range
+    // Allow ads with no dates set (always active) or within their date range.
+    // endDate is treated as "active through END of that day" — compare against startOfToday
+    // so an ad with endDate=today is still shown all day.
     $and: [
       { $or: [{ startDate: null }, { startDate: { $exists: false } }, { startDate: { $lte: now } }] },
-      { $or: [{ endDate: null }, { endDate: { $exists: false } }, { endDate: { $gte: now } }] }
+      { $or: [{ endDate: null }, { endDate: { $exists: false } }, { endDate: { $gte: startOfToday } }] }
     ]
   }).populate('provider', 'businessName logoUrl applicationStatus subscriptionStatus');
 
