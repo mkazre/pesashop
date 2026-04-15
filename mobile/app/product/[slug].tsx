@@ -9,6 +9,11 @@ import {
   Share,
   StyleSheet,
   Platform,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -888,8 +893,6 @@ const ps = StyleSheet.create({
 });
 
 // ─── Service Provider Ad Card + Enquiry Modal (inline) ───────────────────────
-import { TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, Alert } from "react-native";
-
 function SpAdCard({ ad }: { ad: any }) {
   const trackedRef = useRef(false);
   const [modalOpen, setModalOpen] = useState(false);
