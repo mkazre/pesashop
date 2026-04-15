@@ -67,6 +67,33 @@ router.post('/:id/click', async (req, res) => {
   }
 });
 
+// ─── Ad Display Settings (must be before /:id wildcards) ─────────
+// GET /api/service-provider-ads/settings — Public: get ad display settings
+router.get('/settings', async (req, res) => {
+  try {
+    const Settings = require('../models/Settings');
+    const settings = await Settings.findOne().lean();
+    res.json({ success: true, data: settings?.serviceProviderAdSettings || {} });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/service-provider-ads/settings — Admin: update ad display settings
+router.put('/settings', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const Settings = require('../models/Settings');
+    const settings = await Settings.findOneAndUpdate(
+      {},
+      { $set: { serviceProviderAdSettings: req.body } },
+      { new: true, upsert: true, strict: false }
+    );
+    res.json({ success: true, data: settings.serviceProviderAdSettings || req.body });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ─── Admin — Ad Management ────────────────────────────────────────
 
 // GET /api/service-provider-ads — All ads (admin)
@@ -352,32 +379,6 @@ router.get('/enquiries/mine', async (req, res) => {
     );
 
     res.json({ success: true, data: enquiries });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// GET /api/service-provider-ads/settings — Public: get ad display settings
-router.get('/settings', async (req, res) => {
-  try {
-    const Settings = require('../models/Settings');
-    const settings = await Settings.findOne().select('serviceProviderAdSettings').lean();
-    res.json({ success: true, data: settings?.serviceProviderAdSettings || {} });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// PUT /api/service-provider-ads/settings — Admin: update ad display settings
-router.put('/settings', protect, authorize('admin', 'shop_manager'), async (req, res) => {
-  try {
-    const Settings = require('../models/Settings');
-    const settings = await Settings.findOneAndUpdate(
-      {},
-      { $set: { serviceProviderAdSettings: req.body } },
-      { new: true, upsert: true }
-    );
-    res.json({ success: true, data: settings.serviceProviderAdSettings });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

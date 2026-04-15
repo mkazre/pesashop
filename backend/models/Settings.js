@@ -234,7 +234,19 @@ const settingsSchema = new mongoose.Schema({
       appId: { type: String, default: '' },
       appSecret: { type: String, default: '' },
     }
-  }
+  },
+
+  // Service Provider Ad display settings
+  serviceProviderAdSettings: {
+    sectionTitle: { type: String, default: 'Featured Services' },
+    showImage: { type: Boolean, default: true },
+    showBody: { type: Boolean, default: true },
+    showProviderName: { type: Boolean, default: false },
+    enquireButtonText: { type: String, default: 'Enquire' },
+    maxAdsPerSlot: { type: Number, default: 6 },
+    cardMinWidth: { type: Number, default: 180 },
+    cardMaxWidth: { type: Number, default: 220 },
+  },
 }, {
   timestamps: true
 });
