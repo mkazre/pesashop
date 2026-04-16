@@ -149,6 +149,12 @@ async function fetchFromApi(keyword, limit, apiKey, apiHost) {
   const { url } = buildRequest(keyword, limit, apiKey, apiHost);
   const data = await doGet(url, headers);
   const items = extractItems(data);
+  if (Array.isArray(items) && items.length > 0) {
+    console.log('[SocialEngine] first item keys:', Object.keys(items[0]));
+    console.log('[SocialEngine] first item sample:', JSON.stringify(items[0]).slice(0, 600));
+  } else {
+    console.log('[SocialEngine] extractItems result:', JSON.stringify(data).slice(0, 600));
+  }
   const videos = (Array.isArray(items) ? items : []).slice(0, limit).map(normaliseVideo).filter(v => v.id);
   return videos;
 }
