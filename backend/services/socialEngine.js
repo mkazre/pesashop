@@ -147,10 +147,11 @@ async function fetchFromApi(keyword, limit, apiKey, apiHost) {
   }
 
   const { url } = buildRequest(keyword, limit, apiKey, apiHost);
+  console.log('[SocialEngine] calling:', url);
   const data = await doGet(url, headers);
   const items = extractItems(data);
   const videos = (Array.isArray(items) ? items : []).slice(0, limit).map(normaliseVideo).filter(v => v.id);
-  console.log('[SocialEngine] raw keys:', Object.keys(data || {}), '| data.data keys:', Object.keys(data?.data || {}), '| items count:', Array.isArray(items) ? items.length : typeof items, '| videos after normalise:', videos.length);
+  console.log('[SocialEngine] full response:', JSON.stringify(data).slice(0, 500));
   return videos;
 }
 
