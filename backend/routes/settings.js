@@ -14,6 +14,7 @@ function maskSensitive(obj) {
   SENSITIVE_KEYS.forEach(k => { if (data[k]) data[k] = MASK; });
   if (data.socialLogin?.google?.clientSecret) data.socialLogin.google.clientSecret = MASK;
   if (data.socialLogin?.facebook?.appSecret) data.socialLogin.facebook.appSecret = MASK;
+  if (data.socialEngine?.rapidApiKey) data.socialEngine.rapidApiKey = MASK;
   return data;
 }
 
@@ -59,6 +60,7 @@ router.put('/', protect, authorize('admin'), async (req, res) => {
       }
       if (payload.socialLogin?.google?.clientSecret === MASK) delete payload.socialLogin.google.clientSecret;
       if (payload.socialLogin?.facebook?.appSecret === MASK) delete payload.socialLogin.facebook.appSecret;
+      if (payload.socialEngine?.rapidApiKey === MASK || payload.socialEngine?.rapidApiKey === '') delete payload.socialEngine?.rapidApiKey;
       
       // Use findOneAndUpdate with $set for reliable nested object persistence
       settings = await Settings.findOneAndUpdate(

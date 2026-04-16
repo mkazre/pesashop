@@ -438,6 +438,11 @@ export const settingsAPI = {
   verifyEmailConfig: () => api.post('/settings/verify-email-config'),
 };
 
+// Social Engine Admin API
+export const socialEngineAdminAPI = {
+  testConnection: () => api.post('/social-engine/test'),
+};
+
 // Notifications API
 export const notificationsAPI = {
   getAll: (params) => api.get('/notifications', { params }),

@@ -56,9 +56,10 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "blob:", "*"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://www.tiktok.com"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       connectSrc: ["'self'", "wss:", "ws:"],
+      frameSrc: ["'self'", "https://www.tiktok.com"],
     },
   },
   crossOriginResourcePolicy: { policy: "cross-origin" }
@@ -155,6 +156,7 @@ const demographicsRoutes = require('./routes/demographics');
 const serviceTypesRoutes = require('./routes/serviceTypes');
 const serviceRequestsRoutes = require('./routes/serviceRequests');
 const importBatchesRoutes = require('./routes/importBatches');
+const socialEngineRoutes  = require('./routes/socialEngine');
 
 // Mount API routes FIRST (before static files)
 app.use('/api/auth', authRoutes);
@@ -208,6 +210,7 @@ app.use('/api/demographics', demographicsRoutes);
 app.use('/api/service-types', serviceTypesRoutes);
 app.use('/api/service-requests', serviceRequestsRoutes);
 app.use('/api/import-batches', importBatchesRoutes);
+app.use('/api/social-engine', socialEngineRoutes);
 
 // Serve React frontend static files AFTER API routes
 app.use(express.static(path.join(__dirname, '../frontend/dist')));

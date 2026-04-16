@@ -313,6 +313,12 @@ export const serviceProviderAdsAPI = {
   getAdSettings: () => api.get('/api/service-provider-ads/settings'),
 };
 
+// Social Engine API (TikTok video carousel)
+export const socialEngineAPI = {
+  getVideos:   (keywords, limit) => api.get('/api/social-engine/videos', { params: { keywords: keywords.join(','), limit } }),
+  getSettings: ()                => api.get('/api/social-engine/settings'),
+};
+
 // Service Types & Requests API (frontend)
 export const serviceTypesAPI = {
   getAll: (params) => api.get('/api/service-types', { params }),

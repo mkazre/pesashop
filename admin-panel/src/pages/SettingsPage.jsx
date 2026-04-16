@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation } from 'react-query';
-import { settingsAPI } from '@/services/api';
+import { settingsAPI, socialEngineAdminAPI } from '@/services/api';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
@@ -22,6 +22,9 @@ const SettingsPage = () => {
   const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [emailConfigStatus, setEmailConfigStatus] = useState(null);
   const [brevoKeyConfigured, setBrevoKeyConfigured] = useState(false);
+  const [showRapidApiKey,  setShowRapidApiKey]  = useState(false);
+  const [testingTikTok,    setTestingTikTok]    = useState(false);
+  const [tiktokTestResult, setTiktokTestResult] = useState(null);
   
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm({
     shouldUnregister: false,
@@ -113,6 +116,16 @@ const SettingsPage = () => {
       socialLoginFacebookEnabled: false,
       socialLoginFacebookAppId: '',
       socialLoginFacebookAppSecret: '',
+      // Social Engine
+      'socialEngine.enabled':             false,
+      'socialEngine.rapidApiKey':         '',
+      'socialEngine.rapidApiHost':        'tiktok-api23.p.rapidapi.com',
+      'socialEngine.sectionTitle':        'Featured in Videos',
+      'socialEngine.sectionSubtitle':     'See what creators are sharing',
+      'socialEngine.videosPerCarousel':   '8',
+      'socialEngine.showOnHome':          true,
+      'socialEngine.showOnShop':          true,
+      'socialEngine.showOnProductDetail': true,
     }
   });
 
@@ -206,6 +219,16 @@ const SettingsPage = () => {
           socialLoginFacebookEnabled: settings.socialLogin?.facebook?.enabled || false,
           socialLoginFacebookAppId: settings.socialLogin?.facebook?.appId || '',
           socialLoginFacebookAppSecret: settings.socialLogin?.facebook?.appSecret === '***configured***' ? '' : (settings.socialLogin?.facebook?.appSecret || ''),
+          // Social Engine
+          'socialEngine.enabled':             settings.socialEngine?.enabled             || false,
+          'socialEngine.rapidApiKey':         settings.socialEngine?.rapidApiKey === '***configured***' ? '' : (settings.socialEngine?.rapidApiKey || ''),
+          'socialEngine.rapidApiHost':        settings.socialEngine?.rapidApiHost        || 'tiktok-api23.p.rapidapi.com',
+          'socialEngine.sectionTitle':        settings.socialEngine?.sectionTitle        || 'Featured in Videos',
+          'socialEngine.sectionSubtitle':     settings.socialEngine?.sectionSubtitle     || 'See what creators are sharing',
+          'socialEngine.videosPerCarousel':   String(settings.socialEngine?.videosPerCarousel || 8),
+          'socialEngine.showOnHome':          settings.socialEngine?.showOnHome          !== false,
+          'socialEngine.showOnShop':          settings.socialEngine?.showOnShop          !== false,
+          'socialEngine.showOnProductDetail': settings.socialEngine?.showOnProductDetail !== false,
         });
         setBankDetails(settings.bankDetails || []);
         setBrevoKeyConfigured(settings.brevoApiKey === '***configured***');
@@ -254,7 +277,7 @@ const SettingsPage = () => {
     // Remove flat dot-notation keys that react-hook-form creates for nested fields
     const cleanData = { ...data };
     Object.keys(cleanData).forEach(key => {
-      if (key.startsWith('productDisplay.') || key.startsWith('layby') || key.startsWith('socialLogin') || key.startsWith('emailNotifications.')) {
+      if (key.startsWith('productDisplay.') || key.startsWith('layby') || key.startsWith('socialLogin') || key.startsWith('emailNotifications.') || key.startsWith('socialEngine.')) {
         delete cleanData[key];
       }
     });
@@ -349,7 +372,34 @@ const SettingsPage = () => {
           reviewLines: parseInt(data['productDisplay.otherLocations.reviewLines']) || 0,
         },
       },
+      socialEngine: {
+        enabled:             data['socialEngine.enabled']             || false,
+        rapidApiKey:         data['socialEngine.rapidApiKey']         || '',
+        rapidApiHost:        data['socialEngine.rapidApiHost']        || 'tiktok-api23.p.rapidapi.com',
+        sectionTitle:        data['socialEngine.sectionTitle']        || 'Featured in Videos',
+        sectionSubtitle:     data['socialEngine.sectionSubtitle']     || 'See what creators are sharing',
+        videosPerCarousel:   parseInt(data['socialEngine.videosPerCarousel']) || 8,
+        showOnHome:          data['socialEngine.showOnHome']          !== false,
+        showOnShop:          data['socialEngine.showOnShop']          !== false,
+        showOnProductDetail: data['socialEngine.showOnProductDetail'] !== false,
+      },
     });
+  };
+
+  const handleTestTikTok = async () => {
+    setTestingTikTok(true);
+    setTiktokTestResult(null);
+    try {
+      const res = await socialEngineAdminAPI.testConnection();
+      const videos = res.data?.data || [];
+      setTiktokTestResult({ success: true, count: videos.length, first: videos[0]?.author?.handle || 'unknown' });
+      toast.success(`Connection OK — ${videos.length} videos returned`);
+    } catch (err) {
+      setTiktokTestResult({ success: false, message: err.response?.data?.message || 'Connection failed' });
+      toast.error('TikTok connection test failed');
+    } finally {
+      setTestingTikTok(false);
+    }
   };
 
   return (
@@ -830,6 +880,96 @@ const SettingsPage = () => {
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Social Engine — TikTok Video Carousel */}
+        <Card title="Social Engine — TikTok Videos">
+          <div className="space-y-5">
+            <p className="text-sm text-gray-500">
+              Display contextual TikTok videos in a "Featured in Videos" carousel on product, shop, and home pages.
+              Requires a <strong>RapidAPI</strong> key — no official TikTok developer account needed.
+            </p>
+
+            <label className="flex items-center gap-2">
+              <input type="checkbox" className="w-4 h-4" {...register('socialEngine.enabled')} />
+              <span className="text-sm font-medium">Enable TikTok Video Carousel</span>
+            </label>
+
+            <div className="border-t pt-4 space-y-3">
+              <h4 className="text-sm font-semibold text-gray-700">RapidAPI Credentials</h4>
+              <div>
+                <label className="block text-sm font-medium mb-1">RapidAPI Key</label>
+                <div className="flex gap-2">
+                  <Input
+                    type={showRapidApiKey ? 'text' : 'password'}
+                    {...register('socialEngine.rapidApiKey')}
+                    placeholder="Enter your RapidAPI key"
+                    fullWidth
+                  />
+                  <button type="button" onClick={() => setShowRapidApiKey(v => !v)}
+                    className="px-3 py-2 border border-gray-300 rounded text-sm text-gray-600 hover:bg-gray-50 flex items-center">
+                    {showRapidApiKey ? <IoEyeOff size={16}/> : <IoEye size={16}/>}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Get a free key at <strong>rapidapi.com</strong> — search for <em>tiktok-api23</em> and subscribe to the free tier.
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">RapidAPI Host</label>
+                <Input {...register('socialEngine.rapidApiHost')} placeholder="tiktok-api23.p.rapidapi.com" fullWidth />
+                <p className="text-xs text-gray-500 mt-1">Default: tiktok-api23.p.rapidapi.com — change if you use a different TikTok API on RapidAPI.</p>
+              </div>
+            </div>
+
+            <div className="border-t pt-4 space-y-3">
+              <h4 className="text-sm font-semibold text-gray-700">Display Settings</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Section Title</label>
+                  <Input {...register('socialEngine.sectionTitle')} placeholder="Featured in Videos" fullWidth />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Section Subtitle</label>
+                  <Input {...register('socialEngine.sectionSubtitle')} placeholder="See what creators are sharing" fullWidth />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Videos per Carousel (1–20)</label>
+                <Input type="number" {...register('socialEngine.videosPerCarousel')} min="1" max="20" style={{ width: 100 }} />
+              </div>
+            </div>
+
+            <div className="border-t pt-4 space-y-2">
+              <h4 className="text-sm font-semibold text-gray-700">Show On</h4>
+              {[
+                { key: 'socialEngine.showOnHome',           label: 'Home Page' },
+                { key: 'socialEngine.showOnShop',           label: 'Shop / Archive Pages (including category archives)' },
+                { key: 'socialEngine.showOnProductDetail',  label: 'Product Detail Pages' },
+              ].map(({ key, label }) => (
+                <label key={key} className="flex items-center gap-2">
+                  <input type="checkbox" className="w-4 h-4" {...register(key)} />
+                  <span className="text-sm">{label}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <Button type="button" variant="outline" onClick={handleTestTikTok} disabled={testingTikTok}>
+                  {testingTikTok ? 'Testing…' : 'Test Connection'}
+                </Button>
+                <span className="text-xs text-gray-500">Saves settings first, then fetches 3 sample videos for keyword "trending"</span>
+              </div>
+              {tiktokTestResult && (
+                <div className={`mt-3 p-3 rounded text-sm ${tiktokTestResult.success ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                  {tiktokTestResult.success
+                    ? `✓ Connection OK — received ${tiktokTestResult.count} video${tiktokTestResult.count !== 1 ? 's' : ''}. First creator: @${tiktokTestResult.first}`
+                    : `✗ ${tiktokTestResult.message}`}
+                </div>
+              )}
             </div>
           </div>
         </Card>

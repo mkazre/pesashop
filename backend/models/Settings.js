@@ -247,6 +247,19 @@ const settingsSchema = new mongoose.Schema({
     cardMinWidth: { type: Number, default: 180 },
     cardMaxWidth: { type: Number, default: 220 },
   },
+
+  // Social Engine — TikTok video carousel
+  socialEngine: {
+    enabled:             { type: Boolean, default: false },
+    rapidApiKey:         { type: String,  default: '' },
+    rapidApiHost:        { type: String,  default: 'tiktok-api23.p.rapidapi.com' },
+    sectionTitle:        { type: String,  default: 'Featured in Videos' },
+    sectionSubtitle:     { type: String,  default: 'See what creators are sharing' },
+    videosPerCarousel:   { type: Number,  default: 8, min: 1, max: 20 },
+    showOnHome:          { type: Boolean, default: true },
+    showOnShop:          { type: Boolean, default: true },
+    showOnProductDetail: { type: Boolean, default: true },
+  },
 }, {
   timestamps: true
 });

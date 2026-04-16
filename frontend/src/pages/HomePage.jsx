@@ -5,6 +5,7 @@ import Loading from '@/components/common/Loading';
 import ProductCard from '@/components/common/ProductCard';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
 import ServiceProviderAdSlot from '@/components/ads/ServiceProviderAdSlot';
+import TikTokVideoSlot from '@/components/social/TikTokVideoSlot';
 import HomePageRenderer from '@/components/homeblocks/HomePageRenderer';
 import { useHomePageConfig } from '@/hooks/useHomePageConfig';
 import { Link } from 'react-router-dom';
@@ -212,6 +213,9 @@ function HomePageFallback() {
         maxAds={2}
         className="container mx-auto px-4 mb-6"
       />
+
+      {/* TikTok video carousel */}
+      <TikTokVideoSlot keywords={['trending', 'shopping haul', 'deals']} pageType="home" />
 
       {featuredProducts.length === 0 && newArrivals.length === 0 && categories.length === 0 && (
         <div className="py-16 px-4 text-center text-gray-500">

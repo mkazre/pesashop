@@ -8,6 +8,7 @@ import ArchiveProductCard from '@/components/shop/ArchiveProductCard';
 import CategoryBanner from '@/components/shop/CategoryBanner';
 import CategoryShowcase from '@/components/shop/CategoryShowcase';
 import FloatingCompareBar from '@/components/shop/FloatingCompareBar';
+import TikTokVideoSlot from '@/components/social/TikTokVideoSlot';
 import { SortDropdown, ViewToggle } from '@/components/shop/ShopControls';
 import Pagination from '@/components/common/Pagination';
 import Loading from '@/components/common/Loading';
@@ -322,6 +323,13 @@ export default function ShopPage() {
           </div>
         </div>
       )}
+
+      {/* TikTok video carousel */}
+      {(() => {
+        const base = categorySlug ? categorySlug.replace(/-/g, ' ') : '';
+        const keywords = base ? [base, `${base} review`] : ['trending', 'deals'];
+        return <TikTokVideoSlot keywords={keywords} pageType="shop" />;
+      })()}
 
       {/* Floating Compare Bar */}
       <FloatingCompareBar settings={s} />

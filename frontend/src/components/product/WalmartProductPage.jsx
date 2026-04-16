@@ -21,6 +21,7 @@ import ProductQA from './ProductQA';
 import RecurringWidget from './RecurringWidget';
 import OfferSlot from '@/components/offers/OfferSlot';
 import ServiceProviderAdSlot from '@/components/ads/ServiceProviderAdSlot';
+import TikTokVideoSlot from '@/components/social/TikTokVideoSlot';
 import ServiceRequestWidget from '@/components/services/ServiceRequestWidget';
 import toast from '@/utils/toast';
 
@@ -1185,6 +1186,10 @@ export default function WalmartProductPage({ product, settings }) {
             productId={product?._id}
             categorySlug={product?.categories?.[0]?.slug}
             maxAds={6}
+          />
+          <TikTokVideoSlot
+            keywords={useMemo(() => [product?.name, product?.categories?.[0]?.name].filter(Boolean), [product?.name, product?.categories])}
+            pageType="product_detail"
           />
           </div>
         </div>
