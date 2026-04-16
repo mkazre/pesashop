@@ -81,13 +81,8 @@ function buildRequest(keyword, limit, apiKey, apiHost) {
       headers: { ...headers, 'X-Params': '' },
     };
   }
-  // tiktok-scraper2 (JoTucker) — keyword search endpoint
-  if (apiHost.includes('tiktok-scraper2')) {
-    return {
-      url: `https://${apiHost}/video/by_keyword/?keyword=${encodeURIComponent(keyword)}&count=${limit}&offset=0`,
-      headers,
-    };
-  }
+  // tiktok-scraper2 (JoTucker) — no keyword search; handled separately via two-step hashtag lookup
+  // (buildRequest not used for this host — fetchFromApi branches out before calling this)
   // tiktok-api6 (omarmhaimdat)
   if (apiHost.includes('tiktok-api6')) {
     return {
@@ -108,27 +103,51 @@ function buildRequest(keyword, limit, apiKey, apiHost) {
 function extractItems(data) {
   return (
     data?.data?.itemList        // tiktok-api23 / tiktok-scraper7
-    || data?.itemList
+    || data?.itemList           // tiktok-scraper2 hashtag/videos
     || data?.data?.videos       // some scraper variants
     || data?.videos
     || data?.data?.items
     || data?.items
+    || data?.collector          // tiktok-scraper2 alternate shape
     || data?.data
     || []
   );
 }
 
-async function fetchFromApi(keyword, limit, apiKey, apiHost) {
-  const { url, headers } = buildRequest(keyword, limit, apiKey, apiHost);
-
+async function doGet(url, headers) {
   const response = await fetch(url, { method: 'GET', headers });
-
   if (!response.ok) {
     const body = await response.text().catch(() => '');
     throw new Error(`TikTok RapidAPI ${response.status} from ${url}: ${body.slice(0, 300)}`);
   }
+  return response.json();
+}
 
-  const data = await response.json();
+async function fetchFromApi(keyword, limit, apiKey, apiHost) {
+  const headers = { 'x-rapidapi-key': apiKey, 'x-rapidapi-host': apiHost };
+
+  // tiktok-scraper2 (JoTucker) has no keyword search — use two-step hashtag lookup
+  if (apiHost.includes('tiktok-scraper2')) {
+    // Step 1: resolve hashtag name → numeric ID
+    const hashtagName = keyword.replace(/\s+/g, '').toLowerCase();
+    const infoData = await doGet(
+      `https://${apiHost}/hashtag/info?hashtag_name=${encodeURIComponent(hashtagName)}`,
+      headers
+    );
+    const hashtagId = infoData?.hashtag_id || infoData?.id || infoData?.data?.id || infoData?.data?.hashtag_id;
+    if (!hashtagId) throw new Error(`tiktok-scraper2: could not resolve hashtag ID for "${hashtagName}"`);
+
+    // Step 2: fetch videos for that hashtag
+    const videosData = await doGet(
+      `https://${apiHost}/hashtag/videos?hashtag_id=${hashtagId}&count=${limit}`,
+      headers
+    );
+    const items = extractItems(videosData);
+    return (Array.isArray(items) ? items : []).slice(0, limit).map(normaliseVideo).filter(v => v.id);
+  }
+
+  const { url } = buildRequest(keyword, limit, apiKey, apiHost);
+  const data = await doGet(url, headers);
   const items = extractItems(data);
   return (Array.isArray(items) ? items : []).slice(0, limit).map(normaliseVideo).filter(v => v.id);
 }
