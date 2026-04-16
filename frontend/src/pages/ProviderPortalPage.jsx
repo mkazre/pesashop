@@ -220,7 +220,7 @@ function Dashboard({ provider: initialProvider, onLogout }) {
         {tab === 'book-slot' && <BookSlotTab slots={slots} onOrderPlaced={() => { qc.invalidateQueries('sp-portal-ad-orders'); setTab('orders'); }} />}
         {tab === 'orders' && <MyOrdersTab orders={adOrders} loading={ordersLoading} onBookSlot={() => setTab('book-slot')} />}
         {tab === 'ads' && <AdsTab ads={ads} adsLoading={adsLoading} onCreateNew={() => setTab('new-ad')} />}
-        {tab === 'new-ad' && <NewAdForm slots={slots} onSuccess={() => { qc.invalidateQueries('sp-portal-ads'); setTab('ads'); }} />}
+        {tab === 'new-ad' && <NewAdForm orders={adOrders} onSuccess={() => { qc.invalidateQueries('sp-portal-ads'); qc.invalidateQueries('sp-portal-ad-orders'); setTab('ads'); }} />}
         {tab === 'enquiries' && <EnquiriesTab enquiries={enquiries} loading={enquiriesLoading} />}
       </div>
     </div>
@@ -394,32 +394,45 @@ function AdsTab({ ads, adsLoading, onCreateNew }) {
 }
 
 // ─── New Ad Form ───────────────────────────────────────────
-function NewAdForm({ slots, onSuccess }) {
+function NewAdForm({ orders, onSuccess }) {
   const [form, setForm] = useState({
-    title: '', body: '', imageUrl: '',
-    placementSlot: '', startDate: '', endDate: '', aiKeywords: ''
+    adOrderId: '', title: '', body: '', imageUrl: '', aiKeywords: ''
   });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
 
   const set = (field, val) => setForm(prev => ({ ...prev, [field]: val }));
 
+  const activeOrders = (orders || []).filter(o => o.status === 'active');
+  const selectedOrder = activeOrders.find(o => o._id === form.adOrderId) || null;
+  const adsUsed = selectedOrder ? (selectedOrder.adsCreated || 0) : 0;
+  const adsAllowed = selectedOrder ? (selectedOrder.maxAds || 1) : 0;
+  const adsRemaining = Math.max(0, adsAllowed - adsUsed);
+
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title || !form.placementSlot) {
-      setErr('Please fill in ad title and select a placement slot.');
+    if (!form.adOrderId) {
+      setErr('Please select an active ad package.');
+      return;
+    }
+    if (!form.title) {
+      setErr('Please fill in the ad title.');
+      return;
+    }
+    if (adsRemaining <= 0) {
+      setErr('This package has reached its maximum number of ads. Please book a new slot package.');
       return;
     }
     setErr('');
     setLoading(true);
     try {
       const payload = {
+        adOrderId: form.adOrderId,
         title: form.title,
         body: form.body,
         imageUrl: form.imageUrl,
-        placementSlot: form.placementSlot,
-        startDate: form.startDate || undefined,
-        endDate: form.endDate || undefined,
         aiKeywords: form.aiKeywords ? form.aiKeywords.split(',').map(k => k.trim()).filter(Boolean) : []
       };
       await portalHttp.post('/api/service-providers/me/ads', payload, portalApi());
@@ -432,19 +445,57 @@ function NewAdForm({ slots, onSuccess }) {
     }
   };
 
-  const groupedSlots = slots.reduce((acc, s) => {
-    const page = s.slotPage || 'Other';
-    if (!acc[page]) acc[page] = [];
-    acc[page].push(s);
-    return acc;
-  }, {});
-
   return (
     <div className="max-w-2xl">
       <h2 className="text-lg font-bold text-gray-900 mb-6">Create New Ad</h2>
 
       <form onSubmit={handleSubmit} className="bg-white border border-gray-200 p-6 space-y-5">
         {err && <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded">{err}</div>}
+
+        {/* Package selector */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Ad Package *</label>
+          {activeOrders.length === 0 ? (
+            <div className="bg-amber-50 border border-amber-200 rounded p-3 text-sm text-amber-700">
+              No active ad packages found. Please <strong>Book an Ad Slot</strong> first and wait for admin to activate your order.
+            </div>
+          ) : (
+            <select
+              required
+              value={form.adOrderId}
+              onChange={e => set('adOrderId', e.target.value)}
+              className="w-full border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-primary bg-white"
+            >
+              <option value="">Select an active ad package…</option>
+              {activeOrders.map(o => (
+                <option key={o._id} value={o._id}>
+                  {o.slotLabel || o.slotId} — {o.durationType} × {o.quantity} ({(o.adsCreated || 0)}/{o.maxAds || 1} ads used)
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {/* Package details callout */}
+        {selectedOrder && (
+          <div className={`rounded border p-3 text-sm ${adsRemaining > 0 ? 'bg-blue-50 border-blue-200 text-blue-800' : 'bg-red-50 border-red-200 text-red-700'}`}>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="space-y-0.5">
+                <p><strong>Slot:</strong> {selectedOrder.slotLabel || selectedOrder.slotId}</p>
+                <p><strong>Active:</strong> {fmtDate(selectedOrder.startDate)} → {fmtDate(selectedOrder.endDate)}</p>
+              </div>
+              <div className="text-right">
+                <p className={`text-2xl font-bold ${adsRemaining > 0 ? 'text-blue-700' : 'text-red-600'}`}>
+                  {adsRemaining} / {adsAllowed}
+                </p>
+                <p className="text-xs">ads remaining</p>
+              </div>
+            </div>
+            {adsRemaining <= 0 && (
+              <p className="mt-2 text-xs font-semibold">This package is full. Book a new slot to create more ads.</p>
+            )}
+          </div>
+        )}
 
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Ad Title *</label>
@@ -484,51 +535,6 @@ function NewAdForm({ slots, onSuccess }) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Placement Slot *</label>
-          <select
-            required
-            value={form.placementSlot}
-            onChange={e => set('placementSlot', e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-primary bg-white"
-          >
-            <option value="">Select where your ad will appear</option>
-            {Object.entries(groupedSlots).map(([page, pageSlots]) => (
-              <optgroup key={page} label={page}>
-                {pageSlots.map(s => (
-                  <option key={s._id} value={s.slotId}>
-                    {s.slotLabel} {s.monthlyRate ? `(R${s.monthlyRate}/month)` : ''}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-          {slots.length === 0 && (
-            <p className="text-xs text-amber-600 mt-1">No placement slots configured yet. Contact admin to set up slots.</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Start Date</label>
-            <input
-              type="date"
-              value={form.startDate}
-              onChange={e => set('startDate', e.target.value)}
-              className="w-full border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">End Date</label>
-            <input
-              type="date"
-              value={form.endDate}
-              onChange={e => set('endDate', e.target.value)}
-              className="w-full border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
-            />
-          </div>
-        </div>
-
-        <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Targeting Keywords</label>
           <input
             type="text"
@@ -543,7 +549,7 @@ function NewAdForm({ slots, onSuccess }) {
         <div className="pt-2 flex gap-3">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !form.adOrderId || adsRemaining <= 0}
             className="flex-1 py-3 bg-primary text-white font-semibold text-sm hover:bg-primary/90 disabled:opacity-60 transition-colors"
           >
             {loading ? 'Submitting…' : 'Submit Ad for Review'}
@@ -552,7 +558,7 @@ function NewAdForm({ slots, onSuccess }) {
       </form>
 
       <p className="text-xs text-gray-400 mt-3">
-        Ads are reviewed by our team within 24 hours before going live. You'll be notified by email.
+        Ads are reviewed by our team within 24 hours before going live. The slot, display dates, and ad count limit are all determined by your booked package — you cannot change them here.
       </p>
     </div>
   );
@@ -566,11 +572,25 @@ const DURATION_OPTIONS = [
   { value: 'yearly', label: 'Yearly', rateKey: 'yearlyRate' },
 ];
 
+function calcEndDateDisplay(startDate, durationType, qty) {
+  if (!startDate) return '';
+  const d = new Date(startDate);
+  const n = Math.max(1, parseInt(qty) || 1);
+  switch (durationType) {
+    case 'daily':   d.setDate(d.getDate() + n - 1); break;
+    case 'weekly':  d.setDate(d.getDate() + (n * 7) - 1); break;
+    case 'monthly': d.setMonth(d.getMonth() + n); d.setDate(d.getDate() - 1); break;
+    case 'yearly':  d.setFullYear(d.getFullYear() + n); d.setDate(d.getDate() - 1); break;
+    default: break;
+  }
+  return d.toISOString().split('T')[0];
+}
+
 function BookSlotTab({ slots, onOrderPlaced }) {
   const { formatPrice } = useCurrencyStore();
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ durationType: 'monthly', quantity: 1, selectedBank: '', notes: '' });
+  const [form, setForm] = useState({ durationType: 'monthly', quantity: 1, maxAds: 1, startDate: '', selectedBank: '', notes: '' });
 
   // Fetch bank details from settings
   const { data: bankDetailsData } = useQuery(
@@ -600,7 +620,7 @@ function BookSlotTab({ slots, onOrderPlaced }) {
     setShowForm(true);
     setErr('');
     setSuccess(null);
-    setForm({ durationType: 'monthly', quantity: 1, selectedBank: bankDetails[0]?.accountNumber || '', notes: '' });
+    setForm({ durationType: 'monthly', quantity: 1, maxAds: 1, startDate: '', selectedBank: bankDetails[0]?.accountNumber || '', notes: '' });
   };
 
   const handleSubmit = async (e) => {
@@ -617,6 +637,8 @@ function BookSlotTab({ slots, onOrderPlaced }) {
         slotId: selectedSlot.slotId,
         durationType: form.durationType,
         quantity: parseInt(form.quantity) || 1,
+        maxAds: parseInt(form.maxAds) || 1,
+        startDate: form.startDate || undefined,
         paymentMethod: selectedBank ? `bank:${selectedBank.bankName}` : 'eft',
         notes: form.notes,
       }, portalApi());
@@ -791,6 +813,48 @@ function BookSlotTab({ slots, onOrderPlaced }) {
                 <p className="text-xs text-gray-400 mt-1">e.g. 3 = 3 {form.durationType}s</p>
               </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                  Number of Ads in Package
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={selectedSlot?.maxAds || 10}
+                  required
+                  value={form.maxAds}
+                  onChange={e => setField('maxAds', e.target.value)}
+                  className="w-full border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Max {selectedSlot?.maxAds || 10} ad{(selectedSlot?.maxAds || 10) !== 1 ? 's' : ''} allowed on this slot simultaneously.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                  Ad Start Date
+                </label>
+                <input
+                  type="date"
+                  value={form.startDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={e => setField('startDate', e.target.value)}
+                  className="w-full border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
+                />
+                <p className="text-xs text-gray-400 mt-1">Leave blank to start today. You can schedule future start dates.</p>
+                {form.startDate && (
+                  <div className="mt-2 bg-gray-50 border border-gray-200 rounded px-3 py-2 flex items-center justify-between text-xs text-gray-600">
+                    <span>Calculated end date:</span>
+                    <span className="font-semibold text-gray-900">
+                      {calcEndDateDisplay(form.startDate, form.durationType, form.quantity)
+                        ? new Date(calcEndDateDisplay(form.startDate, form.durationType, form.quantity) + 'T00:00:00').toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })
+                        : '—'}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Price summary */}
               <div className="bg-gray-50 border border-gray-200 rounded p-3 space-y-1.5 text-sm">
                 <div className="flex justify-between text-gray-600">
@@ -933,8 +997,8 @@ function MyOrdersTab({ orders, loading, onBookSlot }) {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Slot</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Duration</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Qty</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Ads</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Total</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Payment</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
                 </tr>
               </thead>
@@ -951,8 +1015,12 @@ function MyOrdersTab({ orders, loading, onBookSlot }) {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700 capitalize">{order.durationType}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{order.quantity}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      <span className={`font-semibold ${(order.adsCreated || 0) >= (order.maxAds || 1) ? 'text-red-600' : 'text-gray-900'}`}>
+                        {order.adsCreated || 0}/{order.maxAds || 1}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-sm font-semibold text-gray-900">R{(order.totalAmount || 0).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 uppercase">{order.paymentMethod}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${ORDER_BADGE[order.status] || 'bg-gray-100 text-gray-500'}`}>
                         {order.status?.replace('_', ' ').toUpperCase()}

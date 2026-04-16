@@ -158,20 +158,58 @@ router.get('/me/ads', protectProvider, async (req, res) => {
   }
 });
 
-// POST /api/service-providers/me/ads — Create ad request
+// POST /api/service-providers/me/ads — Create ad request (linked to an order)
 router.post('/me/ads', protectProvider, async (req, res) => {
   try {
-    const { title, body, ctaText, ctaUrl, imageUrl, placementSlot, startDate, endDate, aiKeywords } = req.body;
+    const { adOrderId, title, body, imageUrl, aiKeywords } = req.body;
+
+    if (!title) return res.status(400).json({ success: false, message: 'Ad title is required' });
+    if (!adOrderId) return res.status(400).json({ success: false, message: 'adOrderId is required — select a booking to attach this ad to' });
+
+    // Fetch and validate the order
+    const order = await ServiceProviderAdOrder.findById(adOrderId);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    if (order.provider.toString() !== req.provider._id.toString()) {
+      return res.status(403).json({ success: false, message: 'This order does not belong to your account' });
+    }
+    if (order.status !== 'active') {
+      return res.status(400).json({ success: false, message: 'Your ad booking must be approved (active) before you can create ads. Please wait for admin confirmation.' });
+    }
+
+    // Enforce maxAds limit for this order
+    const existingCount = await ServiceProviderAd.countDocuments({
+      adOrder: order._id,
+      status: { $nin: ['rejected'] }   // don't count rejected ads against the limit
+    });
+    if (existingCount >= order.maxAds) {
+      return res.status(400).json({
+        success: false,
+        message: `This booking allows a maximum of ${order.maxAds} ad${order.maxAds === 1 ? '' : 's'}. You have already created ${existingCount}. To add more ads, book a new package.`
+      });
+    }
+
+    // Map durationType → rentPeriod enum on the ad
+    const rentPeriodMap = { daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year' };
+
     const ad = await ServiceProviderAd.create({
       provider: req.provider._id,
-      title, body, ctaText, ctaUrl, imageUrl,
-      placementSlot,
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined,
+      adOrder: order._id,
+      title,
+      body: body || '',
+      imageUrl: imageUrl || '',
+      placementSlot: order.slotId,
+      startDate: order.startDate,
+      endDate: order.endDate,
+      rentPeriod: rentPeriodMap[order.durationType] || null,
       aiKeywords: aiKeywords || [],
       status: 'pending_approval'
     });
-    res.status(201).json({ success: true, data: ad, message: 'Ad submitted for review. You will be notified when it is approved.' });
+
+    res.status(201).json({
+      success: true,
+      data: ad,
+      message: `Ad submitted for review. (${existingCount + 1} of ${order.maxAds} ads used for this booking.)`
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -557,7 +595,12 @@ function calcEndDate(start, durationType, quantity) {
 // POST /api/service-providers/portal/ad-orders — Provider creates an ad order
 router.post('/portal/ad-orders', protectProvider, async (req, res) => {
   try {
-    const { slotId, durationType, quantity = 1, paymentMethod = 'eft', notes = '' } = req.body;
+    const {
+      slotId, durationType, quantity = 1,
+      maxAds = 1,          // how many ad creatives allowed in this package
+      startDate: startDateInput,  // provider-chosen start date (defaults to today)
+      paymentMethod = 'eft', notes = ''
+    } = req.body;
 
     if (!slotId || !durationType) {
       return res.status(400).json({ success: false, message: 'slotId and durationType are required' });
@@ -576,8 +619,14 @@ router.post('/portal/ad-orders', protectProvider, async (req, res) => {
 
     const qty = Math.max(1, parseInt(quantity));
     const totalAmount = unitPrice * qty;
-    const startDate = new Date();
+
+    // Start date: use provider's chosen date (or today). Must not be in the past.
+    const startDate = startDateInput ? new Date(startDateInput) : new Date();
+    startDate.setHours(0, 0, 0, 0);  // normalise to start of day
     const endDate = calcEndDate(startDate, durationType, qty);
+
+    // Cap maxAds to slot's display limit
+    const allowedMaxAds = Math.min(Math.max(1, parseInt(maxAds) || 1), slot.maxAds || 10);
 
     const order = await ServiceProviderAdOrder.create({
       provider: req.provider._id,
@@ -588,6 +637,7 @@ router.post('/portal/ad-orders', protectProvider, async (req, res) => {
       quantity: qty,
       unitPrice,
       totalAmount,
+      maxAds: allowedMaxAds,
       paymentMethod,
       notes,
       startDate,
@@ -606,7 +656,22 @@ router.get('/portal/ad-orders', protectProvider, async (req, res) => {
   try {
     const orders = await ServiceProviderAdOrder.find({ provider: req.provider._id })
       .sort({ createdAt: -1 });
-    res.json({ success: true, data: orders });
+
+    // Attach ad counts to each order so the portal can show "2 of 3 ads used"
+    const orderIds = orders.map(o => o._id);
+    const adCounts = await ServiceProviderAd.aggregate([
+      { $match: { adOrder: { $in: orderIds }, status: { $nin: ['rejected'] } } },
+      { $group: { _id: '$adOrder', count: { $sum: 1 } } }
+    ]);
+    const countMap = {};
+    adCounts.forEach(({ _id, count }) => { countMap[_id.toString()] = count; });
+
+    const ordersWithCounts = orders.map(o => ({
+      ...o.toObject(),
+      adsCreated: countMap[o._id.toString()] || 0,
+    }));
+
+    res.json({ success: true, data: ordersWithCounts });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

@@ -21,6 +21,12 @@ const serviceProviderAdSchema = new mongoose.Schema({
     required: true
     // References ServiceProviderAdPlacement.slotId
   },
+  // Link back to the order that authorises this ad — enforces date range + maxAds
+  adOrder: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ServiceProviderAdOrder',
+    default: null
+  },
   rentPeriod: {
     type: String,
     enum: ['day', 'week', 'month', 'year'],

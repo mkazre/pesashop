@@ -6,11 +6,13 @@ const serviceProviderAdOrderSchema = new mongoose.Schema({
   slotId: { type: String, required: true },
   slotLabel: { type: String },
   slotPage: { type: String },
-  // Pricing
+  // Pricing & package
   durationType: { type: String, enum: ['daily', 'weekly', 'monthly', 'yearly'], required: true },
   quantity: { type: Number, default: 1, min: 1 }, // how many units (e.g. 3 months)
   unitPrice: { type: Number, required: true },
   totalAmount: { type: Number, required: true },
+  // How many ad creatives the provider may create under this order
+  maxAds: { type: Number, default: 1, min: 1, max: 50 },
   // Payment
   paymentMethod: { type: String, enum: ['eft', 'cash', 'card', 'other'], default: 'eft' },
   paymentReference: { type: String, default: '' },
