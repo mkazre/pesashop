@@ -112,6 +112,50 @@ export default function ServiceProviderAdSlot({
         {ads.map(ad => (
           <ServiceProviderAdCard key={ad._id} ad={ad} settings={settings} />
         ))}
+
+        {/* Promo card — always last */}
+        <a
+          href="/service-providers/portal"
+          style={{
+            flexShrink: 0,
+            minWidth: settings.cardMinWidth || 180,
+            maxWidth: settings.cardMaxWidth || 220,
+            width: settings.cardMinWidth || 180,
+            border: '1.5px dashed #1b5e35',
+            borderRadius: 6,
+            padding: '12px 10px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            gap: 8,
+            background: '#f6fbf8',
+            textDecoration: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <div style={{ fontSize: 22 }}>📢</div>
+          <p style={{ fontSize: 12, fontWeight: 700, color: '#1b5e35', lineHeight: 1.3, margin: 0 }}>
+            Advertise Your Service Here
+          </p>
+          <p style={{ fontSize: 10, color: '#76889a', margin: 0, lineHeight: 1.4 }}>
+            Reach thousands of shoppers. Book an ad slot in minutes.
+          </p>
+          <span style={{
+            marginTop: 4,
+            display: 'inline-block',
+            padding: '5px 12px',
+            background: '#1b5e35',
+            color: '#fff',
+            borderRadius: 4,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+          }}>
+            GET STARTED →
+          </span>
+        </a>
       </div>
 
       {/* Dot indicators */}
