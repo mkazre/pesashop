@@ -22,9 +22,10 @@ const SettingsPage = () => {
   const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [emailConfigStatus, setEmailConfigStatus] = useState(null);
   const [brevoKeyConfigured, setBrevoKeyConfigured] = useState(false);
-  const [showRapidApiKey,  setShowRapidApiKey]  = useState(false);
-  const [testingTikTok,    setTestingTikTok]    = useState(false);
-  const [tiktokTestResult, setTiktokTestResult] = useState(null);
+  const [showRapidApiKey,       setShowRapidApiKey]       = useState(false);
+  const [rapidApiKeyConfigured, setRapidApiKeyConfigured] = useState(false);
+  const [testingTikTok,         setTestingTikTok]         = useState(false);
+  const [tiktokTestResult,      setTiktokTestResult]      = useState(null);
   
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm({
     shouldUnregister: false,
@@ -232,6 +233,7 @@ const SettingsPage = () => {
         });
         setBankDetails(settings.bankDetails || []);
         setBrevoKeyConfigured(settings.brevoApiKey === '***configured***');
+        setRapidApiKeyConfigured(settings.socialEngine?.rapidApiKey === '***configured***');
         if (settings.servicePageHero) {
           setServicePageHero({
             imageUrl: settings.servicePageHero.imageUrl || '',
@@ -913,6 +915,9 @@ const SettingsPage = () => {
                     {showRapidApiKey ? <IoEyeOff size={16}/> : <IoEye size={16}/>}
                   </button>
                 </div>
+                {rapidApiKeyConfigured && (
+                  <p className="text-xs text-green-600 mt-1 font-medium">✓ API key is configured — leave blank to keep the existing key</p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">
                   Get a free key at <strong>rapidapi.com</strong> — search for <em>tiktok-scraper7</em> and subscribe to the free tier.
                 </p>
