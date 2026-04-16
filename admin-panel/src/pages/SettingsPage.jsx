@@ -117,15 +117,15 @@ const SettingsPage = () => {
       socialLoginFacebookAppId: '',
       socialLoginFacebookAppSecret: '',
       // Social Engine
-      'socialEngine.enabled':             false,
-      'socialEngine.rapidApiKey':         '',
-      'socialEngine.rapidApiHost':        'tiktok-scraper7.p.rapidapi.com',
-      'socialEngine.sectionTitle':        'Featured in Videos',
-      'socialEngine.sectionSubtitle':     'See what creators are sharing',
-      'socialEngine.videosPerCarousel':   '8',
-      'socialEngine.showOnHome':          true,
-      'socialEngine.showOnShop':          true,
-      'socialEngine.showOnProductDetail': true,
+      socialEngineEnabled:             false,
+      socialEngineRapidApiKey:         '',
+      socialEngineRapidApiHost:        'tiktok-scraper7.p.rapidapi.com',
+      socialEngineSectionTitle:        'Featured in Videos',
+      socialEngineSectionSubtitle:     'See what creators are sharing',
+      socialEngineVideosPerCarousel:   '8',
+      socialEngineShowOnHome:          true,
+      socialEngineShowOnShop:          true,
+      socialEngineShowOnProductDetail: true,
     }
   });
 
@@ -220,15 +220,15 @@ const SettingsPage = () => {
           socialLoginFacebookAppId: settings.socialLogin?.facebook?.appId || '',
           socialLoginFacebookAppSecret: settings.socialLogin?.facebook?.appSecret === '***configured***' ? '' : (settings.socialLogin?.facebook?.appSecret || ''),
           // Social Engine
-          'socialEngine.enabled':             settings.socialEngine?.enabled             || false,
-          'socialEngine.rapidApiKey':         settings.socialEngine?.rapidApiKey === '***configured***' ? '' : (settings.socialEngine?.rapidApiKey || ''),
-          'socialEngine.rapidApiHost':        settings.socialEngine?.rapidApiHost        || 'tiktok-scraper7.p.rapidapi.com',
-          'socialEngine.sectionTitle':        settings.socialEngine?.sectionTitle        || 'Featured in Videos',
-          'socialEngine.sectionSubtitle':     settings.socialEngine?.sectionSubtitle     || 'See what creators are sharing',
-          'socialEngine.videosPerCarousel':   String(settings.socialEngine?.videosPerCarousel || 8),
-          'socialEngine.showOnHome':          settings.socialEngine?.showOnHome          !== false,
-          'socialEngine.showOnShop':          settings.socialEngine?.showOnShop          !== false,
-          'socialEngine.showOnProductDetail': settings.socialEngine?.showOnProductDetail !== false,
+          socialEngineEnabled:             settings.socialEngine?.enabled             || false,
+          socialEngineRapidApiKey:         settings.socialEngine?.rapidApiKey === '***configured***' ? '' : (settings.socialEngine?.rapidApiKey || ''),
+          socialEngineRapidApiHost:        settings.socialEngine?.rapidApiHost        || 'tiktok-scraper7.p.rapidapi.com',
+          socialEngineSectionTitle:        settings.socialEngine?.sectionTitle        || 'Featured in Videos',
+          socialEngineSectionSubtitle:     settings.socialEngine?.sectionSubtitle     || 'See what creators are sharing',
+          socialEngineVideosPerCarousel:   String(settings.socialEngine?.videosPerCarousel || 8),
+          socialEngineShowOnHome:          settings.socialEngine?.showOnHome          !== false,
+          socialEngineShowOnShop:          settings.socialEngine?.showOnShop          !== false,
+          socialEngineShowOnProductDetail: settings.socialEngine?.showOnProductDetail !== false,
         });
         setBankDetails(settings.bankDetails || []);
         setBrevoKeyConfigured(settings.brevoApiKey === '***configured***');
@@ -277,7 +277,7 @@ const SettingsPage = () => {
     // Remove flat dot-notation keys that react-hook-form creates for nested fields
     const cleanData = { ...data };
     Object.keys(cleanData).forEach(key => {
-      if (key.startsWith('productDisplay.') || key.startsWith('layby') || key.startsWith('socialLogin') || key.startsWith('emailNotifications.') || key === 'socialEngine' || key.startsWith('socialEngine.')) {
+      if (key.startsWith('productDisplay.') || key.startsWith('layby') || key.startsWith('socialLogin') || key.startsWith('emailNotifications.') || key.startsWith('socialEngine')) {
         delete cleanData[key];
       }
     });
@@ -373,15 +373,15 @@ const SettingsPage = () => {
         },
       },
       socialEngine: {
-        enabled:             (data['socialEngine.enabled']             ?? data?.socialEngine?.enabled)             || false,
-        rapidApiKey:         (data['socialEngine.rapidApiKey']         ?? data?.socialEngine?.rapidApiKey)         || '',
-        rapidApiHost:        (data['socialEngine.rapidApiHost']        ?? data?.socialEngine?.rapidApiHost)        || 'tiktok-scraper7.p.rapidapi.com',
-        sectionTitle:        (data['socialEngine.sectionTitle']        ?? data?.socialEngine?.sectionTitle)        || 'Featured in Videos',
-        sectionSubtitle:     (data['socialEngine.sectionSubtitle']     ?? data?.socialEngine?.sectionSubtitle)     || 'See what creators are sharing',
-        videosPerCarousel:   parseInt(data['socialEngine.videosPerCarousel'] ?? data?.socialEngine?.videosPerCarousel) || 8,
-        showOnHome:          (data['socialEngine.showOnHome']          ?? data?.socialEngine?.showOnHome)          !== false,
-        showOnShop:          (data['socialEngine.showOnShop']          ?? data?.socialEngine?.showOnShop)          !== false,
-        showOnProductDetail: (data['socialEngine.showOnProductDetail'] ?? data?.socialEngine?.showOnProductDetail) !== false,
+        enabled:             data.socialEngineEnabled             || false,
+        rapidApiKey:         data.socialEngineRapidApiKey         || '',
+        rapidApiHost:        data.socialEngineRapidApiHost        || 'tiktok-scraper7.p.rapidapi.com',
+        sectionTitle:        data.socialEngineSectionTitle        || 'Featured in Videos',
+        sectionSubtitle:     data.socialEngineSectionSubtitle     || 'See what creators are sharing',
+        videosPerCarousel:   parseInt(data.socialEngineVideosPerCarousel) || 8,
+        showOnHome:          data.socialEngineShowOnHome          !== false,
+        showOnShop:          data.socialEngineShowOnShop          !== false,
+        showOnProductDetail: data.socialEngineShowOnProductDetail !== false,
       },
     });
   };
@@ -893,7 +893,7 @@ const SettingsPage = () => {
             </p>
 
             <label className="flex items-center gap-2">
-              <input type="checkbox" className="w-4 h-4" {...register('socialEngine.enabled')} />
+              <input type="checkbox" className="w-4 h-4" {...register('socialEngineEnabled')} />
               <span className="text-sm font-medium">Enable TikTok Video Carousel</span>
             </label>
 
@@ -904,7 +904,7 @@ const SettingsPage = () => {
                 <div className="flex gap-2">
                   <Input
                     type={showRapidApiKey ? 'text' : 'password'}
-                    {...register('socialEngine.rapidApiKey')}
+                    {...register('socialEngineRapidApiKey')}
                     placeholder="Enter your RapidAPI key"
                     fullWidth
                   />
@@ -914,12 +914,12 @@ const SettingsPage = () => {
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Get a free key at <strong>rapidapi.com</strong> — search for <em>tiktok-api23</em> and subscribe to the free tier.
+                  Get a free key at <strong>rapidapi.com</strong> — search for <em>tiktok-scraper7</em> and subscribe to the free tier.
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">RapidAPI Host</label>
-                <Input {...register('socialEngine.rapidApiHost')} placeholder="tiktok-scraper7.p.rapidapi.com" fullWidth />
+                <Input {...register('socialEngineRapidApiHost')} placeholder="tiktok-scraper7.p.rapidapi.com" fullWidth />
                 <p className="text-xs text-gray-500 mt-1">Default: tiktok-scraper7.p.rapidapi.com — change if you use a different TikTok API on RapidAPI.</p>
               </div>
             </div>
@@ -929,25 +929,25 @@ const SettingsPage = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Section Title</label>
-                  <Input {...register('socialEngine.sectionTitle')} placeholder="Featured in Videos" fullWidth />
+                  <Input {...register('socialEngineSectionTitle')} placeholder="Featured in Videos" fullWidth />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Section Subtitle</label>
-                  <Input {...register('socialEngine.sectionSubtitle')} placeholder="See what creators are sharing" fullWidth />
+                  <Input {...register('socialEngineSectionSubtitle')} placeholder="See what creators are sharing" fullWidth />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Videos per Carousel (1–20)</label>
-                <Input type="number" {...register('socialEngine.videosPerCarousel')} min="1" max="20" style={{ width: 100 }} />
+                <Input type="number" {...register('socialEngineVideosPerCarousel')} min="1" max="20" style={{ width: 100 }} />
               </div>
             </div>
 
             <div className="border-t pt-4 space-y-2">
               <h4 className="text-sm font-semibold text-gray-700">Show On</h4>
               {[
-                { key: 'socialEngine.showOnHome',           label: 'Home Page' },
-                { key: 'socialEngine.showOnShop',           label: 'Shop / Archive Pages (including category archives)' },
-                { key: 'socialEngine.showOnProductDetail',  label: 'Product Detail Pages' },
+                { key: 'socialEngineShowOnHome',           label: 'Home Page' },
+                { key: 'socialEngineShowOnShop',           label: 'Shop / Archive Pages (including category archives)' },
+                { key: 'socialEngineShowOnProductDetail',  label: 'Product Detail Pages' },
               ].map(({ key, label }) => (
                 <label key={key} className="flex items-center gap-2">
                   <input type="checkbox" className="w-4 h-4" {...register(key)} />
