@@ -277,7 +277,7 @@ const SettingsPage = () => {
     // Remove flat dot-notation keys that react-hook-form creates for nested fields
     const cleanData = { ...data };
     Object.keys(cleanData).forEach(key => {
-      if (key.startsWith('productDisplay.') || key.startsWith('layby') || key.startsWith('socialLogin') || key.startsWith('emailNotifications.') || key.startsWith('socialEngine.')) {
+      if (key.startsWith('productDisplay.') || key.startsWith('layby') || key.startsWith('socialLogin') || key.startsWith('emailNotifications.') || key === 'socialEngine' || key.startsWith('socialEngine.')) {
         delete cleanData[key];
       }
     });
@@ -373,15 +373,15 @@ const SettingsPage = () => {
         },
       },
       socialEngine: {
-        enabled:             data['socialEngine.enabled']             || false,
-        rapidApiKey:         data['socialEngine.rapidApiKey']         || '',
-        rapidApiHost:        data['socialEngine.rapidApiHost']        || 'tiktok-scraper7.p.rapidapi.com',
-        sectionTitle:        data['socialEngine.sectionTitle']        || 'Featured in Videos',
-        sectionSubtitle:     data['socialEngine.sectionSubtitle']     || 'See what creators are sharing',
-        videosPerCarousel:   parseInt(data['socialEngine.videosPerCarousel']) || 8,
-        showOnHome:          data['socialEngine.showOnHome']          !== false,
-        showOnShop:          data['socialEngine.showOnShop']          !== false,
-        showOnProductDetail: data['socialEngine.showOnProductDetail'] !== false,
+        enabled:             (data['socialEngine.enabled']             ?? data?.socialEngine?.enabled)             || false,
+        rapidApiKey:         (data['socialEngine.rapidApiKey']         ?? data?.socialEngine?.rapidApiKey)         || '',
+        rapidApiHost:        (data['socialEngine.rapidApiHost']        ?? data?.socialEngine?.rapidApiHost)        || 'tiktok-scraper7.p.rapidapi.com',
+        sectionTitle:        (data['socialEngine.sectionTitle']        ?? data?.socialEngine?.sectionTitle)        || 'Featured in Videos',
+        sectionSubtitle:     (data['socialEngine.sectionSubtitle']     ?? data?.socialEngine?.sectionSubtitle)     || 'See what creators are sharing',
+        videosPerCarousel:   parseInt(data['socialEngine.videosPerCarousel'] ?? data?.socialEngine?.videosPerCarousel) || 8,
+        showOnHome:          (data['socialEngine.showOnHome']          ?? data?.socialEngine?.showOnHome)          !== false,
+        showOnShop:          (data['socialEngine.showOnShop']          ?? data?.socialEngine?.showOnShop)          !== false,
+        showOnProductDetail: (data['socialEngine.showOnProductDetail'] ?? data?.socialEngine?.showOnProductDetail) !== false,
       },
     });
   };

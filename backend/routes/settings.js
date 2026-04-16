@@ -60,8 +60,22 @@ router.put('/', protect, authorize('admin'), async (req, res) => {
       }
       if (payload.socialLogin?.google?.clientSecret === MASK) delete payload.socialLogin.google.clientSecret;
       if (payload.socialLogin?.facebook?.appSecret === MASK) delete payload.socialLogin.facebook.appSecret;
-      if (payload.socialEngine?.rapidApiKey === MASK || payload.socialEngine?.rapidApiKey === '') delete payload.socialEngine?.rapidApiKey;
-      
+
+      // Flatten socialEngine into dot-notation so MongoDB merges individual fields
+      // instead of replacing the whole subdocument (which would wipe the stored rapidApiKey)
+      if (payload.socialEngine) {
+        const se = payload.socialEngine;
+        Object.entries(se).forEach(([k, v]) => {
+          if (k === 'rapidApiKey') {
+            if (v && v !== MASK && v !== '') payload[`socialEngine.${k}`] = v;
+            // else skip — preserve existing key already in DB
+          } else {
+            payload[`socialEngine.${k}`] = v;
+          }
+        });
+        delete payload.socialEngine;
+      }
+
       // Use findOneAndUpdate with $set for reliable nested object persistence
       settings = await Settings.findOneAndUpdate(
         { _id: settings._id },
