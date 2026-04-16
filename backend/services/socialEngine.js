@@ -81,10 +81,10 @@ function buildRequest(keyword, limit, apiKey, apiHost) {
       headers: { ...headers, 'X-Params': '' },
     };
   }
-  // tiktok-scraper2 (JoTucker)
+  // tiktok-scraper2 (JoTucker) — keyword search endpoint
   if (apiHost.includes('tiktok-scraper2')) {
     return {
-      url: `https://${apiHost}/video/search?query=${encodeURIComponent(keyword)}&count=${limit}`,
+      url: `https://${apiHost}/video/by_keyword/?keyword=${encodeURIComponent(keyword)}&count=${limit}&offset=0`,
       headers,
     };
   }
@@ -125,7 +125,7 @@ async function fetchFromApi(keyword, limit, apiKey, apiHost) {
 
   if (!response.ok) {
     const body = await response.text().catch(() => '');
-    throw new Error(`TikTok RapidAPI ${response.status} from ${apiHost}: ${body.slice(0, 300)}`);
+    throw new Error(`TikTok RapidAPI ${response.status} from ${url}: ${body.slice(0, 300)}`);
   }
 
   const data = await response.json();
