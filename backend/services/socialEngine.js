@@ -149,7 +149,9 @@ async function fetchFromApi(keyword, limit, apiKey, apiHost) {
   const { url } = buildRequest(keyword, limit, apiKey, apiHost);
   const data = await doGet(url, headers);
   const items = extractItems(data);
-  return (Array.isArray(items) ? items : []).slice(0, limit).map(normaliseVideo).filter(v => v.id);
+  const videos = (Array.isArray(items) ? items : []).slice(0, limit).map(normaliseVideo).filter(v => v.id);
+  console.log('[SocialEngine] raw keys:', Object.keys(data || {}), '| data.data keys:', Object.keys(data?.data || {}), '| items count:', Array.isArray(items) ? items.length : typeof items, '| videos after normalise:', videos.length);
+  return videos;
 }
 
 async function getVideos(keywords, limit = 8) {
