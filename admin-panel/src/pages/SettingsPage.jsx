@@ -119,7 +119,7 @@ const SettingsPage = () => {
       // Social Engine
       'socialEngine.enabled':             false,
       'socialEngine.rapidApiKey':         '',
-      'socialEngine.rapidApiHost':        'tiktok-api23.p.rapidapi.com',
+      'socialEngine.rapidApiHost':        'tiktok-scraper7.p.rapidapi.com',
       'socialEngine.sectionTitle':        'Featured in Videos',
       'socialEngine.sectionSubtitle':     'See what creators are sharing',
       'socialEngine.videosPerCarousel':   '8',
@@ -222,7 +222,7 @@ const SettingsPage = () => {
           // Social Engine
           'socialEngine.enabled':             settings.socialEngine?.enabled             || false,
           'socialEngine.rapidApiKey':         settings.socialEngine?.rapidApiKey === '***configured***' ? '' : (settings.socialEngine?.rapidApiKey || ''),
-          'socialEngine.rapidApiHost':        settings.socialEngine?.rapidApiHost        || 'tiktok-api23.p.rapidapi.com',
+          'socialEngine.rapidApiHost':        settings.socialEngine?.rapidApiHost        || 'tiktok-scraper7.p.rapidapi.com',
           'socialEngine.sectionTitle':        settings.socialEngine?.sectionTitle        || 'Featured in Videos',
           'socialEngine.sectionSubtitle':     settings.socialEngine?.sectionSubtitle     || 'See what creators are sharing',
           'socialEngine.videosPerCarousel':   String(settings.socialEngine?.videosPerCarousel || 8),
@@ -375,7 +375,7 @@ const SettingsPage = () => {
       socialEngine: {
         enabled:             data['socialEngine.enabled']             || false,
         rapidApiKey:         data['socialEngine.rapidApiKey']         || '',
-        rapidApiHost:        data['socialEngine.rapidApiHost']        || 'tiktok-api23.p.rapidapi.com',
+        rapidApiHost:        data['socialEngine.rapidApiHost']        || 'tiktok-scraper7.p.rapidapi.com',
         sectionTitle:        data['socialEngine.sectionTitle']        || 'Featured in Videos',
         sectionSubtitle:     data['socialEngine.sectionSubtitle']     || 'See what creators are sharing',
         videosPerCarousel:   parseInt(data['socialEngine.videosPerCarousel']) || 8,
@@ -919,8 +919,8 @@ const SettingsPage = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">RapidAPI Host</label>
-                <Input {...register('socialEngine.rapidApiHost')} placeholder="tiktok-api23.p.rapidapi.com" fullWidth />
-                <p className="text-xs text-gray-500 mt-1">Default: tiktok-api23.p.rapidapi.com — change if you use a different TikTok API on RapidAPI.</p>
+                <Input {...register('socialEngine.rapidApiHost')} placeholder="tiktok-scraper7.p.rapidapi.com" fullWidth />
+                <p className="text-xs text-gray-500 mt-1">Default: tiktok-scraper7.p.rapidapi.com — change if you use a different TikTok API on RapidAPI.</p>
               </div>
             </div>
 

@@ -252,7 +252,7 @@ const settingsSchema = new mongoose.Schema({
   socialEngine: {
     enabled:             { type: Boolean, default: false },
     rapidApiKey:         { type: String,  default: '' },
-    rapidApiHost:        { type: String,  default: 'tiktok-api23.p.rapidapi.com' },
+    rapidApiHost:        { type: String,  default: 'tiktok-scraper7.p.rapidapi.com' },
     sectionTitle:        { type: String,  default: 'Featured in Videos' },
     sectionSubtitle:     { type: String,  default: 'See what creators are sharing' },
     videosPerCarousel:   { type: Number,  default: 8, min: 1, max: 20 },
