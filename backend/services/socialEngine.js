@@ -20,39 +20,32 @@ async function getSettings() {
 }
 
 function normaliseVideo(item) {
-  // Handles response shapes from multiple RapidAPI TikTok providers
-  const videoId = item.id || item.aweme_id || item.video_id || '';
+  // video_id is the numeric TikTok ID used in embed/share URLs (e.g. "7628655323447971073")
+  // aweme_id is a different internal string format — don't use it for URLs
+  const videoId = item.video_id || item.id || item.aweme_id || '';
+  const handle  = item.author?.uniqueId || item.author?.unique_id || item.authorMeta?.name || item.author_name || '';
   return {
     id:          videoId,
-    description: item.desc || item.title || item.text || '',
-    coverUrl:    item.video?.cover
+    description: item.title || item.desc || item.text || item.content_desc || '',
+    coverUrl:    item.cover
+                  || item.origin_cover
+                  || item.ai_dynamic_cover
+                  || item.video?.cover
                   || item.video?.dynamicCover
-                  || item.video?.originCover
                   || item.coverUrl
                   || item.thumbnailUrl
-                  || item.cover
                   || '',
     embedUrl:    `https://www.tiktok.com/embed/v2/${videoId}`,
     author: {
-      handle:    item.author?.uniqueId
-                  || item.author?.unique_id
-                  || item.authorMeta?.name
-                  || item.author_name
-                  || '',
-      name:      item.author?.nickname
-                  || item.authorMeta?.nickName
-                  || item.author_nickname
-                  || '',
-      avatarUrl: item.author?.avatarThumb
-                  || item.author?.avatar_thumb?.url_list?.[0]
-                  || item.authorMeta?.avatar
-                  || '',
+      handle,
+      name:      item.author?.nickname || item.authorMeta?.nickName || item.author_nickname || '',
+      avatarUrl: item.author?.avatarThumb || item.author?.avatar_thumb?.url_list?.[0] || item.authorMeta?.avatar || '',
     },
     stats: {
-      plays:    item.stats?.playCount    || item.statistics?.play_count    || item.playCount    || item.plays    || 0,
-      likes:    item.stats?.diggCount    || item.statistics?.digg_count    || item.diggCount    || item.likes    || 0,
-      shares:   item.stats?.shareCount   || item.statistics?.share_count   || item.shareCount   || item.shares   || 0,
-      comments: item.stats?.commentCount || item.statistics?.comment_count || item.commentCount || item.comments || 0,
+      plays:    item.play_count    || item.stats?.playCount    || item.statistics?.play_count    || item.playCount    || item.plays    || 0,
+      likes:    item.digg_count    || item.stats?.diggCount    || item.statistics?.digg_count    || item.diggCount    || item.likes    || 0,
+      shares:   item.share_count   || item.stats?.shareCount   || item.statistics?.share_count   || item.shareCount   || item.shares   || 0,
+      comments: item.comment_count || item.stats?.commentCount || item.statistics?.comment_count || item.commentCount || item.comments || 0,
     },
   };
 }
@@ -149,12 +142,6 @@ async function fetchFromApi(keyword, limit, apiKey, apiHost) {
   const { url } = buildRequest(keyword, limit, apiKey, apiHost);
   const data = await doGet(url, headers);
   const items = extractItems(data);
-  if (Array.isArray(items) && items.length > 0) {
-    console.log('[SocialEngine] first item keys:', Object.keys(items[0]));
-    console.log('[SocialEngine] first item sample:', JSON.stringify(items[0]).slice(0, 600));
-  } else {
-    console.log('[SocialEngine] extractItems result:', JSON.stringify(data).slice(0, 600));
-  }
   const videos = (Array.isArray(items) ? items : []).slice(0, limit).map(normaliseVideo).filter(v => v.id);
   return videos;
 }
