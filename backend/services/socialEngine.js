@@ -70,7 +70,7 @@ function buildRequest(keyword, limit, apiKey, apiHost) {
   // tiktok-scraper7 (by Axesso) — most stable as of 2025
   if (apiHost.includes('tiktok-scraper7')) {
     return {
-      url: `https://${apiHost}/feed/search?keyword=${encodeURIComponent(keyword)}&count=${limit}&offset=0&region=ZA&publish_time=0`,
+      url: `https://${apiHost}/feed/search?keywords=${encodeURIComponent(keyword)}&count=${limit}&offset=0&region=ZA&publish_time=0`,
       headers,
     };
   }
@@ -147,11 +147,9 @@ async function fetchFromApi(keyword, limit, apiKey, apiHost) {
   }
 
   const { url } = buildRequest(keyword, limit, apiKey, apiHost);
-  console.log('[SocialEngine] calling:', url);
   const data = await doGet(url, headers);
   const items = extractItems(data);
   const videos = (Array.isArray(items) ? items : []).slice(0, limit).map(normaliseVideo).filter(v => v.id);
-  console.log('[SocialEngine] full response:', JSON.stringify(data).slice(0, 500));
   return videos;
 }
 
