@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { notificationsAPI } from '@/services/api';
 import { useAuthStore } from '@/store';
+import { notificationBus, ToastPayload } from '@/lib/notificationBus';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const TOAST_DURATION = 6000;
@@ -130,12 +131,30 @@ export default function NotificationToast() {
 
   useEffect(() => {
     const initialTimeout = setTimeout(checkForNew, 3000);
-    pollRef.current = setInterval(checkForNew, 15000);
+    pollRef.current = setInterval(checkForNew, 60000);
     return () => {
       clearTimeout(initialTimeout);
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [checkForNew]);
+
+  useEffect(() => {
+    const unsubscribe = notificationBus.subscribe((payload: ToastPayload) => {
+      if (seenIdsRef.current.has(payload.id)) return;
+      seenIdsRef.current.add(payload.id);
+      addToast({
+        id: payload.id,
+        title: payload.title,
+        body: payload.body,
+        image: payload.image,
+        icon: payload.icon,
+        type: payload.type || 'custom',
+        actionUrl: payload.actionUrl,
+        actionLabel: payload.actionLabel,
+      });
+    });
+    return unsubscribe;
+  }, []);
 
   if (toasts.length === 0) return null;
 

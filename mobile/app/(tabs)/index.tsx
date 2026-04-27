@@ -17,6 +17,7 @@ import SearchBar from "@/components/SearchBar";
 import ProductCard from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import HomePageRenderer from "@/components/homeblocks/HomePageRenderer";
+import TikTokVideoSlot from "@/components/social/TikTokVideoSlot";
 import AppDrawer from "@/components/AppDrawer";
 import CurrencyPicker from "@/components/CurrencyPicker";
 import NotificationBell from "@/components/NotificationBell";
@@ -116,6 +117,10 @@ export default function HomeScreen() {
         {hasBlockConfig !== false && (
           <HomePageRenderer onConfigLoaded={handleConfigLoaded} />
         )}
+
+        {/* TikTok / Social Engine carousel */}
+        <TikTokVideoSlot keywords={["trending", "shopping haul", "deals"]} pageType="home" />
+
 
         {/* Priority 2: Fallback — featured/trending/new */}
         {hasBlockConfig === false && !loading && (

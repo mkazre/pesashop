@@ -33,6 +33,7 @@ import ProductQA from "@/components/ProductQA";
 import OfferSlot from "@/components/OfferSlot";
 import ProductAIAssistant from "@/components/ProductAIAssistant";
 import ProductRecommendations from "@/components/ProductRecommendations";
+import TikTokVideoSlot from "@/components/social/TikTokVideoSlot";
 import BottomTabBar from "@/components/BottomTabBar";
 import PulsingArrows from "@/components/PulsingArrows";
 import FreeShippingBar from "@/components/FreeShippingBar";
@@ -706,6 +707,12 @@ export default function ProductDetailScreen() {
             </View>
           );
         })()}
+
+        {/* ════ TIKTOK VIDEO CAROUSEL ════ */}
+        <TikTokVideoSlot
+          keywords={[product.name, ...(product.tags || []).slice(0, 2)].filter(Boolean)}
+          pageType="product_detail"
+        />
 
         {/* ════ FEATURED SERVICES (Service Provider Ads Carousel) ════ */}
         {providerAds.length > 0 && (

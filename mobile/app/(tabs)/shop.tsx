@@ -21,6 +21,7 @@ import ProductCard from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import EmptyState from "@/components/EmptyState";
 import BottomTabBar from "@/components/BottomTabBar";
+import TikTokVideoSlot from "@/components/social/TikTokVideoSlot";
 import { colors, resolveImageUrl } from "@/theme";
 import { productsAPI, categoriesAPI, productArchiveSettingsAPI } from "@/services/api";
 
@@ -170,6 +171,12 @@ export default function ShopScreen() {
           );
         }}
       />
+      {/* TikTok carousel */}
+      <TikTokVideoSlot
+        keywords={selectedCategory ? [String(selectedCategory)] : ["trending", "shopping"]}
+        pageType="shop"
+      />
+
       {/* Toolbar */}
       <View style={ss.sortRow}>
         <Text style={ss.countText}>{totalCount > 0 ? `${totalCount} products` : `${products.length} products`}</Text>

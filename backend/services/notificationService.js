@@ -240,10 +240,14 @@ class NotificationService {
       data: {
         notificationId: notification._id.toString(),
         actionUrl: notification.actionUrl || '/',
+        actionLabel: notification.actionLabel,
         type: notification.type,
+        image: notification.image,
+        icon: notification.icon,
       },
-      priority: notification.priority === 'high' ? 'high' : 'default',
+      priority: 'high',
       channelId: 'default',
+      _displayInForeground: true,
     };
 
     // Expo supports rich content (images) on Android via richContent
@@ -364,10 +368,14 @@ class NotificationService {
       data: {
         notificationId: notification._id.toString(),
         actionUrl: notification.actionUrl || '/',
+        actionLabel: notification.actionLabel,
         type: notification.type,
+        image: notification.image,
+        icon: notification.icon,
       },
       priority: 'high',
       channelId: 'default',
+      _displayInForeground: true,
     };
 
     if (notification.image) {

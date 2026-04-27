@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { notificationsAPI } from '@/services/api';
 import { useAuthStore } from '@/store';
+import { notificationBus } from '@/lib/notificationBus';
 
 let Notifications: any = null;
 let Device: any = null;
@@ -23,9 +24,11 @@ try {
 if (Notifications && Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
+      shouldShowAlert: true,
     }),
   });
 }
@@ -59,7 +62,15 @@ export function useExpoPush() {
         }
         const { status } = await Notifications.getPermissionsAsync();
         if (status !== 'granted') {
-          await Notifications.requestPermissionsAsync();
+          await Notifications.requestPermissionsAsync({
+            ios: {
+              allowAlert: true,
+              allowBadge: true,
+              allowSound: true,
+              allowAnnouncements: true,
+              provideAppNotificationSettings: true,
+            },
+          });
         }
       } catch {}
     };
@@ -100,7 +111,15 @@ export function useExpoPush() {
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
         if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
+          const { status } = await Notifications.requestPermissionsAsync({
+            ios: {
+              allowAlert: true,
+              allowBadge: true,
+              allowSound: true,
+              allowAnnouncements: true,
+              provideAppNotificationSettings: true,
+            },
+          });
           finalStatus = status;
         }
         if (finalStatus !== 'granted') return;
@@ -147,8 +166,20 @@ export function useExpoPush() {
 
     notificationListener.current = Notifications.addNotificationReceivedListener(
       (notification: any) => {
-        // Notification received while app is in foreground
-        // The bell component will pick up the new count via polling
+        const req = notification?.request;
+        if (!req) return;
+        const content = req.content || {};
+        const data = content.data || {};
+        notificationBus.emit({
+          id: data.notificationId || req.identifier || `${Date.now()}`,
+          title: content.title || 'PesaShop',
+          body: content.body || '',
+          image: data.image,
+          icon: data.icon,
+          type: data.type || 'custom',
+          actionUrl: data.actionUrl,
+          actionLabel: data.actionLabel,
+        });
       }
     );
 

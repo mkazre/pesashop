@@ -44,6 +44,7 @@ export default function AccountScreen() {
     { icon: "navigate-outline" as const,      label: "Track Order",           onPress: () => router.push("/account/track-order" as any) },
     { icon: "card-outline" as const,          label: "My Laybyes",            onPress: () => router.push("/account/laybyes" as any) },
     { icon: "refresh-outline" as const,       label: "Recurring Orders",      onPress: () => router.push("/account/recurring-orders" as any) },
+    { icon: "hand-right-outline" as const,    label: "Browse Services",       onPress: () => router.push("/service-providers" as any) },
     { icon: "construct-outline" as const,     label: "My Service Requests",   onPress: () => router.push("/account/service-requests" as any) },
     { icon: "business-outline" as const, label: "Service Provider Portal", onPress: () => router.push("/service-providers-portal" as any) },
     { icon: "sparkles-outline" as const,      label: "My Offers",             onPress: () => router.push("/account/my-offers" as any) },
