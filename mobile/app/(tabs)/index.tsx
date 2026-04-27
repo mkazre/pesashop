@@ -18,6 +18,7 @@ import ProductCard from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import HomePageRenderer from "@/components/homeblocks/HomePageRenderer";
 import TikTokVideoSlot from "@/components/social/TikTokVideoSlot";
+import ServiceProviderAdSlot from "@/components/ads/ServiceProviderAdSlot";
 import AppDrawer from "@/components/AppDrawer";
 import CurrencyPicker from "@/components/CurrencyPicker";
 import NotificationBell from "@/components/NotificationBell";
@@ -117,6 +118,9 @@ export default function HomeScreen() {
         {hasBlockConfig !== false && (
           <HomePageRenderer onConfigLoaded={handleConfigLoaded} />
         )}
+
+        {/* Service Provider Ads — home banner */}
+        <ServiceProviderAdSlot slotId="home_banner" pageType="home" maxAds={2} />
 
         {/* TikTok / Social Engine carousel */}
         <TikTokVideoSlot keywords={["trending", "shopping haul", "deals"]} pageType="home" />

@@ -495,6 +495,8 @@ export default function ProductDetailScreen() {
             </>
           )}
 
+          <OfferSlot page="product_detail" />
+
           {/* ── Trust Badges ── */}
           {pageSettings?.trustBadges?.enabled !== false && pageSettings?.trustBadges?.badges?.length > 0 && (
             <View style={ps.trustRow}>
@@ -662,7 +664,6 @@ export default function ProductDetailScreen() {
                             })
                           )}
 
-                          <OfferSlot page="product_detail" />
                           {/* Write review form */}
                           <WriteReview
                             productId={product._id}

@@ -14,7 +14,14 @@ const serviceProviderAdOrderSchema = new mongoose.Schema({
   // How many ad creatives the provider may create under this order
   maxAds: { type: Number, default: 1, min: 1, max: 50 },
   // Payment
-  paymentMethod: { type: String, enum: ['eft', 'cash', 'card', 'other'], default: 'eft' },
+  paymentMethod: {
+    type: String,
+    default: 'eft',
+    validate: {
+      validator: (v) => ['eft', 'cash', 'card', 'other'].includes(v) || /^bank:.+/.test(v),
+      message: (props) => `${props.value} is not a valid paymentMethod (expected eft|cash|card|other or bank:<name>)`,
+    },
+  },
   paymentReference: { type: String, default: '' },
   // Status flow: pending_payment → active or declined
   status: { type: String, enum: ['pending_payment', 'active', 'declined', 'expired', 'cancelled'], default: 'pending_payment' },
