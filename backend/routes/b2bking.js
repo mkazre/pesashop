@@ -8,6 +8,7 @@ const PricingRule = require('../models/PricingRule');
 const User = require('../models/User');
 const Product = require('../models/Product');
 const pricingService = require('../services/pricingService');
+const priceJobStore = require('../services/priceJobStore');
 
 // ==================== CUSTOMER GROUPS ====================
 
@@ -553,17 +554,15 @@ router.post('/pricing-rules', protect, authorize('admin', 'shop_manager'), check
     await rule.populate('customerGroups products categories');
     console.log('Pricing rule created successfully:', rule._id, rule.name);
     
-    // Apply rule to affected products to update their regular prices
+    // Apply rule to affected products in the background — return immediately so the
+    // client can poll for progress. Avoids HTTP timeouts on large rule applications.
     const productPriceUpdater = require('../services/productPriceUpdater');
-    try {
-      const updatedCount = await productPriceUpdater.applyRuleToProducts(rule._id);
-      console.log(`Applied pricing rule to ${updatedCount} products`);
-    } catch (error) {
-      console.error('Error applying rule to products:', error);
-      // Don't fail the request, just log the error
-    }
-    
-    res.status(201).json({ success: true, data: rule });
+    const job = priceJobStore.create({ kind: 'apply_rule', ruleId: String(rule._id), ruleName: rule.name });
+    priceJobStore.run(job, (report) =>
+      productPriceUpdater.applyRuleToProducts(rule._id, { onProgress: report })
+    );
+
+    res.status(201).json({ success: true, data: rule, jobId: job.id });
   } catch (error) {
     console.error('Error creating pricing rule:', error);
     next(error);
@@ -627,20 +626,19 @@ router.put('/pricing-rules/:id', protect, authorize('admin', 'shop_manager'), ch
       return res.status(404).json({ success: false, message: 'Pricing rule not found' });
     }
 
-    let updatedCount = 0;
     const shouldUpdate = req.query.updateProducts === 'true';
+    let jobId = null;
 
     if (shouldUpdate) {
       const productPriceUpdater = require('../services/productPriceUpdater');
-      try {
-        updatedCount = await productPriceUpdater.applyRuleToProducts(rule._id);
-        console.log(`Applied updated pricing rule to ${updatedCount} products`);
-      } catch (error) {
-        console.error('Error applying rule to products:', error);
-      }
+      const job = priceJobStore.create({ kind: 'apply_rule', ruleId: String(rule._id), ruleName: rule.name });
+      priceJobStore.run(job, (report) =>
+        productPriceUpdater.applyRuleToProducts(rule._id, { onProgress: report })
+      );
+      jobId = job.id;
     }
 
-    res.json({ success: true, data: rule, updatedProducts: updatedCount });
+    res.json({ success: true, data: rule, jobId });
   } catch (error) {
     next(error);
   }
@@ -703,22 +701,25 @@ router.delete('/pricing-rules/:id', protect, authorize('admin', 'shop_manager'),
     // Delete the rule
     await rule.deleteOne();
 
+    let jobId = null;
     if (priceAction === 'recalculate' && productIds.length > 0) {
-      // Recalculate remaining rules for affected products
-      for (const productId of productIds) {
-        try {
-          await productPriceUpdater.applyRulesToProduct(productId);
-          affectedCount++;
-        } catch (error) {
-          console.error(`Error recalculating product ${productId}:`, error);
-        }
-      }
+      // Recalculate remaining rules for affected products in the background
+      const job = priceJobStore.create({
+        kind: 'recalculate_after_delete',
+        ruleId: String(rule._id),
+        ruleName: rule.name,
+      });
+      priceJobStore.run(job, (report) =>
+        productPriceUpdater.recalculateProducts(productIds, { onProgress: report })
+      );
+      jobId = job.id;
     }
 
     res.json({
       success: true,
       message: 'Pricing rule deleted successfully',
-      affectedProducts: affectedCount
+      affectedProducts: affectedCount,
+      jobId,
     });
   } catch (error) {
     next(error);
@@ -728,23 +729,34 @@ router.delete('/pricing-rules/:id', protect, authorize('admin', 'shop_manager'),
 // ==================== PRICE RECALCULATION ====================
 
 // POST recalculate product prices
+//   { productId } → synchronous single-product recalculation
+//   {}            → bulk recalculation; returns { jobId } for polling /price-jobs/:id
 router.post('/recalculate-prices', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), async (req, res, next) => {
   try {
     const { productId } = req.body;
     const productPriceUpdater = require('../services/productPriceUpdater');
-    
+
     if (productId) {
-      // Recalculate single product
       await productPriceUpdater.applyRulesToProduct(productId);
-      res.json({ success: true, message: 'Product price recalculated successfully' });
-    } else {
-      // Recalculate all products
-      const count = await productPriceUpdater.recalculateAllProducts();
-      res.json({ success: true, message: `Recalculated prices for ${count} products` });
+      return res.json({ success: true, message: 'Product price recalculated successfully' });
     }
+
+    // Bulk path — kick off a background job and return immediately.
+    const job = priceJobStore.create({ kind: 'recalculate_all' });
+    priceJobStore.run(job, (report) =>
+      productPriceUpdater.recalculateAllProducts({ onProgress: report })
+    );
+    res.json({ success: true, jobId: job.id, message: 'Recalculation started in background' });
   } catch (error) {
     next(error);
   }
+});
+
+// GET status of a price-update job
+router.get('/price-jobs/:id', protect, authorize('admin', 'shop_manager', 'superadmin', 'super_admin'), (req, res) => {
+  const job = priceJobStore.get(req.params.id);
+  if (!job) return res.status(404).json({ success: false, message: 'Job not found' });
+  res.json({ success: true, data: job });
 });
 
 // ==================== PRICE CALCULATION ====================

@@ -522,6 +522,7 @@ export const b2bkingAPI = {
   
   // Price Recalculation
   recalculatePrices: (data = {}) => api.post('/b2bking/recalculate-prices', data),
+  getPriceJobStatus: (jobId) => api.get(`/b2bking/price-jobs/${jobId}`),
 };
 
 // Product Page Settings API

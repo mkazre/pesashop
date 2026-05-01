@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { b2bkingAPI, productsAPI, categoriesAPI, customersAPI } from '@/services/api';
 import { extractData } from '@/utils/apiResponse';
@@ -26,6 +26,47 @@ const PricingRulesPage = () => {
   const [pendingSaveData, setPendingSaveData] = useState(null);
   const [isActiveFilter, setIsActiveFilter] = useState('');
   const [ruleTypeFilter, setRuleTypeFilter] = useState('');
+  const [activeJob, setActiveJob] = useState(null); // { id, status, total, processed, updated, kind, message, error }
+  const jobPollRef = useRef(null);
+
+  // Poll the backend for the latest progress on an in-flight price-update job.
+  const startJobTracking = (jobId, kindLabel = 'Updating prices') => {
+    if (!jobId) return;
+    if (jobPollRef.current) clearInterval(jobPollRef.current);
+    setActiveJob({ id: jobId, status: 'running', total: 0, processed: 0, updated: 0, label: kindLabel });
+
+    const poll = async () => {
+      try {
+        const res = await b2bkingAPI.getPriceJobStatus(jobId);
+        const job = res.data?.data;
+        if (!job) return;
+        setActiveJob((prev) => ({ ...(prev || {}), ...job, label: kindLabel }));
+        if (job.status === 'completed') {
+          clearInterval(jobPollRef.current);
+          jobPollRef.current = null;
+          toast.success(job.message || `Updated prices on ${job.updated} of ${job.total} products`);
+          queryClient.invalidateQueries(['pricing-rules']);
+        } else if (job.status === 'failed') {
+          clearInterval(jobPollRef.current);
+          jobPollRef.current = null;
+          toast.error(job.error || 'Price update failed');
+        }
+      } catch (err) {
+        // 404 means the job has been cleaned up — stop polling silently.
+        if (err.response?.status === 404) {
+          clearInterval(jobPollRef.current);
+          jobPollRef.current = null;
+        }
+      }
+    };
+
+    poll();
+    jobPollRef.current = setInterval(poll, 1500);
+  };
+
+  useEffect(() => () => {
+    if (jobPollRef.current) clearInterval(jobPollRef.current);
+  }, []);
 
   const { register, handleSubmit, reset, watch, setValue, control, formState: { errors } } = useForm({
     defaultValues: {
@@ -136,9 +177,9 @@ const PricingRulesPage = () => {
       onSuccess: async (response) => {
         await queryClient.invalidateQueries(['pricing-rules']);
         await refetch();
-        const updatedCount = response.data?.updatedProducts;
+        const jobId = response.data?.jobId;
         const msg = editingRule
-          ? `Pricing rule updated${updatedCount ? ` — ${updatedCount} product(s) re-priced` : ''}`
+          ? 'Pricing rule updated'
           : 'Pricing rule created successfully';
         toast.success(msg);
         setShowForm(false);
@@ -146,6 +187,7 @@ const PricingRulesPage = () => {
         setShowUpdateConfirm(false);
         setPendingSaveData(null);
         reset();
+        if (jobId) startJobTracking(jobId, editingRule ? 'Re-applying rule to products' : 'Applying rule to products');
       },
       onError: (error) => {
         console.error('Error saving pricing rule:', error);
@@ -176,11 +218,13 @@ const PricingRulesPage = () => {
       onSuccess: (response) => {
         queryClient.invalidateQueries('pricing-rules');
         const affected = response.data?.affectedProducts;
-        const actionLabel = deleteAction === 'clear' ? 'prices cleared' : deleteAction === 'clearBoth' ? 'all prices cleared' : deleteAction === 'recalculate' ? 'prices recalculated' : '';
+        const jobId = response.data?.jobId;
+        const actionLabel = deleteAction === 'clear' ? 'prices cleared' : deleteAction === 'clearBoth' ? 'all prices cleared' : deleteAction === 'recalculate' ? 'prices recalculating' : '';
         toast.success(`Pricing rule deleted${affected ? ` — ${affected} product(s) ${actionLabel}` : ''}`);
         setDeleteModal(null);
         setDeleteAction('recalculate');
         setAffectedCount(null);
+        if (jobId) startJobTracking(jobId, 'Recalculating remaining rules');
       },
       onError: (error) => {
         toast.error(error.response?.data?.message || 'Failed to delete pricing rule');
@@ -202,7 +246,14 @@ const PricingRulesPage = () => {
     (data) => b2bkingAPI.recalculatePrices(data),
     {
       onSuccess: (response) => {
-        toast.success(response.data?.message || 'Prices recalculated successfully');
+        const jobId = response.data?.jobId;
+        if (jobId) {
+          toast.success(response.data?.message || 'Recalculation started');
+          startJobTracking(jobId, 'Recalculating prices for all products');
+        } else {
+          // Synchronous single-product response
+          toast.success(response.data?.message || 'Prices recalculated successfully');
+        }
       },
       onError: (error) => {
         toast.error(error.response?.data?.message || 'Failed to recalculate prices');
@@ -352,8 +403,52 @@ const PricingRulesPage = () => {
     }
   ];
 
+  const jobInProgress = activeJob && (activeJob.status === 'running' || activeJob.status === 'queued');
+  const jobPercent = activeJob && activeJob.total > 0
+    ? Math.min(100, Math.round((activeJob.processed / activeJob.total) * 100))
+    : 0;
+
   return (
     <div className="p-6">
+      {/* Job progress banner — shown while a price-update job is running */}
+      {activeJob && (
+        <div className={`mb-4 rounded-lg border p-4 ${activeJob.status === 'failed' ? 'border-red-200 bg-red-50' : activeJob.status === 'completed' ? 'border-green-200 bg-green-50' : 'border-blue-200 bg-blue-50'}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                {activeJob.status === 'running' && <IoRefresh className="animate-spin" size={16} />}
+                {activeJob.label || 'Price update job'}
+                <span className={`text-xs uppercase tracking-wide ${activeJob.status === 'failed' ? 'text-red-700' : activeJob.status === 'completed' ? 'text-green-700' : 'text-blue-700'}`}>
+                  {activeJob.status}
+                </span>
+              </div>
+              <div className="mt-1 text-xs text-gray-600">
+                {jobInProgress && activeJob.total > 0 && (
+                  <>Processed {activeJob.processed.toLocaleString()} of {activeJob.total.toLocaleString()} • Updated {activeJob.updated.toLocaleString()}</>
+                )}
+                {jobInProgress && activeJob.total === 0 && <>Preparing…</>}
+                {activeJob.status === 'completed' && (activeJob.message || `Updated ${activeJob.updated.toLocaleString()} of ${activeJob.total.toLocaleString()} products`)}
+                {activeJob.status === 'failed' && (activeJob.error || 'Job failed')}
+              </div>
+              {activeJob.total > 0 && jobInProgress && (
+                <div className="mt-2 h-2 w-full rounded-full bg-blue-100">
+                  <div className="h-2 rounded-full bg-blue-600 transition-all" style={{ width: `${jobPercent}%` }} />
+                </div>
+              )}
+            </div>
+            {!jobInProgress && (
+              <button
+                onClick={() => setActiveJob(null)}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label="Dismiss"
+              >
+                <IoClose size={18} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -370,7 +465,8 @@ const PricingRulesPage = () => {
                 recalculateMutation.mutate({});
               }
             }}
-            loading={recalculateMutation.isLoading}
+            loading={recalculateMutation.isLoading || jobInProgress}
+            disabled={jobInProgress}
           >
             <IoFlash size={20} className="mr-2" />
             Apply All Rules
