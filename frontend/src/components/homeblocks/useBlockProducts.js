@@ -42,11 +42,20 @@ async function fetchFromStats(endpoint, limit) {
  * Uses stats endpoints (real order/view data) when available, with proper
  * fallbacks to the products API using correct sort params.
  */
-export function useBlockProducts(source, { categoryId = '', limit = 10, enabled = true } = {}) {
+export function useBlockProducts(source, { categoryId = '', limit = 10, productIds = null, enabled = true } = {}) {
   return useQuery(
-    ['blockProducts', source, categoryId, limit],
+    ['blockProducts', source, categoryId, limit, (productIds || []).join(',')],
     async () => {
       switch (source) {
+        case 'manual':
+          if (Array.isArray(productIds) && productIds.length > 0) {
+            // Fetch by IDs and preserve the user's order
+            const res = await productsAPI.getAll({ ids: productIds.join(','), limit: productIds.length });
+            const list = extractProducts(res);
+            const byId = new Map(list.map(p => [String(p._id), p]));
+            return productIds.map(id => byId.get(String(id))).filter(Boolean);
+          }
+          return [];
         case 'trending': {
           // Try real stats data first (orders + views)
           const statsProducts = await fetchFromStats('trending-products', limit);

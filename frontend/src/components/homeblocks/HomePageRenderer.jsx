@@ -24,6 +24,7 @@ import NewsletterBlock from './NewsletterBlock';
 import CategoryGrid from './CategoryGrid';
 import ProductVerticalTabs from './ProductVerticalTabs';
 import ImageTextCta from './ImageTextCta';
+import GiftSectionCarousel from './GiftSectionCarousel';
 
 const BLOCK_COMPONENTS = {
   'hero-slider-full': HeroSliderFull,
@@ -50,6 +51,7 @@ const BLOCK_COMPONENTS = {
   'category-grid': CategoryGrid,
   'product-vertical-tabs': ProductVerticalTabs,
   'image-text-cta': ImageTextCta,
+  'gift-section-carousel': GiftSectionCarousel,
 };
 
 /**

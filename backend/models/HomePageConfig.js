@@ -51,6 +51,27 @@ const tabItemSchema = new mongoose.Schema({
   categoryId: { type: String, default: '' },
 }, { _id: true });
 
+// ── Gift section schema (for GiftSectionCarousel) ─────────────────
+// Each section is a card with a title + a 2x2 grid of products. Multiple
+// sections sit side-by-side and the whole row paginates as a carousel.
+const giftSectionSchema = new mongoose.Schema({
+  title: { type: String, default: '' },
+  // emoji string OR { type, value } via SmartIcon (see iconCatalog)
+  icon: { type: mongoose.Schema.Types.Mixed, default: '' },
+  source: {
+    type: String,
+    enum: ['manual', 'category', 'featured', 'sale', 'newest', 'best-selling', 'top-rated', 'trending'],
+    default: 'newest',
+  },
+  productIds: [{ type: String }],     // for source: 'manual'
+  categoryId: { type: String, default: '' },     // for source: 'category'
+  productLimit: { type: Number, default: 4 },
+  viewAllLink: { type: String, default: '' },
+  viewAllText: { type: String, default: 'View all' },
+  // Optional per-section background to mimic the screenshot's tinted card top
+  headerBgColor: { type: String, default: '#f3f4f6' },
+}, { _id: true });
+
 // ── Coupon item schema ─────────────────────────────────────────────
 const couponItemSchema = new mongoose.Schema({
   title: { type: String, default: '' },
@@ -93,6 +114,7 @@ const blockSchema = new mongoose.Schema({
       'category-grid',
       'product-vertical-tabs',
       'image-text-cta',
+      'gift-section-carousel',
     ],
   },
   enabled: { type: Boolean, default: true },
@@ -277,6 +299,33 @@ const blockSchema = new mongoose.Schema({
   bulletPoints: [{ type: String }],
   buttonLink: { type: String, default: '' },
   textPosition: { type: String, enum: ['left', 'right', 'center'], default: 'right' },
+
+  // ── Gift Section Carousel ──────────────────────────────────────────
+  // The "Mother's Day gifts" style block: a heading + a horizontal carousel
+  // of section cards, each with its own title and 2x2 product grid.
+  giftSections: [giftSectionSchema],
+  // How many sections are visible per slide at each breakpoint
+  giftSectionsVisibleDesktop: { type: Number, default: 4, min: 1, max: 8 },
+  giftSectionsVisibleTablet: { type: Number, default: 2, min: 1, max: 4 },
+  giftSectionsVisibleMobile: { type: Number, default: 1, min: 1, max: 2 },
+  // Inside each section card: how many products to show, in how many columns
+  giftProductsPerSection: { type: Number, default: 4, min: 2, max: 8 },
+  giftProductColumns: { type: Number, default: 2, min: 1, max: 4 },
+  giftSectionGap: { type: String, default: '16px' },
+  giftSectionPadding: { type: String, default: '12px' },
+  giftSectionBorderRadius: { type: String, default: '8px' },
+  giftSectionBorderColor: { type: String, default: '#e5e7eb' },
+  giftSectionBorderWidth: { type: String, default: '1px' },
+  giftSectionBgColor: { type: String, default: '#ffffff' },
+  giftSectionTitleSize: { type: String, default: '14px' },
+  giftSectionTitleWeight: { type: String, default: '700' },
+  giftSectionTitleColor: { type: String, default: '#111827' },
+  giftSectionViewAllColor: { type: String, default: '#0F604B' },
+  giftAutoplay: { type: Boolean, default: false },
+  giftAutoplayInterval: { type: Number, default: 5000 },
+  giftShowArrows: { type: Boolean, default: true },
+  giftShowDots: { type: Boolean, default: true },
+  giftCardStyle: { type: String, enum: ['compact', 'detailed'], default: 'compact' },
 
 }, { _id: true });
 

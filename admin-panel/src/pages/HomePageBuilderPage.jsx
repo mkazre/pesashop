@@ -39,6 +39,7 @@ const BLOCK_TYPES = [
   { type: 'category-grid', label: 'Category Grid (Image Cards)', icon: '🗂️', category: 'Categories' },
   { type: 'product-vertical-tabs', label: 'Product Vertical List (Tabs)', icon: '📋', category: 'Products' },
   { type: 'image-text-cta', label: 'Image + Text CTA Banner', icon: '🖼️', category: 'Banners' },
+  { type: 'gift-section-carousel', label: 'Gift Section Carousel (Mother\'s Day style)', icon: '🎁', category: 'Products' },
 ];
 
 const BLOCK_CATEGORIES = ['Hero', 'Banners', 'Products', 'Categories', 'Promotions', 'Content', 'Templates', 'Other'];
@@ -343,6 +344,42 @@ function getDefaultBlock(blockType) {
         textPosition: 'right',
         textColor: '#333333',
       };
+    case 'gift-section-carousel':
+      return {
+        ...base,
+        sectionTitle: "Mother's Day gifts",
+        showSectionTitle: true,
+        backgroundColor: '#ffffff',
+        paddingTop: '40px',
+        paddingBottom: '40px',
+        giftSections: [
+          { title: 'Everything Mom wants', source: 'featured', productLimit: 4, headerBgColor: '#f3f4f6', viewAllText: 'View all', viewAllLink: '/shop' },
+          { title: 'Elevate her space', source: 'newest', productLimit: 4, headerBgColor: '#f3f4f6', viewAllText: 'View all', viewAllLink: '/shop' },
+          { title: 'Fashion & accessories', source: 'top-rated', productLimit: 4, headerBgColor: '#f3f4f6', viewAllText: 'View all', viewAllLink: '/shop' },
+          { title: 'Gotta-have gift sets', source: 'best-selling', productLimit: 4, headerBgColor: '#f3f4f6', viewAllText: 'View all', viewAllLink: '/shop' },
+          { title: 'Beauty & fragrances', source: 'sale', productLimit: 4, headerBgColor: '#f3f4f6', viewAllText: 'View all', viewAllLink: '/shop' },
+        ],
+        giftSectionsVisibleDesktop: 4,
+        giftSectionsVisibleTablet: 2,
+        giftSectionsVisibleMobile: 1,
+        giftProductsPerSection: 4,
+        giftProductColumns: 2,
+        giftSectionGap: '16px',
+        giftSectionPadding: '12px',
+        giftSectionBorderRadius: '8px',
+        giftSectionBorderColor: '#e5e7eb',
+        giftSectionBorderWidth: '1px',
+        giftSectionBgColor: '#ffffff',
+        giftSectionTitleSize: '14px',
+        giftSectionTitleWeight: '700',
+        giftSectionTitleColor: '#111827',
+        giftSectionViewAllColor: '#0F604B',
+        giftAutoplay: false,
+        giftAutoplayInterval: 5000,
+        giftShowArrows: true,
+        giftShowDots: true,
+        giftCardStyle: 'compact',
+      };
     default:
       return base;
   }
@@ -535,6 +572,95 @@ function TabItemEditor({ tab, index, onChange, onRemove, showRemove }) {
         <input className="w-32 text-xs px-2 py-1 border rounded" placeholder="Category ID" value={tab.categoryId || ''} onChange={(e) => update('categoryId', e.target.value)} />
       )}
       {showRemove && <button onClick={onRemove} className="text-red-500 hover:text-red-700"><IoTrash size={14} /></button>}
+    </div>
+  );
+}
+
+// ── Gift section editor (per row inside the GiftSectionCarousel block) ─────
+function GiftSectionEditor({ section, index, onChange, onRemove, onMoveUp, onMoveDown, isFirst, isLast }) {
+  const update = (key, val) => onChange({ ...section, [key]: val });
+  return (
+    <div className="p-3 bg-gray-50 rounded border space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-mono text-gray-400 w-5">#{index + 1}</span>
+        <IconPicker value={section.icon} onChange={(v) => update('icon', v)} />
+        <input
+          className="flex-1 text-sm px-2 py-1 border rounded"
+          placeholder="Section title (e.g. Everything Mom wants)"
+          value={section.title || ''}
+          onChange={(e) => update('title', e.target.value)}
+        />
+        <div className="flex gap-1">
+          <button onClick={onMoveUp} disabled={isFirst} className="text-gray-400 hover:text-gray-700 disabled:opacity-30">▲</button>
+          <button onClick={onMoveDown} disabled={isLast} className="text-gray-400 hover:text-gray-700 disabled:opacity-30">▼</button>
+          <button onClick={onRemove} className="text-red-500 hover:text-red-700"><IoTrash size={14} /></button>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <label className="text-xs text-gray-600">Source:</label>
+        <select
+          className="text-sm px-2 py-1 border rounded"
+          value={section.source || 'newest'}
+          onChange={(e) => update('source', e.target.value)}
+        >
+          <option value="manual">Manual (pick products)</option>
+          <option value="featured">Featured</option>
+          <option value="sale">On Sale</option>
+          <option value="newest">Newest</option>
+          <option value="best-selling">Best Selling</option>
+          <option value="top-rated">Top Rated</option>
+          <option value="trending">Trending</option>
+          <option value="category">Category</option>
+        </select>
+        {section.source === 'category' && (
+          <input
+            className="text-xs px-2 py-1 border rounded w-40"
+            placeholder="Category ID"
+            value={section.categoryId || ''}
+            onChange={(e) => update('categoryId', e.target.value)}
+          />
+        )}
+        {section.source === 'manual' && (
+          <input
+            className="text-xs px-2 py-1 border rounded flex-1 min-w-[200px]"
+            placeholder="Comma-separated product IDs"
+            value={(section.productIds || []).join(',')}
+            onChange={(e) => update('productIds', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+          />
+        )}
+        <label className="text-xs text-gray-600 ml-auto">Limit:</label>
+        <input
+          type="number"
+          min={1}
+          max={12}
+          className="w-16 text-sm px-2 py-1 border rounded"
+          value={section.productLimit || 4}
+          onChange={(e) => update('productLimit', parseInt(e.target.value) || 4)}
+        />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <input
+          className="text-xs px-2 py-1 border rounded"
+          placeholder="View-all text"
+          value={section.viewAllText || ''}
+          onChange={(e) => update('viewAllText', e.target.value)}
+        />
+        <input
+          className="text-xs px-2 py-1 border rounded"
+          placeholder="View-all URL"
+          value={section.viewAllLink || ''}
+          onChange={(e) => update('viewAllLink', e.target.value)}
+        />
+        <div className="flex items-center gap-1">
+          <label className="text-xs text-gray-600">Header BG:</label>
+          <input
+            type="color"
+            value={section.headerBgColor || '#f3f4f6'}
+            onChange={(e) => update('headerBgColor', e.target.value)}
+            className="w-8 h-6 rounded border-0"
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -745,6 +871,30 @@ function BlockSettingsPanel({ block, onChange }) {
   };
   const addFeature = () => {
     update('features', [...(block.features || []), { icon: '⭐', iconImage: '', title: '', subtitle: '', color: '#1b5e35' }]);
+  };
+
+  const updateGiftSection = (i, section) => {
+    const sections = [...(block.giftSections || [])];
+    sections[i] = section;
+    update('giftSections', sections);
+  };
+  const removeGiftSection = (i) => {
+    const sections = [...(block.giftSections || [])];
+    sections.splice(i, 1);
+    update('giftSections', sections);
+  };
+  const addGiftSection = () => {
+    update('giftSections', [...(block.giftSections || []), {
+      title: 'New section', source: 'newest', productLimit: 4,
+      headerBgColor: '#f3f4f6', viewAllText: 'View all', viewAllLink: '/shop',
+    }]);
+  };
+  const moveGiftSection = (i, dir) => {
+    const sections = [...(block.giftSections || [])];
+    const target = i + dir;
+    if (target < 0 || target >= sections.length) return;
+    [sections[i], sections[target]] = [sections[target], sections[i]];
+    update('giftSections', sections);
   };
 
   const updateColumn = (i, column) => {
@@ -1528,6 +1678,133 @@ function BlockSettingsPanel({ block, onChange }) {
             </div>
           </div>
           <ColorField label="Text Color" value={block.textColor} onChange={(v) => update('textColor', v)} placeholder="#333333" />
+        </div>
+      )}
+
+      {/* Gift Section Carousel */}
+      {block.blockType === 'gift-section-carousel' && (
+        <div className="space-y-4 pb-4 border-b">
+          <h4 className="text-sm font-semibold text-gray-700">Sections</h4>
+          <p className="text-xs text-gray-500 -mt-2">Each section is a card with its own title and product grid. The whole row paginates as a carousel.</p>
+          <div className="space-y-2">
+            {(block.giftSections || []).map((section, i) => (
+              <GiftSectionEditor
+                key={i}
+                index={i}
+                section={section}
+                onChange={(s) => updateGiftSection(i, s)}
+                onRemove={() => removeGiftSection(i)}
+                onMoveUp={() => moveGiftSection(i, -1)}
+                onMoveDown={() => moveGiftSection(i, 1)}
+                isFirst={i === 0}
+                isLast={i === (block.giftSections || []).length - 1}
+              />
+            ))}
+          </div>
+          <button onClick={addGiftSection} className="flex items-center gap-1 text-sm text-primary hover:underline">
+            <IoAdd size={16} /> Add Section
+          </button>
+
+          <h4 className="text-sm font-semibold text-gray-700 pt-3">Carousel Layout</h4>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Visible per slide (Desktop)</label>
+              <select className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftSectionsVisibleDesktop || 4} onChange={(e) => update('giftSectionsVisibleDesktop', parseInt(e.target.value))}>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Visible (Tablet)</label>
+              <select className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftSectionsVisibleTablet || 2} onChange={(e) => update('giftSectionsVisibleTablet', parseInt(e.target.value))}>
+                {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Visible (Mobile)</label>
+              <select className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftSectionsVisibleMobile || 1} onChange={(e) => update('giftSectionsVisibleMobile', parseInt(e.target.value))}>
+                {[1, 2].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <h4 className="text-sm font-semibold text-gray-700 pt-3">Product Grid (per section)</h4>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Products per section</label>
+              <input type="number" min={2} max={8} className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftProductsPerSection || 4} onChange={(e) => update('giftProductsPerSection', parseInt(e.target.value))} />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Columns</label>
+              <select className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftProductColumns || 2} onChange={(e) => update('giftProductColumns', parseInt(e.target.value))}>
+                {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Card style</label>
+              <select className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftCardStyle || 'compact'} onChange={(e) => update('giftCardStyle', e.target.value)}>
+                <option value="compact">Compact (image + price)</option>
+                <option value="detailed">Detailed (with title)</option>
+              </select>
+            </div>
+          </div>
+
+          <h4 className="text-sm font-semibold text-gray-700 pt-3">Styling</h4>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Section gap</label>
+              <input type="text" className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftSectionGap || '16px'} onChange={(e) => update('giftSectionGap', e.target.value)} placeholder="16px" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Section padding</label>
+              <input type="text" className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftSectionPadding || '12px'} onChange={(e) => update('giftSectionPadding', e.target.value)} placeholder="12px" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Border radius</label>
+              <input type="text" className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftSectionBorderRadius || '8px'} onChange={(e) => update('giftSectionBorderRadius', e.target.value)} placeholder="8px" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Border width</label>
+              <input type="text" className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftSectionBorderWidth || '1px'} onChange={(e) => update('giftSectionBorderWidth', e.target.value)} placeholder="1px" />
+            </div>
+            <ColorField label="Border color" value={block.giftSectionBorderColor} onChange={(v) => update('giftSectionBorderColor', v)} placeholder="#e5e7eb" />
+            <ColorField label="Section BG" value={block.giftSectionBgColor} onChange={(v) => update('giftSectionBgColor', v)} placeholder="#ffffff" />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Section title size</label>
+              <input type="text" className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftSectionTitleSize || '14px'} onChange={(e) => update('giftSectionTitleSize', e.target.value)} placeholder="14px" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Title weight</label>
+              <select className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftSectionTitleWeight || '700'} onChange={(e) => update('giftSectionTitleWeight', e.target.value)}>
+                {['400', '500', '600', '700', '800'].map(w => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </div>
+            <ColorField label="Title color" value={block.giftSectionTitleColor} onChange={(v) => update('giftSectionTitleColor', v)} placeholder="#111827" />
+          </div>
+          <ColorField label="View-all link color" value={block.giftSectionViewAllColor} onChange={(v) => update('giftSectionViewAllColor', v)} placeholder="#0F604B" />
+
+          <h4 className="text-sm font-semibold text-gray-700 pt-3">Carousel Behavior</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={block.giftAutoplay !== false && block.giftAutoplay === true} onChange={(e) => update('giftAutoplay', e.target.checked)} />
+              Autoplay
+            </label>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Interval (ms)</label>
+              <input type="number" min={1000} step={500} className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftAutoplayInterval || 5000} onChange={(e) => update('giftAutoplayInterval', parseInt(e.target.value))} />
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={block.giftShowArrows !== false} onChange={(e) => update('giftShowArrows', e.target.checked)} />
+              Show arrows
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={block.giftShowDots !== false} onChange={(e) => update('giftShowDots', e.target.checked)} />
+              Show dots
+            </label>
+          </div>
         </div>
       )}
     </div>

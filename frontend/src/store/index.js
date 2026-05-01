@@ -242,6 +242,11 @@ const _useCurrencyStoreBase = create(
         if (!selected || selected.isBaseCurrency || selected.exchangeRate === 1) return amount;
         return amount / selected.exchangeRate;
       },
+      convertToBase: (amount) => {
+        const selected = get().selectedCurrency;
+        if (!selected || selected.isBaseCurrency || selected.exchangeRate === 1) return amount;
+        return amount * selected.exchangeRate;
+      },
       formatPrice: (amountInBase) => {
         const selected = get().selectedCurrency;
         if (!selected) return `R${(amountInBase || 0).toFixed(2)}`;
@@ -274,6 +279,11 @@ export function useCurrencyStore(selectorFn) {
     return amount / selectedCurrency.exchangeRate;
   }, [selectedCurrency]);
 
+  const convertToBase = useCallback((amount) => {
+    if (!selectedCurrency || selectedCurrency.isBaseCurrency || selectedCurrency.exchangeRate === 1) return amount;
+    return amount * selectedCurrency.exchangeRate;
+  }, [selectedCurrency]);
+
   const formatPrice = useCallback((amountInBase) => {
     if (!selectedCurrency) return `R${(amountInBase || 0).toFixed(2)}`;
     const converted = (selectedCurrency.isBaseCurrency || selectedCurrency.exchangeRate === 1)
@@ -292,6 +302,7 @@ export function useCurrencyStore(selectorFn) {
     setCurrencies: _useCurrencyStoreBase(s => s.setCurrencies),
     setSelectedCurrency: _useCurrencyStoreBase(s => s.setSelectedCurrency),
     convertFromBase,
+    convertToBase,
     formatPrice,
   };
 }

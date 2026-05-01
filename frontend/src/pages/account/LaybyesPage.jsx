@@ -5,7 +5,7 @@ import { useCurrencyStore } from '@/store';
 import toast from '@/utils/toast';
 
 export default function LaybyesPage() {
-  const { formatPrice } = useCurrencyStore();
+  const { formatPrice, convertFromBase, convertToBase, selectedCurrency } = useCurrencyStore();
   const queryClient = useQueryClient();
   const [selectedLaybye, setSelectedLaybye] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -56,8 +56,11 @@ export default function LaybyesPage() {
   const openPayModal = (laybye) => {
     setSelectedLaybye(laybye);
     const effective = getEffectiveRemaining(laybye);
-    const suggested = Math.min(laybye.installmentPlan?.installmentAmount || 0, effective);
-    setPaymentAmount(suggested > 0 ? suggested.toFixed(2) : '');
+    // installmentAmount is stored in base currency; show the prefill in the
+    // customer's selected currency so it matches the "$28.01" suggested label.
+    const suggestedBase = Math.min(laybye.installmentPlan?.installmentAmount || 0, effective);
+    const suggestedInDisplay = convertFromBase(suggestedBase);
+    setPaymentAmount(suggestedInDisplay > 0 ? suggestedInDisplay.toFixed(2) : '');
     setPayStep('amount');
     setPaymentMethod('');
     setShowPayModal(true);
@@ -84,10 +87,12 @@ export default function LaybyesPage() {
 
   const handleSubmitPayment = () => {
     if (!selectedLaybye || !paymentAmount || parseFloat(paymentAmount) <= 0) return;
+    // Input is in the customer's selected currency; backend stores in base.
+    const amountInBase = convertToBase(parseFloat(paymentAmount));
     payMutation.mutate({
       id: selectedLaybye._id,
       data: {
-        amount: parseFloat(paymentAmount),
+        amount: amountInBase,
         paymentMethod: paymentMethod,
         note: paymentMethod === 'eft' ? 'EFT bank transfer' : paymentMethod === 'cash' ? 'Cash payment' : ''
       }
@@ -407,22 +412,41 @@ export default function LaybyesPage() {
                 ) : (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Amount</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="1"
-                      max={effRemaining}
-                      value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(e.target.value)}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
-                    />
+                    <div className="relative">
+                      {selectedCurrency?.symbolPosition !== 'after' && (
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
+                          {selectedCurrency?.symbol || 'R'}
+                        </span>
+                      )}
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        max={convertFromBase(effRemaining).toFixed(2)}
+                        value={paymentAmount}
+                        onChange={(e) => setPaymentAmount(e.target.value)}
+                        className={`w-full ${selectedCurrency?.symbolPosition !== 'after' ? 'pl-8' : 'pr-10'} pr-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-gray-900`}
+                      />
+                      {selectedCurrency?.symbolPosition === 'after' && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
+                          {selectedCurrency?.symbol}
+                        </span>
+                      )}
+                    </div>
+                    {selectedCurrency && !selectedCurrency.isBaseCurrency && selectedCurrency.exchangeRate !== 1 && paymentAmount && parseFloat(paymentAmount) > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">≈ R{(parseFloat(paymentAmount) * selectedCurrency.exchangeRate).toFixed(2)} in base currency</p>
+                    )}
                   </div>
                 )}
                 <div className="flex items-center justify-end gap-3 pt-2">
                   <button onClick={closePayModal} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium">Cancel</button>
                   <button
                     onClick={() => setPayStep('method')}
-                    disabled={effRemaining <= 0 || !paymentAmount || parseFloat(paymentAmount) <= 0 || parseFloat(paymentAmount) > effRemaining + 0.01}
+                    disabled={(() => {
+                      if (effRemaining <= 0 || !paymentAmount || parseFloat(paymentAmount) <= 0) return true;
+                      const inBase = convertToBase(parseFloat(paymentAmount));
+                      return inBase > effRemaining + 0.01;
+                    })()}
                     className="px-6 py-2.5 bg-gray-900 text-white rounded-lg font-medium text-sm hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Continue
@@ -435,7 +459,7 @@ export default function LaybyesPage() {
             {/* Step 2: Choose Payment Method */}
             {payStep === 'method' && (
               <div className="p-6 space-y-4">
-                <p className="text-sm text-gray-600 mb-2">Amount: <span className="font-bold text-gray-900">{formatPrice(parseFloat(paymentAmount))}</span></p>
+                <p className="text-sm text-gray-600 mb-2">Amount: <span className="font-bold text-gray-900">{formatPrice(convertToBase(parseFloat(paymentAmount)))}</span></p>
                 <p className="text-sm font-medium text-gray-700 mb-3">How would you like to pay?</p>
                 <div className="space-y-3">
                   <button
@@ -492,7 +516,7 @@ export default function LaybyesPage() {
               <div className="p-6 space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm font-medium text-blue-800 mb-1">EFT / Bank Transfer</p>
-                  <p className="text-xs text-blue-600">Please transfer <span className="font-bold">{formatPrice(parseFloat(paymentAmount))}</span> to one of the accounts below and use your order/layby reference.</p>
+                  <p className="text-xs text-blue-600">Please transfer <span className="font-bold">{formatPrice(convertToBase(parseFloat(paymentAmount)))}</span> to one of the accounts below and use your order/layby reference.</p>
                 </div>
                 {bankDetails.length > 0 ? (
                   <div className="space-y-3">
@@ -539,7 +563,7 @@ export default function LaybyesPage() {
               <div className="p-6 space-y-4">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-sm font-medium text-green-800 mb-1">Cash Payment</p>
-                  <p className="text-xs text-green-600">You are recording a cash payment of <span className="font-bold">{formatPrice(parseFloat(paymentAmount))}</span>.</p>
+                  <p className="text-xs text-green-600">You are recording a cash payment of <span className="font-bold">{formatPrice(convertToBase(parseFloat(paymentAmount)))}</span>.</p>
                 </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                   <p className="text-xs text-yellow-700">Your payment will be marked as <span className="font-bold">pending</span> until the store admin verifies the funds have been received.</p>
@@ -583,7 +607,7 @@ export default function LaybyesPage() {
                 </div>
                 <h3 className="text-lg font-bold text-gray-900">Payment Submitted</h3>
                 <p className="text-sm text-gray-600">
-                  Your {paymentMethod === 'eft' ? 'EFT' : 'cash'} payment of <span className="font-bold">{formatPrice(parseFloat(paymentAmount))}</span> has been recorded and is awaiting verification by the store.
+                  Your {paymentMethod === 'eft' ? 'EFT' : 'cash'} payment of <span className="font-bold">{formatPrice(convertToBase(parseFloat(paymentAmount)))}</span> has been recorded and is awaiting verification by the store.
                 </p>
                 <p className="text-xs text-gray-400">You will be notified once the payment has been confirmed.</p>
                 <button

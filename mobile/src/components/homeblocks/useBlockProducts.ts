@@ -7,7 +7,7 @@ import { productsAPI } from "@/services/api";
  */
 export function useBlockProducts(
   source: string,
-  { categoryId = "", limit = 10, enabled = true } = {}
+  { categoryId = "", limit = 10, productIds = null as string[] | null, enabled = true } = {}
 ) {
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,6 +24,16 @@ export function useBlockProducts(
     const params: any = { limit };
 
     switch (source) {
+      case "manual":
+        if (Array.isArray(productIds) && productIds.length > 0) {
+          params.ids = productIds.join(",");
+          params.limit = productIds.length;
+        } else {
+          setData([]);
+          setIsLoading(false);
+          return;
+        }
+        break;
       case "featured":
         params.featured = "true";
         break;
@@ -69,7 +79,7 @@ export function useBlockProducts(
     return () => {
       cancelled = true;
     };
-  }, [source, categoryId, limit, enabled]);
+  }, [source, categoryId, limit, enabled, (productIds || []).join(",")]);
 
   return { data, isLoading };
 }

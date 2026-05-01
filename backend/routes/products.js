@@ -114,6 +114,20 @@ router.get('/', optionalAuth, async (req, res) => {
         query.name = { $regex: req.query.search, $options: 'i' };
       }
     }
+
+    // Fetch a specific list of products by ID (used by the gift-section
+    // carousel and any other "manual" picker). Order is preserved client-side.
+    if (req.query.ids) {
+      const mongoose = require('mongoose');
+      const ids = String(req.query.ids)
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => mongoose.Types.ObjectId.isValid(s))
+        .map(s => new mongoose.Types.ObjectId(s));
+      if (ids.length > 0) {
+        query._id = { $in: ids };
+      }
+    }
     
     // Status filter - show all non-trash products by default
     // Note: $text and $or cannot coexist at the top level in MongoDB,

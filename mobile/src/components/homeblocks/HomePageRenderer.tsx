@@ -23,6 +23,7 @@ import ProductVerticalTabs from "./ProductVerticalTabs";
 import ImageTextCta from "./ImageTextCta";
 import ProductColumnsGrid from "./ProductColumnsGrid";
 import CustomHtmlBlock from "./CustomHtmlBlock";
+import GiftSectionCarousel from "./GiftSectionCarousel";
 
 const BLOCK_COMPONENTS: Record<string, React.ComponentType<{ block: any }>> = {
   "hero-slider-full": HeroSlider,
@@ -49,6 +50,7 @@ const BLOCK_COMPONENTS: Record<string, React.ComponentType<{ block: any }>> = {
   "product-vertical-tabs": ProductVerticalTabs,
   "image-text-cta": ImageTextCta,
   "product-columns-grid": ProductColumnsGrid,
+  "gift-section-carousel": GiftSectionCarousel,
 };
 
 interface HomePageRendererProps {
