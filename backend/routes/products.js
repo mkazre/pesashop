@@ -219,6 +219,23 @@ router.get('/', optionalAuth, async (req, res) => {
         'top-selling': '-totalSold',
         'trending': '-viewCount',
         'popularity': '-totalSold -viewCount',
+        // Storefront / admin-panel vocabulary
+        'featured': '-isFeatured -createdAt',
+        'newest': '-createdAt',
+        'oldest': 'createdAt',
+        'price-low': 'regularPrice',
+        'price-high': '-regularPrice',
+        'name-az': 'name',
+        'name-za': '-name',
+        'rating': '-rating',
+        'best-selling': '-totalSold',
+        // Raw mongoose sort strings used by mobile (legacy)
+        'regularPrice': 'regularPrice',
+        '-regularPrice': '-regularPrice',
+        '-createdAt': '-createdAt',
+        'createdAt': 'createdAt',
+        '-averageRating': '-rating',
+        '-salesCount': '-totalSold',
       };
       sortBy = sortMap[req.query.sort] || sortBy;
     }

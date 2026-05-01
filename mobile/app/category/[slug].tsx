@@ -25,11 +25,14 @@ import { productsAPI, categoriesAPI, productArchiveSettingsAPI, productPageSetti
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const SORT_OPTIONS = [
-  { value: "-createdAt",    label: "Newest First" },
-  { value: "regularPrice",  label: "Price: Low to High" },
-  { value: "-regularPrice", label: "Price: High to Low" },
-  { value: "-averageRating",label: "Top Rated" },
-  { value: "-salesCount",   label: "Best Selling" },
+  { value: "featured",     label: "Featured" },
+  { value: "newest",       label: "Newest First" },
+  { value: "price-low",    label: "Price: Low to High" },
+  { value: "price-high",   label: "Price: High to Low" },
+  { value: "name-az",      label: "Name: A to Z" },
+  { value: "name-za",      label: "Name: Z to A" },
+  { value: "rating",       label: "Top Rated" },
+  { value: "best-selling", label: "Best Selling" },
 ];
 
 export default function CategoryScreen() {
@@ -47,16 +50,24 @@ export default function CategoryScreen() {
   const [archiveSettings, setArchiveSettings] = useState<any>(null);
   const [deliveryDays, setDeliveryDays] = useState<number | undefined>(undefined);
 
-  // Filter state
-  const [sortBy, setSortBy] = useState("-createdAt");
+  // Filter state — null until user picks; falls back to admin defaults
+  const [sortOverride, setSortOverride] = useState<string | null>(null);
+  const [gridOverride, setGridOverride] = useState<"grid" | "list" | null>(null);
   const [inStockOnly, setInStockOnly] = useState(false);
-  const [gridMode, setGridMode] = useState<"grid" | "list">("grid");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [pendingSort, setPendingSort] = useState("-createdAt");
+
+  const sortBy = sortOverride ?? archiveSettings?.toolbar?.defaultSort ?? "newest";
+  const setSortBy = (v: string) => setSortOverride(v);
+
+  const gridMode: "grid" | "list" = gridOverride ?? archiveSettings?.toolbar?.defaultView ?? "grid";
+  const setGridMode = (v: "grid" | "list") => setGridOverride(v);
+
+  const [pendingSort, setPendingSort] = useState<string>(sortBy);
   const [pendingInStock, setPendingInStock] = useState(false);
 
-  const numColumns = gridMode === "grid" ? (archiveSettings?.productGrid?.colsMobile || 2) : 1;
-  const limit = archiveSettings?.toolbar?.perPage || 12;
+  const numColumns = gridMode === "grid" ? (archiveSettings?.productGrid?.columnsMobile || 2) : 1;
+  const limit = archiveSettings?.toolbar?.defaultPerPage || 12;
+  const paginationType = archiveSettings?.pagination?.type || 'infinite-scroll';
 
   useEffect(() => {
     Promise.all([
@@ -99,7 +110,14 @@ export default function CategoryScreen() {
 
   useEffect(() => { if (category || slug) fetchProducts(1); }, [fetchProducts, category, slug]);
 
-  const loadMore = () => { if (!loadingMore && hasMore) fetchProducts(page + 1, true); };
+  const loadMore = () => {
+    if (loadingMore || !hasMore) return;
+    fetchProducts(page + 1, paginationType !== 'numbered');
+  };
+  const goToPrevPage = () => {
+    if (loadingMore || page <= 1) return;
+    fetchProducts(page - 1, false);
+  };
 
   const applyFilters = () => {
     setSortBy(pendingSort);
@@ -144,7 +162,7 @@ export default function CategoryScreen() {
           <Pressable onPress={() => { setPendingSort(sortBy); setPendingInStock(inStockOnly); setFilterOpen(true); }} style={cat.filterBtn}>
             <Ionicons name="options-outline" size={15} color={colors.gray700} />
             <Text style={cat.filterBtnText}>Sort & Filter</Text>
-            {(sortBy !== "-createdAt" || inStockOnly) && <View style={cat.filterDot} />}
+            {(sortOverride !== null || inStockOnly) && <View style={cat.filterDot} />}
           </Pressable>
         </View>
       </View>
@@ -174,12 +192,20 @@ export default function CategoryScreen() {
               <ProductCard product={item} deliveryDays={deliveryDays} />
             </View>
           )}
-          onEndReached={loadMore}
+          onEndReached={paginationType === 'infinite-scroll' ? loadMore : undefined}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
-            loadingMore
-              ? <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 16 }} />
-              : null
+            <PaginationFooter
+              type={paginationType}
+              page={page}
+              hasMore={hasMore}
+              totalCount={totalCount}
+              limit={limit}
+              loadingMore={loadingMore}
+              loadMoreText={archiveSettings?.pagination?.loadMoreText || 'Load More Products'}
+              onLoadMore={loadMore}
+              onPrev={goToPrevPage}
+            />
           }
           showsVerticalScrollIndicator={false}
         />
@@ -223,7 +249,7 @@ export default function CategoryScreen() {
           </ScrollView>
 
           <View style={cat.drawerFooter}>
-            <Pressable onPress={() => { setPendingSort("-createdAt"); setPendingInStock(false); }} style={cat.clearBtn}>
+            <Pressable onPress={() => { setPendingSort(archiveSettings?.toolbar?.defaultSort || "newest"); setPendingInStock(false); }} style={cat.clearBtn}>
               <Text style={cat.clearBtnText}>Clear</Text>
             </Pressable>
             <Pressable onPress={applyFilters} style={cat.applyBtn}>
@@ -236,6 +262,51 @@ export default function CategoryScreen() {
       <BottomTabBar />
     </View>
   );
+}
+
+function PaginationFooter({
+  type, page, hasMore, totalCount, limit, loadingMore, loadMoreText, onLoadMore, onPrev,
+}: {
+  type: string;
+  page: number;
+  hasMore: boolean;
+  totalCount: number;
+  limit: number;
+  loadingMore: boolean;
+  loadMoreText: string;
+  onLoadMore: () => void;
+  onPrev: () => void;
+}) {
+  if (loadingMore) {
+    return <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 16 }} />;
+  }
+  if (type === 'load-more' && hasMore) {
+    return (
+      <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
+        <Pressable onPress={onLoadMore} style={cat.loadMoreBtn}>
+          <Text style={cat.loadMoreText}>{loadMoreText}</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  if (type === 'numbered') {
+    const totalPages = Math.max(1, Math.ceil((totalCount || 0) / Math.max(1, limit)));
+    if (totalPages <= 1) return null;
+    return (
+      <View style={cat.pagerRow}>
+        <Pressable onPress={onPrev} disabled={page <= 1} style={[cat.pagerBtn, page <= 1 && cat.pagerBtnDisabled]}>
+          <Ionicons name="chevron-back" size={16} color={page <= 1 ? colors.gray400 : colors.gray700} />
+          <Text style={[cat.pagerBtnText, page <= 1 && { color: colors.gray400 }]}>Prev</Text>
+        </Pressable>
+        <Text style={cat.pagerLabel}>Page {page} of {totalPages}</Text>
+        <Pressable onPress={onLoadMore} disabled={!hasMore} style={[cat.pagerBtn, !hasMore && cat.pagerBtnDisabled]}>
+          <Text style={[cat.pagerBtnText, !hasMore && { color: colors.gray400 }]}>Next</Text>
+          <Ionicons name="chevron-forward" size={16} color={!hasMore ? colors.gray400 : colors.gray700} />
+        </Pressable>
+      </View>
+    );
+  }
+  return null;
 }
 
 const cat = StyleSheet.create({
@@ -269,4 +340,12 @@ const cat = StyleSheet.create({
   clearBtnText: { fontSize: 14, fontWeight: "600", color: colors.gray700 },
   applyBtn: { flex: 2, backgroundColor: colors.primary, paddingVertical: 13, alignItems: "center" },
   applyBtnText: { fontSize: 14, fontWeight: "700", color: colors.white },
+  // Pagination footer
+  loadMoreBtn: { backgroundColor: colors.primary, paddingVertical: 14, alignItems: "center", borderRadius: 4 },
+  loadMoreText: { color: colors.white, fontSize: 14, fontWeight: "700" },
+  pagerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 16 },
+  pagerBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.white },
+  pagerBtnDisabled: { borderColor: colors.gray100, backgroundColor: colors.gray50 },
+  pagerBtnText: { fontSize: 13, fontWeight: "600", color: colors.gray700 },
+  pagerLabel: { fontSize: 13, fontWeight: "600", color: colors.gray800 },
 });

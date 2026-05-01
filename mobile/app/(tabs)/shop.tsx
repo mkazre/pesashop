@@ -28,10 +28,14 @@ import { productsAPI, categoriesAPI, productArchiveSettingsAPI } from "@/service
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const SORT_OPTIONS = [
-  { value: "-createdAt",      label: "Newest First" },
-  { value: "regularPrice",    label: "Price: Low to High" },
-  { value: "-regularPrice",   label: "Price: High to Low" },
-  { value: "-averageRating",  label: "Top Rated" },
+  { value: "featured",     label: "Featured" },
+  { value: "newest",       label: "Newest First" },
+  { value: "price-low",    label: "Price: Low to High" },
+  { value: "price-high",   label: "Price: High to Low" },
+  { value: "name-az",      label: "Name: A to Z" },
+  { value: "name-za",      label: "Name: Z to A" },
+  { value: "rating",       label: "Top Rated" },
+  { value: "best-selling", label: "Best Selling" },
 ];
 
 export default function ShopScreen() {
@@ -49,20 +53,24 @@ export default function ShopScreen() {
   const [totalCount, setTotalCount] = useState(0);
   const [archiveSettings, setArchiveSettings] = useState<any>(null);
 
-  // Filter state
-  const [sortBy, setSortBy] = useState("-createdAt");
+  // Filter state — null until user picks; falls back to admin defaults
+  const [sortOverride, setSortOverride] = useState<string | null>(null);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
 
+  const sortBy = sortOverride ?? archiveSettings?.toolbar?.defaultSort ?? "newest";
+  const setSortBy = (v: string) => setSortOverride(v);
+
   // Pending (in drawer) vs applied
-  const [pendingSort, setPendingSort] = useState("-createdAt");
+  const [pendingSort, setPendingSort] = useState<string>(sortBy);
   const [pendingInStock, setPendingInStock] = useState(false);
 
-  // Dynamic columns from admin settings (default 2)
-  const numColumns = archiveSettings?.productGrid?.colsMobile || 2;
-  const limit = archiveSettings?.toolbar?.perPage || 12;
+  // Dynamic columns + per-page from admin settings (correct field names: columnsMobile, defaultPerPage)
+  const numColumns = archiveSettings?.productGrid?.columnsMobile || 2;
+  const limit = archiveSettings?.toolbar?.defaultPerPage || 12;
+  const paginationType = archiveSettings?.pagination?.type || 'infinite-scroll';
 
   useEffect(() => {
     productArchiveSettingsAPI.get().then((res) => {
@@ -101,7 +109,15 @@ export default function ShopScreen() {
 
   useEffect(() => { fetchProducts(1, false); }, [fetchProducts]);
 
-  const loadMore = () => { if (!loadingMore && hasMore) fetchProducts(page + 1, true); };
+  const loadMore = () => {
+    if (loadingMore || !hasMore) return;
+    // For numbered: replace page; for load-more / infinite-scroll: append
+    fetchProducts(page + 1, paginationType !== 'numbered');
+  };
+  const goToPrevPage = () => {
+    if (loadingMore || page <= 1) return;
+    fetchProducts(page - 1, false);
+  };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -121,7 +137,8 @@ export default function ShopScreen() {
   };
 
   const clearFilters = () => {
-    setPendingSort("-createdAt");
+    const adminDefault = archiveSettings?.toolbar?.defaultSort || "newest";
+    setPendingSort(adminDefault);
     setPendingInStock(false);
   };
 
@@ -183,7 +200,7 @@ export default function ShopScreen() {
         <Pressable onPress={openFilterDrawer} style={ss.filterBtn}>
           <Ionicons name="options-outline" size={15} color={colors.gray700} />
           <Text style={ss.filterBtnText}>Filter & Sort</Text>
-          {(sortBy !== "-createdAt" || inStockOnly) && (
+          {(sortOverride !== null || inStockOnly) && (
             <View style={ss.filterBadge} />
           )}
         </Pressable>
@@ -217,12 +234,20 @@ export default function ShopScreen() {
               <ProductCard product={item} />
             </View>
           )}
-          onEndReached={loadMore}
+          onEndReached={paginationType === 'infinite-scroll' ? loadMore : undefined}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
-            loadingMore
-              ? <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 16 }} />
-              : null
+            <PaginationFooter
+              type={paginationType}
+              page={page}
+              hasMore={hasMore}
+              totalCount={totalCount}
+              limit={limit}
+              loadingMore={loadingMore}
+              loadMoreText={archiveSettings?.pagination?.loadMoreText || 'Load More Products'}
+              onLoadMore={loadMore}
+              onPrev={goToPrevPage}
+            />
           }
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -298,6 +323,51 @@ export default function ShopScreen() {
   );
 }
 
+function PaginationFooter({
+  type, page, hasMore, totalCount, limit, loadingMore, loadMoreText, onLoadMore, onPrev,
+}: {
+  type: string;
+  page: number;
+  hasMore: boolean;
+  totalCount: number;
+  limit: number;
+  loadingMore: boolean;
+  loadMoreText: string;
+  onLoadMore: () => void;
+  onPrev: () => void;
+}) {
+  if (loadingMore) {
+    return <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 16 }} />;
+  }
+  if (type === 'load-more' && hasMore) {
+    return (
+      <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
+        <Pressable onPress={onLoadMore} style={ss.loadMoreBtn}>
+          <Text style={ss.loadMoreText}>{loadMoreText}</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  if (type === 'numbered') {
+    const totalPages = Math.max(1, Math.ceil((totalCount || 0) / Math.max(1, limit)));
+    if (totalPages <= 1) return null;
+    return (
+      <View style={ss.pagerRow}>
+        <Pressable onPress={onPrev} disabled={page <= 1} style={[ss.pagerBtn, page <= 1 && ss.pagerBtnDisabled]}>
+          <Ionicons name="chevron-back" size={16} color={page <= 1 ? colors.gray400 : colors.gray700} />
+          <Text style={[ss.pagerBtnText, page <= 1 && { color: colors.gray400 }]}>Prev</Text>
+        </Pressable>
+        <Text style={ss.pagerLabel}>Page {page} of {totalPages}</Text>
+        <Pressable onPress={onLoadMore} disabled={!hasMore} style={[ss.pagerBtn, !hasMore && ss.pagerBtnDisabled]}>
+          <Text style={[ss.pagerBtnText, !hasMore && { color: colors.gray400 }]}>Next</Text>
+          <Ionicons name="chevron-forward" size={16} color={!hasMore ? colors.gray400 : colors.gray700} />
+        </Pressable>
+      </View>
+    );
+  }
+  return null;
+}
+
 const ss = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.gray50 },
   header: { backgroundColor: colors.white, paddingHorizontal: 16, paddingBottom: 12, paddingTop: 8, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
@@ -333,4 +403,12 @@ const ss = StyleSheet.create({
   clearBtnText: { fontSize: 14, fontWeight: "600", color: colors.gray700 },
   applyBtn: { flex: 2, backgroundColor: colors.primary, paddingVertical: 13, alignItems: "center" },
   applyBtnText: { fontSize: 14, fontWeight: "700", color: colors.white },
+  // Pagination footer
+  loadMoreBtn: { backgroundColor: colors.primary, paddingVertical: 14, alignItems: "center", borderRadius: 4 },
+  loadMoreText: { color: colors.white, fontSize: 14, fontWeight: "700" },
+  pagerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 16 },
+  pagerBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderColor: colors.gray200, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.white },
+  pagerBtnDisabled: { borderColor: colors.gray100, backgroundColor: colors.gray50 },
+  pagerBtnText: { fontSize: 13, fontWeight: "600", color: colors.gray700 },
+  pagerLabel: { fontSize: 13, fontWeight: "600", color: colors.gray800 },
 });

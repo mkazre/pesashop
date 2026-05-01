@@ -3,12 +3,13 @@ import { IoGrid, IoList, IoChevronDown } from 'react-icons/io5';
 export function SortDropdown({ value, onChange }) {
   const options = [
     { value: 'featured', label: 'Featured' },
-    { value: 'price-asc', label: 'Price: Low to High' },
-    { value: 'price-desc', label: 'Price: High to Low' },
-    { value: 'name-asc', label: 'Name: A to Z' },
-    { value: 'name-desc', label: 'Name: Z to A' },
-    { value: 'date-desc', label: 'Newest First' },
-    { value: 'rating-desc', label: 'Highest Rated' },
+    { value: 'newest', label: 'Newest First' },
+    { value: 'price-low', label: 'Price: Low to High' },
+    { value: 'price-high', label: 'Price: High to Low' },
+    { value: 'name-az', label: 'Name: A to Z' },
+    { value: 'name-za', label: 'Name: Z to A' },
+    { value: 'rating', label: 'Highest Rated' },
+    { value: 'best-selling', label: 'Best Selling' },
   ];
 
   return (

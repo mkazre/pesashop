@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from 'react-query';
 import { useSearchParams, useParams } from 'react-router-dom';
 import { productsAPI, categoriesAPI } from '@/services/api';
@@ -30,14 +30,30 @@ export default function ShopPage() {
   const tb = s.toolbar || {};
   const pg = s.productGrid || {};
   const layoutConfig = s.layout || {};
+  const paginationType = s.pagination?.type || 'numbered';
 
-  const [layout, setLayout] = useState(tb.defaultView || 'grid');
-  const [sortBy, setSortBy] = useState(tb.defaultSort || 'featured');
+  // null = not yet user-set; falls back to settings default until then
+  const [layoutOverride, setLayoutOverride] = useState(null);
+  const [sortOverride, setSortOverride] = useState(null);
+  const [perPageOverride, setPerPageOverride] = useState(null);
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(tb.defaultPerPage || 12);
 
-  // Reset page when filters or category change
-  useEffect(() => { setPage(1); }, [filters, categorySlug]);
+  const layout = layoutOverride ?? tb.defaultView ?? 'grid';
+  const sortBy = sortOverride ?? tb.defaultSort ?? 'featured';
+  const perPage = perPageOverride ?? tb.defaultPerPage ?? 12;
+
+  const setLayout = (v) => setLayoutOverride(v);
+  const setSortBy = (v) => setSortOverride(v);
+  const setPerPage = (v) => setPerPageOverride(v);
+
+  // Accumulated products for load-more / infinite-scroll
+  const [accumulated, setAccumulated] = useState([]);
+
+  // Reset page + accumulated when filters, category, sort, perPage, or pagination type change
+  useEffect(() => {
+    setPage(1);
+    setAccumulated([]);
+  }, [filters, categorySlug, sortBy, perPage, paginationType]);
 
   // Fetch current category data if on category page
   const { data: categoryData } = useQuery(
@@ -65,7 +81,7 @@ export default function ShopPage() {
   // Don't fetch products until the category is resolved (if on a category page)
   const categoryReady = !categorySlug || !!currentCategory;
 
-  const { data, isLoading } = useQuery(
+  const { data, isLoading, isFetching } = useQuery(
     ['products', queryParams],
     () => productsAPI.getAll(queryParams),
     { keepPreviousData: true, enabled: categoryReady }
@@ -73,9 +89,30 @@ export default function ShopPage() {
 
   // API returns { success, count, data: [...products], pagination: { page, limit, total, totalPages } }
   // After axios wraps: response.data = { success, count, data: [...], pagination: {...} }
-  const products = data?.data?.data || [];
+  const pageProducts = data?.data?.data || [];
   const totalPages = data?.data?.pagination?.totalPages || 1;
   const totalProducts = data?.data?.pagination?.total || 0;
+
+  // Append fetched page into accumulated list (load-more / infinite-scroll modes)
+  useEffect(() => {
+    if (paginationType === 'numbered') return;
+    if (!pageProducts || pageProducts.length === 0) return;
+    setAccumulated((prev) => {
+      // Replace when on page 1 (filter/sort change), else append
+      if (page === 1) return pageProducts;
+      // Avoid duplicate append if React re-renders with same data
+      const existingIds = new Set(prev.map((p) => p._id));
+      const fresh = pageProducts.filter((p) => !existingIds.has(p._id));
+      return fresh.length ? [...prev, ...fresh] : prev;
+    });
+  }, [pageProducts, page, paginationType]);
+
+  // For non-numbered modes, prefer accumulated; fall back to pageProducts during the
+  // brief window after a filter/sort reset clears `accumulated` but before the append effect runs.
+  const products = paginationType === 'numbered'
+    ? pageProducts
+    : (accumulated.length > 0 ? accumulated : pageProducts);
+  const hasMore = page < totalPages;
 
   // Fetch evaluated badges for current product list
   const { data: badgeMap = {} } = useProductBadges(products, products.length > 0);
@@ -86,6 +123,24 @@ export default function ShopPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  const loadMore = () => {
+    if (!isFetching && hasMore) setPage((p) => p + 1);
+  };
+
+  // Infinite scroll — observe sentinel at end of grid
+  const sentinelRef = useRef(null);
+  useEffect(() => {
+    if (paginationType !== 'infinite-scroll') return;
+    if (!hasMore || isFetching) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) loadMore();
+    }, { rootMargin: '300px' });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [paginationType, hasMore, isFetching, page]);
 
   const activeFiltersCount = Object.values(filters).flat().filter(Boolean).length;
   const searchTerm = searchParams.get('search');
@@ -204,7 +259,9 @@ export default function ShopPage() {
                     {tb.showResultCount !== false && (
                       <span className="hidden sm:inline text-sm text-gray-600">
                         {totalProducts > 0
-                          ? `${((page - 1) * perPage) + 1}–${Math.min(page * perPage, totalProducts)} of ${totalProducts} products`
+                          ? (paginationType === 'numbered'
+                              ? `${((page - 1) * perPage) + 1}–${Math.min(page * perPage, totalProducts)} of ${totalProducts} products`
+                              : `Showing ${products.length} of ${totalProducts} products`)
                           : '0 products'}
                       </span>
                     )}
@@ -269,7 +326,7 @@ export default function ShopPage() {
             )}
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {totalPages > 1 && paginationType === 'numbered' && (
               <div className="mt-6">
                 <Pagination
                   currentPage={page}
@@ -281,6 +338,26 @@ export default function ShopPage() {
                     total: totalProducts
                   }}
                 />
+              </div>
+            )}
+
+            {/* Load More button */}
+            {paginationType === 'load-more' && hasMore && products.length > 0 && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={loadMore}
+                  disabled={isFetching}
+                  className="px-6 py-3 bg-primary text-white font-semibold rounded hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                >
+                  {isFetching ? 'Loading…' : (s.pagination?.loadMoreText || 'Load More Products')}
+                </button>
+              </div>
+            )}
+
+            {/* Infinite scroll sentinel */}
+            {paginationType === 'infinite-scroll' && hasMore && products.length > 0 && (
+              <div ref={sentinelRef} className="h-10 flex items-center justify-center mt-6">
+                {isFetching && <Loading text="Loading more..." />}
               </div>
             )}
           </div>
