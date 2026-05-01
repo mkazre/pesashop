@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  IoHome, IoHome,
-  IoGrid, IoGrid,
-  IoSearch, IoSearch,
-  IoCart, IoCart,
-  IoPerson, IoPerson,
+  IoHome,
+  IoGrid,
+  IoSearch,
+  IoCart,
+  IoPerson,
   IoClose, IoChevronForward, IoArrowForward,
 } from 'react-icons/io5';
 import { useCartStore, useAuthStore, useUIStore } from '@/store';
