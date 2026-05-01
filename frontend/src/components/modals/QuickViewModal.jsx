@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IoClose, IoCartOutline } from 'react-icons/io5';
+import { IoClose, IoCart } from 'react-icons/io5';
 import { useUIStore, useCartStore, useCurrencyStore } from '@/store';
 import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
@@ -171,7 +171,7 @@ export default function QuickViewModal() {
                 <Button
                   variant="primary-filled"
                   fullWidth
-                  icon={<IoCartOutline size={20} />}
+                  icon={<IoCart size={20} />}
                   onClick={handleAddToCart}
                   disabled={product.stock === 0}
                 >

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { popupsAPI } from '@/services/api';
 import toast from '@/utils/toast';
+import IconPicker from '@/components/common/IconPicker';
 import {
   IoAdd, IoTrash, IoCreate, IoCopy, IoEye, IoEyeOff, IoSave, IoClose,
   IoDesktopOutline, IoTabletPortraitOutline, IoPhonePortraitOutline,
@@ -387,6 +388,12 @@ const BlockEditor = ({ block, onChange, onClose }) => {
   const { type, content = {}, styles = {} } = block;
   const update = (key, val) => onChange({ ...block, content: { ...content, [key]: val } });
   const updateStyle = (key, val) => onChange({ ...block, styles: { ...styles, [key]: val } });
+  const iconInp = (label, cKey) => (
+    <div style={{ marginBottom: '10px' }}>
+      <label style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>
+      <IconPicker value={content[cKey]} onChange={(v) => update(cKey, v)} />
+    </div>
+  );
   const inp = (label, cKey, placeholder = '') => (
     <div style={{ marginBottom: '10px' }}>
       <label style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>
@@ -452,7 +459,7 @@ const BlockEditor = ({ block, onChange, onClose }) => {
         {type === 'spacer' && inp('Height', 'height', '20px')}
         {type === 'video' && <>{inp('Video Embed URL', 'url', 'https://www.youtube.com/embed/...')}<div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '4px' }}>{[['Autoplay', 'autoplay'], ['Muted', 'muted'], ['Loop', 'loop']].map(([l, k]) => <label key={k} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px' }}><input type="checkbox" checked={!!content[k]} onChange={e => update(k, e.target.checked)} />{l}</label>)}</div></>}
         {type === 'html' && <div style={{ marginBottom: '10px' }}><label style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>HTML Code</label><textarea value={content.code || ''} onChange={e => update('code', e.target.value)} rows={5} style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e5e7eb', borderRadius: '7px', fontSize: '12px', boxSizing: 'border-box', fontFamily: 'monospace', resize: 'vertical' }} /></div>}
-        {type === 'icon_text' && <>{inp('Icon / Emoji', 'icon', '🎁')}{inp('Heading', 'heading', 'Special Offer')}{inp('Text', 'text', 'Limited time deal')}</>}
+        {type === 'icon_text' && <>{iconInp('Icon', 'icon')}{inp('Heading', 'heading', 'Special Offer')}{inp('Text', 'text', 'Limited time deal')}</>}
       </div>
 
       {/* Style section */}

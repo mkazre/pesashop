@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { IoHeartOutline, IoHeart, IoEyeOutline, IoCartOutline } from 'react-icons/io5';
+import { IoHeartOutline, IoHeart, IoEye, IoCart } from 'react-icons/io5';
 import StarRating from './StarRating';
 import Badge from './Badge';
 import Button from './Button';
@@ -131,7 +131,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
             <Button
               variant="primary-filled"
               size="sm"
-              icon={<IoCartOutline />}
+              icon={<IoCart />}
               onClick={handleAddToCart}
             >
               Add to Cart
@@ -146,7 +146,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
               onClick={handleQuickView}
               className="p-2 border-2 border-gray-300 hover:border-primary hover:text-primary transition-colors"
             >
-              <IoEyeOutline />
+              <IoEye />
             </button>
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
               className="w-10 h-10 bg-white hover:bg-primary hover:text-white flex items-center justify-center transition-colors shadow-md"
               title="Quick View"
             >
-              <IoEyeOutline size={20} />
+              <IoEye size={20} />
             </button>
           </div>
 
@@ -225,7 +225,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
               variant="primary-filled"
               fullWidth
               className="rounded-none"
-              icon={<IoCartOutline size={20} />}
+              icon={<IoCart size={20} />}
               onClick={handleAddToCart}
             >
               Add to Cart

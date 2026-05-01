@@ -4,12 +4,12 @@ import { useQuery } from 'react-query';
 import { ordersAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
 import {
-  IoCheckmarkCircleOutline,
-  IoCardOutline,
-  IoCubeOutline,
-  IoAirplaneOutline,
-  IoHomeOutline,
-  IoCopyOutline,
+  IoCheckmarkCircle,
+  IoCard,
+  IoCube,
+  IoAirplane,
+  IoHome,
+  IoCopy,
   IoCheckmark,
 } from 'react-icons/io5';
 
@@ -33,11 +33,11 @@ const STATUS_STYLES = {
 };
 
 const JOURNEY_STEPS = [
-  { key: 'placed',    label: 'Order Placed',       icon: IoCheckmarkCircleOutline },
-  { key: 'confirmed', label: 'Payment Confirmed',  icon: IoCardOutline },
-  { key: 'packing',   label: 'Packing',            icon: IoCubeOutline },
-  { key: 'shipped',   label: 'Shipped',            icon: IoAirplaneOutline },
-  { key: 'delivered', label: 'Delivered',           icon: IoHomeOutline },
+  { key: 'placed',    label: 'Order Placed',       icon: IoCheckmarkCircle },
+  { key: 'confirmed', label: 'Payment Confirmed',  icon: IoCard },
+  { key: 'packing',   label: 'Packing',            icon: IoCube },
+  { key: 'shipped',   label: 'Shipped',            icon: IoAirplane },
+  { key: 'delivered', label: 'Delivered',           icon: IoHome },
 ];
 
 // Waybill statuses that mean the parcel is in transit or beyond
@@ -122,7 +122,7 @@ export default function OrderDetailPage() {
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               Order #{order.orderNumber}
               <button onClick={copyOrderNumber} className="text-gray-400 hover:text-gray-600 transition-colors p-0.5" title="Copy order number">
-                {copied ? <IoCheckmark size={16} className="text-green-500" /> : <IoCopyOutline size={16} />}
+                {copied ? <IoCheckmark size={16} className="text-green-500" /> : <IoCopy size={16} />}
               </button>
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">Placed on {formatDate(order.createdAt)}</p>

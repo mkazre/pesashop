@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { IoCloseCircle, IoGitCompareOutline } from 'react-icons/io5';
+import { IoCloseCircle, IoGitCompare } from 'react-icons/io5';
 import { useCompareStore } from '@/store';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -31,7 +31,7 @@ export default function FloatingCompareBar({ settings = {} }) {
         <div className="flex items-center gap-4">
           {/* Label */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <IoGitCompareOutline size={20} className="text-primary" />
+            <IoGitCompare size={20} className="text-primary" />
             <span className="text-sm font-semibold text-gray-700">
               Compare ({items.length}/{maxItems})
             </span>

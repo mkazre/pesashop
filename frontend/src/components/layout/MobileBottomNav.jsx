@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  IoHomeOutline, IoHome,
-  IoGridOutline, IoGrid,
-  IoSearchOutline, IoSearch,
-  IoCartOutline, IoCart,
-  IoPersonOutline, IoPerson,
+  IoHome, IoHome,
+  IoGrid, IoGrid,
+  IoSearch, IoSearch,
+  IoCart, IoCart,
+  IoPerson, IoPerson,
   IoClose, IoChevronForward, IoArrowForward,
 } from 'react-icons/io5';
 import { useCartStore, useAuthStore, useUIStore } from '@/store';
@@ -64,28 +64,28 @@ export default function MobileBottomNav() {
   const navItems = [
     {
       label: 'Home',
-      icon: IoHomeOutline,
+      icon: IoHome,
       activeIcon: IoHome,
       action: () => navigate('/'),
       active: isActive('/'),
     },
     {
       label: 'Categories',
-      icon: IoGridOutline,
+      icon: IoGrid,
       activeIcon: IoGrid,
       action: () => setCategoriesOpen(!categoriesOpen),
       active: categoriesOpen,
     },
     {
       label: 'Search',
-      icon: IoSearchOutline,
+      icon: IoSearch,
       activeIcon: IoSearch,
       action: () => setSearchOpen(!searchOpen),
       active: searchOpen,
     },
     {
       label: 'Cart',
-      icon: IoCartOutline,
+      icon: IoCart,
       activeIcon: IoCart,
       action: openCartSidebar,
       active: false,
@@ -93,7 +93,7 @@ export default function MobileBottomNav() {
     },
     {
       label: 'Account',
-      icon: IoPersonOutline,
+      icon: IoPerson,
       activeIcon: IoPerson,
       action: () => isAuthenticated ? navigate('/account') : openAuthModal('login'),
       active: location.pathname.startsWith('/account'),

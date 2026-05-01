@@ -5,6 +5,8 @@ import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import toast from '@/utils/toast';
+import IconPicker from '@/components/common/IconPicker';
+import SmartIcon from '@/components/common/SmartIcon';
 import { IoSave, IoArrowBack, IoAdd, IoTrash, IoPencil, IoCheckmark, IoClose } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 
@@ -62,12 +64,7 @@ const ReviewCategoriesManager = () => {
               <div key={cat._id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
                 {editingId === cat._id ? (
                   <>
-                    <input
-                      className="input input-bordered input-sm w-16"
-                      value={editData.icon || ''}
-                      onChange={(e) => setEditData({ ...editData, icon: e.target.value })}
-                      placeholder="Icon"
-                    />
+                    <IconPicker value={editData.icon} onChange={(v) => setEditData({ ...editData, icon: v })} />
                     <input
                       className="input input-bordered input-sm flex-1"
                       value={editData.name || ''}
@@ -91,7 +88,7 @@ const ReviewCategoriesManager = () => {
                   </>
                 ) : (
                   <>
-                    <span className="text-xl w-8 text-center">{cat.icon || '⭐'}</span>
+                    <span className="w-8 flex justify-center"><SmartIcon value={cat.icon} fallback="⭐" size={20} /></span>
                     <span className="flex-1 font-medium text-sm">{cat.name}</span>
                     <span className="flex-1 text-xs text-gray-500">{cat.description || '—'}</span>
                     <label className="flex items-center gap-1 text-xs text-gray-500">
@@ -123,14 +120,8 @@ const ReviewCategoriesManager = () => {
           <p className="text-sm font-medium text-gray-700 mb-3">Add New Category</p>
           <div className="flex gap-3 items-end">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Icon (emoji)</label>
-              <input
-                className="input input-bordered input-sm w-20"
-                value={newCat.icon}
-                onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })}
-                placeholder="⭐"
-                maxLength={4}
-              />
+              <label className="text-xs text-gray-500 mb-1 block">Icon</label>
+              <IconPicker value={newCat.icon} onChange={(v) => setNewCat({ ...newCat, icon: v })} />
             </div>
             <div className="flex-1">
               <label className="text-xs text-gray-500 mb-1 block">Category Name *</label>

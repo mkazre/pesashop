@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { reviewsAPI } from '@/services/api';
 import { useAuthStore } from '@/store';
+import SmartIcon from '@/components/common/SmartIcon';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -230,7 +231,7 @@ export default function WriteReview({ productId, productName, onReviewSubmitted 
           {reviewCategories.map(cat => (
             <div key={cat._id} className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-1.5 min-w-0">
-                {cat.icon && <span>{cat.icon}</span>}
+                {cat.icon && <SmartIcon value={cat.icon} size={14} />}
                 <span className="text-sm text-gray-700 truncate">{cat.name}</span>
               </div>
               <StarInput

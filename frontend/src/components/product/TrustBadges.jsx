@@ -1,4 +1,4 @@
-import { IoCheckmarkCircle, IoRefreshCircle, IoCashOutline, IoShieldCheckmarkOutline } from 'react-icons/io5';
+import { IoCheckmarkCircle, IoRefreshCircle, IoCash, IoShieldCheckmark } from 'react-icons/io5';
 
 export default function TrustBadges() {
   const badges = [
@@ -13,12 +13,12 @@ export default function TrustBadges() {
       description: 'Round-the-Clock Assistance Anytime You Need It',
     },
     {
-      icon: <IoCashOutline size={40} className="text-secondary" />,
+      icon: <IoCash size={40} className="text-secondary" />,
       title: '30 Days Return',
       description: 'Your Satisfaction is Our Priority Return Any Product Within 30 Days',
     },
     {
-      icon: <IoShieldCheckmarkOutline size={40} className="text-secondary" />,
+      icon: <IoShieldCheckmark size={40} className="text-secondary" />,
       title: 'Secure Payment',
       description: 'Seamless Shopping Backed by Safe and Secure Payment Options',
     },

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
+import SmartIcon from './SmartIcon';
 
 const API = `${import.meta.env.VITE_API_URL || ''}/api`;
 
@@ -329,7 +330,7 @@ const BlockRenderer = ({ block, onConversion }) => {
     case 'icon_text':
       return (
         <div style={{ textAlign: styles.textAlign || 'center', marginBottom: styles.marginBottom || '16px' }}>
-          <div style={{ fontSize: '40px', marginBottom: '8px' }}>{content.icon || '🎁'}</div>
+          <div style={{ marginBottom: '8px' }}><SmartIcon value={content.icon} fallback="🎁" size={40} /></div>
           {content.heading && <h4 style={{ fontSize: '16px', fontWeight: '700', color: styles.headingColor || '#1f2937', margin: '0 0 4px' }}>{content.heading}</h4>}
           {content.text && <p style={{ fontSize: '13px', color: styles.textColor || '#6b7280', margin: 0 }}>{content.text}</p>}
         </div>

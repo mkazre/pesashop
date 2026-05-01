@@ -2,11 +2,11 @@ import { Link } from 'react-router-dom';
 import {
   IoHeartOutline,
   IoHeart,
-  IoEyeOutline,
-  IoCartOutline,
-  IoGitCompareOutline,
-  IoTimeOutline,
-  IoLocationOutline,
+  IoEye,
+  IoCart,
+  IoGitCompare,
+  IoTime,
+  IoLocation,
 } from 'react-icons/io5';
 import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
@@ -317,7 +317,7 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
             {/* Layby Indicator */}
             {pc.showLaybyIndicator !== false && hasLayby && (
               <div className="flex items-center gap-1 text-xs mb-1" style={{ color: pc.laybyIndicatorColor || '#f59e0b' }}>
-                <IoTimeOutline size={12} />
+                <IoTime size={12} />
                 <span className="font-medium">{pc.laybyIndicatorText || 'Layby Available'}</span>
               </div>
             )}
@@ -325,7 +325,7 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
             {/* Delivery Estimate */}
             {pc.showDeliveryEstimate !== false && inStock && (
               <div className="flex items-center gap-1 text-xs text-green-600 mb-2">
-                <IoLocationOutline size={12} />
+                <IoLocation size={12} />
                 <span>{(pc.deliveryEstimateText || 'Delivers in {days}').replace('{days}', pc.defaultDeliveryDays || '2-5 days')}</span>
               </div>
             )}
@@ -347,7 +347,7 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
             {/* Actions */}
             <div className="flex items-center gap-2 mt-auto">
               {pc.showAddToCart !== false && inStock && (
-                <Button variant="primary-filled" size="sm" icon={<IoCartOutline />} onClick={handleAddToCart}>
+                <Button variant="primary-filled" size="sm" icon={<IoCart />} onClick={handleAddToCart}>
                   {pc.addToCartText || 'Add to Cart'}
                 </Button>
               )}
@@ -358,12 +358,12 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
               )}
               {compare.enabled !== false && pc.showCompareButton !== false && (
                 <button onClick={handleCompareToggle} className={`p-2 border border-gray-300 hover:border-primary transition-colors rounded ${isInCompare ? 'bg-primary text-white border-primary' : 'hover:text-primary'}`} title="Compare">
-                  <IoGitCompareOutline size={16} />
+                  <IoGitCompare size={16} />
                 </button>
               )}
               {pc.showQuickView !== false && (
                 <button onClick={handleQuickView} className="p-2 border border-gray-300 hover:border-primary hover:text-primary transition-colors rounded" title="Quick View">
-                  <IoEyeOutline size={16} />
+                  <IoEye size={16} />
                 </button>
               )}
             </div>
@@ -438,12 +438,12 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
               )}
               {pc.showQuickView !== false && (
                 <button onClick={handleQuickView} className="w-8 h-8 bg-white hover:bg-primary hover:text-white flex items-center justify-center transition-colors shadow-md rounded" title="Quick View">
-                  <IoEyeOutline size={16} />
+                  <IoEye size={16} />
                 </button>
               )}
               {compare.enabled !== false && pc.showCompareButton !== false && (
                 <button onClick={handleCompareToggle} className={`w-8 h-8 flex items-center justify-center transition-colors shadow-md rounded ${isInCompare ? 'bg-primary text-white' : 'bg-white hover:bg-primary hover:text-white'}`} title="Compare">
-                  <IoGitCompareOutline size={16} />
+                  <IoGitCompare size={16} />
                 </button>
               )}
             </div>
@@ -457,7 +457,7 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
                 className="w-full py-2 text-xs font-semibold text-white flex items-center justify-center gap-1.5 transition-colors"
                 style={{ backgroundColor: theme.primaryColor || '#1b5e35' }}
               >
-                <IoCartOutline size={14} />
+                <IoCart size={14} />
                 {pc.addToCartText || 'Add to Cart'}
               </button>
             </div>
@@ -527,7 +527,7 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
           {/* Delivery Estimate */}
           {pc.showDeliveryEstimate !== false && inStock && (
             <div className="flex items-center gap-1 text-[11px] text-green-600 mt-1">
-              <IoLocationOutline size={10} />
+              <IoLocation size={10} />
               <span>{(pc.deliveryEstimateText || 'Delivers in {days}').replace('{days}', pc.defaultDeliveryDays || '2-5 days')}</span>
             </div>
           )}
@@ -539,7 +539,7 @@ export default function ArchiveProductCard({ product, layout = 'grid', settings 
               className="w-full mt-2 py-1.5 text-xs font-semibold text-white flex items-center justify-center gap-1 rounded transition-colors"
               style={{ backgroundColor: theme.primaryColor || '#1b5e35' }}
             >
-              <IoCartOutline size={13} />
+              <IoCart size={13} />
               {pc.addToCartText || 'Add to Cart'}
             </button>
           )}

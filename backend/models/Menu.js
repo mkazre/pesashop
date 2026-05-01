@@ -11,7 +11,8 @@ const menuItemSchema = new mongoose.Schema({
     default: 'manual',
   },
   linkId: { type: String }, // Page ID, category ID, or product ID
-  icon: { type: String, default: '' }, // Lucide icon name or image URL
+  // emoji string OR { type: 'emoji'|'icon'|'image', value } OR (legacy) lucide icon name / image URL
+  icon: { type: mongoose.Schema.Types.Mixed, default: '' },
   iconPosition: { type: String, enum: ['left', 'right', 'top'], default: 'left' },
   image: { type: String, default: '' }, // Image URL for visual menu items
   imageWidth: { type: String, default: '' },

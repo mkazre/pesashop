@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { serviceProvidersAPI } from '@/services/api';
 import Card from '@/components/common/Card';
 import toast from '@/utils/toast';
+import IconPicker from '@/components/common/IconPicker';
+import SmartIcon from '@/components/common/SmartIcon';
 import { IoAdd, IoTrash, IoPencil, IoArrowBack, IoCheckmarkCircle } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 
@@ -71,10 +73,7 @@ const ServiceProviderCategoriesPage = () => {
           <div className="p-5 space-y-4">
             <h3 className="font-semibold text-gray-800">{editing === 'new' ? 'New Category' : `Edit: ${editing.name}`}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Icon (emoji)</label>
-                <input className="input input-bordered w-full" value={form.icon} maxLength={4} onChange={(e) => setForm(f => ({ ...f, icon: e.target.value }))} placeholder="🔧" />
-              </div>
+              <IconPicker label="Icon" value={form.icon} onChange={(v) => setForm(f => ({ ...f, icon: v }))} />
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category Name *</label>
                 <input className="input input-bordered w-full" value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Electrical, Plumbing, Landscaping" />
@@ -117,7 +116,7 @@ const ServiceProviderCategoriesPage = () => {
           <div className="divide-y divide-gray-100">
             {categories.map((cat) => (
               <div key={cat._id} className="flex items-center gap-4 p-4 hover:bg-gray-50">
-                <span className="text-2xl">{cat.icon || '🔧'}</span>
+                <span><SmartIcon value={cat.icon} fallback="🔧" size={24} /></span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-800">{cat.name}</p>
                   {cat.description && <p className="text-sm text-gray-500">{cat.description}</p>}

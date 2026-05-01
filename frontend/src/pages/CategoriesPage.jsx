@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { categoriesAPI } from '@/services/api';
-import { IoArrowForward, IoGridOutline } from 'react-icons/io5';
+import { IoArrowForward, IoGrid } from 'react-icons/io5';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -39,7 +39,7 @@ export default function CategoriesPage() {
           <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Categories' }]} className="mb-6 text-white/70" />
           <div className="flex items-center gap-4 mb-3">
             <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-              <IoGridOutline size={28} />
+              <IoGrid size={28} />
             </div>
             <div>
               <h1 className="text-3xl md:text-4xl font-bold">Shop by Category</h1>

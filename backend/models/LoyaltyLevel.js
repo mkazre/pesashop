@@ -25,7 +25,7 @@ const loyaltyLevelSchema = new mongoose.Schema({
     default: '#0e604a'
   },
   badgeImage: String, // URL to badge image
-  badgeIcon: String, // Icon name or emoji
+  badgeIcon: mongoose.Schema.Types.Mixed, // emoji string OR { type: 'emoji'|'icon'|'image', value }
   
   // Benefits
   extraPointsOnAchievement: {

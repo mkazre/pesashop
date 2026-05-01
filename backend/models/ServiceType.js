@@ -16,7 +16,7 @@ const serviceTypeSchema = new mongoose.Schema({
     default: '',
   },
   icon: {
-    type: String,  // emoji or icon name
+    type: mongoose.Schema.Types.Mixed, // emoji string OR { type: 'emoji'|'icon'|'image', value }
     default: '🔧',
   },
   imageUrl: {

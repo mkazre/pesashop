@@ -1,6 +1,6 @@
 import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
-import { IoHeart, IoHeartOutline, IoShareSocialOutline } from 'react-icons/io5';
+import { IoHeart, IoHeartOutline, IoShareSocial } from 'react-icons/io5';
 import { useWishlistStore, useAuthStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
@@ -150,7 +150,7 @@ export default function ProductInfo({ product, selectedVariation = null, quantit
           onClick={handleShare}
           className="flex items-center gap-2 px-6 py-3 border-2 border-gray-300 hover:border-primary hover:text-primary font-medium transition-colors"
         >
-          <IoShareSocialOutline size={20} />
+          <IoShareSocial size={20} />
           Share
         </button>
       </div>

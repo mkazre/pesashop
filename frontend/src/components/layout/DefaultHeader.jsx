@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  IoSearch, IoPersonOutline, IoCartOutline, IoHeartOutline,
+  IoSearch, IoPerson, IoCart, IoHeart,
   IoChevronDown, IoChevronForward, IoMenu, IoClose,
-  IoCallOutline, IoLocationOutline, IoGridOutline,
-  IoLogOutOutline, IoReceiptOutline, IoSettingsOutline,
-  IoArrowForward, IoFlameOutline, IoTrendingUpOutline,
-  IoHomeOutline, IoStorefrontOutline,
+  IoCall, IoLocation, IoGrid,
+  IoLogOut, IoReceipt, IoSettings,
+  IoArrowForward, IoFlame, IoTrendingUp,
+  IoHome, IoStorefront,
 } from 'react-icons/io5';
 import { useCartStore, useWishlistStore, useAuthStore, useUIStore, useCurrencyStore } from '@/store';
 import { useQuery } from 'react-query';
@@ -52,10 +52,10 @@ const AccountFlyout = ({ user, onClose, onLogout, onNavigate }) => {
       {/* Links */}
       <div className="py-2">
         {[
-          { icon: IoPersonOutline, label: 'My Account', to: '/account' },
-          { icon: IoReceiptOutline, label: 'My Orders', to: '/account/orders' },
-          { icon: IoHeartOutline, label: 'Wishlist', to: '/wishlist' },
-          { icon: IoSettingsOutline, label: 'Account Settings', to: '/account/settings' },
+          { icon: IoPerson, label: 'My Account', to: '/account' },
+          { icon: IoReceipt, label: 'My Orders', to: '/account/orders' },
+          { icon: IoHeart, label: 'Wishlist', to: '/wishlist' },
+          { icon: IoSettings, label: 'Account Settings', to: '/account/settings' },
         ].map(item => (
           <Link key={item.to} to={item.to} onClick={() => { onClose(); onNavigate?.(); }}
             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors">
@@ -67,7 +67,7 @@ const AccountFlyout = ({ user, onClose, onLogout, onNavigate }) => {
       <div className="border-t border-gray-100 py-2">
         <button onClick={() => { onLogout(); onClose(); }}
           className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full transition-colors">
-          <IoLogOutOutline size={18} />
+          <IoLogOut size={18} />
           Sign Out
         </button>
       </div>
@@ -102,7 +102,7 @@ const CategoryMegaMenu = ({ categories, onClose, formatPrice }) => {
             <div className="col-span-5 pr-8 border-r border-gray-100">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                  <IoGridOutline size={14} className="text-primary" />
+                  <IoGrid size={14} className="text-primary" />
                   Shop by Category
                 </h3>
                 <Link to="/categories" onClick={onClose}
@@ -137,7 +137,7 @@ const CategoryMegaMenu = ({ categories, onClose, formatPrice }) => {
             {/* ── MIDDLE: Trending (most ordered) ── */}
             <div className="col-span-4 px-8 border-r border-gray-100">
               <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-5 flex items-center gap-2">
-                <IoFlameOutline size={14} className="text-orange-500" />
+                <IoFlame size={14} className="text-orange-500" />
                 {hasTrending ? 'Best Sellers' : 'Featured'}
               </h3>
               <div className="grid grid-cols-2 gap-3">
@@ -157,7 +157,7 @@ const CategoryMegaMenu = ({ categories, onClose, formatPrice }) => {
                         )}
                         {idx === 0 && hasTrending && (
                           <span className="absolute top-1.5 right-1.5 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            <IoFlameOutline size={8} /> #1
+                            <IoFlame size={8} /> #1
                           </span>
                         )}
                       </div>
@@ -181,7 +181,7 @@ const CategoryMegaMenu = ({ categories, onClose, formatPrice }) => {
             <div className="col-span-3 pl-8">
               {/* Popular Products */}
               <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-5 flex items-center gap-2">
-                <IoTrendingUpOutline size={14} className="text-blue-500" />
+                <IoTrendingUp size={14} className="text-blue-500" />
                 Popular Now
               </h3>
               {popular.length > 0 ? (
@@ -228,7 +228,7 @@ const CategoryMegaMenu = ({ categories, onClose, formatPrice }) => {
               <div className="mt-6 pt-5 border-t border-gray-100">
                 <Link to="/shop" onClick={onClose}
                   className="flex items-center gap-2 text-[12px] font-semibold text-primary hover:underline">
-                  <IoStorefrontOutline size={14} /> Browse All Products <IoArrowForward size={10} />
+                  <IoStorefront size={14} /> Browse All Products <IoArrowForward size={10} />
                 </Link>
               </div>
             </div>
@@ -336,7 +336,7 @@ const EnhancedSearchBar = ({ trendingProducts, formatPrice, className }) => {
         <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden">
           <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-              <IoTrendingUpOutline size={14} className="text-primary" /> Trending Searches
+              <IoTrendingUp size={14} className="text-primary" /> Trending Searches
             </span>
           </div>
           <div className="py-1">
@@ -550,13 +550,13 @@ export default function DefaultHeader() {
               <div className="flex items-center gap-3 sm:gap-6 min-w-0 overflow-hidden">
                 {(topBar.phone) && (
                   <a href={`tel:${topBar.phone}`} className="flex items-center gap-1 sm:gap-1.5 shrink-0 hover:opacity-80">
-                    <IoCallOutline size={14} />
+                    <IoCall size={14} />
                     <span className="truncate">{topBar.phoneLabel || 'Call Us:'} <strong>{topBar.phone}</strong></span>
                   </a>
                 )}
                 {(topBar.location) && (
                   <div className="hidden md:flex items-center gap-1.5">
-                    <IoLocationOutline size={14} />
+                    <IoLocation size={14} />
                     <span>{topBar.location}</span>
                   </div>
                 )}
@@ -600,7 +600,7 @@ export default function DefaultHeader() {
                   }}
                     className="flex items-center gap-2 hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-gray-50">
                     <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                      <IoPersonOutline size={20} />
+                      <IoPerson size={20} />
                     </div>
                     {!isCollapsed && (
                       <div className="text-left text-sm hidden lg:block">
@@ -619,7 +619,7 @@ export default function DefaultHeader() {
 
                 {/* Wishlist */}
                 <Link to="/wishlist" className="relative p-1.5 rounded-lg hover:bg-gray-50 transition-colors hidden sm:flex">
-                  <IoHeartOutline size={24} />
+                  <IoHeart size={24} />
                   {wishlistCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 w-5 h-5 text-[10px] font-bold rounded-full flex items-center justify-center bg-red-500 text-white">
                       {wishlistCount}
@@ -630,7 +630,7 @@ export default function DefaultHeader() {
                 {/* Cart */}
                 <button onClick={openCartSidebar} className="relative p-1.5 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
                   <div className="relative">
-                    <IoCartOutline size={24} />
+                    <IoCart size={24} />
                     {cartItemCount > 0 && (
                       <span className={`absolute -top-1.5 -right-2 min-w-[20px] h-5 px-1 text-[10px] font-bold rounded-full flex items-center justify-center bg-secondary text-black ${cartBadgeBounce ? 'cart-badge-bounce' : ''}`}>
                         {cartItemCount}
@@ -677,7 +677,7 @@ export default function DefaultHeader() {
                       className={`flex items-center gap-1 px-4 py-3 text-sm font-medium transition-colors hover:text-primary ${
                         location.pathname === item.to ? 'text-primary border-b-2 border-primary' : 'text-gray-700'
                       }`}>
-                      {item.isMega && <IoGridOutline size={16} className="mr-0.5" />}
+                      {item.isMega && <IoGrid size={16} className="mr-0.5" />}
                       {item.label}
                       {item.isMega && <IoChevronDown size={12} className={`transition-transform ${megaMenuOpen ? 'rotate-180' : ''}`} />}
                     </Link>
@@ -694,7 +694,7 @@ export default function DefaultHeader() {
               {/* Support in nav */}
               {topBar.phone && (
               <div className="hidden lg:flex items-center gap-2 text-sm text-gray-600">
-                <IoCallOutline className="text-primary" size={18} />
+                <IoCall className="text-primary" size={18} />
                 <span>{topBar.phoneLabel || 'Need Support? Call Us:'} <strong className="text-gray-900">{topBar.phone}</strong></span>
               </div>
               )}
@@ -744,23 +744,23 @@ export default function DefaultHeader() {
             {/* Extra Links */}
             <div className="border-t border-gray-100 py-2">
               <Link to="/wishlist" onClick={closeMobile} className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
-                <IoHeartOutline size={20} className="text-gray-400" />
+                <IoHeart size={20} className="text-gray-400" />
                 Wishlist
                 {wishlistCount > 0 && <span className="ml-auto text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">{wishlistCount}</span>}
               </Link>
               {isAuthenticated ? (
                 <>
                   <Link to="/account" onClick={closeMobile} className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
-                    <IoPersonOutline size={20} className="text-gray-400" />
+                    <IoPerson size={20} className="text-gray-400" />
                     My Account
                   </Link>
                   <Link to="/account/orders" onClick={closeMobile} className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
-                    <IoReceiptOutline size={20} className="text-gray-400" />
+                    <IoReceipt size={20} className="text-gray-400" />
                     My Orders
                   </Link>
                   <button onClick={() => { handleLogout(); closeMobile(); }}
                     className="flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 w-full">
-                    <IoLogOutOutline size={20} />
+                    <IoLogOut size={20} />
                     Sign Out
                   </button>
                 </>
@@ -795,7 +795,7 @@ function MobileNavItem({ item, categories, onClose }) {
       <div>
         <div className="flex items-center justify-between">
           <Link to={item.to} onClick={onClose} className="flex-1 flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-900 hover:text-primary">
-            <IoStorefrontOutline size={20} className="text-gray-400" />
+            <IoStorefront size={20} className="text-gray-400" />
             {item.label}
           </Link>
           <button onClick={() => setOpen(!open)} className="p-3 text-gray-400 hover:text-gray-600">
@@ -830,7 +830,7 @@ function MobileNavItem({ item, categories, onClose }) {
   return (
     <Link to={item.to} onClick={onClose}
       className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:text-primary transition-colors">
-      <IoHomeOutline size={20} className="text-gray-400" />
+      <IoHome size={20} className="text-gray-400" />
       {item.label}
     </Link>
   );

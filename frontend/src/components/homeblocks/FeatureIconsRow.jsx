@@ -1,5 +1,6 @@
 import React from 'react';
 import BlockWrapper from './BlockWrapper';
+import SmartIcon from '@/components/common/SmartIcon';
 
 export default function FeatureIconsRow({ block }) {
   const features = block.features || [];
@@ -25,7 +26,7 @@ export default function FeatureIconsRow({ block }) {
               {f.iconImage ? (
                 <img src={resolveImg(f.iconImage)} alt={f.title} className="w-8 h-8 object-contain" />
               ) : (
-                <span className="text-2xl">{f.icon || '⭐'}</span>
+                <SmartIcon value={f.icon} fallback="⭐" size={28} color={f.color || '#1b5e35'} />
               )}
             </div>
             <h4 className="text-sm font-bold text-gray-800" style={{ color: f.color || '#1b5e35' }}>

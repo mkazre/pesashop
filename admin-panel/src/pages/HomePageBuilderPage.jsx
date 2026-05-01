@@ -9,6 +9,7 @@ import {
 } from 'react-icons/io5';
 import { homePageConfigAPI, imagesAPI, pageTemplatesAPI } from '../services/api';
 import { useAuthStore } from '@/store';
+import IconPicker from '@/components/common/IconPicker';
 
 const BADGE_API = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
 
@@ -543,7 +544,7 @@ function FeatureItemEditor({ feature, index, onChange, onRemove }) {
   const update = (key, val) => onChange({ ...feature, [key]: val });
   return (
     <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
-      <input className="w-12 text-center text-lg px-1 py-1 border rounded" value={feature.icon || ''} onChange={(e) => update('icon', e.target.value)} title="Emoji icon" />
+      <IconPicker value={feature.icon} onChange={(v) => update('icon', v)} />
       <input className="flex-1 text-sm px-2 py-1 border rounded" placeholder="Title" value={feature.title || ''} onChange={(e) => update('title', e.target.value)} />
       <input className="flex-1 text-sm px-2 py-1 border rounded" placeholder="Subtitle" value={feature.subtitle || ''} onChange={(e) => update('subtitle', e.target.value)} />
       <input type="color" value={feature.color || '#1b5e35'} onChange={(e) => update('color', e.target.value)} className="w-8 h-8 rounded border-0" />

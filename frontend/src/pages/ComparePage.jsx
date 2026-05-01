@@ -4,7 +4,7 @@ import StarRating from '@/components/common/StarRating';
 import Button from '@/components/common/Button';
 import { useCompareStore, useCartStore, useUIStore, useCurrencyStore } from '@/store';
 import { useProductArchiveSettings } from '@/hooks/useProductArchiveSettings';
-import { IoTrashOutline, IoCartOutline, IoArrowBack } from 'react-icons/io5';
+import { IoTrash, IoCart, IoArrowBack } from 'react-icons/io5';
 import toast from '@/utils/toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -138,7 +138,7 @@ export default function ComparePage() {
           <Button
             variant="primary-filled"
             size="sm"
-            icon={<IoCartOutline />}
+            icon={<IoCart />}
             onClick={() => handleAddToCart(product)}
             fullWidth
           >
@@ -153,7 +153,7 @@ export default function ComparePage() {
             onClick={() => { removeItem(product._id); toast.success('Removed from compare'); }}
             className="flex items-center gap-1 text-sm text-red-500 hover:text-red-700 transition-colors mx-auto"
           >
-            <IoTrashOutline size={14} />
+            <IoTrash size={14} />
             Remove
           </button>
         );

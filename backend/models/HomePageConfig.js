@@ -28,7 +28,8 @@ const bannerItemSchema = new mongoose.Schema({
 
 // ── Feature item schema ────────────────────────────────────────────
 const featureItemSchema = new mongoose.Schema({
-  icon: { type: String, default: '🚚' },
+  // emoji string OR { type: 'emoji'|'icon'|'image', value }
+  icon: { type: mongoose.Schema.Types.Mixed, default: '🚚' },
   iconImage: { type: String, default: '' },
   title: { type: String, default: '' },
   subtitle: { type: String, default: '' },

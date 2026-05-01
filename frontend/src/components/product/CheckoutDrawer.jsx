@@ -6,6 +6,7 @@ import { useAuthStore, useCartStore, useCurrencyStore, useUIStore } from '@/stor
 import toast from '@/utils/toast';
 import LaybyWidget from './LaybyWidget';
 import OfferCard from '@/components/offers/OfferCard';
+import SmartIcon from '@/components/common/SmartIcon';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -897,7 +898,7 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
                           {m.displayType === 'image' && m.image ? (
                             <img src={m.image.startsWith('http') ? m.image : `${API_URL}${m.image}`} alt="" style={{ height: 18, objectFit: 'contain' }} />
                           ) : m.displayType === 'text' ? null : (
-                            <span>{m.icon || ''}</span>
+                            <SmartIcon value={m.icon} size={16} />
                           )}
                           <span>{m.label}</span>
                         </button>
@@ -913,7 +914,7 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
                           {m.displayType === 'image' && m.image ? (
                             <img src={m.image.startsWith('http') ? m.image : `${API_URL}${m.image}`} alt="" style={{ height: 16, objectFit: 'contain' }} />
                           ) : m.displayType === 'text' ? null : (
-                            <span>{m.icon || ''}</span>
+                            <SmartIcon value={m.icon} size={14} />
                           )}
                           {m.label}
                         </span>

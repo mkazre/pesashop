@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { serviceTypesAPI, serviceRequestsAPI } from '@/services/api';
 import { useAuthStore, useUIStore } from '@/store';
 import toast from '@/utils/toast';
+import SmartIcon from '@/components/common/SmartIcon';
 
 const MODE_LABELS = { repair: 'Repair', install: 'Install', maintain: 'Maintain' };
 
@@ -184,7 +185,7 @@ export default function ServiceRequestWidget({ product }) {
                       {type.imageUrl ? (
                         <img src={type.imageUrl} alt={type.title} style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 6, margin: '0 auto 4px', display: 'block' }} />
                       ) : (
-                        <div style={{ fontSize: 24, marginBottom: 4 }}>{type.icon || '🔧'}</div>
+                        <div style={{ marginBottom: 4 }}><SmartIcon value={type.icon} fallback="🔧" size={24} /></div>
                       )}
                       <div style={{ fontSize: 12, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.2 }}>{type.title}</div>
                       <div style={{ fontSize: 10, color: '#76889a', marginTop: 3 }}>

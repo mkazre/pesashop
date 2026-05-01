@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { IoTrashOutline, IoHeartOutline, IoGift, IoClose } from 'react-icons/io5';
+import { IoTrash, IoHeart, IoGift, IoClose } from 'react-icons/io5';
 import { useState } from 'react';
 import { useCartStore, useCurrencyStore } from '@/store';
 import { giftCardsAPI } from '@/services/api';
@@ -56,14 +56,14 @@ export function CartItem({ item, index, onUpdateQuantity, onRemove, onMoveToWish
             onClick={() => onMoveToWishlist?.(item)}
             className="flex items-center gap-2 text-sm text-gray-600 hover:text-primary transition-colors"
           >
-            <IoHeartOutline size={18} />
+            <IoHeart size={18} />
             Move to Wishlist
           </button>
           <button
             onClick={() => onRemove(index)}
             className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors"
           >
-            <IoTrashOutline size={18} />
+            <IoTrash size={18} />
             Remove
           </button>
         </div>

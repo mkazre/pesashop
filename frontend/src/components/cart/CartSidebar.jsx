@@ -1,4 +1,4 @@
-import { IoClose, IoTrashOutline, IoChevronForward } from 'react-icons/io5';
+import { IoClose, IoTrash, IoChevronForward } from 'react-icons/io5';
 import { useCartStore, useUIStore, useAuthStore, useCurrencyStore } from '@/store';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -190,7 +190,7 @@ export default function CartSidebar() {
                       className="flex-shrink-0 text-gray-400 hover:text-red-600 transition-colors self-start mt-1"
                       title="Remove item"
                     >
-                      <IoTrashOutline size={18} />
+                      <IoTrash size={18} />
                     </button>
                   </div>
                 );

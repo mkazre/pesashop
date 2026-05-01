@@ -13,7 +13,7 @@ const serviceProviderCategorySchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
-  icon: String, // emoji or icon name (e.g. "⚡" or "lucide:zap")
+  icon: mongoose.Schema.Types.Mixed, // emoji string OR { type: 'emoji'|'icon'|'image', value }
   description: String,
   // Keywords used for AI contextual ad matching
   keywords: [{ type: String }],

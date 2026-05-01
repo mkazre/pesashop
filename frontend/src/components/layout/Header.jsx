@@ -2,17 +2,18 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   IoSearch,
-  IoPersonOutline,
-  IoCartOutline,
-  IoHeartOutline,
+  IoPerson,
+  IoCart,
+  IoHeart,
   IoChevronDown,
   IoChevronForward,
   IoMenu,
   IoClose,
-  IoCallOutline,
-  IoLocationOutline,
+  IoCall,
+  IoLocation,
 } from 'react-icons/io5';
 import { useCartStore, useWishlistStore, useAuthStore, useUIStore } from '@/store';
+import SmartIcon from '@/components/common/SmartIcon';
 import { useQuery } from 'react-query';
 import { menusAPI, categoriesAPI } from '@/services/api';
 import CurrencyPicker from '@/components/common/CurrencyPicker';
@@ -205,7 +206,7 @@ const MenuItemLink = ({ item, settings, isActive, onClose, level = 0 }) => {
       >
         {inlineBadge && badgePos === 'left' && inlineBadge}
         {item.icon && item.iconPosition !== 'right' && (
-          <span className="text-sm">{item.icon}</span>
+          <SmartIcon value={item.icon} size={14} />
         )}
         {item.image && (
           <img src={item.image} alt="" className="w-5 h-5 object-cover rounded" style={{ width: item.imageWidth || '20px', height: item.imageHeight || '20px' }} />
@@ -215,7 +216,7 @@ const MenuItemLink = ({ item, settings, isActive, onClose, level = 0 }) => {
           <span className="text-xs opacity-60 ml-0.5 hidden lg:inline">{item.description}</span>
         )}
         {item.icon && item.iconPosition === 'right' && (
-          <span className="text-sm">{item.icon}</span>
+          <SmartIcon value={item.icon} size={14} />
         )}
         {inlineBadge && badgePos === 'right' && inlineBadge}
         {(hasChildren || hasMega) && (
@@ -497,7 +498,7 @@ export default function Header() {
                 <div className="flex items-center gap-6">
                   {topBarPhone && (
                     <div className="flex items-center gap-2">
-                      <IoCallOutline />
+                      <IoCall />
                       <span>{topBarPhoneLabel} <strong>{topBarPhone}</strong></span>
                     </div>
                   )}
@@ -508,7 +509,7 @@ export default function Header() {
                   )}
                   {topBarLocation && (
                     <div className="hidden md:flex items-center gap-2">
-                      <IoLocationOutline />
+                      <IoLocation />
                       <span>{topBarLocation}</span>
                     </div>
                   )}
@@ -566,7 +567,7 @@ export default function Header() {
                         backgroundColor: headerRowIconStyle === 'circle' ? (headerRowIconBg || 'var(--color-secondary, #f59e0b)') : 'transparent',
                         color: headerRowIconColor || undefined,
                       }}>
-                        <IoPersonOutline size={20} />
+                        <IoPerson size={20} />
                       </div>
                       <div className="text-left text-sm">
                         <div className="text-gray-600">Account</div>
@@ -580,7 +581,7 @@ export default function Header() {
 
                   {headerRowShowWishlist && (
                     <Link to="/wishlist" className="relative hover:text-primary transition-colors" style={{ color: headerRowIconColor || undefined }}>
-                      <IoHeartOutline size={28} />
+                      <IoHeart size={28} />
                       {wishlistCount > 0 && (
                         <span className="absolute -top-2 -right-2 w-5 h-5 text-xs font-bold rounded-full flex items-center justify-center"
                           style={{ backgroundColor: headerRowBadgeColor || 'var(--color-secondary, #f59e0b)', color: headerRowBadgeText || '#000' }}>
@@ -594,7 +595,7 @@ export default function Header() {
                     <button onClick={openCartSidebar} className="relative hover:text-primary transition-colors flex items-center gap-2"
                       style={{ color: headerRowIconColor || undefined }}>
                       <div className="relative">
-                        <IoCartOutline size={28} />
+                        <IoCart size={28} />
                         {cartItemCount > 0 && (
                           <span className="absolute -top-2 -right-2 w-5 h-5 text-xs font-bold rounded-full flex items-center justify-center"
                             style={{ backgroundColor: headerRowBadgeColor || 'var(--color-secondary, #f59e0b)', color: headerRowBadgeText || '#000' }}>

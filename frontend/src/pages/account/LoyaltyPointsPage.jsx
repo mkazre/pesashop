@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { loyaltyAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
 import toast from '@/utils/toast';
+import SmartIcon from '@/components/common/SmartIcon';
 
 export default function LoyaltyPointsPage() {
   const [overview, setOverview] = useState(null);
@@ -193,7 +194,7 @@ export default function LoyaltyPointsPage() {
             {overview.currentLevel?.name || 'None'}
           </p>
           {overview.currentLevel?.badgeIcon && (
-            <p className="text-lg mt-1">{overview.currentLevel.badgeIcon}</p>
+            <p className="mt-1"><SmartIcon value={overview.currentLevel.badgeIcon} size={20} color={overview.currentLevel?.color || '#0e604a'} /></p>
           )}
         </div>
 

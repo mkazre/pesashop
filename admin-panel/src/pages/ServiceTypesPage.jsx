@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import IconPicker from '@/components/common/IconPicker';
+import SmartIcon from '@/components/common/SmartIcon';
 
 const MODES = [
   { value: 'repair',   label: 'Repair' },
@@ -127,15 +129,7 @@ export default function ServiceTypesPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Icon */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Icon (emoji)</label>
-                <input
-                  value={form.icon}
-                  onChange={e => setForm(f => ({ ...f, icon: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-2xl"
-                  placeholder="🔧"
-                />
-              </div>
+              <IconPicker label="Icon" value={form.icon} onChange={(v) => setForm(f => ({ ...f, icon: v }))} />
               {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
@@ -349,7 +343,7 @@ export default function ServiceTypesPage() {
                       {item.imageUrl ? (
                         <img src={item.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-100 flex-shrink-0" />
                       ) : (
-                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-xl flex-shrink-0">{item.icon || '🔧'}</div>
+                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0"><SmartIcon value={item.icon} fallback="🔧" size={22} /></div>
                       )}
                       <div>
                         <p className="font-medium text-gray-900 text-sm">{item.title}</p>

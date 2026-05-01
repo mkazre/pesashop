@@ -4,6 +4,7 @@ import { serviceTypesAPI, serviceRequestsAPI, settingsAPI } from '@/services/api
 import api from '@/services/api';
 import { useAuthStore } from '@/store';
 import toast from '@/utils/toast';
+import SmartIcon from '@/components/common/SmartIcon';
 
 const MODES = [
   { value: 'repair',   label: 'Repair',   icon: '🔨', desc: 'Fix something that is broken or not working' },
@@ -298,7 +299,7 @@ function ServiceRequestForm({ serviceTypes, user, isAuthenticated, onClose }) {
                           : 'border-gray-200 text-gray-600 hover:border-gray-300'
                       }`}
                     >
-                      <span className="text-2xl mb-1">{m.icon}</span>
+                      <span className="mb-1"><SmartIcon value={m.icon} fallback="🔧" size={28} /></span>
                       <span className="text-xs font-semibold">{m.label}</span>
                       <span className="text-xs text-gray-400 mt-0.5 line-clamp-2">{m.desc}</span>
                     </button>
@@ -469,7 +470,7 @@ function ProviderApplicationForm({ serviceTypes, onClose }) {
                   {MODES.map(m => (
                     <label key={m.value} className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={form.serviceModes.includes(m.value)} onChange={() => toggleMode(m.value)} className="rounded" />
-                      <span className="text-sm">{m.icon} {m.label}</span>
+                      <span className="text-sm flex items-center gap-1"><SmartIcon value={m.icon} fallback="🔧" size={14} /> {m.label}</span>
                     </label>
                   ))}
                 </div>

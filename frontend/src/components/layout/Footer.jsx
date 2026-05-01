@@ -7,9 +7,9 @@ import {
   IoLogoPinterest,
   IoLogoYoutube,
   IoLogoTiktok,
-  IoLocationOutline,
-  IoCallOutline,
-  IoMailOutline,
+  IoLocation,
+  IoCall,
+  IoMail,
 } from 'react-icons/io5';
 import { useState, useMemo } from 'react';
 import { useQuery } from 'react-query';
@@ -136,19 +136,19 @@ function BuilderContentBlock({ item, colors }) {
         <div className="space-y-3" style={{ color: textColor, fontSize }}>
           {item.address && (
             <div className="flex items-start gap-2.5">
-              {item.showIcons !== false && <IoLocationOutline size={18} className={iconClass} />}
+              {item.showIcons !== false && <IoLocation size={18} className={iconClass} />}
               <span className="opacity-80">{item.address}</span>
             </div>
           )}
           {item.phone && (
             <div className="flex items-start gap-2.5">
-              {item.showIcons !== false && <IoCallOutline size={18} className={iconClass} />}
+              {item.showIcons !== false && <IoCall size={18} className={iconClass} />}
               <a href={`tel:${item.phone}`} style={{ color: linkColor }} className="opacity-80 hover:opacity-100 transition-opacity">{item.phone}</a>
             </div>
           )}
           {item.email && (
             <div className="flex items-start gap-2.5">
-              {item.showIcons !== false && <IoMailOutline size={18} className={iconClass} />}
+              {item.showIcons !== false && <IoMail size={18} className={iconClass} />}
               <a href={`mailto:${item.email}`} style={{ color: linkColor }} className="opacity-80 hover:opacity-100 transition-opacity">{item.email}</a>
             </div>
           )}
@@ -654,21 +654,21 @@ export default function Footer() {
         <div className="container-custom py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
             <div className="flex items-start gap-3">
-              <IoLocationOutline size={24} className="text-secondary mt-1" />
+              <IoLocation size={24} className="text-secondary mt-1" />
               <div>
                 <div className="font-medium mb-1">Address</div>
                 <div className="text-primary-100">2715 Ash Dr. San Jose, South Dakota 83475</div>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <IoCallOutline size={24} className="text-secondary mt-1" />
+              <IoCall size={24} className="text-secondary mt-1" />
               <div>
                 <div className="font-medium mb-1">Call Us</div>
                 <div className="text-primary-100">Call Us: (239) 555-0108</div>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <IoMailOutline size={24} className="text-secondary mt-1" />
+              <IoMail size={24} className="text-secondary mt-1" />
               <div>
                 <div className="font-medium mb-1">Email</div>
                 <div className="text-primary-100">sara.cruz@example.com</div>

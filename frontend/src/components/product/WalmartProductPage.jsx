@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from 'react-query';
 import { laybyAPI, reviewsAPI, loyaltyAPI } from '@/services/api';
 import { useCartSuccessOverlay } from '@/components/common/CartSuccessOverlay';
 import StarRating from '../common/StarRating';
+import SmartIcon from '../common/SmartIcon';
 import InlineLaybyePlans from './InlineLaybyePlans';
 import CheckoutDrawer from './CheckoutDrawer';
 import LaybyWidget from './LaybyWidget';
@@ -1234,7 +1235,7 @@ export default function WalmartProductPage({ product, settings }) {
                 <div style={{ margin: '14px 0', borderTop: '1px solid var(--wp-border)', paddingTop: 14 }}>
                   {fb.deliveryOptions.filter(d => d.enabled).sort((a, b) => a.order - b.order).map(opt => (
                     <div key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', fontSize: 13 }}>
-                      <span>{opt.icon}</span>
+                      <SmartIcon value={opt.icon} fallback="🚚" size={18} />
                       <div>
                         <div style={{ fontWeight: 600 }}>
                           {opt.label}
@@ -1303,7 +1304,7 @@ export default function WalmartProductPage({ product, settings }) {
                 <div className="wp-trust">
                   {fb.trustBadges.filter(b => b.enabled).sort((a, b) => a.order - b.order).map((badge, i) => (
                     <div key={i} className="wp-trust-item">
-                      <span>{badge.icon}</span>
+                      <SmartIcon value={badge.icon} fallback="🔒" size={16} />
                       <span>{badge.text}</span>
                     </div>
                   ))}
@@ -1327,7 +1328,7 @@ export default function WalmartProductPage({ product, settings }) {
       {ce.priceMatchGuarantee?.enabled && (
         <div style={{ maxWidth: lay.maxWidth || 1440, margin: '0 auto', padding: '0 24px 12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: 13 }}>
-            <span>{ce.priceMatchGuarantee.icon || '🏷️'}</span>
+            <SmartIcon value={ce.priceMatchGuarantee.icon} fallback="🏷️" size={18} />
             <span>{ce.priceMatchGuarantee.text}</span>
           </div>
         </div>

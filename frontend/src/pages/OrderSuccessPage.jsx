@@ -4,16 +4,16 @@ import { ordersAPI, productsAPI, settingsAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
 import { useProductPageSettings } from '@/hooks/useProductPageSettings';
 import {
-  IoHelpCircleOutline,
-  IoCartOutline,
-  IoGiftOutline,
-  IoCallOutline,
-  IoMailOutline,
-  IoCheckmarkCircleOutline,
-  IoCardOutline,
-  IoCubeOutline,
-  IoAirplaneOutline,
-  IoHomeOutline,
+  IoHelpCircle,
+  IoCart,
+  IoGift,
+  IoCall,
+  IoMail,
+  IoCheckmarkCircle,
+  IoCard,
+  IoCube,
+  IoAirplane,
+  IoHome,
   IoLogoWhatsapp,
   IoLogoFacebook,
   IoLogoTwitter,
@@ -30,11 +30,11 @@ const getImgSrc = (img) => {
 };
 
 const JOURNEY_STEPS = [
-  { key: 'placed',    label: 'Order Placed',       desc: 'Done',                icon: IoCheckmarkCircleOutline },
-  { key: 'confirmed', label: 'Payment Confirmed',  desc: 'You are here!',       icon: IoCardOutline },
-  { key: 'packing',   label: 'Packing',            desc: 'Within 24 hours',     icon: IoCubeOutline },
-  { key: 'shipped',   label: 'Shipped',            desc: '1-2 business days',   icon: IoAirplaneOutline },
-  { key: 'delivered', label: 'Delivered',           desc: '3-7 business days',   icon: IoHomeOutline },
+  { key: 'placed',    label: 'Order Placed',       desc: 'Done',                icon: IoCheckmarkCircle },
+  { key: 'confirmed', label: 'Payment Confirmed',  desc: 'You are here!',       icon: IoCard },
+  { key: 'packing',   label: 'Packing',            desc: 'Within 24 hours',     icon: IoCube },
+  { key: 'shipped',   label: 'Shipped',            desc: '1-2 business days',   icon: IoAirplane },
+  { key: 'delivered', label: 'Delivered',           desc: '3-7 business days',   icon: IoHome },
 ];
 
 export default function OrderSuccessPage() {
@@ -350,9 +350,9 @@ export default function OrderSuccessPage() {
         {/* ═══ SECTION 5: Contact Cards ═══ */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {[
-            { Icon: IoHelpCircleOutline, title: 'General Queries', email: 'hello@pesashop.com' },
-            { Icon: IoCartOutline,        title: 'Orders & Payments', email: 'admin@pesashop.com' },
-            { Icon: IoGiftOutline,        title: 'Delivery Queries', email: 'shipping@pesashop.com' },
+            { Icon: IoHelpCircle, title: 'General Queries', email: 'hello@pesashop.com' },
+            { Icon: IoCart,        title: 'Orders & Payments', email: 'admin@pesashop.com' },
+            { Icon: IoGift,        title: 'Delivery Queries', email: 'shipping@pesashop.com' },
           ].map((card, idx) => (
             <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 text-center">
               <div className="w-14 h-14 bg-[#0F604B] rounded-full flex items-center justify-center mx-auto mb-3">
@@ -361,7 +361,7 @@ export default function OrderSuccessPage() {
               <h4 className="text-xs font-bold uppercase tracking-widest text-[#0F604B] mb-3">{card.title}</h4>
               <div className="space-y-1.5 text-sm text-gray-600">
                 <p className="flex items-center justify-center gap-1.5">
-                  <IoCallOutline className="text-gray-500" size={14} />
+                  <IoCall className="text-gray-500" size={14} />
                   +27 73 563 7564
                 </p>
                 <p className="flex items-center justify-center gap-1.5">
@@ -369,7 +369,7 @@ export default function OrderSuccessPage() {
                   +27 73 563 7564
                 </p>
                 <p className="flex items-center justify-center gap-1.5">
-                  <IoMailOutline className="text-gray-500" size={14} />
+                  <IoMail className="text-gray-500" size={14} />
                   {card.email}
                 </p>
               </div>

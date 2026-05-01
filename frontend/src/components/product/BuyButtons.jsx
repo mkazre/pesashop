@@ -1,4 +1,4 @@
-import { IoCartOutline } from 'react-icons/io5';
+import { IoCart } from 'react-icons/io5';
 import Button from '../common/Button';
 import { useCartStore, useUIStore } from '@/store';
 import { useNavigate } from 'react-router-dom';
@@ -55,7 +55,7 @@ export default function BuyButtons({ product, quantity, selectedVariant, disable
         variant="primary-filled"
         size="lg"
         fullWidth
-        icon={<IoCartOutline size={24} />}
+        icon={<IoCart size={24} />}
         onClick={handleAddToCart}
         disabled={disabled || product.stock === 0}
       >

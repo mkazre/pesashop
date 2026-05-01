@@ -229,7 +229,10 @@ const productArchiveSettingsSchema = new mongoose.Schema({
 
   // ─── EMPTY STATE ───────────────────────────────────────────────────────────
   emptyState: {
-    icon: { type: String, default: '🔍' },
+    // Accepts either a legacy emoji string ('🔍') or a structured descriptor
+    // { type: 'emoji'|'icon'|'image', value: string }. SmartIcon on the frontend
+    // and IconPicker in the admin both handle either shape.
+    icon: { type: mongoose.Schema.Types.Mixed, default: '🔍' },
     title: { type: String, default: 'No products found' },
     message: { type: String, default: 'Try adjusting your filters or search terms' },
     showClearFiltersButton: { type: Boolean, default: true },

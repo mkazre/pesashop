@@ -8,6 +8,7 @@ import Input from '@/components/common/Input';
 import Select from '@/components/common/Select';
 import Modal from '@/components/common/Modal';
 import toast from '@/utils/toast';
+import IconPicker from '@/components/common/IconPicker';
 import {
   Plus,
   Edit,
@@ -1246,7 +1247,7 @@ const MenuItemProperties = ({ item, onUpdate, onOpenMegaMenu }) => {
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <LabeledInput label="Icon" value={formData.icon || ''} onChange={(e) => handleChange('icon', e.target.value)} placeholder="Icon name or URL" />
+            <IconPicker label="Icon" value={formData.icon} onChange={(v) => handleChange('icon', v)} />
             <LabeledSelect label="Icon Position" value={formData.iconPosition || 'left'} onChange={(e) => handleChange('iconPosition', e.target.value)}
               options={[{ value: 'left', label: 'Left' }, { value: 'right', label: 'Right' }, { value: 'top', label: 'Top' }]} />
           </div>

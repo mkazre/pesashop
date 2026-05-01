@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { productPageSettingsAPI, imagesAPI, productsAIAPI, productsAPI, categoriesAPI } from '../services/api';
 import toast from '@/utils/toast';
+import IconPicker from '@/components/common/IconPicker';
+import SmartIcon from '@/components/common/SmartIcon';
 import {
   IoChevronDown,
   IoChevronUp,
@@ -129,6 +131,8 @@ function ListEditor({ items = [], onChange, fields, addLabel = 'Add item' }) {
                 <label className="text-xs text-gray-500">{f.label}</label>
                 {f.type === 'toggle' ? (
                   <Toggle label="" checked={item[f.key] ?? true} onChange={(v) => handleChange(idx, f.key, v)} />
+                ) : f.type === 'icon' ? (
+                  <IconPicker value={item[f.key]} onChange={(v) => handleChange(idx, f.key, v)} />
                 ) : (
                   <input
                     type={f.type || 'text'}
@@ -232,7 +236,7 @@ function PaymentMethodEditor({ items = [], onChange }) {
               <option value="image">Image/Logo</option>
             </select>
             {(item.displayType === 'icon' || !item.displayType) && (
-              <input type="text" value={item.icon || ''} onChange={(e) => handleChange(idx, 'icon', e.target.value)} className="w-20 px-2 py-1 border border-gray-300 text-xs" placeholder="🏦" />
+              <IconPicker value={item.icon} onChange={(v) => handleChange(idx, 'icon', v)} />
             )}
             {item.displayType === 'image' && (
               <div className="flex items-center gap-2">
@@ -251,7 +255,7 @@ function PaymentMethodEditor({ items = [], onChange }) {
               {item.displayType === 'image' && item.image ? (
                 <img src={item.image.startsWith('http') ? item.image : `${API_BASE}${item.image}`} alt="" className="h-4 object-contain" />
               ) : item.displayType === 'text' ? null : (
-                <span>{item.icon || '?'}</span>
+                <SmartIcon value={item.icon} fallback="?" size={14} />
               )}
               <span className="font-medium">{item.label || 'Method'}</span>
             </div>
@@ -682,7 +686,7 @@ export default function ProductPageSettingsPage() {
           fields={[
             { key: 'id', label: 'ID', placeholder: 'delivery' },
             { key: 'label', label: 'Label', placeholder: 'Delivery' },
-            { key: 'icon', label: 'Icon', placeholder: '🚚' },
+            { key: 'icon', label: 'Icon', type: 'icon' },
             { key: 'subtitle', label: 'Subtitle', placeholder: 'Available · Main Store' },
             { key: 'price', label: 'Price', type: 'number', default: 0 },
             { key: 'isFree', label: 'Free?', type: 'toggle', default: true },
@@ -695,7 +699,7 @@ export default function ProductPageSettingsPage() {
           items={s.fulfillmentBox?.trustBadges || []}
           onChange={(v) => update('fulfillmentBox', 'trustBadges', v)}
           fields={[
-            { key: 'icon', label: 'Icon', placeholder: '🔒' },
+            { key: 'icon', label: 'Icon', type: 'icon' },
             { key: 'text', label: 'Text', placeholder: 'Secure checkout' },
             { key: 'enabled', label: 'Enabled', type: 'toggle', default: true },
           ]}
@@ -720,7 +724,7 @@ export default function ProductPageSettingsPage() {
         <div className="grid grid-cols-2 gap-4 mt-3">
           <Field label="Toggle Label" type="text" value={s.laybyeDisplay?.toggleLabel} onChange={(v) => update('laybyeDisplay', 'toggleLabel', v)} />
           <Field label="Toggle Sub-Label" type="text" value={s.laybyeDisplay?.toggleSubLabel} onChange={(v) => update('laybyeDisplay', 'toggleSubLabel', v)} />
-          <Field label="Toggle Icon" type="text" value={s.laybyeDisplay?.toggleIcon} onChange={(v) => update('laybyeDisplay', 'toggleIcon', v)} />
+          <IconPicker label="Toggle Icon" value={s.laybyeDisplay?.toggleIcon} onChange={(v) => update('laybyeDisplay', 'toggleIcon', v)} />
         </div>
         <h4 className="text-sm font-medium text-gray-700 mt-4 mb-2">Info Bullets</h4>
         <StringListEditor items={s.laybyeDisplay?.infoBullets || []} onChange={(v) => update('laybyeDisplay', 'infoBullets', v)} label="Add bullet" placeholder="✓ No credit check" />
@@ -994,7 +998,7 @@ export default function ProductPageSettingsPage() {
           <Toggle label="Enable" checked={s.conversionEnhancers?.priceMatchGuarantee?.enabled} onChange={(v) => updateDeep('conversionEnhancers', 'priceMatchGuarantee', 'enabled', v)} />
           <div className="grid grid-cols-2 gap-3 mt-2">
             <Field label="Text" type="text" value={s.conversionEnhancers?.priceMatchGuarantee?.text} onChange={(v) => updateDeep('conversionEnhancers', 'priceMatchGuarantee', 'text', v)} />
-            <Field label="Icon" type="text" value={s.conversionEnhancers?.priceMatchGuarantee?.icon} onChange={(v) => updateDeep('conversionEnhancers', 'priceMatchGuarantee', 'icon', v)} />
+            <IconPicker label="Icon" value={s.conversionEnhancers?.priceMatchGuarantee?.icon} onChange={(v) => updateDeep('conversionEnhancers', 'priceMatchGuarantee', 'icon', v)} />
           </div>
         </div>
       </Section>

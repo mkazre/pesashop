@@ -7,6 +7,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import toast from '@/utils/toast';
+import IconPicker from '@/components/common/IconPicker';
 import { IoAdd, IoCreate, IoTrash } from 'react-icons/io5';
 
 const LoyaltyLevelsPage = () => {
@@ -272,14 +273,7 @@ const LoyaltyLevelsPage = () => {
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Badge Icon/Emoji</label>
-              <Input
-                value={editingLevel.badgeIcon || ''}
-                onChange={(e) => setEditingLevel({ ...editingLevel, badgeIcon: e.target.value })}
-                placeholder="🏆 or icon name"
-              />
-            </div>
+            <IconPicker label="Badge Icon" value={editingLevel.badgeIcon} onChange={(v) => setEditingLevel({ ...editingLevel, badgeIcon: v })} />
             <div>
               <label className="block text-sm font-medium mb-2">Badge Image URL</label>
               <Input

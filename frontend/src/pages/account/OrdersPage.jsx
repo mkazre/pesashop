@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
-import { IoCopyOutline, IoCheckmark } from 'react-icons/io5';
+import { IoCopy, IoCheckmark } from 'react-icons/io5';
 import { ordersAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
 
@@ -103,7 +103,7 @@ export default function OrdersPage() {
                         className="text-gray-400 hover:text-gray-600 transition-colors p-0.5"
                         title="Copy order number"
                       >
-                        {copiedId === order.orderNumber ? <IoCheckmark size={14} className="text-green-500" /> : <IoCopyOutline size={14} />}
+                        {copiedId === order.orderNumber ? <IoCheckmark size={14} className="text-green-500" /> : <IoCopy size={14} />}
                       </button>
                     </span>
                     <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[order.status] || 'bg-gray-100 text-gray-800'}`}>

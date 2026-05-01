@@ -8,7 +8,7 @@ const reviewCategorySchema = new mongoose.Schema({
     trim: true,
     unique: true
   },
-  icon: String, // emoji or lucide icon name
+  icon: mongoose.Schema.Types.Mixed, // emoji string OR { type: 'emoji'|'icon'|'image', value }
   description: String, // Tooltip shown to reviewer
   isActive: { type: Boolean, default: true },
   displayOrder: { type: Number, default: 0 }

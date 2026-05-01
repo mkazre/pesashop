@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { productArchiveSettingsAPI, imagesAPI } from '../services/api';
 import toast from '@/utils/toast';
+import IconPicker from '@/components/common/IconPicker';
 import {
   IoChevronDown,
   IoChevronUp,
@@ -111,6 +112,8 @@ function ListEditor({ items = [], onChange, fields, addLabel = 'Add item' }) {
                 <label className="text-xs text-gray-500">{f.label}</label>
                 {f.type === 'toggle' ? (
                   <Toggle label="" checked={item[f.key] ?? true} onChange={(v) => handleChange(idx, f.key, v)} />
+                ) : f.type === 'icon' ? (
+                  <IconPicker value={item[f.key]} onChange={(v) => handleChange(idx, f.key, v)} />
                 ) : (
                   <input
                     type={f.type || 'text'}
@@ -530,7 +533,7 @@ export default function ProductArchiveSettingsPage() {
       {/* ─── EMPTY STATE ────────────────────────────────────────────────── */}
       <Section title="Empty State" subtitle="What to show when no products match">
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Icon / Emoji" type="text" value={s.emptyState?.icon} onChange={(v) => update('emptyState', 'icon', v)} />
+          <IconPicker label="Empty-state icon" sublabel="Shown when no products match" value={s.emptyState?.icon} onChange={(v) => update('emptyState', 'icon', v)} />
           <Toggle label="Show Clear Filters Button" checked={s.emptyState?.showClearFiltersButton} onChange={(v) => update('emptyState', 'showClearFiltersButton', v)} />
         </div>
         <Field label="Title" type="text" value={s.emptyState?.title} onChange={(v) => update('emptyState', 'title', v)} />

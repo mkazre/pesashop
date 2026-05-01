@@ -17,7 +17,7 @@ const sectionSchema = new mongoose.Schema({
 }, { _id: false });
 
 const trustBadgeSchema = new mongoose.Schema({
-  icon: { type: String, default: '🔒' },
+  icon: { type: mongoose.Schema.Types.Mixed, default: '🔒' },
   text: { type: String, default: 'Secure checkout' },
   enabled: { type: Boolean, default: true },
   order: { type: Number, default: 0 },
@@ -26,7 +26,7 @@ const trustBadgeSchema = new mongoose.Schema({
 const deliveryOptionSchema = new mongoose.Schema({
   id: { type: String, required: true },
   label: { type: String, required: true },
-  icon: { type: String, default: '🚚' },
+  icon: { type: mongoose.Schema.Types.Mixed, default: '🚚' },
   subtitle: { type: String, default: '' },
   isFree: { type: Boolean, default: false },
   price: { type: Number, default: 0 },
@@ -60,7 +60,7 @@ const checkoutPaymentMethodSchema = new mongoose.Schema({
   id: { type: String, required: true },
   label: { type: String, required: true },
   displayType: { type: String, enum: ['icon', 'text', 'image'], default: 'icon' },
-  icon: { type: String, default: '' },      // emoji or icon name (e.g. '🏦')
+  icon: { type: mongoose.Schema.Types.Mixed, default: '' }, // emoji string OR { type: 'emoji'|'icon'|'image', value }
   image: { type: String, default: '' },      // uploaded image URL/path
   enabled: { type: Boolean, default: true },
   order: { type: Number, default: 0 },
@@ -226,7 +226,7 @@ const productPageSettingsSchema = new mongoose.Schema({
     showInProductInfo: { type: Boolean, default: false },
     toggleLabel: { type: String, default: 'Pay with Laybye' },
     toggleSubLabel: { type: String, default: 'Split into monthly payments — no credit check' },
-    toggleIcon: { type: String, default: '💳' },
+    toggleIcon: { type: mongoose.Schema.Types.Mixed, default: '💳' },
     showDepositCalculation: { type: Boolean, default: true },
     showMonthlyBreakdown: { type: Boolean, default: true },
     showTotalPayable: { type: Boolean, default: true },
@@ -407,7 +407,7 @@ const productPageSettingsSchema = new mongoose.Schema({
     priceMatchGuarantee: {
       enabled: { type: Boolean, default: false },
       text: { type: String, default: 'Price Match Guarantee — found it cheaper? We\'ll match it!' },
-      icon: { type: String, default: '🏷️' },
+      icon: { type: mongoose.Schema.Types.Mixed, default: '🏷️' },
     },
 
     // Bulk discount teaser
