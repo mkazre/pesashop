@@ -61,6 +61,7 @@ export const productsAPI = {
   restore: (id) => api.post(`/products/${id}/restore`), // Restore from trash
   bulkEdit: (data) => api.post('/products/bulk-edit', data),
   bulkTrash: (productIds) => api.post('/products/bulk-trash', { productIds }),
+  scalePrices: (data) => api.post('/products/scale-prices', data),
   getNextSKU: () => api.get('/products/next-sku'),
   // AI Generator
   generateDescription: (id, data = {}) => api.post(`/products-ai/generate-description/${id}`, data),

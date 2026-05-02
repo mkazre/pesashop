@@ -17,6 +17,7 @@ const { uploadToCloudinary } = require('../config/cloudinary');
 const useCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
 
 const { buildLookupMaps, checkDuplicateFast } = require('./validationHelper');
+const { parsePriceString, parseQuantityString } = require('./numberParser');
 
 // ─── Tuning constants for 100K+ imports ─────────────────────────
 const BATCH_SIZE = 100;
@@ -558,8 +559,9 @@ class WooCommerceImporter extends EventEmitter {
     }
 
     // CSV regular_price → backendPrice (cost/purchase price for B2B markup)
+    // Use locale-aware parser so "1.000,00" / "1000,00" / "$1,234.56" all parse correctly.
     const regularPriceValue = row.regular_price || row['Regular price'] || row.price || 0;
-    const backendPriceValue = parseFloat(regularPriceValue);
+    const backendPriceValue = parsePriceString(regularPriceValue);
 
     const rawName = row.post_title || row.Name || row.name;
     const rawDescription = row.post_content || row.Description || row.description || '';
@@ -572,12 +574,12 @@ class WooCommerceImporter extends EventEmitter {
       description: options.stripHtml ? this.stripHtml(rawDescription) : rawDescription,
       shortDescription: options.stripHtml ? this.stripHtml(rawShortDescription) : rawShortDescription,
       regularPrice: 0, // Will be set after pricing rules markup
-      salePrice: row.sale_price || row['Sale price'] ? parseFloat(row.sale_price || row['Sale price']) : undefined,
-      backendPrice: isNaN(backendPriceValue) ? 0 : backendPriceValue,
-      stock: parseInt(row.stock || row.Stock || row.stock_quantity || 0),
+      salePrice: (row.sale_price || row['Sale price']) ? parsePriceString(row.sale_price || row['Sale price']) : undefined,
+      backendPrice: backendPriceValue,
+      stock: parseQuantityString(row.stock || row.Stock || row.stock_quantity || 0),
       categories: categoryIds,
       tags,
-      weight: row.weight || row.Weight ? parseFloat(row.weight || row.Weight) : undefined,
+      weight: (row.weight || row.Weight) ? parsePriceString(row.weight || row.Weight) : undefined,
       productType: (row.Type === 'variable' || row.type === 'variable' || row['tax:product_type'] === 'variable') ? 'variable' : 'simple',
       isActive: row.post_status === 'publish' || row.Published === '1' || row.status === 'published',
       isFeatured: row.featured === '1' || row.Featured === '1' || false,
@@ -646,7 +648,7 @@ class WooCommerceImporter extends EventEmitter {
     }
 
     const regularPriceValue = row.regular_price || row['Regular price'] || row.price || 0;
-    const backendPriceValue = parseFloat(regularPriceValue);
+    const backendPriceValue = parsePriceString(regularPriceValue);
 
     const rawName = row.post_title || row.Name || row.name;
     const rawDescription = row.post_content || row.Description || row.description || '';
@@ -659,12 +661,12 @@ class WooCommerceImporter extends EventEmitter {
       description: options.stripHtml ? this.stripHtml(rawDescription) : rawDescription,
       shortDescription: options.stripHtml ? this.stripHtml(rawShortDescription) : rawShortDescription,
       regularPrice: 0,
-      salePrice: row.sale_price || row['Sale price'] ? parseFloat(row.sale_price || row['Sale price']) : undefined,
-      backendPrice: isNaN(backendPriceValue) ? 0 : backendPriceValue,
-      stock: parseInt(row.stock || row.Stock || row.stock_quantity || 0),
+      salePrice: (row.sale_price || row['Sale price']) ? parsePriceString(row.sale_price || row['Sale price']) : undefined,
+      backendPrice: backendPriceValue,
+      stock: parseQuantityString(row.stock || row.Stock || row.stock_quantity || 0),
       categories: categoryIds,
       tags,
-      weight: row.weight || row.Weight ? parseFloat(row.weight || row.Weight) : undefined,
+      weight: (row.weight || row.Weight) ? parsePriceString(row.weight || row.Weight) : undefined,
       productType: (row.Type === 'variable' || row.type === 'variable' || row['tax:product_type'] === 'variable') ? 'variable' : 'simple',
       isActive: row.post_status === 'publish' || row.Published === '1' || row.status === 'published',
       isFeatured: row.featured === '1' || row.Featured === '1' || false,
@@ -1261,11 +1263,11 @@ class WooCommerceImporter extends EventEmitter {
       orderNumber,
       customer: customer ? customer._id : undefined,
       items,
-      subtotal: parseFloat(row.order_subtotal || row.subtotal || row['Order Subtotal'] || 0),
-      tax: parseFloat(row.order_tax || row.tax || row['Order Tax'] || 0),
-      shipping: parseFloat(row.order_shipping || row.shipping || row['Shipping Total'] || 0),
-      discount: parseFloat(row.discount_total || row.discount || row['Discount Total'] || 0),
-      total: parseFloat(row.order_total || row.total || row['Order Total'] || 0),
+      subtotal: parsePriceString(row.order_subtotal || row.subtotal || row['Order Subtotal'] || 0),
+      tax: parsePriceString(row.order_tax || row.tax || row['Order Tax'] || 0),
+      shipping: parsePriceString(row.order_shipping || row.shipping || row['Shipping Total'] || 0),
+      discount: parsePriceString(row.discount_total || row.discount || row['Discount Total'] || 0),
+      total: parsePriceString(row.order_total || row.total || row['Order Total'] || 0),
       currency: row.currency || row.order_currency || 'ZAR',
       billingAddress: {
         firstName: row.billing_first_name || row['Billing First Name'] || '',

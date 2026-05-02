@@ -77,6 +77,7 @@ import ServiceProviderDetailPage from './pages/ServiceProviderDetailPage';
 import ServiceTypesPage from './pages/ServiceTypesPage';
 import ServiceRequestsPage from './pages/ServiceRequestsPage';
 import ImportBatchesPage from './pages/ImportBatchesPage';
+import PriceFixToolPage from './pages/PriceFixToolPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -189,6 +190,7 @@ function App() {
             <Route path="service-types" element={<ServiceTypesPage />} />
             <Route path="service-requests" element={<ServiceRequestsPage />} />
             <Route path="import-batches" element={<ImportBatchesPage />} />
+            <Route path="price-fix-tool" element={<PriceFixToolPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -21,37 +21,68 @@ interface Props {
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
-function ProductTile({ product, cardStyle }: { product: any; cardStyle: string }) {
+function aspectToRatio(aspect: string): number {
+  switch (aspect) {
+    case "4:3": return 4 / 3;
+    case "3:4": return 3 / 4;
+    case "4:5": return 4 / 5;
+    case "1:1":
+    default:    return 1;
+  }
+}
+
+function ProductTile({
+  product,
+  cardStyle,
+  titleClamp,
+  imageAspect,
+}: {
+  product: any;
+  cardStyle: string;
+  titleClamp: number;
+  imageAspect: string;
+}) {
   const formatPrice = useCurrencyStore((s) => s.formatPrice);
   const router = useRouter();
   const onSale = product.salePrice && product.salePrice < product.regularPrice;
   const cover = resolveImageUrl(product.featuredImage || product.images?.[0]);
+  const showTitle = cardStyle === "detailed";
+  const clamp = Math.max(1, Math.min(3, titleClamp || 2));
+  const titleLineHeight = 14; // matches s.tileTitle fontSize 11 * 1.27
   return (
     <Pressable
       onPress={() => router.push(`/product/${product.slug || product._id}` as any)}
       style={s.tile}
     >
-      {cover ? (
-        <View style={s.tileImageWrap}>
-          <Image
-            source={{ uri: cover }}
-            style={s.tileImage}
-            contentFit="contain"
-          />
-        </View>
-      ) : (
-        <View style={[s.tileImageWrap, { backgroundColor: colors.gray100 }]} />
-      )}
-      <View style={s.tilePriceRow}>
+      {/* Image — fixed aspect */}
+      <View style={[s.tileImageWrap, { aspectRatio: aspectToRatio(imageAspect) }]}>
+        {cover ? (
+          <Image source={{ uri: cover }} style={s.tileImage} contentFit="contain" />
+        ) : (
+          <View style={{ flex: 1, backgroundColor: colors.gray100 }} />
+        )}
+      </View>
+
+      {/* Title — reserves N lines of space */}
+      {showTitle ? (
+        <Text
+          style={[s.tileTitle, { minHeight: titleLineHeight * clamp }]}
+          numberOfLines={clamp}
+        >
+          {product.name}
+        </Text>
+      ) : null}
+
+      {/* Price row — pinned to bottom */}
+      <View style={[s.tilePriceRow, { marginTop: "auto" }]}>
         {onSale ? <Text style={s.nowLabel}>Now </Text> : null}
-        <Text style={s.tilePrice}>{formatPrice(product.salePrice || product.regularPrice || product.price || 0)}</Text>
+        <Text style={s.tilePrice}>
+          {formatPrice(product.salePrice || product.regularPrice || product.price || 0)}
+        </Text>
         {onSale ? (
           <Text style={s.tilePriceWas}>{formatPrice(product.regularPrice || 0)}</Text>
         ) : null}
       </View>
-      {cardStyle === "detailed" && (
-        <Text style={s.tileTitle} numberOfLines={1}>{product.name}</Text>
-      )}
     </Pressable>
   );
 }
@@ -67,6 +98,9 @@ function SectionCard({ section, block, width }: { section: any; block: any; widt
   const cols = block.giftProductColumns || 2;
   const gap = 6;
   const tileWidth = (width - parseInt(block.giftSectionPadding || "12") * 2 - gap * (cols - 1)) / cols;
+  const cardStyle = block.giftCardStyle || "compact";
+  const titleClamp = block.giftCardTitleClamp || 2;
+  const imageAspect = block.giftCardImageAspect || "1:1";
 
   return (
     <View
@@ -110,7 +144,12 @@ function SectionCard({ section, block, width }: { section: any; block: any; widt
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
             {products.slice(0, section.productLimit || 4).map((p: any) => (
               <View key={p._id} style={{ width: tileWidth }}>
-                <ProductTile product={p} cardStyle={block.giftCardStyle || "compact"} />
+                <ProductTile
+                  product={p}
+                  cardStyle={cardStyle}
+                  titleClamp={titleClamp}
+                  imageAspect={imageAspect}
+                />
               </View>
             ))}
           </View>
@@ -212,15 +251,16 @@ const s = StyleSheet.create({
     textDecorationLine: "underline",
   },
   tile: {
-    alignItems: "center",
+    alignItems: "stretch",
     width: "100%",
+    flex: 1,
   },
   tileImageWrap: {
     width: "100%",
-    aspectRatio: 1,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#ffffff",
+    overflow: "hidden",
   },
   tileImage: {
     width: "100%",

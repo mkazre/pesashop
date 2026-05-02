@@ -127,6 +127,7 @@ const menuGroups = [
       { path: '/snippets', icon: IoCodeSlashOutline, label: 'Code Snippets' },
       { path: '/import-export', icon: IoCloudUploadOutline, label: 'Import/Export' },
       { path: '/import-batches', icon: IoCloudUploadOutline, label: 'Import Batches' },
+      { path: '/price-fix-tool', icon: IoFlash, label: 'Price Fix Tool' },
       { path: '/media-library', icon: IoFolderOutline, label: 'Media Library' },
       { path: '/images', icon: IoImagesOutline, label: 'Image Manager' },
       { path: '/images/regenerate', icon: IoRefresh, label: 'Regenerate Images' },

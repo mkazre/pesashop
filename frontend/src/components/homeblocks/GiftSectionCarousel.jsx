@@ -21,33 +21,76 @@ function pickRegularPrice(p) {
   return p?.regularPrice || p?.price || 0;
 }
 
+// Map an aspect string to a CSS aspect-ratio value.
+function aspectToRatio(aspect) {
+  switch (aspect) {
+    case '4:3': return '4 / 3';
+    case '3:4': return '3 / 4';
+    case '4:5': return '4 / 5';
+    case '1:1':
+    default:    return '1 / 1';
+  }
+}
+
 // ── Single product tile inside a section card ────────────────────────────────
-function ProductTile({ product, columns, cardStyle }) {
+// Tile has a fixed structure so every tile in a row has the same height:
+//   [ image (fixed aspect) ]
+//   [ title (only in detailed; clamped to N lines, RESERVES that height) ]
+//   [ price row (always at the bottom via mt-auto) ]
+function ProductTile({ product, cardStyle, titleClamp, imageAspect }) {
   const { formatPrice } = useCurrencyStore();
   const onSale = product.salePrice && product.salePrice < product.regularPrice;
   const cover = img(product.featuredImage || product.images?.[0]);
+  const showTitle = cardStyle === 'detailed';
+  const clamp = Math.max(1, Math.min(3, titleClamp || 2));
+
   return (
     <Link
       to={`/product/${product.slug || product._id}`}
-      className="group flex flex-col items-center text-center hover:opacity-90 transition-opacity"
+      className="group flex flex-col h-full text-center hover:opacity-90 transition-opacity"
     >
-      {cover ? (
-        <div className="w-full aspect-square overflow-hidden flex items-center justify-center bg-white">
-          <img src={cover} alt={product.name} className="max-w-full max-h-full object-contain group-hover:scale-[1.03] transition-transform duration-200" loading="lazy" />
-        </div>
-      ) : (
-        <div className="w-full aspect-square bg-gray-100" />
+      {/* Image — fixed aspect so every tile's image area is identical */}
+      <div
+        className="w-full overflow-hidden flex items-center justify-center bg-white"
+        style={{ aspectRatio: aspectToRatio(imageAspect) }}
+      >
+        {cover ? (
+          <img
+            src={cover}
+            alt={product.name}
+            className="max-w-full max-h-full object-contain group-hover:scale-[1.03] transition-transform duration-200"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-100" />
+        )}
+      </div>
+
+      {/* Title — reserves N lines of space whether the text is short or long */}
+      {showTitle && (
+        <p
+          className="text-xs text-gray-700 mt-1.5 px-1"
+          style={{
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: clamp,
+            overflow: 'hidden',
+            // Reserve clamp-line worth of vertical space so prices align across tiles
+            // even when titles are shorter than the clamp limit.
+            minHeight: `calc(${clamp} * 1.4em)`,
+            lineHeight: '1.4em',
+          }}
+        >
+          {product.name}
+        </p>
       )}
-      <div className="mt-1 w-full px-1">
-        <div className="flex items-baseline gap-1 justify-center flex-wrap">
-          {onSale && <span className="text-[10px] uppercase font-semibold text-emerald-700">Now</span>}
-          <span className="text-sm font-bold text-gray-900">{formatPrice(pickPrice(product))}</span>
-          {onSale && (
-            <span className="text-[10px] text-gray-400 line-through">{formatPrice(pickRegularPrice(product))}</span>
-          )}
-        </div>
-        {cardStyle === 'detailed' && (
-          <p className="text-xs text-gray-700 truncate mt-0.5">{product.name}</p>
+
+      {/* Price row — always pinned to the bottom of the tile */}
+      <div className="mt-auto pt-1.5 px-1 flex items-baseline gap-1 justify-center flex-wrap">
+        {onSale && <span className="text-[10px] uppercase font-semibold text-emerald-700">Now</span>}
+        <span className="text-sm font-bold text-gray-900">{formatPrice(pickPrice(product))}</span>
+        {onSale && (
+          <span className="text-[10px] text-gray-400 line-through">{formatPrice(pickRegularPrice(product))}</span>
         )}
       </div>
     </Link>
@@ -65,6 +108,8 @@ function SectionCard({ section, block }) {
   const cols = block.giftProductColumns || 2;
   const productGap = '8px';
   const cardStyle = block.giftCardStyle || 'compact';
+  const titleClamp = block.giftCardTitleClamp || 2;
+  const imageAspect = block.giftCardImageAspect || '1:1';
 
   return (
     <div
@@ -109,23 +154,45 @@ function SectionCard({ section, block }) {
 
       {/* Product grid */}
       <div
-        className="flex-1"
+        className="flex-1 flex flex-col"
         style={{
           padding: block.giftSectionPadding || '12px',
         }}
       >
         {isLoading ? (
-          <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: productGap }}>
+          <div
+            className="grid h-full"
+            style={{
+              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+              gridAutoRows: '1fr',
+              gap: productGap,
+            }}
+          >
             {Array.from({ length: section.productLimit || 4 }).map((_, i) => (
-              <div key={i} className="aspect-square bg-gray-100 animate-pulse rounded" />
+              <div key={i} style={{ aspectRatio: aspectToRatio(imageAspect) }} className="bg-gray-100 animate-pulse rounded" />
             ))}
           </div>
         ) : products.length === 0 ? (
           <div className="text-xs text-gray-400 text-center py-4">No products yet</div>
         ) : (
-          <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: productGap }}>
+          <div
+            className="grid h-full"
+            style={{
+              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+              // grid-auto-rows: 1fr makes every row in this section equal height,
+              // which is what keeps prices and titles aligned across tiles.
+              gridAutoRows: '1fr',
+              gap: productGap,
+            }}
+          >
             {products.slice(0, section.productLimit || 4).map((p) => (
-              <ProductTile key={p._id} product={p} columns={cols} cardStyle={cardStyle} />
+              <ProductTile
+                key={p._id}
+                product={p}
+                cardStyle={cardStyle}
+                titleClamp={titleClamp}
+                imageAspect={imageAspect}
+              />
             ))}
           </div>
         )}

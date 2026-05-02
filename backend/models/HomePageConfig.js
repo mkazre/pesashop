@@ -326,6 +326,11 @@ const blockSchema = new mongoose.Schema({
   giftShowArrows: { type: Boolean, default: true },
   giftShowDots: { type: Boolean, default: true },
   giftCardStyle: { type: String, enum: ['compact', 'detailed'], default: 'compact' },
+  // Title clamp (lines) when card style is "detailed"
+  giftCardTitleClamp: { type: Number, default: 2, min: 1, max: 3 },
+  // Image aspect ratio per tile — keeps every tile's image area exactly the same
+  // height regardless of source image dimensions.
+  giftCardImageAspect: { type: String, enum: ['1:1', '4:3', '3:4', '4:5'], default: '1:1' },
 
 }, { _id: true });
 

@@ -379,6 +379,8 @@ function getDefaultBlock(blockType) {
         giftShowArrows: true,
         giftShowDots: true,
         giftCardStyle: 'compact',
+        giftCardTitleClamp: 2,
+        giftCardImageAspect: '1:1',
       };
     default:
       return base;
@@ -1746,6 +1748,26 @@ function BlockSettingsPanel({ block, onChange }) {
                 <option value="detailed">Detailed (with title)</option>
               </select>
             </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Image aspect</label>
+              <select className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftCardImageAspect || '1:1'} onChange={(e) => update('giftCardImageAspect', e.target.value)}>
+                <option value="1:1">Square (1:1)</option>
+                <option value="4:3">Landscape (4:3)</option>
+                <option value="3:4">Portrait (3:4)</option>
+                <option value="4:5">Tall (4:5)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Title lines (clamp)</label>
+              <select className="w-full text-sm px-2 py-1.5 border rounded" value={block.giftCardTitleClamp || 2} onChange={(e) => update('giftCardTitleClamp', parseInt(e.target.value))} disabled={(block.giftCardStyle || 'compact') !== 'detailed'}>
+                <option value={1}>1 line</option>
+                <option value={2}>2 lines</option>
+                <option value={3}>3 lines</option>
+              </select>
+            </div>
+            <div />
           </div>
 
           <h4 className="text-sm font-semibold text-gray-700 pt-3">Styling</h4>
