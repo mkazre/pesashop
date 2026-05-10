@@ -157,6 +157,7 @@ const serviceTypesRoutes = require('./routes/serviceTypes');
 const serviceRequestsRoutes = require('./routes/serviceRequests');
 const importBatchesRoutes = require('./routes/importBatches');
 const socialEngineRoutes  = require('./routes/socialEngine');
+const digitalKioskRoutes = require('./routes/digitalKiosk');
 
 // Mount API routes FIRST (before static files)
 app.use('/api/auth', authRoutes);
@@ -211,6 +212,7 @@ app.use('/api/service-types', serviceTypesRoutes);
 app.use('/api/service-requests', serviceRequestsRoutes);
 app.use('/api/import-batches', importBatchesRoutes);
 app.use('/api/social-engine', socialEngineRoutes);
+app.use('/api/digital-kiosk', digitalKioskRoutes);
 
 // Serve React frontend static files AFTER API routes
 app.use(express.static(path.join(__dirname, '../frontend/dist')));

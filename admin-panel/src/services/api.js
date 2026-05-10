@@ -613,6 +613,14 @@ export const mobileAppConfigAPI = {
   uploadSplashImage: (formData) => api.post('/mobile-app-config/splash/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
 };
 
+// ─── Digital Kiosk API ─────────────────────────────────────────────
+export const digitalKioskAPI = {
+  getConfig: () => api.get('/digital-kiosk/config/admin'),
+  updateConfig: (data) => api.put('/digital-kiosk/config', data),
+  updateDevice: (deviceId, data) => api.put(`/digital-kiosk/devices/${deviceId}`, data),
+  deleteDevice: (deviceId) => api.delete(`/digital-kiosk/devices/${deviceId}`),
+};
+
 // ─── Demographics API ──────────────────────────────────────────────
 export const demographicsAPI = {
   getStats: () => api.get('/demographics/admin/stats'),

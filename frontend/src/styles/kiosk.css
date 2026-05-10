@@ -1,0 +1,110 @@
+/* ─────────────────────────────────────────────────────────────────
+ * Digital Kiosk styles — scoped to .kiosk-root and .kiosk-account-scope
+ * ───────────────────────────────────────────────────────────────── */
+
+.kiosk-root {
+  font-size: clamp(16px, 1vw, 22px);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.kiosk-root * {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kiosk-root input,
+.kiosk-root textarea {
+  user-select: text;
+}
+
+/* Larger touch-targets for re-mounted account pages */
+.kiosk-account-scope {
+  font-size: 1.125rem;
+}
+.kiosk-account-scope button:not([class*="text-xs"]):not([class*="text-sm"]),
+.kiosk-account-scope a.button,
+.kiosk-account-scope .btn {
+  min-height: 56px;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+.kiosk-account-scope input:not([type="checkbox"]):not([type="radio"]),
+.kiosk-account-scope select,
+.kiosk-account-scope textarea {
+  min-height: 56px;
+  font-size: 1.125rem;
+}
+
+/* Kiosk theme variables (overridden inline by KioskLayout from admin branding) */
+.kiosk-root {
+  --kiosk-primary: #0e604a;
+  --kiosk-secondary: #f7bd20;
+}
+
+/* Ken Burns slow-zoom for static screensaver images */
+@keyframes kiosk-kenburns {
+  0%   { transform: scale(1)    translate(0, 0); }
+  100% { transform: scale(1.15) translate(-1.5%, -1.5%); }
+}
+.animate-kiosk-kenburns {
+  animation: kiosk-kenburns 12s ease-out forwards;
+}
+
+/* Soft tile shadow + lift on touch */
+.kiosk-tile {
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+.kiosk-tile:active {
+  transform: scale(0.97);
+}
+
+/* Hide native scrollbars in kiosk panels (still scrollable) */
+.kiosk-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.kiosk-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+/* Ripple */
+@keyframes kiosk-ripple {
+  to { transform: scale(4); opacity: 0; }
+}
+.kiosk-ripple-span {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  background: rgba(255, 255, 255, 0.4);
+  animation: kiosk-ripple 0.6s linear;
+  pointer-events: none;
+}
+
+/* Page enter animation */
+@keyframes kiosk-page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.kiosk-root main {
+  animation: kiosk-page-in 0.25s ease-out;
+}
+
+/* Tile entrance stagger */
+@keyframes kiosk-tile-pop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.kiosk-root .kiosk-tile {
+  animation: kiosk-tile-pop 0.25s ease-out backwards;
+}
+
+/* Pulse for primary CTAs */
+@keyframes kiosk-cta-pulse {
+  0%, 100% { box-shadow: 0 10px 25px -5px rgba(14, 96, 74, 0.3); }
+  50% { box-shadow: 0 14px 35px -5px rgba(14, 96, 74, 0.5); }
+}
+.kiosk-cta-pulse {
+  animation: kiosk-cta-pulse 2.4s ease-in-out infinite;
+}

@@ -8,8 +8,8 @@ const emailService = require('../services/emailService');
 // @route   POST /api/auth/register
 router.post('/register', async (req, res, next) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
-    const user = await User.create({ email, password, firstName, lastName });
+    const { email, password, firstName, lastName, phone } = req.body;
+    const user = await User.create({ email, password, firstName, lastName, phone });
     
     // Handle coupon email automation for new users
     const couponEmailService = require('../services/couponEmailService');

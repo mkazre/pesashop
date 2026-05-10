@@ -36,6 +36,18 @@ import ChatAdmin from './pages/chat/ChatAdmin';
 import ChatWidget from './components/chat/ChatWidget';
 import PopupRenderer from './components/common/PopupRenderer';
 
+// Kiosk
+import KioskLayout from './pages/kiosk/KioskLayout';
+import KioskHome from './pages/kiosk/KioskHome';
+import KioskShop from './pages/kiosk/KioskShop';
+import KioskProductDetail from './pages/kiosk/KioskProductDetail';
+import KioskSearch from './pages/kiosk/KioskSearch';
+import KioskCart from './pages/kiosk/KioskCart';
+import KioskCheckout from './pages/kiosk/KioskCheckout';
+import KioskOrderSuccess from './pages/kiosk/KioskOrderSuccess';
+import KioskAuth from './pages/kiosk/KioskAuth';
+import KioskAccountLayout from './pages/kiosk/KioskAccountLayout';
+
 // Modals
 import QuickViewModal from './components/modals/QuickViewModal';
 import AuthModal from './components/modals/AuthModal';
@@ -55,6 +67,7 @@ function ScrollToTop() {
 function App() {
   const { quickViewProduct, authModalOpen, cartSidebarOpen, checkoutDrawerOpen, closeCheckoutDrawer } = useUIStore();
   const { settings: pageSettings } = useProductPageSettings();
+  const isKioskRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/kiosk');
 
   return (
     <>
@@ -62,7 +75,38 @@ function App() {
       <Routes>
         {/* Chat Admin - separate login route (outside Layout) - MUST be before catch-all */}
         <Route path="/chat-admin" element={<ChatAdmin />} />
-        
+
+        {/* Digital Kiosk — fullscreen, no Header/Footer */}
+        <Route path="/kiosk" element={<KioskLayout />}>
+          <Route index element={<KioskHome />} />
+          <Route path="shop" element={<KioskShop />} />
+          <Route path="shop/:category" element={<KioskShop />} />
+          <Route path="product/:slug" element={<KioskProductDetail />} />
+          <Route path="search" element={<KioskSearch />} />
+          <Route path="cart" element={<KioskCart />} />
+          <Route path="checkout" element={<KioskCheckout />} />
+          <Route path="order-success/:orderId" element={<KioskOrderSuccess />} />
+          <Route path="auth" element={<KioskAuth />} />
+          <Route path="account" element={<KioskAccountLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="orders/:id" element={<OrderDetailPage />} />
+            <Route path="laybyes" element={<LaybyesPage />} />
+            <Route path="payments" element={<PaymentsPage />} />
+            <Route path="transactions" element={<TransactionsPage />} />
+            <Route path="loyalty-points" element={<LoyaltyPointsPage />} />
+            <Route path="coupons" element={<MyCouponsPage />} />
+            <Route path="gift-cards" element={<MyGiftCardsPage />} />
+            <Route path="wishlist" element={<WishlistPage />} />
+            <Route path="addresses" element={<AddressesPage />} />
+            <Route path="recurring-orders" element={<RecurringOrdersAccountPage />} />
+            <Route path="my-offers" element={<MyOffersPage />} />
+            <Route path="service-requests" element={<MyServiceRequestsPage />} />
+            <Route path="settings" element={<AccountSettingsPage />} />
+            <Route path="provider-portal" element={<ProviderPortalPage />} />
+          </Route>
+        </Route>
+
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path="shop" element={<ShopPage />} />
@@ -100,11 +144,11 @@ function App() {
         </Route>
       </Routes>
 
-      {/* Chat Widget - visible on all pages */}
-      <ChatWidget />
+      {/* Chat Widget — hidden on kiosk routes */}
+      {!isKioskRoute && <ChatWidget />}
 
-      {/* Popup Renderer - evaluates and displays active popups */}
-      <PopupRenderer isApp={false} />
+      {/* Popup Renderer — disabled on kiosk routes (kiosk has its own screensaver) */}
+      {!isKioskRoute && <PopupRenderer isApp={false} />}
 
       {/* Global Modals */}
       {quickViewProduct && <QuickViewModal />}

@@ -78,6 +78,10 @@ import ServiceTypesPage from './pages/ServiceTypesPage';
 import ServiceRequestsPage from './pages/ServiceRequestsPage';
 import ImportBatchesPage from './pages/ImportBatchesPage';
 import PriceFixToolPage from './pages/PriceFixToolPage';
+import KioskSettingsPage from './pages/digitalKiosks/SettingsPage';
+import KioskScreensaverMediaPage from './pages/digitalKiosks/ScreensaverMediaPage';
+import KioskFeaturedContentPage from './pages/digitalKiosks/FeaturedContentPage';
+import KioskRegisteredDevicesPage from './pages/digitalKiosks/RegisteredDevicesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -191,6 +195,11 @@ function App() {
             <Route path="service-requests" element={<ServiceRequestsPage />} />
             <Route path="import-batches" element={<ImportBatchesPage />} />
             <Route path="price-fix-tool" element={<PriceFixToolPage />} />
+            {/* Digital Kiosks */}
+            <Route path="digital-kiosks/settings" element={<KioskSettingsPage />} />
+            <Route path="digital-kiosks/screensaver" element={<KioskScreensaverMediaPage />} />
+            <Route path="digital-kiosks/featured" element={<KioskFeaturedContentPage />} />
+            <Route path="digital-kiosks/devices" element={<KioskRegisteredDevicesPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

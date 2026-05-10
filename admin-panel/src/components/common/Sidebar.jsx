@@ -37,6 +37,10 @@ import {
   IoMegaphoneOutline,
   IoChevronDownOutline,
   IoChevronForwardOutline,
+  IoTvOutline,
+  IoFilmOutline,
+  IoSparklesOutline,
+  IoHardwareChipOutline,
 } from 'react-icons/io5';
 import { useUIStore } from '@/store';
 import classNames from 'classnames';
@@ -138,6 +142,15 @@ const menuGroups = [
     label: 'Mobile App',
     items: [
       { path: '/mobile-app/splash', icon: IoPhonePortraitOutline, label: 'Mobile App' },
+    ],
+  },
+  {
+    label: 'Digital Kiosks',
+    items: [
+      { path: '/digital-kiosks/settings', icon: IoTvOutline, label: 'Settings' },
+      { path: '/digital-kiosks/screensaver', icon: IoFilmOutline, label: 'Screensaver Media' },
+      { path: '/digital-kiosks/featured', icon: IoSparklesOutline, label: 'Featured Content' },
+      { path: '/digital-kiosks/devices', icon: IoHardwareChipOutline, label: 'Registered Devices' },
     ],
   },
   {

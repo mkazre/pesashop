@@ -330,4 +330,11 @@ export const serviceRequestsAPI = {
   getMine: () => api.get('/api/service-requests/mine'),
 };
 
+// Digital Kiosk API
+export const digitalKioskAPI = {
+  getConfig: (deviceId) => api.get('/api/digital-kiosk/config', { params: deviceId ? { deviceId } : {} }),
+  registerDevice: (data) => api.post('/api/digital-kiosk/devices', data),
+  heartbeat: (deviceId) => api.post(`/api/digital-kiosk/devices/${deviceId}/heartbeat`),
+};
+
 export default api;

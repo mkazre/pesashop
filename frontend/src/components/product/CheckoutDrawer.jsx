@@ -17,7 +17,7 @@ const DEFAULT_PAYMENT_METHODS = [
   { id: 'card', label: 'Card', displayType: 'icon', icon: '💳', image: '', enabled: true },
 ];
 
-export default function CheckoutDrawer({ open, onClose, product, quantity: initialQty, selectedVariant, laybyeSelection, settings }) {
+export default function CheckoutDrawer({ open, onClose, product, quantity: initialQty, selectedVariant, laybyeSelection, settings, onOrderPlaced }) {
   const cd = settings?.checkoutDrawer || {};
   const theme = settings?.theme || {};
   const { user, isAuthenticated } = useAuthStore();
@@ -237,7 +237,9 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
         cart.clearCart();
         const orderId = response.data?.data?._id || response.data?._id;
         onClose();
-        if (orderId) {
+        if (typeof onOrderPlaced === 'function') {
+          onOrderPlaced(orderId, response);
+        } else if (orderId) {
           navigate(`/order-success/${orderId}`);
         }
       },
