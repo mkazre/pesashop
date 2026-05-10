@@ -2,10 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore, useCurrencyStore } from '@/store';
 import KioskHeader from '@/components/kiosk/KioskHeader';
+import { resolveUrl } from '@/utils/kioskUrl';
 import { IoAddOutline, IoRemoveOutline, IoTrashOutline, IoArrowForwardOutline, IoBagOutline } from 'react-icons/io5';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const resolveUrl = (url) => (!url ? '' : url.startsWith('http') ? url : `${API_URL}${url}`);
 
 export default function KioskCart() {
   const navigate = useNavigate();

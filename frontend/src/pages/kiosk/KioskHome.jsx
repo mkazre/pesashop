@@ -4,9 +4,7 @@ import { useKioskConfig } from '@/hooks/useKioskConfig';
 import { useOrientation } from '@/hooks/useOrientation';
 import { useCurrencyStore } from '@/store';
 import KioskHeader from '@/components/kiosk/KioskHeader';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const resolveUrl = (url) => (!url ? '' : url.startsWith('http') ? url : `${API_URL}${url}`);
+import { resolveUrl } from '@/utils/kioskUrl';
 
 export default function KioskHome() {
   const navigate = useNavigate();

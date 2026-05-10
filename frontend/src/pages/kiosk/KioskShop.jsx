@@ -6,12 +6,10 @@ import { useCurrencyStore } from '@/store';
 import { useProductArchiveSettings } from '@/hooks/useProductArchiveSettings';
 import KioskHeader from '@/components/kiosk/KioskHeader';
 import KioskCategoryCarousel from '@/components/kiosk/KioskCategoryCarousel';
+import { resolveUrl } from '@/utils/kioskUrl';
 import {
   IoFilterOutline, IoChevronBackOutline, IoChevronForwardOutline,
 } from 'react-icons/io5';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const resolveUrl = (url) => (!url ? '' : url.startsWith('http') ? url : `${API_URL}${url}`);
 
 const SORT_OPTIONS = [
   { id: 'featured', label: 'Featured' },

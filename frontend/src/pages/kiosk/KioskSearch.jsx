@@ -5,10 +5,8 @@ import { productsAPI, categoriesAPI } from '@/services/api';
 import KioskHeader from '@/components/kiosk/KioskHeader';
 import VirtualKeyboard from '@/components/kiosk/VirtualKeyboard';
 import { useCurrencyStore } from '@/store';
+import { resolveUrl } from '@/utils/kioskUrl';
 import { IoSearchOutline, IoCloseCircle, IoArrowForwardOutline } from 'react-icons/io5';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const resolveUrl = (url) => (!url ? '' : url.startsWith('http') ? url : `${API_URL}${url}`);
 
 export default function KioskSearch() {
   const navigate = useNavigate();

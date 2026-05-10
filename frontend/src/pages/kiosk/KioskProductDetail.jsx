@@ -6,6 +6,7 @@ import { useCartStore, useCurrencyStore } from '@/store';
 import KioskHeader from '@/components/kiosk/KioskHeader';
 import toast from 'react-hot-toast';
 import { IoAddOutline, IoRemoveOutline, IoCartOutline, IoCheckmarkCircle, IoChevronBackOutline, IoChevronForwardOutline } from 'react-icons/io5';
+import { resolveUrl } from '@/utils/kioskUrl';
 
 // Reuse the same widgets the website's product page uses — single source of truth
 import LoyaltyPointsBadge from '@/components/loyalty/LoyaltyPointsBadge';
@@ -19,8 +20,6 @@ import RecommendedWithPurchase from '@/components/product/RecommendedWithPurchas
 import ServiceProviderAdSlot from '@/components/ads/ServiceProviderAdSlot';
 import OfferSlot from '@/components/offers/OfferSlot';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const resolveUrl = (url) => (!url ? '' : url.startsWith('http') ? url : `${API_URL}${url}`);
 
 export default function KioskProductDetail() {
   const { slug } = useParams();

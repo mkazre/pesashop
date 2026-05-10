@@ -4,12 +4,10 @@ import { useCartStore, useAuthStore } from '@/store';
 import { useKioskConfig } from '@/hooks/useKioskConfig';
 import KioskCurrencyPicker from '@/components/kiosk/KioskCurrencyPicker';
 import pesaLogo from '@/assets/pesashop-logo.png';
+import { resolveUrl } from '@/utils/kioskUrl';
 import {
   IoHomeOutline, IoSearchOutline, IoCartOutline, IoPersonOutline, IoArrowBackOutline, IoLocateOutline,
 } from 'react-icons/io5';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const resolveUrl = (url) => (!url ? '' : url.startsWith('http') ? url : `${API_URL}${url}`);
 
 export default function KioskHeader() {
   const navigate = useNavigate();

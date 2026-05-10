@@ -2,15 +2,8 @@ import React, { useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { categoriesAPI } from '@/services/api';
+import { resolveUrl as resolveImg } from '@/utils/kioskUrl';
 import { IoChevronBackOutline, IoChevronForwardOutline } from 'react-icons/io5';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const resolveImg = (url) => {
-  if (!url) return '';
-  if (typeof url === 'object') url = url.url || url.src || '';
-  if (typeof url !== 'string' || !url) return '';
-  return url.startsWith('http') ? url : `${API_URL}${url.startsWith('/') ? url : '/' + url}`;
-};
 
 /**
  * Touch-friendly category carousel for the kiosk — same shape as the website's
