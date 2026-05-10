@@ -39,24 +39,27 @@ export default function KioskProductDetail() {
     return list;
   }, [product]);
 
-  if (isLoading) return <Shell><div className="p-12 text-gray-500 text-center">Loading…</div></Shell>;
-  if (!product) return <Shell><div className="p-12 text-gray-500 text-center">Product not found.</div></Shell>;
-
-  const attributesMap = product.attributes && typeof product.attributes === 'object' && !(product.attributes instanceof Array)
-    ? (product.attributes.toJSON ? product.attributes.toJSON() : product.attributes)
-    : {};
-  const attrEntries = Object.entries(attributesMap || {});
+  const attrEntries = useMemo(() => {
+    if (!product) return [];
+    const raw = product.attributes;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return [];
+    const map = typeof raw.toJSON === 'function' ? raw.toJSON() : raw;
+    return Object.entries(map || {});
+  }, [product]);
 
   const matchedVariant = useMemo(() => {
-    if (!Array.isArray(product.variations) || product.variations.length === 0) return null;
+    if (!product || !Array.isArray(product.variations) || product.variations.length === 0) return null;
     const entries = Object.entries(selectedAttrs);
     if (entries.length === 0) return null;
     return product.variations.find(v => {
       const va = v.attributes || {};
-      const vaJson = va.toJSON ? va.toJSON() : va;
+      const vaJson = typeof va.toJSON === 'function' ? va.toJSON() : va;
       return entries.every(([k, val]) => String(vaJson[k]) === String(val));
     }) || null;
   }, [product, selectedAttrs]);
+
+  if (isLoading) return <Shell><div className="p-12 text-gray-500 text-center">Loading…</div></Shell>;
+  if (!product) return <Shell><div className="p-12 text-gray-500 text-center">Product not found.</div></Shell>;
 
   const variantPrice = matchedVariant?.salePrice || matchedVariant?.regularPrice;
   const productPrice = product.salePrice || product.regularPrice || 0;
