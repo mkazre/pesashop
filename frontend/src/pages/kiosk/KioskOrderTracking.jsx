@@ -133,7 +133,7 @@ function SearchForm({ orderNumber, email, activeField, setActiveField, setOrderN
   const setValue = activeField === 'orderNumber' ? setOrderNumber : setEmail;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,640px)] gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,640px)] gap-6 items-start">
       <div className="bg-white rounded-2xl shadow-md p-6 md:p-8">
         <div className="space-y-3">
           <button

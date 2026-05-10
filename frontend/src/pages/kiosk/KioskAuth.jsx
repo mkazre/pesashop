@@ -94,7 +94,7 @@ export default function KioskAuth() {
       <KioskHeader />
 
       <main className="flex-1 px-6 py-6 md:px-10 md:py-8 max-w-[1800px] mx-auto w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,640px)] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,640px)] gap-6 items-start">
           {/* Form */}
           <div className="bg-white rounded-2xl shadow-md p-6 md:p-8">
             <div className="flex gap-2 mb-6">
