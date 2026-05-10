@@ -28,9 +28,9 @@ export default function KioskHeader() {
         {!onHome && (
           <button
             onClick={() => navigate(-1)}
-            className="kiosk-tile flex items-center gap-2 px-4 py-3 bg-gray-100 rounded-xl text-gray-700 font-medium"
+            className="kiosk-tile flex items-center gap-2 px-5 py-3 bg-gray-100 rounded-xl text-gray-700 font-medium"
           >
-            <IoArrowBackOutline size={22} /> Back
+            <IoArrowBackOutline size={24} /> Back
           </button>
         )}
         <button onClick={() => navigate('/kiosk')} className="kiosk-tile flex items-center gap-3">
@@ -73,9 +73,9 @@ export default function KioskHeader() {
         {!onHome && (
           <button
             onClick={() => navigate('/kiosk')}
-            className="kiosk-tile flex items-center gap-2 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-100"
+            className="kiosk-tile flex items-center gap-2 px-5 py-3 bg-gray-100 rounded-xl text-gray-700"
           >
-            <IoHomeOutline size={22} />
+            <IoHomeOutline size={24} />
           </button>
         )}
       </div>

@@ -5,6 +5,7 @@ import { productsAPI, categoriesAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
 import { useProductArchiveSettings } from '@/hooks/useProductArchiveSettings';
 import KioskHeader from '@/components/kiosk/KioskHeader';
+import KioskCategoryCarousel from '@/components/kiosk/KioskCategoryCarousel';
 import {
   IoFilterOutline, IoChevronBackOutline, IoChevronForwardOutline,
 } from 'react-icons/io5';
@@ -128,6 +129,11 @@ export default function KioskShop() {
       <KioskHeader />
 
       <main className="flex-1 px-6 py-6 md:px-10 md:py-8 max-w-[1800px] mx-auto w-full">
+        {/* Category carousel — top */}
+        <div className="mb-8">
+          <KioskCategoryCarousel title="Browse Categories" />
+        </div>
+
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
@@ -230,6 +236,11 @@ export default function KioskShop() {
             )}
           </>
         )}
+
+        {/* Category carousel — bottom */}
+        <div className="mt-12">
+          <KioskCategoryCarousel title="Keep browsing" />
+        </div>
       </main>
     </div>
   );
