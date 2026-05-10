@@ -92,9 +92,9 @@ export default function KioskHome() {
                   onClick={() => navigate(`/kiosk/product/${p.slug || p._id}`)}
                   className="kiosk-tile flex-shrink-0 w-64 md:w-72 bg-white rounded-2xl shadow-md overflow-hidden text-left"
                 >
-                  <div className="aspect-square bg-gray-100">
+                  <div className="h-56 md:h-64 bg-white flex items-center justify-center p-4">
                     {p.featuredImage ? (
-                      <img src={resolveUrl(p.featuredImage)} alt={p.name} className="w-full h-full object-cover" />
+                      <img src={resolveUrl(p.featuredImage)} alt={p.name} className="max-w-full max-h-full object-contain" />
                     ) : null}
                   </div>
                   <div className="p-4">

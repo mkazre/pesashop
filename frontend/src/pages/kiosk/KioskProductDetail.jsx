@@ -7,6 +7,18 @@ import KioskHeader from '@/components/kiosk/KioskHeader';
 import toast from 'react-hot-toast';
 import { IoAddOutline, IoRemoveOutline, IoCartOutline, IoCheckmarkCircle, IoChevronBackOutline, IoChevronForwardOutline } from 'react-icons/io5';
 
+// Reuse the same widgets the website's product page uses — single source of truth
+import LoyaltyPointsBadge from '@/components/loyalty/LoyaltyPointsBadge';
+import LaybyWidget from '@/components/product/LaybyWidget';
+import RecurringWidget from '@/components/product/RecurringWidget';
+import TrustBadges from '@/components/product/TrustBadges';
+import ProductTabs from '@/components/product/ProductTabs';
+import RelatedProducts from '@/components/product/RelatedProducts';
+import CustomersAlsoBought from '@/components/product/CustomersAlsoBought';
+import RecommendedWithPurchase from '@/components/product/RecommendedWithPurchase';
+import ServiceProviderAdSlot from '@/components/ads/ServiceProviderAdSlot';
+import OfferSlot from '@/components/offers/OfferSlot';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const resolveUrl = (url) => (!url ? '' : url.startsWith('http') ? url : `${API_URL}${url}`);
 
@@ -179,14 +191,64 @@ export default function KioskProductDetail() {
             Add to Cart — {formatPrice(Number(displayPrice) * quantity)}
           </button>
 
-          {product.description && (
-            <div className="mt-8 bg-white rounded-2xl p-5 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">About this product</h3>
-              <div className="prose max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: product.description }} />
-            </div>
-          )}
+          {/* PESA Coins reward badge */}
+          <div className="mt-5">
+            <LoyaltyPointsBadge productId={product._id} quantity={quantity} />
+          </div>
+
+          {/* Laybye widget */}
+          <div className="mt-4">
+            <LaybyWidget product={product} />
+          </div>
+
+          {/* Recurring purchase widget */}
+          <div className="mt-4">
+            <RecurringWidget product={product} />
+          </div>
         </div>
       </main>
+
+      {/* ── Below the fold: full website experience, kiosk-styled ───────────── */}
+      <section className="kiosk-account-scope max-w-[1800px] mx-auto w-full px-6 md:px-10 pb-12 space-y-8">
+        {/* Trust badges */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6">
+          <TrustBadges />
+        </div>
+
+        {/* Service provider ads — slot just under the buy area */}
+        <ServiceProviderAdSlot
+          slotId="product_detail_below_buy"
+          pageType="product"
+          productId={product._id}
+          categorySlug={product.categories?.[0]?.slug}
+        />
+
+        {/* Description / Specs / Reviews / Q&A tabs */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 md:p-8">
+          <ProductTabs product={product} />
+        </div>
+
+        {/* Related products */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Related products</h2>
+          <RelatedProducts productId={product._id} categoryId={product.categories?.[0]?._id} />
+        </div>
+
+        {/* Customers also bought */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Customers also bought</h2>
+          <CustomersAlsoBought productId={product._id} />
+        </div>
+
+        {/* Recommended with your purchase */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Recommended with your purchase</h2>
+          <RecommendedWithPurchase productId={product._id} />
+        </div>
+
+        {/* Special offers */}
+        <OfferSlot page="product_detail" />
+      </section>
     </Shell>
   );
 }

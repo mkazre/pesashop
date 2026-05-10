@@ -176,9 +176,9 @@ export default function KioskShop() {
                     onClick={() => navigate(`/kiosk/product/${p.slug || p._id}`)}
                     className="kiosk-tile bg-white rounded-2xl shadow-sm overflow-hidden text-left flex flex-col"
                   >
-                    <div className="aspect-square bg-gray-100 relative">
+                    <div className="h-48 sm:h-52 md:h-60 lg:h-64 bg-white relative flex items-center justify-center p-3">
                       {p.featuredImage && (
-                        <img src={resolveUrl(p.featuredImage)} alt={p.name} className="w-full h-full object-cover" />
+                        <img src={resolveUrl(p.featuredImage)} alt={p.name} className="max-w-full max-h-full object-contain" />
                       )}
                       {onSale && (
                         <span className="absolute top-3 left-3 bg-secondary text-black text-xs font-bold px-2.5 py-1 rounded">SALE</span>

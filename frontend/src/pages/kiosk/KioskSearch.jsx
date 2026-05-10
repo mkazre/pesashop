@@ -70,8 +70,8 @@ export default function KioskSearch() {
                     onClick={() => navigate(`/kiosk/product/${p.slug || p._id}`)}
                     className="kiosk-tile bg-white rounded-2xl shadow-sm overflow-hidden text-left"
                   >
-                    <div className="aspect-square bg-gray-100">
-                      {p.featuredImage && <img src={resolveUrl(p.featuredImage)} alt={p.name} className="w-full h-full object-cover" />}
+                    <div className="h-44 sm:h-48 md:h-52 bg-white flex items-center justify-center p-3">
+                      {p.featuredImage && <img src={resolveUrl(p.featuredImage)} alt={p.name} className="max-w-full max-h-full object-contain" />}
                     </div>
                     <div className="p-3">
                       <div className="text-base font-semibold text-gray-800 line-clamp-2 leading-tight">{p.name}</div>
