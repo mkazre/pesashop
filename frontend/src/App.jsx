@@ -47,6 +47,7 @@ import KioskCheckout from './pages/kiosk/KioskCheckout';
 import KioskOrderSuccess from './pages/kiosk/KioskOrderSuccess';
 import KioskAuth from './pages/kiosk/KioskAuth';
 import KioskAccountLayout from './pages/kiosk/KioskAccountLayout';
+import KioskOrderTracking from './pages/kiosk/KioskOrderTracking';
 
 // Modals
 import QuickViewModal from './components/modals/QuickViewModal';
@@ -83,6 +84,7 @@ function App() {
           <Route path="shop/:category" element={<KioskShop />} />
           <Route path="product/:slug" element={<KioskProductDetail />} />
           <Route path="search" element={<KioskSearch />} />
+          <Route path="track" element={<KioskOrderTracking />} />
           <Route path="cart" element={<KioskCart />} />
           <Route path="checkout" element={<KioskCheckout />} />
           <Route path="order-success/:orderId" element={<KioskOrderSuccess />} />

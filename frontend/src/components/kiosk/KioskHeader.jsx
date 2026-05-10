@@ -3,8 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useCartStore, useAuthStore } from '@/store';
 import { useKioskConfig } from '@/hooks/useKioskConfig';
 import KioskCurrencyPicker from '@/components/kiosk/KioskCurrencyPicker';
+import pesaLogo from '@/assets/pesashop-logo.png';
 import {
-  IoHomeOutline, IoSearchOutline, IoCartOutline, IoPersonOutline, IoArrowBackOutline,
+  IoHomeOutline, IoSearchOutline, IoCartOutline, IoPersonOutline, IoArrowBackOutline, IoLocateOutline,
 } from 'react-icons/io5';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -33,11 +34,11 @@ export default function KioskHeader() {
           </button>
         )}
         <button onClick={() => navigate('/kiosk')} className="kiosk-tile flex items-center gap-3">
-          {logoUrl ? (
-            <img src={resolveUrl(logoUrl)} alt="Logo" className="h-12 w-auto" />
-          ) : (
-            <span className="text-2xl font-bold text-primary">PESA Shop</span>
-          )}
+          <img
+            src={logoUrl ? resolveUrl(logoUrl) : pesaLogo}
+            alt="PESA Shop"
+            className="h-12 md:h-14 w-auto object-contain"
+          />
         </button>
 
         <div className="flex-1" />
@@ -45,6 +46,11 @@ export default function KioskHeader() {
         <button onClick={() => navigate('/kiosk/search')} className="kiosk-tile flex items-center gap-2 px-5 py-3 bg-gray-100 rounded-xl text-gray-700">
           <IoSearchOutline size={24} />
           <span className="hidden md:inline font-medium">Search</span>
+        </button>
+
+        <button onClick={() => navigate('/kiosk/track')} className="kiosk-tile flex items-center gap-2 px-5 py-3 bg-gray-100 rounded-xl text-gray-700">
+          <IoLocateOutline size={24} />
+          <span className="hidden md:inline font-medium">Track Order</span>
         </button>
 
         <KioskCurrencyPicker />
