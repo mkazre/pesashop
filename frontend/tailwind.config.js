@@ -18,8 +18,6 @@ export default {
     extend: {
       screens: {
         'kiosk': '2160px',
-        'kiosk-portrait': { 'raw': '(orientation: portrait) and (min-height: 1500px)' },
-        'kiosk-landscape': { 'raw': '(orientation: landscape) and (min-width: 2160px)' },
       },
       colors: {
         primary: {

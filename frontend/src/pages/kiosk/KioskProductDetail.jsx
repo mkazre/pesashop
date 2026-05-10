@@ -13,12 +13,16 @@ import LoyaltyPointsBadge from '@/components/loyalty/LoyaltyPointsBadge';
 import LaybyWidget from '@/components/product/LaybyWidget';
 import RecurringWidget from '@/components/product/RecurringWidget';
 import TrustBadges from '@/components/product/TrustBadges';
-import ProductTabs from '@/components/product/ProductTabs';
 import RelatedProducts from '@/components/product/RelatedProducts';
 import CustomersAlsoBought from '@/components/product/CustomersAlsoBought';
+import CustomersAlsoViewed from '@/components/product/CustomersAlsoViewed';
 import RecommendedWithPurchase from '@/components/product/RecommendedWithPurchase';
 import ServiceProviderAdSlot from '@/components/ads/ServiceProviderAdSlot';
 import OfferSlot from '@/components/offers/OfferSlot';
+import ProductQA from '@/components/product/ProductQA';
+import StarRating from '@/components/common/StarRating';
+import KioskFreeShippingBar from '@/components/kiosk/KioskFreeShippingBar';
+import KioskAccordion from '@/components/kiosk/KioskAccordion';
 
 
 export default function KioskProductDetail() {
@@ -181,10 +185,15 @@ export default function KioskProductDetail() {
             </div>
           </div>
 
+          {/* Free shipping progress bar — currency-aware (uses same admin settings as web) */}
+          <div className="mt-6">
+            <KioskFreeShippingBar extraAmount={Number(displayPrice) * quantity} />
+          </div>
+
           <button
             onClick={addToCart}
             disabled={stock <= 0}
-            className="mt-8 w-full kiosk-tile kiosk-cta-pulse flex items-center justify-center gap-3 py-5 bg-primary text-white rounded-2xl text-2xl font-bold shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed disabled:animate-none"
+            className="mt-6 w-full kiosk-tile kiosk-cta-pulse flex items-center justify-center gap-3 py-5 bg-primary text-white rounded-2xl text-2xl font-bold shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed disabled:animate-none"
           >
             <IoCartOutline size={28} />
             Add to Cart — {formatPrice(Number(displayPrice) * quantity)}
@@ -214,29 +223,65 @@ export default function KioskProductDetail() {
           <TrustBadges />
         </div>
 
-        {/* Service provider ads — slot just under the buy area */}
-        <ServiceProviderAdSlot
-          slotId="product_detail_below_buy"
-          pageType="product"
-          productId={product._id}
-          categorySlug={product.categories?.[0]?.slug}
+        {/* Book a Professional — service provider ads in product context */}
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">Book a Professional</h2>
+          <ServiceProviderAdSlot
+            slotId="product_detail_below_buy"
+            pageType="product"
+            productId={product._id}
+            categorySlug={product.categories?.[0]?.slug}
+          />
+        </div>
+
+        {/* Collapsible accordion — Description / Specifications / Reviews / Q&A */}
+        <KioskAccordion
+          defaultOpen="description"
+          items={[
+            {
+              id: 'description',
+              label: 'Description',
+              content: () => (
+                <div className="prose max-w-none text-gray-700 text-base md:text-lg whitespace-pre-line"
+                     dangerouslySetInnerHTML={{ __html: product.description || '<p class="text-gray-500">No description provided.</p>' }} />
+              ),
+            },
+            {
+              id: 'specifications',
+              label: 'Specifications',
+              count: Array.isArray(product.specifications) ? product.specifications.length : undefined,
+              content: () => <KioskSpecifications product={product} />,
+            },
+            {
+              id: 'reviews',
+              label: 'Customer Reviews',
+              count: product.reviewCount || (product.reviews?.length ?? 0),
+              content: () => <KioskReviews product={product} />,
+            },
+            {
+              id: 'qa',
+              label: 'Questions & Answers',
+              content: () => <ProductQA productId={product._id} />,
+            },
+          ]}
         />
 
-        {/* Description / Specs / Reviews / Q&A tabs */}
-        <div className="bg-white rounded-2xl shadow-sm p-5 md:p-8">
-          <ProductTabs product={product} />
+        {/* Customers Also Viewed */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Customers also viewed</h2>
+          <CustomersAlsoViewed productId={product._id} />
+        </div>
+
+        {/* Customers Also Bought */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Customers also bought</h2>
+          <CustomersAlsoBought productId={product._id} />
         </div>
 
         {/* Related products */}
         <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Related products</h2>
           <RelatedProducts productId={product._id} categoryId={product.categories?.[0]?._id} />
-        </div>
-
-        {/* Customers also bought */}
-        <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Customers also bought</h2>
-          <CustomersAlsoBought productId={product._id} />
         </div>
 
         {/* Recommended with your purchase */}
@@ -249,6 +294,71 @@ export default function KioskProductDetail() {
         <OfferSlot page="product_detail" />
       </section>
     </Shell>
+  );
+}
+
+function KioskSpecifications({ product }) {
+  const specs = Array.isArray(product.specifications) ? product.specifications : [];
+  // Inline misc fields (weight/dimensions/material/brand) too, in case they're not in the array
+  const extras = [];
+  if (product.brand) extras.push({ name: 'Brand', value: product.brand });
+  if (product.weight) extras.push({ name: 'Weight', value: `${product.weight} kg` });
+  if (product.dimensions) extras.push({ name: 'Dimensions', value: product.dimensions });
+  if (product.material) extras.push({ name: 'Material', value: product.material });
+  const all = [...extras, ...specs.map(s => ({ name: s.name || s.label || s.key, value: s.value }))].filter(s => s.name && s.value);
+  if (all.length === 0) {
+    return <p className="text-base text-gray-500 italic">No specifications available for this product.</p>;
+  }
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-base md:text-lg">
+        <tbody>
+          {all.map((spec, i) => (
+            <tr key={i} className={i % 2 === 0 ? 'bg-gray-50' : ''}>
+              <td className="py-3 px-4 font-semibold text-gray-700 align-top w-1/3">{spec.name}</td>
+              <td className="py-3 px-4 text-gray-700">{spec.value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function KioskReviews({ product }) {
+  const rating = product.rating || 0;
+  const count = product.reviewCount || product.reviews?.length || 0;
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-6 pb-4 border-b border-gray-200">
+        <div>
+          <div className="text-5xl font-extrabold text-gray-900 leading-none">{rating.toFixed(1)}</div>
+          <div className="mt-2"><StarRating rating={rating} size="lg" showCount={false} /></div>
+          <div className="mt-1 text-sm text-gray-500">Based on {count} review{count === 1 ? '' : 's'}</div>
+        </div>
+      </div>
+      {Array.isArray(product.reviews) && product.reviews.length > 0 ? (
+        <div className="space-y-5">
+          {product.reviews.map((r) => (
+            <div key={r._id} className="border-b border-gray-100 pb-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-semibold text-gray-900 text-base">{r.userName}</div>
+                  <StarRating rating={r.rating} size="sm" showCount={false} />
+                </div>
+                <div className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</div>
+              </div>
+              <p className="mt-2 text-base text-gray-700 leading-relaxed">{r.comment}</p>
+              {r.isVerifiedPurchase && (
+                <span className="inline-block mt-2 text-xs text-green-600 font-semibold">✓ Verified Purchase</span>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-base text-gray-500 italic">No reviews yet for this product.</div>
+      )}
+    </div>
   );
 }
 
