@@ -2,11 +2,31 @@ const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const DigitalKioskConfig = require('../models/DigitalKioskConfig');
+const Product = require('../models/Product');
 
 async function getConfig() {
   let config = await DigitalKioskConfig.findOne();
   if (!config) config = await DigitalKioskConfig.create({});
   return config;
+}
+
+// Compute live product counts for a list of category IDs (matches /api/categories logic)
+async function attachLiveCategoryCounts(categories) {
+  if (!Array.isArray(categories) || categories.length === 0) return categories;
+  const ids = categories.map(c => c?._id).filter(Boolean);
+  if (ids.length === 0) return categories;
+  const counts = await Product.aggregate([
+    { $match: { status: { $ne: 'trashed' }, categories: { $in: ids } } },
+    { $unwind: '$categories' },
+    { $match: { categories: { $in: ids } } },
+    { $group: { _id: '$categories', count: { $sum: 1 } } },
+  ]);
+  const map = {};
+  counts.forEach(c => { map[c._id.toString()] = c.count; });
+  categories.forEach(cat => {
+    if (cat && cat._id) cat.productCount = map[cat._id.toString()] || 0;
+  });
+  return categories;
 }
 
 function mergeDeviceOverrides(configObj, deviceId) {
@@ -31,6 +51,8 @@ router.get('/config', async (req, res) => {
       .populate('featuredCategories', 'name slug image icon iconImage bannerImage productCount')
       .populate('featuredProducts', 'name slug featuredImage images regularPrice salePrice stock');
     const obj = populated.toObject();
+    // Replace the cached (often stale) productCount with a live aggregation
+    await attachLiveCategoryCounts(obj.featuredCategories);
     const merged = mergeDeviceOverrides(obj, req.query.deviceId);
     // Don't ship full devices array to public clients
     delete merged.devices;
@@ -45,9 +67,11 @@ router.get('/config/admin', protect, authorize('admin'), async (req, res) => {
   try {
     const config = await getConfig();
     const populated = await DigitalKioskConfig.findById(config._id)
-      .populate('featuredCategories', 'name slug image')
+      .populate('featuredCategories', 'name slug image productCount')
       .populate('featuredProducts', 'name slug featuredImage regularPrice salePrice');
-    res.json({ success: true, data: populated });
+    const obj = populated.toObject();
+    await attachLiveCategoryCounts(obj.featuredCategories);
+    res.json({ success: true, data: obj });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -70,9 +94,11 @@ router.put('/config', protect, authorize('admin'), async (req, res) => {
     }
     await config.save();
     const populated = await DigitalKioskConfig.findById(config._id)
-      .populate('featuredCategories', 'name slug image')
+      .populate('featuredCategories', 'name slug image productCount')
       .populate('featuredProducts', 'name slug featuredImage regularPrice salePrice');
-    res.json({ success: true, data: populated });
+    const obj = populated.toObject();
+    await attachLiveCategoryCounts(obj.featuredCategories);
+    res.json({ success: true, data: obj });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
