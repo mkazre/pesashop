@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCartStore, useAuthStore } from '@/store';
 import { useKioskConfig } from '@/hooks/useKioskConfig';
+import KioskCurrencyPicker from '@/components/kiosk/KioskCurrencyPicker';
 import {
   IoHomeOutline, IoSearchOutline, IoCartOutline, IoPersonOutline, IoArrowBackOutline,
 } from 'react-icons/io5';
@@ -45,6 +46,8 @@ export default function KioskHeader() {
           <IoSearchOutline size={24} />
           <span className="hidden md:inline font-medium">Search</span>
         </button>
+
+        <KioskCurrencyPicker />
 
         <button onClick={() => navigate('/kiosk/cart')} className="kiosk-tile relative flex items-center gap-2 px-5 py-3 bg-gray-100 rounded-xl text-gray-700">
           <IoCartOutline size={24} />

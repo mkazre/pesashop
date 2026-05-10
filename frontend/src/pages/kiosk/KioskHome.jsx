@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useKioskConfig } from '@/hooks/useKioskConfig';
 import { useOrientation } from '@/hooks/useOrientation';
+import { useCurrencyStore } from '@/store';
 import KioskHeader from '@/components/kiosk/KioskHeader';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -11,6 +12,7 @@ export default function KioskHome() {
   const navigate = useNavigate();
   const { config, isLoading } = useKioskConfig();
   const orientation = useOrientation();
+  const { formatPrice } = useCurrencyStore();
 
   const featuredCategories = config?.featuredCategories || [];
   const featuredProducts = config?.featuredProducts || [];
@@ -98,7 +100,7 @@ export default function KioskHome() {
                   <div className="p-4">
                     <div className="text-base md:text-lg font-semibold text-gray-800 line-clamp-2">{p.name}</div>
                     <div className="mt-2 text-primary font-bold text-lg">
-                      R{(p.salePrice || p.regularPrice || 0).toFixed(2)}
+                      {formatPrice(p.salePrice || p.regularPrice || 0)}
                     </div>
                   </div>
                 </button>

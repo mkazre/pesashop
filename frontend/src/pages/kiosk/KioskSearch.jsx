@@ -4,6 +4,7 @@ import { useQuery } from 'react-query';
 import { productsAPI } from '@/services/api';
 import KioskHeader from '@/components/kiosk/KioskHeader';
 import VirtualKeyboard from '@/components/kiosk/VirtualKeyboard';
+import { useCurrencyStore } from '@/store';
 import { IoSearchOutline, IoCloseCircle } from 'react-icons/io5';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -11,6 +12,7 @@ const resolveUrl = (url) => (!url ? '' : url.startsWith('http') ? url : `${API_U
 
 export default function KioskSearch() {
   const navigate = useNavigate();
+  const { formatPrice } = useCurrencyStore();
   const [q, setQ] = useState('');
 
   const trimmed = q.trim();
@@ -73,7 +75,7 @@ export default function KioskSearch() {
                     </div>
                     <div className="p-3">
                       <div className="text-base font-semibold text-gray-800 line-clamp-2 leading-tight">{p.name}</div>
-                      <div className="mt-1.5 text-primary font-bold">R{(p.salePrice || p.regularPrice || 0).toFixed(2)}</div>
+                      <div className="mt-1.5 text-primary font-bold">{formatPrice(p.salePrice || p.regularPrice || 0)}</div>
                     </div>
                   </button>
                 ))}

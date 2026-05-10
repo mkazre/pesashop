@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { productsAPI } from '@/services/api';
-import { useCartStore } from '@/store';
+import { useCartStore, useCurrencyStore } from '@/store';
 import KioskHeader from '@/components/kiosk/KioskHeader';
 import toast from 'react-hot-toast';
 import { IoAddOutline, IoRemoveOutline, IoCartOutline, IoCheckmarkCircle, IoChevronBackOutline, IoChevronForwardOutline } from 'react-icons/io5';
@@ -14,6 +14,7 @@ export default function KioskProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const addItem = useCartStore(s => s.addItem);
+  const { formatPrice } = useCurrencyStore();
 
   const { data, isLoading } = useQuery(
     ['kiosk-product', slug],
@@ -121,12 +122,12 @@ export default function KioskProductDetail() {
           {product.shortDescription && <p className="text-gray-600 mt-3 text-lg">{product.shortDescription}</p>}
 
           <div className="mt-6 flex items-baseline gap-3">
-            <span className="text-4xl md:text-5xl font-bold text-primary">R{Number(displayPrice).toFixed(2)}</span>
+            <span className="text-4xl md:text-5xl font-bold text-primary">{formatPrice(Number(displayPrice))}</span>
             {variantPrice && product.regularPrice > variantPrice && (
-              <span className="text-gray-400 text-xl line-through">R{Number(product.regularPrice).toFixed(2)}</span>
+              <span className="text-gray-400 text-xl line-through">{formatPrice(Number(product.regularPrice))}</span>
             )}
             {!variantPrice && product.salePrice && product.salePrice < product.regularPrice && (
-              <span className="text-gray-400 text-xl line-through">R{Number(product.regularPrice).toFixed(2)}</span>
+              <span className="text-gray-400 text-xl line-through">{formatPrice(Number(product.regularPrice))}</span>
             )}
           </div>
 
@@ -175,7 +176,7 @@ export default function KioskProductDetail() {
             className="mt-8 w-full kiosk-tile kiosk-cta-pulse flex items-center justify-center gap-3 py-5 bg-primary text-white rounded-2xl text-2xl font-bold shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed disabled:animate-none"
           >
             <IoCartOutline size={28} />
-            Add to Cart — R{(Number(displayPrice) * quantity).toFixed(2)}
+            Add to Cart — {formatPrice(Number(displayPrice) * quantity)}
           </button>
 
           {product.description && (
