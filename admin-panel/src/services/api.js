@@ -718,4 +718,60 @@ export const offersAPI = {
   markContacted: (customerOfferId, notes) => api.put(`/offers/admin/customer-offers/${customerOfferId}/mark-contacted`, { notes }),
 };
 
+// ─── 2026-05 batch ─────────────────────────────────────────────────
+
+// Returns
+export const returnsAPI = {
+  adminList: (params) => api.get('/returns/admin/all', { params }),
+  adminStats: () => api.get('/returns/admin/stats'),
+  approve: (id, notes) => api.put(`/returns/admin/${id}/approve`, notes || {}),
+  reject: (id, body) => api.put(`/returns/admin/${id}/reject`, body),
+  markReceived: (id) => api.put(`/returns/admin/${id}/mark-received`),
+  refund: (id, body) => api.put(`/returns/admin/${id}/refund`, body),
+  close: (id) => api.put(`/returns/admin/${id}/close`),
+};
+
+// Referrals
+export const referralsAPI = {
+  adminList: (params) => api.get('/referrals/admin/all', { params }),
+  adminStats: () => api.get('/referrals/admin/stats'),
+  flag: (id, reason) => api.put(`/referrals/admin/${id}/flag`, { reason, status: 'fraud' }),
+};
+
+// WhatsApp
+export const whatsappAPI = {
+  status: () => api.get('/whatsapp/admin/status'),
+  list: () => api.get('/whatsapp/admin/templates'),
+  create: (data) => api.post('/whatsapp/admin/templates', data),
+  update: (id, data) => api.put(`/whatsapp/admin/templates/${id}`, data),
+  remove: (id) => api.delete(`/whatsapp/admin/templates/${id}`),
+  testSend: (body) => api.post('/whatsapp/admin/test-send', body),
+  testEvent: (body) => api.post('/whatsapp/admin/test-event', body),
+};
+
+// Live Streams
+export const liveStreamsAPI = {
+  adminList: () => api.get('/live-streams/admin/all'),
+  getOne: (id) => api.get(`/live-streams/${id}`),
+  create: (data) => api.post('/live-streams/admin', data),
+  update: (id, data) => api.put(`/live-streams/admin/${id}`, data),
+  remove: (id) => api.delete(`/live-streams/admin/${id}`),
+  start: (id) => api.put(`/live-streams/admin/${id}/start`),
+  end: (id, data) => api.put(`/live-streams/admin/${id}/end`, data || {}),
+  pin: (id, productId, durationSec) => api.post(`/live-streams/admin/${id}/pin`, { productId, durationSec }),
+  unpin: (id) => api.post(`/live-streams/admin/${id}/unpin`),
+};
+
+// Visual Search / Bundles
+export const visualSearchAPI = {
+  embeddingStatus: () => api.get('/visual-search/admin/embedding-status'),
+  backfill: (data) => api.post('/visual-search/admin/backfill', data),
+};
+export const bundlesAPI = {
+  list: () => api.get('/visual-search/admin/bundles'),
+  create: (data) => api.post('/visual-search/admin/bundles', data),
+  update: (id, data) => api.put(`/visual-search/admin/bundles/${id}`, data),
+  remove: (id) => api.delete(`/visual-search/admin/bundles/${id}`),
+};
+
 export default api;

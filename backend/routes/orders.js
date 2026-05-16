@@ -414,7 +414,12 @@ router.put('/:id/status', protect, authorize('admin', 'shop_manager'), async (re
     if (req.body.status === 'completed' && oldStatus !== 'completed') {
       // Assign points for completed order
       await loyaltyService.assignOrderPoints(order._id);
-    } else if ((req.body.status === 'cancelled' || req.body.status === 'refunded') && 
+      // Trigger referral reward if this is the customer's first qualifying order
+      try {
+        const referralService = require('../services/referralService');
+        referralService.handleQualifyingOrder(order).catch(e => console.error('Referral qualifying order error:', e.message));
+      } catch (e) { /* non-blocking */ }
+    } else if ((req.body.status === 'cancelled' || req.body.status === 'refunded') &&
                oldStatus !== 'cancelled' && oldStatus !== 'refunded') {
       // Remove points for canceled/refunded order
       await loyaltyService.removeOrderPoints(order._id);
@@ -433,6 +438,27 @@ router.put('/:id/status', protect, authorize('admin', 'shop_manager'), async (re
         emailService.sendOrderRefunded(order).catch(e => console.error('Order refunded email error:', e));
       }
     } catch (emailErr) { console.error('Email sending error (status change):', emailErr); }
+
+    // Send status-change WhatsApp messages (non-blocking, no-op if not configured)
+    try {
+      const whatsappService = require('../services/whatsappService');
+      const customerPhone = order.shippingAddress?.phone || order.billingAddress?.phone;
+      const customerName = order.shippingAddress?.firstName || order.billingAddress?.firstName || 'there';
+      const newStatus = req.body.status;
+      const eventMap = {
+        confirmed: 'order_confirmed', processing: 'order_confirmed',
+        shipped: 'order_shipped', delivered: 'order_delivered'
+      };
+      const triggerEvent = eventMap[newStatus];
+      if (triggerEvent && customerPhone) {
+        whatsappService.sendByEvent(triggerEvent, customerPhone, {
+          name: customerName,
+          order_number: order.orderNumber,
+          total: order.total?.toFixed(2),
+          tracking: order.trackingNumber || ''
+        }).catch(e => console.error(`WhatsApp ${triggerEvent} send error:`, e.message));
+      }
+    } catch (waErr) { console.error('WhatsApp send error (status change):', waErr.message); }
     
     res.json({ success: true, data: order });
   } catch (error) {

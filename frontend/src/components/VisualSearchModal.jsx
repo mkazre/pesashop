@@ -1,0 +1,90 @@
+import React, { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { visualSearchAPI } from '../services/api';
+
+const VisualSearchModal = ({ open, onClose }) => {
+  const [results, setResults] = useState([]);
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState('');
+  const fileRef = useRef(null);
+
+  if (!open) return null;
+
+  const reset = () => { setResults([]); setDescription(''); setQuery(''); };
+
+  const handleFile = async (file) => {
+    if (!file) return;
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await visualSearchAPI.byImage(formData);
+      setDescription(res.data.data.description);
+      setResults(res.data.data.results || []);
+    } catch (e) {
+      alert(e.response?.data?.message || 'Search failed');
+    } finally { setLoading(false); }
+  };
+
+  const handleText = async () => {
+    if (!query.trim()) return;
+    setLoading(true);
+    try {
+      const res = await visualSearchAPI.byText(query);
+      setResults(res.data.data || []);
+      setDescription('');
+    } catch (e) {
+      alert(e.response?.data?.message || 'Search failed');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 p-4 overflow-y-auto" onClick={onClose}>
+      <div className="bg-white rounded-lg max-w-2xl w-full mt-10" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b flex justify-between items-center">
+          <h2 className="font-bold text-lg">Find products by photo or description</h2>
+          <button onClick={onClose} className="text-2xl text-gray-400 hover:text-gray-600">×</button>
+        </div>
+
+        <div className="p-4 space-y-3">
+          <div className="flex gap-2">
+            <input type="text" className="border rounded flex-1 p-2" placeholder="Describe what you're looking for..." value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleText()} />
+            <button onClick={handleText} disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">Search</button>
+          </div>
+          <p className="text-center text-xs text-gray-400">or</p>
+          <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50" onClick={() => fileRef.current?.click()}>
+            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleFile(e.target.files?.[0])} />
+            <p className="text-gray-500">📸 Click to upload a photo</p>
+            <p className="text-xs text-gray-400 mt-1">On mobile, this opens your camera.</p>
+          </div>
+        </div>
+
+        {loading && <p className="text-center p-4 text-gray-500">Searching...</p>}
+
+        {description && (
+          <div className="px-4 py-2 bg-blue-50 text-sm text-blue-700">
+            <strong>We see:</strong> {description}
+          </div>
+        )}
+
+        {results.length > 0 && (
+          <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+            {results.map(p => (
+              <Link key={p._id} to={`/product/${p.slug}`} onClick={() => { reset(); onClose(); }} className="block border rounded hover:shadow-md transition">
+                {p.images?.[0] && <img src={p.images[0].url || p.images[0]} alt={p.name} className="w-full aspect-square object-cover" />}
+                <div className="p-2">
+                  <p className="text-sm font-medium line-clamp-2">{p.name}</p>
+                  <p className="text-xs text-gray-500">R {(p.salePrice || p.price)?.toFixed(2)}</p>
+                  {p.similarity > 0 && <p className="text-xs text-green-600">{Math.round(p.similarity * 100)}% match</p>}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default VisualSearchModal;

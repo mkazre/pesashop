@@ -1,0 +1,145 @@
+const axios = require('axios');
+const Product = require('../models/Product');
+const Settings = require('../models/Settings');
+
+const EMBEDDING_MODEL = 'text-embedding-3-small'; // 1536 dimensions
+
+async function getApiKey() {
+  const settings = await Settings.getSettings();
+  return settings?.openaiApiKey || process.env.OPENAI_API_KEY;
+}
+
+function cosineSimilarity(a, b) {
+  if (!a || !b || a.length !== b.length) return 0;
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  return na && nb ? dot / (Math.sqrt(na) * Math.sqrt(nb)) : 0;
+}
+
+async function embed(text) {
+  const apiKey = await getApiKey();
+  if (!apiKey) throw new Error('OpenAI API key not configured');
+  const res = await axios.post('https://api.openai.com/v1/embeddings', {
+    model: EMBEDDING_MODEL,
+    input: text.slice(0, 8000)
+  }, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    timeout: 30000
+  });
+  return res.data?.data?.[0]?.embedding || null;
+}
+
+async function describeImage(imageUrlOrBase64) {
+  const apiKey = await getApiKey();
+  if (!apiKey) throw new Error('OpenAI API key not configured');
+
+  const imageContent = imageUrlOrBase64.startsWith('http')
+    ? { type: 'image_url', image_url: { url: imageUrlOrBase64 } }
+    : { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageUrlOrBase64}` } };
+
+  const res = await axios.post('https://api.openai.com/v1/chat/completions', {
+    model: 'gpt-4o-mini',
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'text', text: 'Describe this product in 1-2 sentences focusing on category, color, material, style, and likely use. Be specific so it can be used to search a product catalogue.' },
+        imageContent
+      ]
+    }],
+    max_tokens: 120
+  }, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    timeout: 30000
+  });
+
+  return res.data?.choices?.[0]?.message?.content?.trim() || '';
+}
+
+function productEmbeddingText(product) {
+  const parts = [
+    product.name,
+    product.brand,
+    product.shortDescription || '',
+    (product.description || '').replace(/<[^>]+>/g, '').slice(0, 800),
+    Array.isArray(product.categories) ? product.categories.map(c => c.name || c).filter(Boolean).join(' ') : ''
+  ];
+  return parts.filter(Boolean).join(' · ');
+}
+
+async function backfillEmbeddings({ limit = 50, force = false } = {}) {
+  const query = force ? { isActive: true } : { isActive: true, embedding: { $exists: false } };
+  const products = await Product.find(query).select('+embedding name brand shortDescription description').populate('categories', 'name').limit(limit);
+  let updated = 0, failed = 0;
+  for (const p of products) {
+    try {
+      const text = productEmbeddingText(p);
+      if (!text || text.length < 5) continue;
+      const vec = await embed(text);
+      if (vec) {
+        p.embedding = vec;
+        p.embeddingUpdatedAt = new Date();
+        await p.save({ validateBeforeSave: false });
+        updated++;
+      }
+    } catch (e) {
+      console.error(`Embed product ${p._id} failed:`, e.message);
+      failed++;
+    }
+  }
+  return { processed: products.length, updated, failed };
+}
+
+async function searchByText(query, { limit = 12 } = {}) {
+  const vec = await embed(query);
+  if (!vec) return [];
+  return rankByEmbedding(vec, limit);
+}
+
+async function searchByImage(imageInput, { limit = 12 } = {}) {
+  const description = await describeImage(imageInput);
+  if (!description) return [];
+  const vec = await embed(description);
+  const results = await rankByEmbedding(vec, limit);
+  return { description, results };
+}
+
+async function findSimilar(productId, { limit = 8 } = {}) {
+  const source = await Product.findById(productId).select('+embedding');
+  if (!source) return [];
+  if (!source.embedding || !source.embedding.length) {
+    // generate on demand
+    const text = productEmbeddingText(source);
+    const vec = await embed(text);
+    if (vec) {
+      source.embedding = vec;
+      source.embeddingUpdatedAt = new Date();
+      await source.save({ validateBeforeSave: false });
+    }
+  }
+  if (!source.embedding) return [];
+  const results = await rankByEmbedding(source.embedding, limit + 1);
+  return results.filter(r => String(r._id) !== String(source._id)).slice(0, limit);
+}
+
+async function rankByEmbedding(vec, limit) {
+  const products = await Product.find({ isActive: true, embedding: { $exists: true, $ne: null } })
+    .select('+embedding name slug price salePrice images brand stock')
+    .lean();
+  const scored = products.map(p => ({ ...p, similarity: cosineSimilarity(vec, p.embedding) }));
+  scored.sort((a, b) => b.similarity - a.similarity);
+  return scored.slice(0, limit).map(s => ({ _id: s._id, name: s.name, slug: s.slug, price: s.price, salePrice: s.salePrice, images: s.images, brand: s.brand, stock: s.stock, similarity: Math.round(s.similarity * 100) / 100 }));
+}
+
+module.exports = {
+  embed,
+  describeImage,
+  productEmbeddingText,
+  backfillEmbeddings,
+  searchByText,
+  searchByImage,
+  findSimilar
+};

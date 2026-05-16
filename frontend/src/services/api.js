@@ -337,4 +337,39 @@ export const digitalKioskAPI = {
   heartbeat: (deviceId) => api.post(`/api/digital-kiosk/devices/${deviceId}/heartbeat`),
 };
 
+// ─── 2026-05 batch ─────────────────────────────────────────────────
+
+// Returns
+export const returnsAPI = {
+  eligibility: (orderId) => api.get(`/api/returns/eligibility/${orderId}`),
+  create: (data) => api.post('/api/returns', data),
+  getMine: () => api.get('/api/returns/mine'),
+  getOne: (id) => api.get(`/api/returns/${id}`),
+  dispute: (id, reason) => api.post(`/api/returns/${id}/dispute`, { reason }),
+};
+
+// Referrals
+export const referralsAPI = {
+  lookup: (code) => api.get(`/api/referrals/code/${code}`),
+  getMine: () => api.get('/api/referrals/me'),
+  invite: (data) => api.post('/api/referrals/invite', data),
+};
+
+// Live Streams
+export const liveStreamsAPI = {
+  list: (params) => api.get('/api/live-streams', { params }),
+  current: () => api.get('/api/live-streams/current'),
+  getOne: (id) => api.get(`/api/live-streams/${id}`),
+  tap: (id, productId, action) => api.post(`/api/live-streams/${id}/tap`, { productId, action }),
+};
+
+// Visual Search & Bundles
+export const visualSearchAPI = {
+  byText: (query, limit) => api.post('/api/visual-search/by-text', { query, limit }),
+  byImage: (formData) => api.post('/api/visual-search/by-image', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  similar: (productId, limit) => api.get(`/api/visual-search/similar/${productId}`, { params: { limit } }),
+  bundleForProduct: (productId) => api.get(`/api/visual-search/bundles/for-product/${productId}`),
+  trackBundle: (id, event) => api.post(`/api/visual-search/bundles/${id}/track`, { event }),
+};
+
 export default api;

@@ -82,6 +82,13 @@ import KioskSettingsPage from './pages/digitalKiosks/SettingsPage';
 import KioskScreensaverMediaPage from './pages/digitalKiosks/ScreensaverMediaPage';
 import KioskFeaturedContentPage from './pages/digitalKiosks/FeaturedContentPage';
 import KioskRegisteredDevicesPage from './pages/digitalKiosks/RegisteredDevicesPage';
+// 2026-05 batch: Returns, Referrals, WhatsApp, Live, Bundles
+import ReturnsPage from './pages/ReturnsPage';
+import ReferralsPage from './pages/ReferralsPage';
+import WhatsAppPage from './pages/WhatsAppPage';
+import LiveStreamsPage from './pages/LiveStreamsPage';
+import LiveStreamControlPage from './pages/LiveStreamControlPage';
+import BundlesPage from './pages/BundlesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -200,6 +207,13 @@ function App() {
             <Route path="digital-kiosks/screensaver" element={<KioskScreensaverMediaPage />} />
             <Route path="digital-kiosks/featured" element={<KioskFeaturedContentPage />} />
             <Route path="digital-kiosks/devices" element={<KioskRegisteredDevicesPage />} />
+            {/* 2026-05 batch */}
+            <Route path="returns" element={<ReturnsPage />} />
+            <Route path="referrals" element={<ReferralsPage />} />
+            <Route path="whatsapp" element={<WhatsAppPage />} />
+            <Route path="live-streams" element={<LiveStreamsPage />} />
+            <Route path="live-streams/:id/control" element={<LiveStreamControlPage />} />
+            <Route path="bundles" element={<BundlesPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

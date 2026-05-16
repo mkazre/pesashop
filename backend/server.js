@@ -158,6 +158,11 @@ const serviceRequestsRoutes = require('./routes/serviceRequests');
 const importBatchesRoutes = require('./routes/importBatches');
 const socialEngineRoutes  = require('./routes/socialEngine');
 const digitalKioskRoutes = require('./routes/digitalKiosk');
+const returnsRoutes = require('./routes/returns');
+const referralsRoutes = require('./routes/referrals');
+const whatsappRoutes = require('./routes/whatsapp');
+const liveStreamsRoutes = require('./routes/liveStreams');
+const visualSearchRoutes = require('./routes/visualSearch');
 
 // Mount API routes FIRST (before static files)
 app.use('/api/auth', authRoutes);
@@ -213,6 +218,11 @@ app.use('/api/service-requests', serviceRequestsRoutes);
 app.use('/api/import-batches', importBatchesRoutes);
 app.use('/api/social-engine', socialEngineRoutes);
 app.use('/api/digital-kiosk', digitalKioskRoutes);
+app.use('/api/returns', returnsRoutes);
+app.use('/api/referrals', referralsRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/live-streams', liveStreamsRoutes);
+app.use('/api/visual-search', visualSearchRoutes);
 
 // Serve React frontend static files AFTER API routes
 app.use(express.static(path.join(__dirname, '../frontend/dist')));

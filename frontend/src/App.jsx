@@ -28,6 +28,12 @@ import AddressesPage from './pages/account/AddressesPage';
 import RecurringOrdersAccountPage from './pages/account/RecurringOrdersPage';
 import MyOffersPage from './pages/account/MyOffersPage';
 import MyServiceRequestsPage from './pages/account/MyServiceRequestsPage';
+// 2026-05 batch
+import AccountReturnsPage from './pages/account/ReturnsPage';
+import RequestReturnPage from './pages/account/RequestReturnPage';
+import AccountReferralsPage from './pages/account/ReferralsPage';
+import ReferLandingPage from './pages/ReferLandingPage';
+import LivePage from './pages/LivePage';
 import ServiceProvidersPage from './pages/ServiceProvidersPage';
 import ProviderPortalPage from './pages/ProviderPortalPage';
 import DynamicPage from './pages/DynamicPage';
@@ -106,6 +112,9 @@ function App() {
             <Route path="service-requests" element={<MyServiceRequestsPage />} />
             <Route path="settings" element={<AccountSettingsPage />} />
             <Route path="provider-portal" element={<ProviderPortalPage />} />
+            <Route path="returns" element={<AccountReturnsPage />} />
+            <Route path="returns/new/:orderId" element={<RequestReturnPage />} />
+            <Route path="referrals" element={<AccountReferralsPage />} />
           </Route>
         </Route>
 
@@ -134,7 +143,12 @@ function App() {
             <Route path="recurring-orders" element={<RecurringOrdersAccountPage />} />
             <Route path="my-offers" element={<MyOffersPage />} />
             <Route path="service-requests" element={<MyServiceRequestsPage />} />
+            <Route path="returns" element={<AccountReturnsPage />} />
+            <Route path="returns/new/:orderId" element={<RequestReturnPage />} />
+            <Route path="referrals" element={<AccountReferralsPage />} />
           </Route>
+          <Route path="refer/:code" element={<ReferLandingPage />} />
+          <Route path="live/:id" element={<LivePage />} />
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="service-providers" element={<ServiceProvidersPage />} />

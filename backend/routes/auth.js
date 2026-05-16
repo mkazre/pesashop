@@ -8,21 +8,30 @@ const emailService = require('../services/emailService');
 // @route   POST /api/auth/register
 router.post('/register', async (req, res, next) => {
   try {
-    const { email, password, firstName, lastName, phone } = req.body;
+    const { email, password, firstName, lastName, phone, referralCode } = req.body;
     const user = await User.create({ email, password, firstName, lastName, phone });
-    
+
     // Handle coupon email automation for new users
     const couponEmailService = require('../services/couponEmailService');
     couponEmailService.handleNewUser(user._id).catch(err => {
       console.error('Error handling new user coupon:', err);
     });
-    
+
     // Award signup bonus PESA Coins
     const loyaltyService = require('../services/loyaltyService');
     loyaltyService.awardExtraPoints(user._id, 'signup').catch(err => {
       console.error('Error awarding signup bonus:', err);
     });
-    
+
+    // Handle referral attribution if a code was supplied
+    if (referralCode) {
+      const referralService = require('../services/referralService');
+      referralService.handleSignup(user, String(referralCode).toUpperCase(), {
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+      }).catch(err => console.error('Referral signup error:', err));
+    }
+
     sendTokenResponse(user, 201, res);
   } catch (error) {
     next(error);

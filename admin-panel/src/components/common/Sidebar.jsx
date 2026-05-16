@@ -54,8 +54,18 @@ const menuGroups = [
       { path: '/products', icon: IoCubeOutline, label: 'Products' },
       { path: '/categories', icon: IoFolderOutline, label: 'Categories' },
       { path: '/orders', icon: IoReceiptOutline, label: 'Orders' },
+      { path: '/returns', icon: IoSwapHorizontalOutline, label: 'Returns' },
       { path: '/shipping', icon: IoCarOutline, label: 'Shipping' },
       { path: '/customers', icon: IoPeopleOutline, label: 'Customers' },
+    ],
+  },
+  {
+    label: 'Growth & Engagement',
+    items: [
+      { path: '/referrals', icon: IoPeopleOutline, label: 'Referrals' },
+      { path: '/whatsapp', icon: IoChatbubblesOutline, label: 'WhatsApp Commerce' },
+      { path: '/live-streams', icon: IoTvOutline, label: 'Live Shopping' },
+      { path: '/bundles', icon: IoSparklesOutline, label: 'Bundles & Visual Search' },
     ],
   },
   {

@@ -254,4 +254,10 @@ productSchema.statics.getNextSKU = async function() {
   return `PS-${skuNumber}`;
 };
 
+// Visual / semantic search embedding (text-embedding-3-small dimensions = 1536)
+productSchema.add({
+  embedding: { type: [Number], select: false, default: undefined },
+  embeddingUpdatedAt: { type: Date, select: false }
+});
+
 module.exports = mongoose.model('Product', productSchema);
