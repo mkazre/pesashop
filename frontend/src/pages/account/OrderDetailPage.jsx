@@ -136,6 +136,14 @@ export default function OrderDetailPage() {
             )}
           </div>
         </div>
+        {['delivered', 'completed'].includes(order.status) && (
+          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2">
+            <p className="text-sm text-gray-600">Something wrong with your order?</p>
+            <Link to={`/account/returns/new/${order._id}`} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+              Request a return
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Order Items */}
