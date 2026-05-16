@@ -23,11 +23,23 @@ async function loadOrderForUser(orderId, user) {
 
 async function resolveLogoPath() {
   const settings = await Settings.getSettings();
-  if (!settings?.storeLogo) return null;
-  const candidate = settings.storeLogo.startsWith('/')
-    ? path.join(__dirname, '..', settings.storeLogo)
-    : path.join(__dirname, '..', 'uploads', settings.storeLogo);
-  return fs.existsSync(candidate) ? candidate : null;
+  let logoPath = null;
+  if (settings?.storeLogo) {
+    // storeLogo could be "/uploads/xyz.png" or just "xyz.png"
+    const candidate = settings.storeLogo.startsWith('/')
+      ? path.join(__dirname, '..', settings.storeLogo)
+      : path.join(__dirname, '..', 'uploads', settings.storeLogo);
+    if (fs.existsSync(candidate)) logoPath = candidate;
+  }
+  // Fallback: look for a logo file in uploads root
+  if (!logoPath) {
+    const fallbacks = ['logo.png', 'logo.jpg', 'logo.jpeg', 'logo.svg', 'logo.webp'];
+    for (const f of fallbacks) {
+      const candidate = path.join(__dirname, '..', 'uploads', f);
+      if (fs.existsSync(candidate)) { logoPath = candidate; break; }
+    }
+  }
+  return logoPath;
 }
 
 // ─── Customer ───────────────────────────────────────────────────

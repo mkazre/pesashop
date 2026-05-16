@@ -3,25 +3,19 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 const { protect, authorize } = require('../middleware/auth');
 const Return = require('../models/Return');
 const Order = require('../models/Order');
 const returnService = require('../services/returnService');
 
-// Disk storage for return uploads — saved per-customer
+// Uploads land here; photos are compressed before write to save disk.
 const uploadDir = path.join(__dirname, '..', 'uploads', 'returns');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-50);
-    cb(null, `${req.user.id}-${Date.now()}-${file.fieldname}-${safe}`);
-  }
-});
 const upload = multer({
-  storage,
-  limits: { fileSize: 8 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB raw upload
   fileFilter: (req, file, cb) => {
     const ok = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'application/pdf'];
     if (ok.includes(file.mimetype)) cb(null, true);
@@ -33,6 +27,42 @@ const returnUpload = upload.fields([
   { name: 'invoice', maxCount: 1 },
   { name: 'photos', maxCount: 5 }
 ]);
+
+// Compress + persist a return photo to disk. Returns the public URL path.
+async function persistReturnPhoto(file, userId) {
+  const safe = (file.originalname || 'photo').replace(/[^a-zA-Z0-9._-]/g, '_').slice(-30);
+  const filename = `${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${safe.replace(/\.[^.]+$/, '')}.jpg`;
+  const outPath = path.join(uploadDir, filename);
+  // Resize to max 1280px on the long side and re-encode as JPEG quality 75 (mozjpeg).
+  await sharp(file.buffer, { failOn: 'none' })
+    .rotate() // honor EXIF orientation from phone cameras
+    .resize({ width: 1280, height: 1280, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 75, mozjpeg: true })
+    .toFile(outPath);
+  return `/uploads/returns/${filename}`;
+}
+
+// Persist invoice (no compression — could be a PDF; keep original).
+async function persistReturnInvoice(file, userId) {
+  const safe = (file.originalname || 'invoice').replace(/[^a-zA-Z0-9._-]/g, '_').slice(-50);
+  const ext = path.extname(safe) || (file.mimetype === 'application/pdf' ? '.pdf' : '.jpg');
+  const base = safe.replace(/\.[^.]+$/, '');
+  const filename = `${userId}-${Date.now()}-invoice-${base}${ext}`;
+  const outPath = path.join(uploadDir, filename);
+
+  if (file.mimetype === 'application/pdf') {
+    await fs.promises.writeFile(outPath, file.buffer);
+  } else {
+    // Compress image-format invoices too (smaller side; preserve readability).
+    await sharp(file.buffer, { failOn: 'none' })
+      .rotate()
+      .resize({ width: 1800, height: 2400, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 82, mozjpeg: true })
+      .toFile(outPath.replace(/\.[^.]+$/, '.jpg'));
+    return `/uploads/returns/${path.basename(outPath).replace(/\.[^.]+$/, '.jpg')}`;
+  }
+  return `/uploads/returns/${filename}`;
+}
 
 // ─── Customer ───────────────────────────────────────────────────
 
@@ -81,8 +111,16 @@ router.post('/', protect, returnUpload, async (req, res) => {
       return res.status(400).json({ success: false, message: 'An active return already exists for this order.' });
     }
 
-    const invoiceUrl = `/uploads/returns/${path.basename(req.files.invoice[0].path)}`;
-    const photos = (req.files.photos || []).map(f => `/uploads/returns/${path.basename(f.path)}`);
+    const invoiceUrl = await persistReturnInvoice(req.files.invoice[0], req.user.id);
+    const photoFiles = req.files.photos || [];
+    const photos = [];
+    for (const f of photoFiles) {
+      try {
+        photos.push(await persistReturnPhoto(f, req.user.id));
+      } catch (e) {
+        console.error('Return photo compress failed:', e.message);
+      }
+    }
 
     const enrichedItems = items.map(i => {
       const orderItem = order.items.find(oi => String(oi._id) === String(i.orderItem) || String(oi.product) === String(i.product));

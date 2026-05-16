@@ -155,7 +155,7 @@ const ReturnsPage = () => {
                 <p className="text-sm font-semibold text-amber-900 mb-2">📄 Proof of purchase</p>
                 <div className="flex gap-2 flex-wrap">
                   <a
-                    href={`${import.meta.env.VITE_API_URL || ''}${selected.invoiceUrl}`}
+                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${selected.invoiceUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-sm btn-outline"
@@ -163,7 +163,7 @@ const ReturnsPage = () => {
                     View invoice
                   </a>
                   <a
-                    href={`${import.meta.env.VITE_API_URL || ''}${selected.invoiceUrl}`}
+                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${selected.invoiceUrl}`}
                     download
                     className="btn btn-sm btn-outline"
                   >
@@ -180,7 +180,7 @@ const ReturnsPage = () => {
                 <p className="text-sm font-semibold mb-2">📸 Customer photos ({selected.photos.length})</p>
                 <div className="grid grid-cols-3 gap-2">
                   {selected.photos.map((p, i) => {
-                    const url = `${import.meta.env.VITE_API_URL || ''}${p}`;
+                    const url = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${p}`;
                     return (
                       <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block aspect-square border rounded overflow-hidden hover:opacity-80">
                         <img src={url} alt={`Return photo ${i + 1}`} className="w-full h-full object-cover" />
