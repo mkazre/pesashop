@@ -68,20 +68,25 @@ router.put('/update', protect, async (req, res) => {
     update.profileCompletionScore = score;
     update.profileCompletionFields = missingFields;
 
-    const wasComplete = currentUser.profileCompletionScore === 100;
     const nowComplete = score === 100;
 
-    // Award PESA Coins if profile just reached 100% for first time
+    // Award PESA Coins if profile is 100% complete and bonus hasn't been claimed yet
     let pointsAwarded = 0;
-    if (!wasComplete && nowComplete && !currentUser.profileCompletionRewardClaimed) {
+    if (nowComplete && !currentUser.profileCompletionRewardClaimed) {
       try {
         const LoyaltyRule = require('../models/LoyaltyRule');
+        const { LOYALTY_TYPES } = require('../config/constants');
+        const loyaltyService = require('../services/loyaltyService');
         const profileRule = await LoyaltyRule.findOne({ ruleType: 'profile_complete', isActive: true }).lean();
         const rewardPoints = profileRule?.fixedPoints || 0;
         if (rewardPoints > 0) {
-          // Create loyalty point record
-          const loyaltyService = require('../services/loyaltyService');
-          await loyaltyService.awardPoints(req.user.id, rewardPoints, 'profile_complete', 'Profile completion reward');
+          await LoyaltyPoint.addPoints(
+            req.user.id,
+            rewardPoints,
+            LOYALTY_TYPES.PROFILE_COMPLETE,
+            'Profile completion reward'
+          );
+          await loyaltyService.checkLevelUp(req.user.id);
           update.profileCompletionRewardClaimed = true;
           pointsAwarded = rewardPoints;
         }
