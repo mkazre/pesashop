@@ -282,6 +282,102 @@ class PDFService {
     return `/uploads/pod/${filename}`;
   }
 
+  // Generate invoice PDF
+  async generateInvoicePDF({ order, customer, company }) {
+    const currencyCode = order?.currency || 'ZAR';
+    const exchangeRate = order?.exchangeRate || 1;
+    const formatPrice = (zarAmount) => {
+      const converted = (zarAmount || 0) / (exchangeRate || 1);
+      try {
+        return new Intl.NumberFormat('en', { style: 'currency', currency: currencyCode, minimumFractionDigits: 2 }).format(converted);
+      } catch {
+        return `${currencyCode} ${converted.toFixed(2)}`;
+      }
+    };
+
+    const invoiceNumber = (order.orderNumber || '').replace(/^#?ORD-?/i, 'INV-') || `INV-${order._id}`;
+
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const filename = `invoice-${invoiceNumber}.pdf`;
+    const filepath = path.join(__dirname, '..', 'uploads', 'invoices', filename);
+    await fs.promises.mkdir(path.dirname(filepath), { recursive: true });
+    const writeStream = fs.createWriteStream(filepath);
+    doc.pipe(writeStream);
+
+    // Logo + company
+    if (company?.logo) { try { doc.image(company.logo, 50, 50, { width: 120 }); } catch {} }
+    doc.fontSize(10)
+       .text(company?.name || 'PesaShop', 400, 50, { align: 'right' })
+       .text(company?.address || '', 400, 65, { align: 'right' })
+       .text(company?.phone || '', 400, 80, { align: 'right' })
+       .text(company?.email || '', 400, 95, { align: 'right' });
+
+    // Title
+    doc.fontSize(28).text('INVOICE', 50, 160);
+
+    // Invoice meta
+    doc.fontSize(11)
+       .text(`Invoice #: ${invoiceNumber}`, 50, 210)
+       .text(`Order #: ${order.orderNumber}`, 50, 226)
+       .text(`Date: ${new Date(order.createdAt).toLocaleDateString('en-ZA')}`, 50, 242)
+       .text(`Status: ${order.paymentStatus || order.status || 'unknown'}`, 50, 258);
+
+    // Bill to
+    const customerName = customer ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim() : 'Customer';
+    const billing = order.billingAddress || order.shippingAddress || {};
+    doc.fontSize(12).text('BILL TO', 350, 210)
+       .fontSize(10)
+       .text(customerName, 350, 228)
+       .text(customer?.email || '', 350, 243)
+       .text(customer?.phone || billing.phone || '', 350, 258)
+       .text(`${billing.street || ''}`, 350, 273)
+       .text(`${billing.city || ''}, ${billing.state || ''} ${billing.postalCode || ''}`.trim(), 350, 288);
+
+    // Items table
+    let y = 340;
+    doc.fontSize(11).fillColor('#000').text('Item', 50, y).text('Qty', 320, y, { width: 50, align: 'right' }).text('Price', 380, y, { width: 70, align: 'right' }).text('Total', 470, y, { width: 80, align: 'right' });
+    doc.moveTo(50, y + 16).lineTo(550, y + 16).strokeColor('#888').stroke();
+    y += 24;
+
+    for (const item of (order.items || [])) {
+      const name = (item.name || '').slice(0, 50);
+      doc.fontSize(10)
+         .text(name, 50, y, { width: 260 })
+         .text(String(item.quantity || 1), 320, y, { width: 50, align: 'right' })
+         .text(formatPrice(item.salePrice || item.price), 380, y, { width: 70, align: 'right' })
+         .text(formatPrice(item.total), 470, y, { width: 80, align: 'right' });
+      y += 22;
+      if (y > 700) { doc.addPage(); y = 50; }
+    }
+
+    // Totals
+    y += 10;
+    doc.moveTo(50, y).lineTo(550, y).strokeColor('#888').stroke();
+    y += 12;
+    const totalsRow = (label, value, bold = false) => {
+      doc.fontSize(bold ? 12 : 10)
+         .text(label, 380, y, { width: 100, align: 'right' })
+         .text(value, 480, y, { width: 70, align: 'right' });
+      y += bold ? 24 : 18;
+    };
+    totalsRow('Subtotal', formatPrice(order.subtotal));
+    if (order.tax) totalsRow(`Tax (${order.taxRate || 0}%)`, formatPrice(order.tax));
+    if (order.shipping) totalsRow('Shipping', formatPrice(order.shipping));
+    if (order.discount) totalsRow('Discount', `-${formatPrice(order.discount)}`);
+    if (order.loyaltyPointsUsed) totalsRow('PESA Coins', `-${formatPrice(order.loyaltyPointsValue || order.loyaltyPointsUsed)}`);
+    totalsRow('TOTAL', formatPrice(order.total), true);
+
+    // Footer
+    doc.fontSize(9).fillColor('#666')
+       .text('Thank you for shopping with PesaShop.', 50, 760, { align: 'center', width: 500 })
+       .text(`This invoice was generated on ${new Date().toLocaleString('en-ZA')}.`, 50, 775, { align: 'center', width: 500 });
+
+    doc.end();
+
+    await new Promise((resolve) => writeStream.on('finish', resolve));
+    return { url: `/uploads/invoices/${filename}`, invoiceNumber, filename };
+  }
+
   // Generate barcode
   async generateBarcode(data) {
     return new Promise((resolve, reject) => {

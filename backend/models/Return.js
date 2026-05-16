@@ -28,6 +28,7 @@ const returnSchema = new mongoose.Schema({
   },
   customerNotes: String,
   photos: [String],
+  invoiceUrl: { type: String, required: true },
 
   status: {
     type: String,

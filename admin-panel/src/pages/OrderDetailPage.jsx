@@ -304,6 +304,24 @@ const OrderDetailPage = () => {
           </span>
           <Button
             variant="secondary"
+            onClick={async () => {
+              try {
+                const token = localStorage.getItem('token');
+                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                const res = await fetch(`${baseUrl}/api/invoices/order/${order._id}/download`, {
+                  headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed');
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+              } catch (e) { alert('Failed to open invoice'); }
+            }}
+          >
+            View Invoice
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => {
               setNewStatus(order.status);
               setStatusModal(true);

@@ -409,6 +409,32 @@ const WaybillDetailPage = () => {
             </div>
           </div>
 
+          {/* Shipping Photos Gallery */}
+          {events.some(e => e.eventType === 'PHOTO_UPLOADED' && e.photoData?.photoUrls?.length > 0) && (
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Camera className="w-5 h-5" /> Pre-shipment photos
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {events
+                  .filter(e => e.eventType === 'PHOTO_UPLOADED')
+                  .flatMap(e => (e.photoData?.photoUrls || []).map(url => ({ url, uploadedAt: e.createdAt, by: e.performedBy?.name })))
+                  .map((p, i) => {
+                    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                    const fullUrl = p.url.startsWith('http') ? p.url : `${baseUrl}${p.url}`;
+                    return (
+                      <a key={i} href={fullUrl} target="_blank" rel="noopener noreferrer" className="block group">
+                        <div className="aspect-square border rounded overflow-hidden bg-gray-100 hover:opacity-90">
+                          <img src={fullUrl} alt={`Shipping photo ${i + 1}`} className="w-full h-full object-cover" />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 truncate">{format(new Date(p.uploadedAt), 'MMM d, HH:mm')}</p>
+                      </a>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
           {/* Shipping Events */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h2 className="text-lg font-semibold mb-4">Shipping Events</h2>
@@ -434,11 +460,17 @@ const WaybillDetailPage = () => {
                         {format(new Date(event.createdAt), 'MMM d, yyyy HH:mm')}
                       </span>
                     </div>
-                    {event.photoData && (
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-600">
-                          {event.photoData.photoUrls.length} photos uploaded
-                        </p>
+                    {event.photoData?.photoUrls?.length > 0 && (
+                      <div className="mt-2 flex gap-2 flex-wrap">
+                        {event.photoData.photoUrls.map((url, i) => {
+                          const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                          const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+                          return (
+                            <a key={i} href={fullUrl} target="_blank" rel="noopener noreferrer" className="block w-16 h-16 border rounded overflow-hidden hover:opacity-80">
+                              <img src={fullUrl} alt="" className="w-full h-full object-cover" />
+                            </a>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

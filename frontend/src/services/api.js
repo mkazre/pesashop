@@ -342,7 +342,7 @@ export const digitalKioskAPI = {
 // Returns
 export const returnsAPI = {
   eligibility: (orderId) => api.get(`/api/returns/eligibility/${orderId}`),
-  create: (data) => api.post('/api/returns', data),
+  create: (formData) => api.post('/api/returns', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   getMine: () => api.get('/api/returns/mine'),
   getOne: (id) => api.get(`/api/returns/${id}`),
   dispute: (id, reason) => api.post(`/api/returns/${id}/dispute`, { reason }),
@@ -361,6 +361,12 @@ export const liveStreamsAPI = {
   current: () => api.get('/api/live-streams/current'),
   getOne: (id) => api.get(`/api/live-streams/${id}`),
   tap: (id, productId, action) => api.post(`/api/live-streams/${id}/tap`, { productId, action }),
+};
+
+// Invoices
+export const invoicesAPI = {
+  getMine: () => api.get('/api/invoices/mine'),
+  forOrder: (orderId) => api.get(`/api/invoices/order/${orderId}`),
 };
 
 // Visual Search & Bundles

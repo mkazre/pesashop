@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ordersAPI, returnsAPI } from '../../services/api';
 
@@ -22,7 +22,11 @@ const RequestReturnPage = () => {
   const [reasonCategory, setReasonCategory] = useState('other');
   const [notes, setNotes] = useState('');
   const [refundMethod, setRefundMethod] = useState('pesa_coins');
+  const [invoiceFile, setInvoiceFile] = useState(null);
+  const [photoFiles, setPhotoFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const invoiceRef = useRef(null);
+  const photosRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -53,16 +57,19 @@ const RequestReturnPage = () => {
   const submit = async () => {
     if (Object.keys(selectedItems).length === 0) return alert('Pick at least one item to return.');
     if (!reason.trim()) return alert('Please explain the reason for your return.');
+    if (!invoiceFile) return alert('Proof of purchase (invoice) is required. We only process returns for purchases we can verify.');
     setSubmitting(true);
     try {
-      await returnsAPI.create({
-        orderId,
-        items: Object.values(selectedItems),
-        reason,
-        reasonCategory,
-        customerNotes: notes,
-        refundMethod
-      });
+      const formData = new FormData();
+      formData.append('orderId', orderId);
+      formData.append('reason', reason);
+      formData.append('reasonCategory', reasonCategory);
+      formData.append('customerNotes', notes);
+      formData.append('refundMethod', refundMethod);
+      formData.append('items', JSON.stringify(Object.values(selectedItems)));
+      formData.append('invoice', invoiceFile);
+      photoFiles.forEach(f => formData.append('photos', f));
+      await returnsAPI.create(formData);
       navigate('/account/returns');
     } catch (e) {
       alert(e.response?.data?.message || 'Failed to submit return');
@@ -119,6 +126,56 @@ const RequestReturnPage = () => {
           <label className="block text-sm font-semibold mb-1">Additional notes (optional)</label>
           <textarea className="border rounded w-full p-2" rows={2} value={notes} onChange={e => setNotes(e.target.value)} />
         </div>
+
+        {/* Mandatory invoice */}
+        <div>
+          <label className="block text-sm font-semibold mb-1">
+            Proof of purchase / invoice <span className="text-red-600">*</span>
+          </label>
+          <p className="text-xs text-gray-500 mb-2">Required. PDF or image. We only process returns we can verify.</p>
+          <div className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50" onClick={() => invoiceRef.current?.click()}>
+            <input
+              ref={invoiceRef}
+              type="file"
+              accept="image/*,application/pdf"
+              className="hidden"
+              onChange={e => setInvoiceFile(e.target.files?.[0] || null)}
+            />
+            {invoiceFile ? (
+              <p className="text-sm text-gray-700"><strong>{invoiceFile.name}</strong> · {(invoiceFile.size / 1024).toFixed(0)} KB · <span className="text-blue-600">click to change</span></p>
+            ) : (
+              <p className="text-sm text-gray-500">📄 Click to upload your invoice</p>
+            )}
+          </div>
+        </div>
+
+        {/* Optional photos */}
+        <div>
+          <label className="block text-sm font-semibold mb-1">Photos of the item (optional, up to 5)</label>
+          <p className="text-xs text-gray-500 mb-2">Helpful for "defective" or "damaged in shipping" claims.</p>
+          <div className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50" onClick={() => photosRef.current?.click()}>
+            <input
+              ref={photosRef}
+              type="file"
+              accept="image/*"
+              multiple
+              capture="environment"
+              className="hidden"
+              onChange={e => setPhotoFiles(Array.from(e.target.files || []).slice(0, 5))}
+            />
+            {photoFiles.length > 0 ? (
+              <div className="flex flex-wrap gap-2 justify-center">
+                {photoFiles.map((f, i) => (
+                  <div key={i} className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded">{f.name.slice(0, 20)}</div>
+                ))}
+                <p className="w-full text-xs text-blue-600 mt-2">Click to change selection</p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">📸 Click to add photos (or use camera)</p>
+            )}
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-semibold mb-1">Refund method</label>
           <select className="border rounded w-full p-2" value={refundMethod} onChange={e => setRefundMethod(e.target.value)}>

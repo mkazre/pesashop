@@ -152,6 +152,47 @@ router.get('/waybills', protect, checkPermission('shipping_waybills', 'read'), a
   }
 });
 
+// Customer-accessible: shipping photos for an order the customer owns
+router.get('/order/:orderId/photos', protect, async (req, res) => {
+  try {
+    const Order = require('../models/Order');
+    const Waybill = require('../models/Waybill');
+    const ShippingEvent = require('../models/ShippingEvent');
+
+    const order = await Order.findById(req.params.orderId).lean();
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    const isAdmin = ['admin', 'shop_manager', 'superadmin', 'super_admin'].includes(req.user.role);
+    const isOwner = String(order.customer) === String(req.user.id || req.user._id);
+    if (!isAdmin && !isOwner) return res.status(403).json({ success: false, message: 'Forbidden' });
+
+    const waybill = await Waybill.findOne({ order: order._id }).lean();
+    if (!waybill) return res.json({ success: true, data: { waybill: null, photos: [] } });
+
+    const events = await ShippingEvent.find({ waybill: waybill._id, eventType: 'PHOTO_UPLOADED' })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const photos = events.flatMap(e =>
+      (e.photoData?.photoUrls || []).map(url => ({ url, uploadedAt: e.createdAt }))
+    );
+
+    res.json({
+      success: true,
+      data: {
+        waybill: {
+          _id: waybill._id,
+          waybillNumber: waybill.waybillNumber,
+          status: waybill.status,
+          createdAt: waybill.createdAt
+        },
+        photos
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Get waybill details
 router.get('/waybills/:id', protect, checkPermission('shipping_waybills', 'read'), async (req, res) => {
   try {

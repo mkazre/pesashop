@@ -34,6 +34,7 @@ import RequestReturnPage from './pages/account/RequestReturnPage';
 import AccountReferralsPage from './pages/account/ReferralsPage';
 import ReferLandingPage from './pages/ReferLandingPage';
 import LivePage from './pages/LivePage';
+import InvoicesPage from './pages/account/InvoicesPage';
 import ServiceProvidersPage from './pages/ServiceProvidersPage';
 import ProviderPortalPage from './pages/ProviderPortalPage';
 import DynamicPage from './pages/DynamicPage';
@@ -115,6 +116,7 @@ function App() {
             <Route path="returns" element={<AccountReturnsPage />} />
             <Route path="returns/new/:orderId" element={<RequestReturnPage />} />
             <Route path="referrals" element={<AccountReferralsPage />} />
+            <Route path="invoices" element={<InvoicesPage />} />
           </Route>
         </Route>
 
@@ -146,6 +148,7 @@ function App() {
             <Route path="returns" element={<AccountReturnsPage />} />
             <Route path="returns/new/:orderId" element={<RequestReturnPage />} />
             <Route path="referrals" element={<AccountReferralsPage />} />
+            <Route path="invoices" element={<InvoicesPage />} />
           </Route>
           <Route path="refer/:code" element={<ReferLandingPage />} />
           <Route path="live/:id" element={<LivePage />} />

@@ -163,6 +163,7 @@ const referralsRoutes = require('./routes/referrals');
 const whatsappRoutes = require('./routes/whatsapp');
 const liveStreamsRoutes = require('./routes/liveStreams');
 const visualSearchRoutes = require('./routes/visualSearch');
+const invoicesRoutes = require('./routes/invoices');
 
 // Mount API routes FIRST (before static files)
 app.use('/api/auth', authRoutes);
@@ -223,6 +224,7 @@ app.use('/api/referrals', referralsRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/live-streams', liveStreamsRoutes);
 app.use('/api/visual-search', visualSearchRoutes);
+app.use('/api/invoices', invoicesRoutes);
 
 // Serve React frontend static files AFTER API routes
 app.use(express.static(path.join(__dirname, '../frontend/dist')));

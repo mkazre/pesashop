@@ -1,9 +1,38 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { protect, authorize } = require('../middleware/auth');
 const Return = require('../models/Return');
 const Order = require('../models/Order');
 const returnService = require('../services/returnService');
+
+// Disk storage for return uploads — saved per-customer
+const uploadDir = path.join(__dirname, '..', 'uploads', 'returns');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-50);
+    cb(null, `${req.user.id}-${Date.now()}-${file.fieldname}-${safe}`);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'application/pdf'];
+    if (ok.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only JPEG, PNG, WebP or PDF allowed'));
+  }
+});
+
+const returnUpload = upload.fields([
+  { name: 'invoice', maxCount: 1 },
+  { name: 'photos', maxCount: 5 }
+]);
 
 // ─── Customer ───────────────────────────────────────────────────
 
@@ -27,13 +56,20 @@ router.get('/eligibility/:orderId', protect, async (req, res) => {
   }
 });
 
-// POST /api/returns — create a return request
-router.post('/', protect, async (req, res) => {
+// POST /api/returns — create a return request (multipart form-data)
+router.post('/', protect, returnUpload, async (req, res) => {
   try {
-    const { orderId, items, reason, reasonCategory, customerNotes, refundMethod, photos } = req.body;
+    const { orderId, reason, reasonCategory, customerNotes, refundMethod } = req.body;
+    let items;
+    try { items = typeof req.body.items === 'string' ? JSON.parse(req.body.items) : req.body.items; } catch { items = null; }
+
     if (!orderId || !items?.length || !reason) {
       return res.status(400).json({ success: false, message: 'orderId, items, and reason are required' });
     }
+    if (!req.files?.invoice?.[0]) {
+      return res.status(400).json({ success: false, message: 'Proof of purchase (invoice) is required. Returns are only processed for purchases we can verify.' });
+    }
+
     const order = await Order.findOne({ _id: orderId, customer: req.user.id });
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
@@ -44,6 +80,9 @@ router.post('/', protect, async (req, res) => {
     if (existing) {
       return res.status(400).json({ success: false, message: 'An active return already exists for this order.' });
     }
+
+    const invoiceUrl = `/uploads/returns/${path.basename(req.files.invoice[0].path)}`;
+    const photos = (req.files.photos || []).map(f => `/uploads/returns/${path.basename(f.path)}`);
 
     const enrichedItems = items.map(i => {
       const orderItem = order.items.find(oi => String(oi._id) === String(i.orderItem) || String(oi.product) === String(i.product));
@@ -72,7 +111,8 @@ router.post('/', protect, async (req, res) => {
       reason,
       reasonCategory: reasonCategory || 'other',
       customerNotes,
-      photos: photos || [],
+      photos,
+      invoiceUrl,
       refundMethod: refundMethod || 'pesa_coins',
       refundAmount
     });

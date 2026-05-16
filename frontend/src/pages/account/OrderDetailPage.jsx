@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
+import axios from 'axios';
 import { ordersAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
 import {
@@ -86,6 +87,15 @@ export default function OrderDetailPage() {
 
   const order = data?.data?.data || data?.data;
 
+  const { data: shippingPhotosData } = useQuery(
+    ['shipping-photos', order?._id],
+    () => axios.get(`${API_URL}/api/shipping/order/${order._id}/photos`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
+    { enabled: !!order?._id, retry: 0 }
+  );
+  const shippingPhotos = shippingPhotosData?.data?.data?.photos || [];
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
@@ -136,14 +146,56 @@ export default function OrderDetailPage() {
             )}
           </div>
         </div>
-        {['delivered', 'completed'].includes(order.status) && (
-          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2">
-            <p className="text-sm text-gray-600">Something wrong with your order?</p>
-            <Link to={`/account/returns/new/${order._id}`} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-              Request a return
-            </Link>
+        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2">
+          <p className="text-sm text-gray-600">Need a copy of your invoice or want to return an item?</p>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem('token');
+                  const baseUrl = import.meta.env.VITE_API_URL || '';
+                  const res = await fetch(`${baseUrl}/api/invoices/order/${order._id}/download`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                  });
+                  if (!res.ok) throw new Error('Failed');
+                  const blob = await res.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  window.open(url, '_blank');
+                } catch { alert('Failed to load invoice'); }
+              }}
+              className="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors"
+            >
+              View invoice
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem('token');
+                  const baseUrl = import.meta.env.VITE_API_URL || '';
+                  const res = await fetch(`${baseUrl}/api/invoices/order/${order._id}/download`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                  });
+                  if (!res.ok) throw new Error('Failed');
+                  const blob = await res.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const invoiceNumber = (order.orderNumber || '').replace(/^#?ORD-?/i, 'INV-');
+                  const a = document.createElement('a');
+                  a.href = url; a.download = `${invoiceNumber || 'invoice'}.pdf`;
+                  document.body.appendChild(a); a.click(); a.remove();
+                  window.URL.revokeObjectURL(url);
+                } catch { alert('Failed to download invoice'); }
+              }}
+              className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Download invoice
+            </button>
+            {['delivered', 'completed'].includes(order.status) && (
+              <Link to={`/account/returns/new/${order._id}`} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                Request a return
+              </Link>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Order Items */}
@@ -327,6 +379,26 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Shipping photos */}
+      {shippingPhotos.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <h2 className="font-semibold text-gray-900 mb-1">📸 Pre-shipment photos</h2>
+          <p className="text-xs text-gray-500 mb-3">Photos taken by our warehouse before your order was dispatched.</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {shippingPhotos.map((p, i) => {
+              const url = p.url.startsWith('http') ? p.url : `${API_URL}${p.url}`;
+              return (
+                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block group">
+                  <div className="aspect-square border rounded-lg overflow-hidden bg-gray-100 hover:opacity-90 transition">
+                    <img src={url} alt={`Shipping photo ${i + 1}`} className="w-full h-full object-cover" />
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Addresses */}
       <div className="grid md:grid-cols-2 gap-4">

@@ -140,14 +140,57 @@ const ReturnsPage = () => {
       </Card>
 
       {selected && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setSelected(null)}>
-          <div className="bg-white rounded-lg max-w-lg w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setSelected(null)}>
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 space-y-4 my-8" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold">Return {selected.rmaNumber}</h3>
               <button className="btn btn-sm btn-ghost" onClick={() => setSelected(null)}><IoClose /></button>
             </div>
             <p className="text-sm"><strong>Customer reason:</strong> {selected.reason}</p>
             {selected.customerNotes && <p className="text-sm text-gray-600"><strong>Notes:</strong> {selected.customerNotes}</p>}
+
+            {/* Mandatory invoice */}
+            {selected.invoiceUrl && (
+              <div className="bg-amber-50 border border-amber-200 rounded p-3">
+                <p className="text-sm font-semibold text-amber-900 mb-2">📄 Proof of purchase</p>
+                <div className="flex gap-2 flex-wrap">
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || ''}${selected.invoiceUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-sm btn-outline"
+                  >
+                    View invoice
+                  </a>
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || ''}${selected.invoiceUrl}`}
+                    download
+                    className="btn btn-sm btn-outline"
+                  >
+                    Download
+                  </a>
+                </div>
+                <p className="text-xs text-gray-500 mt-1 break-all">{selected.invoiceUrl.split('/').pop()}</p>
+              </div>
+            )}
+
+            {/* Customer photos */}
+            {selected.photos?.length > 0 && (
+              <div>
+                <p className="text-sm font-semibold mb-2">📸 Customer photos ({selected.photos.length})</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {selected.photos.map((p, i) => {
+                    const url = `${import.meta.env.VITE_API_URL || ''}${p}`;
+                    return (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block aspect-square border rounded overflow-hidden hover:opacity-80">
+                        <img src={url} alt={`Return photo ${i + 1}`} className="w-full h-full object-cover" />
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <p className="text-sm font-semibold">Items</p>
               <ul className="text-sm">
