@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { visualSearchAPI } from '../services/api';
+import { useCurrencyStore } from '@/store';
 
 const VisualSearchModal = ({ open, onClose }) => {
+  const { formatPrice } = useCurrencyStore();
   const [results, setResults] = useState([]);
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -91,8 +93,13 @@ const VisualSearchModal = ({ open, onClose }) => {
                 {p.images?.[0] && <img src={p.images[0].url || p.images[0]} alt={p.name} className="w-full aspect-square object-cover" />}
                 <div className="p-2">
                   <p className="text-sm font-medium line-clamp-2">{p.name}</p>
-                  <p className="text-xs text-gray-500">R {(p.salePrice || p.price)?.toFixed(2)}</p>
-                  {p.similarity > 0 && <p className="text-xs text-primary">{Math.round(p.similarity * 100)}% match</p>}
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-sm font-bold text-primary">{formatPrice(p.salePrice || p.price)}</span>
+                    {p.salePrice && p.price && p.salePrice < p.price && (
+                      <span className="text-xs text-gray-400 line-through">{formatPrice(p.price)}</span>
+                    )}
+                  </div>
+                  {p.similarity > 0 && <p className="text-xs text-primary mt-1">{Math.round(p.similarity * 100)}% match</p>}
                 </div>
               </Link>
             ))}
