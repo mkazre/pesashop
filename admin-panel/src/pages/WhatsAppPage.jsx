@@ -136,7 +136,17 @@ const WhatsAppPage = () => {
                 <option value="rejected">rejected</option>
               </select>
             </div>
-            <textarea className="textarea textarea-bordered w-full" rows={5} placeholder="Body template (use {{name}} {{order_number}} etc.)" value={editing.bodyTemplate} onChange={e => setEditing({ ...editing, bodyTemplate: e.target.value })} />
+            <textarea className="textarea textarea-bordered w-full" rows={5} placeholder="Body reference (your local copy of what Meta approved)" value={editing.bodyTemplate} onChange={e => setEditing({ ...editing, bodyTemplate: e.target.value })} />
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Variable names — comma-separated, in the same order as Meta's {`{{1}} {{2}} {{3}}…`}</label>
+              <input
+                className="input input-bordered w-full input-sm font-mono"
+                placeholder="name, order_number, total"
+                value={(editing.variableNames || []).join(', ')}
+                onChange={e => setEditing({ ...editing, variableNames: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+              />
+              <p className="text-xs text-gray-400 mt-1">PesaShop fires these events with variables: <code>name</code>, <code>order_number</code>, <code>total</code>, <code>tracking</code>.</p>
+            </div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={editing.isActive} onChange={e => setEditing({ ...editing, isActive: e.target.checked })} /> Active
             </label>
