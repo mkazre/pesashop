@@ -61,18 +61,29 @@ class WhatsAppService {
   }
 
   async sendByEvent(triggerEvent, toPhone, variables = {}) {
+    let tpl;
     try {
-      const tpl = await WhatsAppTemplate.findOne({ triggerEvent, isActive: true, status: 'approved' });
+      tpl = await WhatsAppTemplate.findOne({ triggerEvent, isActive: true, status: 'approved' });
       if (!tpl) {
-        console.warn(`[WhatsApp] no active template for trigger=${triggerEvent}`);
+        console.warn(`[WhatsApp] no active approved template for trigger=${triggerEvent}`);
         return { skipped: true };
       }
-      let body = tpl.bodyTemplate;
-      Object.entries(variables).forEach(([key, value]) => {
-        body = body.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), value ?? '');
-      });
 
-      const result = await this.sendText(toPhone, body);
+      // Build positional parameters in the order the admin declared them in variableNames.
+      // Meta templates use {{1}}, {{2}}, … so the order in variableNames must match the
+      // approved template body.
+      const params = (tpl.variableNames || []).map(name => ({
+        type: 'text',
+        text: String(variables[name] ?? '')
+      }));
+      const components = params.length > 0 ? [{ type: 'body', parameters: params }] : [];
+
+      const result = await this.sendTemplate(
+        toPhone,
+        tpl.metaTemplateName,
+        tpl.language || 'en',
+        components
+      );
 
       try {
         WhatsAppTemplate.findByIdAndUpdate(tpl._id, { $inc: { 'stats.sent': 1 } }).catch(() => {});
@@ -80,10 +91,9 @@ class WhatsAppService {
       return result;
     } catch (e) {
       console.error('WhatsApp sendByEvent error:', e.response?.data || e.message);
-      try {
-        const tpl = await WhatsAppTemplate.findOne({ triggerEvent, isActive: true });
-        if (tpl) await WhatsAppTemplate.findByIdAndUpdate(tpl._id, { $inc: { 'stats.failed': 1 } });
-      } catch {}
+      if (tpl?._id) {
+        try { await WhatsAppTemplate.findByIdAndUpdate(tpl._id, { $inc: { 'stats.failed': 1 } }); } catch {}
+      }
       throw e;
     }
   }
