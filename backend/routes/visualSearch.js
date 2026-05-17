@@ -66,7 +66,7 @@ router.get('/bundles/for-product/:productId', async (req, res) => {
         { triggerCategories: { $in: product.categories || [] } }
       ],
       displayPages: { $in: ['product_detail'] }
-    }).populate('items.product', 'name slug price salePrice images stock');
+    }).populate('items.product', 'name slug regularPrice salePrice images stock');
 
     if (bundle) {
       Bundle.findByIdAndUpdate(bundle._id, { $inc: { 'stats.impressions': 1 } }).catch(() => {});
@@ -177,7 +177,7 @@ router.delete('/admin/bundles/:id', protect, authorize('admin', 'superadmin', 's
 });
 
 function serializeBundle(bundle) {
-  const subtotal = bundle.items.reduce((sum, it) => sum + ((it.product?.salePrice || it.product?.price || 0) * (it.quantity || 1)), 0);
+  const subtotal = bundle.items.reduce((sum, it) => sum + ((it.product?.salePrice || it.product?.regularPrice || 0) * (it.quantity || 1)), 0);
   let discountedTotal = subtotal;
   if (bundle.discountType === 'percent') discountedTotal = subtotal * (1 - (bundle.discountValue || 0) / 100);
   else if (bundle.discountType === 'fixed') discountedTotal = Math.max(0, subtotal - (bundle.discountValue || 0));

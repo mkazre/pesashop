@@ -94,10 +94,18 @@ const VisualSearchModal = ({ open, onClose }) => {
                 <div className="p-2">
                   <p className="text-sm font-medium line-clamp-2">{p.name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-sm font-bold text-primary">{formatPrice(p.salePrice || p.price)}</span>
-                    {p.salePrice && p.price && p.salePrice < p.price && (
-                      <span className="text-xs text-gray-400 line-through">{formatPrice(p.price)}</span>
-                    )}
+                    {(() => {
+                      const price = p.salePrice || p.regularPrice;
+                      if (price == null || isNaN(price)) return <span className="text-xs text-gray-400">—</span>;
+                      return (
+                        <>
+                          <span className="text-sm font-bold text-primary">{formatPrice(price)}</span>
+                          {p.salePrice && p.regularPrice && p.salePrice < p.regularPrice && (
+                            <span className="text-xs text-gray-400 line-through">{formatPrice(p.regularPrice)}</span>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                   {p.similarity > 0 && <p className="text-xs text-primary mt-1">{Math.round(p.similarity * 100)}% match</p>}
                 </div>

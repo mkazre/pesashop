@@ -56,7 +56,7 @@ const LiveStreamControlPage = () => {
               <button key={p._id} className={`border rounded-lg p-3 text-left hover:bg-blue-50 ${String(stream.currentPin?._id) === String(p._id) ? 'bg-blue-50 border-blue-400' : ''}`} onClick={() => pin.mutate({ productId: p._id, duration: 60 })}>
                 {p.images?.[0] && <img src={p.images[0].url || p.images[0]} alt={p.name} className="w-full h-24 object-cover rounded mb-2" />}
                 <p className="text-sm font-medium truncate">{p.name}</p>
-                <p className="text-xs text-gray-500">R {(p.salePrice || p.price)?.toFixed(2)}</p>
+                <p className="text-xs text-gray-500">R {(p.salePrice ?? p.regularPrice ?? 0).toFixed(2)}</p>
               </button>
             ))}
           </div>

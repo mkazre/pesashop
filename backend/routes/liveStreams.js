@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
   try {
     const status = req.query.status || { $in: ['scheduled', 'live'] };
     const streams = await LiveStream.find({ status })
-      .populate('products', 'name slug price salePrice images stock')
+      .populate('products', 'name slug regularPrice salePrice images stock')
       .sort({ scheduledStart: 1 })
       .limit(parseInt(req.query.limit) || 12);
     res.json({ success: true, data: streams });
@@ -23,8 +23,8 @@ router.get('/', async (req, res) => {
 router.get('/current', async (req, res) => {
   try {
     const stream = await LiveStream.findOne({ status: 'live' })
-      .populate('products', 'name slug price salePrice images stock')
-      .populate('currentPin', 'name slug price salePrice images stock')
+      .populate('products', 'name slug regularPrice salePrice images stock')
+      .populate('currentPin', 'name slug regularPrice salePrice images stock')
       .sort({ actualStart: -1 });
     res.json({ success: true, data: stream });
   } catch (err) {
@@ -36,9 +36,9 @@ router.get('/current', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const stream = await LiveStream.findById(req.params.id)
-      .populate('products', 'name slug price salePrice images stock')
-      .populate('currentPin', 'name slug price salePrice images stock')
-      .populate('pinEvents.product', 'name slug price salePrice images');
+      .populate('products', 'name slug regularPrice salePrice images stock')
+      .populate('currentPin', 'name slug regularPrice salePrice images stock')
+      .populate('pinEvents.product', 'name slug regularPrice salePrice images');
     if (!stream) return res.status(404).json({ success: false, message: 'Stream not found' });
     LiveStream.findByIdAndUpdate(stream._id, { $inc: { 'stats.totalViewers': 1 } }).catch(() => {});
     res.json({ success: true, data: stream });

@@ -19,7 +19,8 @@ const SmartBundle = ({ productId, onAddBundle }) => {
   if (loading || !bundle?.bundle?.items?.length) return null;
 
   const b = bundle.bundle;
-  const subtotal = b.subtotal ?? b.items.reduce((s, it) => s + ((it.salePrice || it.price || it.product?.salePrice || it.product?.price || 0) * (it.quantity || 1)), 0);
+  const itemPrice = (it) => it.salePrice ?? it.regularPrice ?? it.product?.salePrice ?? it.product?.regularPrice ?? 0;
+  const subtotal = b.subtotal ?? b.items.reduce((s, it) => s + (itemPrice(it) * (it.quantity || 1)), 0);
   const total = b.discountedTotal ?? (b.discountType === 'percent' ? subtotal * (1 - (b.discountValue || 0) / 100) : Math.max(0, subtotal - (b.discountValue || 0)));
   const save = subtotal - total;
 

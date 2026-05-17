@@ -132,14 +132,14 @@ const SIMILARITY_THRESHOLD = parseFloat(process.env.VISUAL_SEARCH_MIN_SIMILARITY
 
 async function rankByEmbedding(vec, limit) {
   const products = await Product.find({ isActive: true, embedding: { $exists: true, $ne: null } })
-    .select('+embedding name slug price salePrice images brand stock')
+    .select('+embedding name slug regularPrice salePrice images brand stock')
     .lean();
   const scored = products.map(p => ({ ...p, similarity: cosineSimilarity(vec, p.embedding) }));
   scored.sort((a, b) => b.similarity - a.similarity);
   return scored
     .filter(s => s.similarity >= SIMILARITY_THRESHOLD)
     .slice(0, limit)
-    .map(s => ({ _id: s._id, name: s.name, slug: s.slug, price: s.price, salePrice: s.salePrice, images: s.images, brand: s.brand, stock: s.stock, similarity: Math.round(s.similarity * 100) / 100 }));
+    .map(s => ({ _id: s._id, name: s.name, slug: s.slug, regularPrice: s.regularPrice, salePrice: s.salePrice, images: s.images, brand: s.brand, stock: s.stock, similarity: Math.round(s.similarity * 100) / 100 }));
 }
 
 module.exports = {

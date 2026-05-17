@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { liveStreamsAPI } from '../services/api';
+import { useCurrencyStore } from '@/store';
 
 const LivePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { formatPrice } = useCurrencyStore();
   const [stream, setStream] = useState(null);
   const [error, setError] = useState('');
   const videoRef = useRef(null);
@@ -77,7 +79,7 @@ const LivePage = () => {
                 {stream.currentPin.images?.[0] && <img src={stream.currentPin.images[0].url || stream.currentPin.images[0]} alt="" className="w-12 h-12 object-cover rounded" />}
                 <div className="flex-1 text-left">
                   <p className="font-semibold text-sm">{stream.currentPin.name}</p>
-                  <p className="text-xs text-gray-600">R {(stream.currentPin.salePrice || stream.currentPin.price)?.toFixed(2)} · Tap to view</p>
+                  <p className="text-xs text-gray-600">{formatPrice(stream.currentPin.salePrice || stream.currentPin.regularPrice)} · Tap to view</p>
                 </div>
                 <span className="bg-rose-600 text-white text-xs px-2 py-1 rounded">Live</span>
               </button>
@@ -90,7 +92,7 @@ const LivePage = () => {
                 {p.images?.[0] && <img src={p.images[0].url || p.images[0]} alt="" className="w-12 h-12 object-cover rounded" />}
                 <div className="flex-1">
                   <p className="text-sm font-medium truncate">{p.name}</p>
-                  <p className="text-xs opacity-70">R {(p.salePrice || p.price)?.toFixed(2)}</p>
+                  <p className="text-xs opacity-70">{formatPrice(p.salePrice || p.regularPrice)}</p>
                 </div>
               </div>
             ))}
