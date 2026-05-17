@@ -13,6 +13,7 @@ const { initLaybyeCronJobs } = require('./cron/laybyeCron');
 const { initCouponEmailCronJobs } = require('./cron/couponEmailCron');
 const { initReviewReminderCron } = require('./cron/reviewReminderCron');
 const { initRecurringOrderCronJobs } = require('./cron/recurringOrderCron');
+const { initVisualSearchCron } = require('./cron/visualSearchCron');
 
 // Initialize express app
 const app = express();
@@ -300,6 +301,9 @@ initReviewReminderCron();
 
 // Initialize recurring order and service provider cron jobs
 initRecurringOrderCronJobs();
+
+// Visual Search: auto-embed products as they're added/modified
+initVisualSearchCron();
 
 // Process scheduled notifications every 60 seconds
 const notificationService = require('./services/notificationService');

@@ -125,13 +125,21 @@ async function findSimilar(productId, { limit = 8 } = {}) {
   return results.filter(r => String(r._id) !== String(source._id)).slice(0, limit);
 }
 
+// Minimum cosine similarity for a result to be considered relevant.
+// text-embedding-3-small typically gives 0.30+ for true semantic matches and
+// hovers around 0.15-0.20 for unrelated products. 0.30 strips most noise.
+const SIMILARITY_THRESHOLD = parseFloat(process.env.VISUAL_SEARCH_MIN_SIMILARITY) || 0.30;
+
 async function rankByEmbedding(vec, limit) {
   const products = await Product.find({ isActive: true, embedding: { $exists: true, $ne: null } })
     .select('+embedding name slug price salePrice images brand stock')
     .lean();
   const scored = products.map(p => ({ ...p, similarity: cosineSimilarity(vec, p.embedding) }));
   scored.sort((a, b) => b.similarity - a.similarity);
-  return scored.slice(0, limit).map(s => ({ _id: s._id, name: s.name, slug: s.slug, price: s.price, salePrice: s.salePrice, images: s.images, brand: s.brand, stock: s.stock, similarity: Math.round(s.similarity * 100) / 100 }));
+  return scored
+    .filter(s => s.similarity >= SIMILARITY_THRESHOLD)
+    .slice(0, limit)
+    .map(s => ({ _id: s._id, name: s.name, slug: s.slug, price: s.price, salePrice: s.salePrice, images: s.images, brand: s.brand, stock: s.stock, similarity: Math.round(s.similarity * 100) / 100 }));
 }
 
 module.exports = {

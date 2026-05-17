@@ -260,4 +260,14 @@ productSchema.add({
   embeddingUpdatedAt: { type: Date, select: false }
 });
 
+// When searchable text changes, invalidate the embedding so the cron re-embeds it.
+productSchema.pre('save', function (next) {
+  const watched = ['name', 'brand', 'shortDescription', 'description', 'categories'];
+  if (watched.some(f => this.isModified(f))) {
+    this.embedding = undefined;
+    this.embeddingUpdatedAt = undefined;
+  }
+  next();
+});
+
 module.exports = mongoose.model('Product', productSchema);
