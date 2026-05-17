@@ -32,12 +32,20 @@ const WhatsAppPage = () => {
     onSuccess: (res) => {
       const d = res?.data;
       if (d?.messageId) {
-        toast.success(`Meta accepted message ${d.messageId.slice(-10)}. If your phone didn't receive it, the recipient probably isn't on the test number's allowed list.`, { duration: 8000 });
+        toast.success(`Meta accepted message ${d.messageId.slice(-10)}. If your phone didn't receive it, the recipient probably isn't on the test number's allowed list, OR the 24h window hasn't been opened — try the hello_world button instead.`, { duration: 10000 });
       } else {
         toast.success('Sent (no message ID returned)');
       }
     },
-    onError: (e) => toast.error(e.response?.data?.message || 'Send failed', { duration: 8000 })
+    onError: (e) => toast.error(e.response?.data?.message || 'Send failed', { duration: 10000 })
+  });
+
+  const testHello = useMutation(() => whatsappAPI.testHelloWorld(testPhone), {
+    onSuccess: (res) => {
+      const d = res?.data;
+      toast.success(d?.message || 'hello_world template sent', { duration: 10000 });
+    },
+    onError: (e) => toast.error(e.response?.data?.message || 'Send failed', { duration: 10000 })
   });
 
   const blankTemplate = { name: '', metaTemplateName: '', language: 'en', category: 'UTILITY', status: 'draft', triggerEvent: 'manual', bodyTemplate: '', isActive: true };
@@ -72,8 +80,12 @@ const WhatsAppPage = () => {
           <div className="flex gap-2 flex-wrap">
             <input className="input input-bordered input-sm flex-1 min-w-[200px]" placeholder="27821234567" value={testPhone} onChange={e => setTestPhone(e.target.value)} />
             <input className="input input-bordered input-sm flex-1 min-w-[300px]" value={testBody} onChange={e => setTestBody(e.target.value)} />
-            <Button onClick={() => testSend.mutate()} disabled={!testPhone || testSend.isLoading}><IoPaperPlane className="mr-1" /> Send</Button>
+            <Button onClick={() => testSend.mutate()} disabled={!testPhone || testSend.isLoading}><IoPaperPlane className="mr-1" /> Send free-form</Button>
+            <Button onClick={() => testHello.mutate()} disabled={!testPhone || testHello.isLoading} className="bg-green-600 hover:bg-green-700"><IoPaperPlane className="mr-1" /> Send hello_world</Button>
           </div>
+          <p className="text-xs text-gray-500">
+            <strong>Free-form</strong> only works within 24h of the recipient messaging you. <strong>hello_world</strong> is a Meta pre-approved template — works any time and is the right way to confirm your setup is correct.
+          </p>
         </div>
       </Card>
 

@@ -114,6 +114,32 @@ router.post('/admin/test-send', protect, authorize('admin', 'superadmin', 'super
   }
 });
 
+// POST /api/whatsapp/admin/test-template — send Meta's pre-approved hello_world (no 24h window needed)
+router.post('/admin/test-template', protect, authorize('admin', 'superadmin', 'super_admin'), async (req, res) => {
+  try {
+    const { phone, templateName = 'hello_world', language = 'en_US' } = req.body;
+    if (!phone) return res.status(400).json({ success: false, message: 'phone required' });
+    if (!whatsappService.isConfigured()) {
+      return res.status(400).json({ success: false, message: 'WhatsApp Cloud API is not configured.' });
+    }
+    const result = await whatsappService.sendTemplate(phone, templateName, language, []);
+    if (result?.skipped) return res.status(400).json({ success: false, message: 'Send skipped — Cloud API not configured.' });
+    const messageId = result?.messages?.[0]?.id;
+    res.json({
+      success: true,
+      data: result,
+      messageId,
+      message: messageId ? `Meta accepted template ${templateName} (id ${messageId}). Should arrive within seconds.` : 'Meta returned no message id.'
+    });
+  } catch (err) {
+    const metaError = err.response?.data?.error;
+    let hint = '';
+    if (metaError?.code === 131030) hint = ' Add this phone to the test number\'s allowed recipient list in Meta API Setup.';
+    if (metaError?.code === 132001 || /template name does not exist/i.test(metaError?.message || '')) hint = ' That template name doesn\'t exist for this WABA. "hello_world" works on every account by default.';
+    res.status(500).json({ success: false, message: (metaError?.message || err.message) + hint, code: metaError?.code });
+  }
+});
+
 // POST /api/whatsapp/admin/test-event — trigger a templated event send
 router.post('/admin/test-event', protect, authorize('admin', 'superadmin', 'super_admin'), async (req, res) => {
   try {

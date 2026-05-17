@@ -747,6 +747,7 @@ export const whatsappAPI = {
   remove: (id) => api.delete(`/whatsapp/admin/templates/${id}`),
   testSend: (body) => api.post('/whatsapp/admin/test-send', body),
   testEvent: (body) => api.post('/whatsapp/admin/test-event', body),
+  testHelloWorld: (phone) => api.post('/whatsapp/admin/test-template', { phone, templateName: 'hello_world', language: 'en_US' }),
 };
 
 // Live Streams
