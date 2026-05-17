@@ -29,8 +29,15 @@ const WhatsAppPage = () => {
     onSuccess: () => { qc.invalidateQueries('whatsapp-templates'); toast.success('Deleted'); }
   });
   const testSend = useMutation(() => whatsappAPI.testSend({ phone: testPhone, body: testBody }), {
-    onSuccess: () => toast.success('Test message sent'),
-    onError: (e) => toast.error(e.response?.data?.message || 'Send failed')
+    onSuccess: (res) => {
+      const d = res?.data;
+      if (d?.messageId) {
+        toast.success(`Meta accepted message ${d.messageId.slice(-10)}. If your phone didn't receive it, the recipient probably isn't on the test number's allowed list.`, { duration: 8000 });
+      } else {
+        toast.success('Sent (no message ID returned)');
+      }
+    },
+    onError: (e) => toast.error(e.response?.data?.message || 'Send failed', { duration: 8000 })
   });
 
   const blankTemplate = { name: '', metaTemplateName: '', language: 'en', category: 'UTILITY', status: 'draft', triggerEvent: 'manual', bodyTemplate: '', isActive: true };

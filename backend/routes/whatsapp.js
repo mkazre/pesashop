@@ -85,10 +85,32 @@ router.post('/admin/test-send', protect, authorize('admin', 'superadmin', 'super
   try {
     const { phone, body } = req.body;
     if (!phone || !body) return res.status(400).json({ success: false, message: 'phone and body required' });
+    if (!whatsappService.isConfigured()) {
+      return res.status(400).json({
+        success: false,
+        message: 'WhatsApp Cloud API is not configured. Set WHATSAPP_CLOUD_API_TOKEN and WHATSAPP_PHONE_NUMBER_ID in Railway env vars and redeploy.'
+      });
+    }
     const result = await whatsappService.sendText(phone, body);
-    res.json({ success: true, data: result });
+    if (result?.skipped) {
+      return res.status(400).json({ success: false, message: 'Send skipped — Cloud API not configured.' });
+    }
+    const messageId = result?.messages?.[0]?.id;
+    const recipient = result?.contacts?.[0]?.wa_id;
+    res.json({
+      success: true,
+      data: result,
+      messageId,
+      recipient,
+      message: messageId ? `Meta accepted the message (id ${messageId}). If your phone didn't receive it, the recipient may not be on the test number's allowed list.` : 'Meta returned an unexpected response.'
+    });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.response?.data?.error?.message || err.message });
+    const metaError = err.response?.data?.error;
+    let hint = '';
+    if (metaError?.code === 131030) hint = ' Add this phone to your test number\'s allowed recipient list in Meta API Setup.';
+    if (metaError?.code === 131026 || metaError?.code === 131047) hint = ' The 24-hour customer service window has expired. Use an approved template instead.';
+    if (metaError?.code === 100) hint = ' Check that the phone number format is country code + number with no plus sign (e.g. 27821234567).';
+    res.status(500).json({ success: false, message: (metaError?.message || err.message) + hint, code: metaError?.code });
   }
 });
 
@@ -97,10 +119,19 @@ router.post('/admin/test-event', protect, authorize('admin', 'superadmin', 'supe
   try {
     const { phone, triggerEvent, variables } = req.body;
     if (!phone || !triggerEvent) return res.status(400).json({ success: false, message: 'phone and triggerEvent required' });
+    if (!whatsappService.isConfigured()) {
+      return res.status(400).json({
+        success: false,
+        message: 'WhatsApp Cloud API is not configured. Set WHATSAPP_CLOUD_API_TOKEN and WHATSAPP_PHONE_NUMBER_ID in Railway env vars and redeploy.'
+      });
+    }
     const result = await whatsappService.sendByEvent(triggerEvent, phone, variables || {});
+    if (result?.skipped) {
+      return res.status(400).json({ success: false, message: `No active approved template found for event "${triggerEvent}". Create one in the Templates section first.` });
+    }
     res.json({ success: true, data: result });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.response?.data?.error?.message || err.message });
+    res.status(500).json({ success: false, message: err.response?.data?.error?.message || err.message, code: err.response?.data?.error?.code });
   }
 });
 
