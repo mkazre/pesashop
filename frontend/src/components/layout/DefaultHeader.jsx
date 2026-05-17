@@ -6,13 +6,14 @@ import {
   IoCall, IoLocation, IoGrid,
   IoLogOut, IoReceipt, IoSettings,
   IoArrowForward, IoFlame, IoTrendingUp,
-  IoHome, IoStorefront,
+  IoHome, IoStorefront, IoCamera,
 } from 'react-icons/io5';
 import { useCartStore, useWishlistStore, useAuthStore, useUIStore, useCurrencyStore } from '@/store';
 import { useQuery } from 'react-query';
 import { menusAPI, categoriesAPI, productsAPI, statsAPI } from '@/services/api';
 import CurrencyPicker from '@/components/common/CurrencyPicker';
 import SearchBar from '@/components/common/SearchBar';
+import VisualSearchModal from '@/components/VisualSearchModal';
 import NotificationBell from '@/components/common/NotificationBell';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import pesaLogo from '@/assets/pesashop-logo.png';
@@ -246,6 +247,7 @@ const EnhancedSearchBar = ({ trendingProducts, formatPrice, className }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ products: [], categories: [] });
   const [loading, setLoading] = useState(false);
+  const [visualOpen, setVisualOpen] = useState(false);
   const ref = useRef(null);
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
@@ -324,12 +326,21 @@ const EnhancedSearchBar = ({ trendingProducts, formatPrice, className }) => {
                 <IoClose size={18} />
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setVisualOpen(true)}
+              title="Search by photo"
+              className="p-2 text-gray-400 hover:text-primary transition-colors"
+            >
+              <IoCamera size={20} />
+            </button>
             <button type="submit" className="h-[calc(100%-6px)] px-5 bg-primary text-white hover:bg-primary/90 transition-colors rounded-lg flex items-center">
               <IoSearch size={20} />
             </button>
           </div>
         </div>
       </form>
+      <VisualSearchModal open={visualOpen} onClose={() => setVisualOpen(false)} />
 
       {/* Trending Suggestions (when empty + focused) */}
       {showTrending && (

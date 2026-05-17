@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { IoSearch, IoClose, IoArrowForward } from 'react-icons/io5';
+import { IoSearch, IoClose, IoArrowForward, IoCamera } from 'react-icons/io5';
 import { Link, useNavigate } from 'react-router-dom';
 import { productsAPI, categoriesAPI } from '@/services/api';
 import { useCurrencyStore } from '@/store';
+import VisualSearchModal from '@/components/VisualSearchModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 function getImageSrc(path) {
@@ -18,6 +19,7 @@ export default function SearchBar({ onClose, className = '', inputClassName = ''
   const [results, setResults] = useState({ products: [], categories: [] });
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [visualOpen, setVisualOpen] = useState(false);
   const ref = useRef(null);
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
@@ -113,6 +115,14 @@ export default function SearchBar({ onClose, className = '', inputClassName = ''
                 <IoClose size={18} />
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setVisualOpen(true)}
+              title="Search by photo"
+              className="p-2 text-gray-400 hover:text-primary transition-colors"
+            >
+              <IoCamera size={20} />
+            </button>
             <button type="submit" className="h-[calc(100%-6px)] px-5 bg-primary text-white hover:bg-primary/90 transition-colors flex items-center">
               <IoSearch size={20} />
             </button>
@@ -217,6 +227,8 @@ export default function SearchBar({ onClose, className = '', inputClassName = ''
           )}
         </div>
       )}
+
+      <VisualSearchModal open={visualOpen} onClose={() => setVisualOpen(false)} />
     </div>
   );
 }
