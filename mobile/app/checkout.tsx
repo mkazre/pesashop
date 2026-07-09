@@ -118,7 +118,8 @@ export default function CheckoutScreen() {
     setCouponLoading(true);
     try {
       const subtotal = getTotal();
-      const res = await couponsAPI.publicValidate(couponCode.trim(), subtotal);
+      const cartItems = items.map((i) => ({ product: i.product._id, quantity: i.quantity }));
+      const res = await couponsAPI.publicValidate(couponCode.trim(), subtotal, cartItems);
       const data = res.data?.data || res.data;
       const discount = data?.discountAmount || data?.discount || 0;
       setCouponApplied({ code: couponCode.trim(), discount, type: data?.discountType || "fixed" });
@@ -144,7 +145,7 @@ export default function CheckoutScreen() {
       return;
     }
     try {
-      const res = await loyaltyAPI.calculateRedemption(loyaltyBalance);
+      const res = await loyaltyAPI.calculateRedemption(loyaltyBalance, getTotal());
       const data = res.data?.data || res.data;
       const discount = data?.discountAmount || data?.value || 0;
       const points = data?.pointsUsed || loyaltyBalance;
