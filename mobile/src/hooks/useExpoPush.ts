@@ -196,10 +196,20 @@ export function useExpoPush() {
           router.push(`/category/${url.replace('/category/', '')}` as any);
         } else if (url.startsWith('/order/')) {
           router.push(`/order/${url.replace('/order/', '')}` as any);
+        } else if (url.startsWith('/refer/')) {
+          router.push(`/refer/${url.replace('/refer/', '')}` as any);
+        } else if (url.startsWith('/live/')) {
+          router.push(`/live/${url.replace('/live/', '')}` as any);
         } else if (url === '/shop' || url.startsWith('/shop')) {
           router.push('/(tabs)/shop' as any);
         } else if (url === '/notifications') {
           router.push('/notifications' as any);
+        } else if (url.startsWith('/account/')) {
+          // account/* routes carry their own query params (e.g. laybye-detail?id=...)
+          const [pathname, search] = url.split('?');
+          const params: Record<string, string> = {};
+          if (search) new URLSearchParams(search).forEach((v, k) => { params[k] = v; });
+          router.push({ pathname, params } as any);
         } else {
           router.push('/(tabs)/' as any);
         }

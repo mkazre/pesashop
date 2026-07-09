@@ -459,7 +459,29 @@ router.put('/:id/status', protect, authorize('admin', 'shop_manager'), async (re
         }).catch(e => console.error(`WhatsApp ${triggerEvent} send error:`, e.message));
       }
     } catch (waErr) { console.error('WhatsApp send error (status change):', waErr.message); }
-    
+
+    // Send status-change push notifications (non-blocking)
+    try {
+      const notificationService = require('../services/notificationService');
+      const newStatus = req.body.status;
+      const pushCopy = {
+        confirmed: { title: 'Order confirmed', body: `Your order #${order.orderNumber} has been confirmed.` },
+        processing: { title: 'Order confirmed', body: `Your order #${order.orderNumber} has been confirmed.` },
+        shipped: { title: 'Order shipped', body: `Your order #${order.orderNumber} is on its way!` },
+        delivered: { title: 'Order delivered', body: `Your order #${order.orderNumber} has been delivered.` },
+        cancelled: { title: 'Order cancelled', body: `Your order #${order.orderNumber} has been cancelled.` },
+        refunded: { title: 'Order refunded', body: `Your order #${order.orderNumber} has been refunded.` },
+      };
+      const copy = pushCopy[newStatus];
+      if (copy && oldStatus !== newStatus && order.customer) {
+        notificationService.sendToUser(order.customer, {
+          ...copy,
+          type: 'order',
+          actionUrl: `/order/${order._id}`,
+        }).catch(e => console.error('Order status push error:', e.message));
+      }
+    } catch (pushErr) { console.error('Push send error (status change):', pushErr.message); }
+
     res.json({ success: true, data: order });
   } catch (error) {
     next(error);
