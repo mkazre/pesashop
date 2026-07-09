@@ -47,7 +47,7 @@
         "android.permission.USE_FINGERPRINT",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.WAKE_LOCK"
-      ],
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -68,7 +68,8 @@
           "enableBackgroundRemoteNotifications": true
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
