@@ -10,9 +10,11 @@ import CartSidebar from "@/components/CartSidebar";
 import CheckoutDrawer from "@/components/CheckoutDrawer";
 import OnboardingScreen from "@/components/OnboardingScreen";
 import PopupRenderer from "@/components/PopupRenderer";
+import BiometricLockScreen from "@/components/BiometricLockScreen";
 import { useAuthStore, useCurrencyStore } from "@/store";
 import { currenciesAPI } from "@/services/api";
 import { useExpoPush } from "@/hooks/useExpoPush";
+import { isBiometricLockEnabled } from "@/utils/biometricLock";
 import NotificationToast from "@/components/NotificationToast";
 import ChatWidget from "@/components/ChatWidget";
 import { CartSuccessOverlay } from "@/components/CartSuccessOverlay";
@@ -93,6 +95,7 @@ export default function RootLayout() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const setCurrencies = useCurrencyStore((s) => s.setCurrencies);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [locked, setLocked] = useState(false);
   useExpoPush();
 
   useEffect(() => {
@@ -107,6 +110,7 @@ export default function RootLayout() {
       // Check if onboarding has been completed
       const completed = await OnboardingScreen.hasCompleted();
       setShowOnboarding(!completed);
+      setLocked(await isBiometricLockEnabled());
       await SplashScreen.hideAsync();
     };
     init();
@@ -115,6 +119,11 @@ export default function RootLayout() {
   // Animated preloader while initializing
   if (showOnboarding === null) {
     return <AppPreloader />;
+  }
+
+  // Biometric app-unlock gate (checked once per cold start)
+  if (locked) {
+    return <BiometricLockScreen onUnlock={() => setLocked(false)} />;
   }
 
   // Show onboarding if not yet completed

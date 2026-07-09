@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
+  Switch,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,6 +18,12 @@ import BottomTabBar from "@/components/BottomTabBar";
 import { authAPI } from "@/services/api";
 import { useAuthStore } from "@/store";
 import { colors } from "@/theme";
+import {
+  isBiometricSupported,
+  isBiometricLockEnabled,
+  setBiometricLockEnabled,
+  authenticateBiometric,
+} from "@/utils/biometricLock";
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -34,6 +41,33 @@ export default function SettingsScreen() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
+
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricEnabled, setBiometricEnabledState] = useState(false);
+  const [biometricBusy, setBiometricBusy] = useState(false);
+
+  useEffect(() => {
+    isBiometricSupported().then(setBiometricSupported);
+    isBiometricLockEnabled().then(setBiometricEnabledState);
+  }, []);
+
+  const toggleBiometricLock = async (value: boolean) => {
+    setBiometricBusy(true);
+    try {
+      if (value) {
+        const ok = await authenticateBiometric("Confirm to enable app lock");
+        if (!ok) {
+          Toast.show({ type: "error", text1: "Authentication failed. App lock not enabled." });
+          return;
+        }
+      }
+      await setBiometricLockEnabled(value);
+      setBiometricEnabledState(value);
+      Toast.show({ type: "success", text1: value ? "App lock enabled" : "App lock disabled" });
+    } finally {
+      setBiometricBusy(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     if (!firstName.trim() || !email.trim()) {
@@ -163,6 +197,28 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
+        {/* Security Section */}
+        {biometricSupported && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Security</Text>
+            <View style={s.switchRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.switchLabel}>App Lock (Face ID / Fingerprint)</Text>
+                <Text style={s.switchSubtext}>Require biometric authentication to open the app</Text>
+              </View>
+              {biometricBusy ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Switch
+                  value={biometricEnabled}
+                  onValueChange={toggleBiometricLock}
+                  trackColor={{ false: colors.gray200, true: colors.primary }}
+                />
+              )}
+            </View>
+          </View>
+        )}
+
         {/* Quick links */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>More Account Options</Text>
@@ -213,4 +269,7 @@ const s = StyleSheet.create({
   saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   deleteBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12, paddingHorizontal: 16, borderWidth: 1, borderColor: "#fecaca", alignSelf: "flex-start" },
   deleteBtnText: { fontSize: 14, fontWeight: "600", color: colors.red500 },
+  switchRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  switchLabel: { fontSize: 14, fontWeight: "600", color: colors.gray800 },
+  switchSubtext: { fontSize: 12, color: colors.gray400, marginTop: 2 },
 });
