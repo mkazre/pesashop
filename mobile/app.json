@@ -20,6 +20,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.pesashop.mobile",
       "buildNumber": "1",
+      "associatedDomains": [
+        "applinks:pesashop.com"
+      ],
       "infoPlist": {
         "NSCameraUsageDescription": "Pesa Shop uses your camera to let you upload product review photos.",
         "NSPhotoLibraryUsageDescription": "Pesa Shop accesses your photo library so you can upload profile and review images.",
@@ -47,6 +50,19 @@
         "android.permission.USE_FINGERPRINT",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.WAKE_LOCK"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/product" },
+            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/order" },
+            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/refer" },
+            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/live" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {
