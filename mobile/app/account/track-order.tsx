@@ -256,10 +256,10 @@ export default function TrackOrderScreen() {
                 <Text style={s.totalLabel}>Subtotal</Text>
                 <Text style={s.totalValue}>{formatPrice(order.subtotal || 0)}</Text>
               </View>
-              {order.shippingCost > 0 && (
+              {order.shipping > 0 && (
                 <View style={s.totalRow}>
                   <Text style={s.totalLabel}>Shipping</Text>
-                  <Text style={s.totalValue}>{formatPrice(order.shippingCost)}</Text>
+                  <Text style={s.totalValue}>{formatPrice(order.shipping)}</Text>
                 </View>
               )}
               {order.discount > 0 && (

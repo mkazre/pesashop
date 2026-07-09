@@ -10,7 +10,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
@@ -24,6 +24,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const setAuth = useAuthStore((s) => s.setAuth);
+  const { ref: referralCode } = useLocalSearchParams<{ ref?: string }>();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -55,6 +56,7 @@ export default function RegisterScreen() {
         email: email.trim(),
         phone: phone.trim() || undefined,
         password,
+        referralCode: referralCode || undefined,
       });
       const { user, token } = res.data;
       await setAuth(user, token);
@@ -79,6 +81,13 @@ export default function RegisterScreen() {
           <Image source={LOGO} style={rs.logo} contentFit="contain" />
           <Text style={rs.heading}>Create Account</Text>
           <Text style={rs.subheading}>Join Pesa Shop for the best deals</Text>
+
+          {referralCode && (
+            <View style={rs.referralBanner}>
+              <Ionicons name="gift-outline" size={16} color={colors.primary} />
+              <Text style={rs.referralBannerText}>Signing up with referral code <Text style={{ fontWeight: "700" }}>{referralCode.toUpperCase()}</Text></Text>
+            </View>
+          )}
 
           <Text style={rs.label}>First Name *</Text>
           <View style={rs.inputWrap}>
@@ -141,6 +150,8 @@ const rs = StyleSheet.create({
   closeBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gray50, alignItems: "center", justifyContent: "center", marginBottom: 32 },
   logo: { width: 160, height: 50, marginBottom: 20, alignSelf: "center" } as any,
   heading: { fontSize: 30, fontWeight: "700", color: colors.gray900, marginBottom: 8 },
+  referralBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.primaryLight, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 20 },
+  referralBannerText: { fontSize: 12, color: colors.primaryDark, flex: 1 },
   subheading: { fontSize: 16, color: colors.gray500, marginBottom: 32 },
   label: { fontSize: 14, fontWeight: "600", color: colors.gray700, marginBottom: 6 },
   inputWrap: { flexDirection: "row", alignItems: "center", backgroundColor: colors.gray50, borderRadius: 0, paddingHorizontal: 12, height: 48, marginBottom: 16, borderWidth: 1, borderColor: colors.gray200 },

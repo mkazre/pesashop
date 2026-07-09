@@ -249,6 +249,30 @@ export default function RootLayout() {
           name="account/my-offers"
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="account/returns/index"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/returns/new/[orderId]"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/referrals"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/invoices"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="live/[id]"
+          options={{ headerShown: false, animation: "slide_from_bottom" }}
+        />
+        <Stack.Screen
+          name="refer/[code]"
+          options={{ headerShown: false }}
+        />
       </Stack>
       <CartSidebar />
       <CheckoutDrawer />

@@ -14,7 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 import ScreenHeader from "@/components/ScreenHeader";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ProductCard from "@/components/ProductCard";
-import { ordersAPI, settingsAPI, productsAPI } from "@/services/api";
+import Toast from "react-native-toast-message";
+import { ordersAPI, settingsAPI, productsAPI, viewInvoicePDF } from "@/services/api";
 import { useCurrencyStore } from "@/store";
 import { colors } from "@/theme";
 import BottomTabBar from "@/components/BottomTabBar";
@@ -57,6 +58,7 @@ export default function OrderDetailScreen() {
   const formatPrice = useCurrencyStore((s) => s.formatPrice);
 
   const [loading, setLoading] = useState(true);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [order, setOrder] = useState<any>(null);
   const [bankDetails, setBankDetails] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>({});
@@ -230,6 +232,30 @@ export default function OrderDetailScreen() {
               <Text style={s.totalVal}>{isPickup ? "Collect" : "Deliver"}</Text>
             </View>
           </View>
+
+          <View style={s.orderActionsRow}>
+            <Pressable
+              onPress={async () => {
+                setInvoiceLoading(true);
+                try {
+                  await viewInvoicePDF(order._id, (order.orderNumber || "").replace(/^#?ORD-?/i, "INV-"));
+                } catch {
+                  Toast.show({ type: "error", text1: "Failed to open invoice" });
+                } finally {
+                  setInvoiceLoading(false);
+                }
+              }}
+              disabled={invoiceLoading}
+              style={s.orderActionBtnDark}
+            >
+              <Text style={s.orderActionBtnDarkText}>{invoiceLoading ? "Loading..." : "View / Download Invoice"}</Text>
+            </Pressable>
+            {["delivered", "completed"].includes(order.status) && (
+              <Pressable onPress={() => router.push(`/account/returns/new/${order._id}` as any)} style={s.orderActionBtnPrimary}>
+                <Text style={s.orderActionBtnPrimaryText}>Request a Return</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {/* ─── 4. Bank Details (EFT only) ─── */}
@@ -392,6 +418,11 @@ const s = StyleSheet.create({
   grandTotal: { borderTopWidth: 1, borderTopColor: colors.gray200, paddingTop: 8, marginTop: 4 },
   grandLabel: { fontSize: 13, fontWeight: "700", color: colors.gray900 },
   grandVal: { fontSize: 18, fontWeight: "800", color: colors.gray900 },
+  orderActionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 16 },
+  orderActionBtnDark: { flexGrow: 1, backgroundColor: colors.gray800, borderRadius: 6, paddingVertical: 12, alignItems: "center" },
+  orderActionBtnDarkText: { color: colors.white, fontSize: 12, fontWeight: "700" },
+  orderActionBtnPrimary: { flexGrow: 1, backgroundColor: colors.primary, borderRadius: 6, paddingVertical: 12, alignItems: "center" },
+  orderActionBtnPrimaryText: { color: colors.white, fontSize: 12, fontWeight: "700" },
 
   // Bank Details
   bankNote: { fontSize: 12, color: colors.gray600, textAlign: "center", marginBottom: 12, lineHeight: 18 },
