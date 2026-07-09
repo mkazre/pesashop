@@ -159,11 +159,17 @@ export default function CheckoutScreen() {
   };
 
   // ─── Totals ───
+  // Mirrors frontend/src/pages/CheckoutPage.jsx: free shipping, flat 15% VAT.
+  // (There's no backend shipping-rate endpoint — the web checkout hardcodes
+  // these same two values and sends them explicitly so the order isn't
+  // silently under-charged by the server's own tax/shipping defaults.)
   const subtotal = getTotal();
+  const shippingCost = 0;
+  const tax = subtotal * 0.15;
   const giftCardDiscount = giftCardApplied?.amount || 0;
   const couponDiscount = couponApplied?.discount || 0;
   const loyaltyDiscountAmt = loyaltyApplied ? loyaltyDiscount : 0;
-  const orderTotal = Math.max(0, subtotal - giftCardDiscount - couponDiscount - loyaltyDiscountAmt);
+  const orderTotal = Math.max(0, subtotal + shippingCost + tax - giftCardDiscount - couponDiscount - loyaltyDiscountAmt);
 
   // ─── Place Order ───
   const handlePlaceOrder = async () => {
@@ -210,6 +216,8 @@ export default function CheckoutScreen() {
         paymentMethod,
         notes: form.notes,
         subtotal,
+        shipping: shippingCost,
+        tax,
         total: orderTotal,
         ...(giftCardApplied && { giftCardCode: giftCardApplied.code, giftCardAmount: giftCardDiscount }),
         ...(couponApplied && { couponCode: couponApplied.code, couponDiscount }),
@@ -384,6 +392,14 @@ export default function CheckoutScreen() {
           <View style={co.summaryRow}>
             <Text style={co.subtotalLabel}>Subtotal</Text>
             <Text style={co.summaryPrice}>{formatPrice(subtotal)}</Text>
+          </View>
+          <View style={co.summaryRow}>
+            <Text style={co.subtotalLabel}>Shipping</Text>
+            <Text style={co.summaryPrice}>{shippingCost > 0 ? formatPrice(shippingCost) : "Free"}</Text>
+          </View>
+          <View style={co.summaryRow}>
+            <Text style={co.subtotalLabel}>Tax (VAT)</Text>
+            <Text style={co.summaryPrice}>{formatPrice(tax)}</Text>
           </View>
           {giftCardApplied && (
             <View style={co.summaryRow}>
