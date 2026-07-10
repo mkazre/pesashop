@@ -97,7 +97,6 @@ function SectionCard({ section, block, width }: { section: any; block: any; widt
 
   const cols = block.giftProductColumns || 2;
   const gap = 6;
-  const tileWidth = (width - parseInt(block.giftSectionPadding || "12") * 2 - gap * (cols - 1)) / cols;
   const cardStyle = block.giftCardStyle || "compact";
   const titleClamp = block.giftCardTitleClamp || 2;
   const imageAspect = block.giftCardImageAspect || "1:1";
@@ -141,9 +140,12 @@ function SectionCard({ section, block, width }: { section: any; block: any; widt
             No products
           </Text>
         ) : (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: -gap / 2 }}>
             {products.slice(0, section.productLimit || 4).map((p: any) => (
-              <View key={p._id} style={{ width: tileWidth }}>
+              <View
+                key={p._id}
+                style={{ width: `${100 / cols}%`, paddingHorizontal: gap / 2, marginBottom: gap }}
+              >
                 <ProductTile
                   product={p}
                   cardStyle={cardStyle}
