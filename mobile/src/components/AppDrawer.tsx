@@ -51,12 +51,15 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
 
   useEffect(() => {
     if (!visible) return;
-    // Fetch mobile menu from admin — use 'mobile-menu' location (set in Admin → Menu Builder)
+    // Mirror the website's Header.jsx exactly — it reads the 'header' location
+    // (Admin → Menu Builder). Fall back to a mobile-specific menu only if the
+    // site has never configured a header menu at all.
     Promise.all([
+      menusAPI.getByLocation("header").catch(() => null),
       menusAPI.getByLocation("mobile-menu").catch(() => null),
       menusAPI.getByLocation("mobile").catch(() => null),
-    ]).then(([mobileMenuRes, mobileRes]) => {
-      const menu = mobileMenuRes?.data?.data || mobileRes?.data?.data;
+    ]).then(([headerRes, mobileMenuRes, mobileRes]) => {
+      const menu = headerRes?.data?.data || mobileMenuRes?.data?.data || mobileRes?.data?.data;
       if (menu?.items?.length) {
         setMenuItems(menu.items);
       }
