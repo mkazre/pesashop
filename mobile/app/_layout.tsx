@@ -159,6 +159,10 @@ export default function RootLayout() {
           options={{ headerShown: false, animation: "fade" }}
         />
         <Stack.Screen
+          name="visual-search"
+          options={{ headerShown: false, presentation: "modal" }}
+        />
+        <Stack.Screen
           name="auth/login"
           options={{ headerShown: false, presentation: "modal" }}
         />

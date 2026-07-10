@@ -49,6 +49,9 @@ export default function SearchBar({
             <Ionicons name="close-circle" size={18} color={colors.gray400} />
           </Pressable>
         )}
+        <Pressable onPress={() => router.push("/visual-search" as any)} style={s.cameraBtn} hitSlop={8}>
+          <Ionicons name="camera-outline" size={20} color={colors.gray500} />
+        </Pressable>
       </View>
     </Pressable>
   );
@@ -57,4 +60,5 @@ export default function SearchBar({
 const s = StyleSheet.create({
   container: { flexDirection: "row", alignItems: "center", backgroundColor: colors.gray100, borderRadius: 0, paddingHorizontal: 12, height: 44 },
   input: { flex: 1, marginLeft: 8, fontSize: 14, color: colors.gray800 },
+  cameraBtn: { marginLeft: 8, paddingLeft: 8, borderLeftWidth: 1, borderLeftColor: colors.gray300 },
 });
