@@ -42,8 +42,8 @@ export default function InvoicesScreen() {
     setOpeningId(inv.orderId);
     try {
       await viewInvoicePDF(inv.orderId, inv.invoiceNumber);
-    } catch {
-      Toast.show({ type: "error", text1: "Failed to open invoice" });
+    } catch (err: any) {
+      Toast.show({ type: "error", text1: "Failed to open invoice", text2: err?.message });
     } finally {
       setOpeningId(null);
     }
@@ -123,6 +123,6 @@ const s = StyleSheet.create({
   statusBadgeGreen: { backgroundColor: "#dcfce7" },
   statusBadgeText: { fontSize: 10, fontWeight: "600", color: colors.gray600 },
   statusBadgeTextGreen: { color: "#15803d" },
-  viewBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.primary, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8 },
+  viewBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.primary, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 0 },
   viewBtnText: { color: colors.white, fontSize: 11, fontWeight: "700" },
 });
