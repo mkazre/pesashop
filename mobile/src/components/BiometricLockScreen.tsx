@@ -45,6 +45,6 @@ const s = StyleSheet.create({
   iconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", marginBottom: 24 },
   title: { fontSize: 20, fontWeight: "700", color: colors.white, marginBottom: 8 },
   subtitle: { fontSize: 13, color: "rgba(255,255,255,0.75)", textAlign: "center", marginBottom: 32 },
-  btn: { backgroundColor: colors.white, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 8 },
+  btn: { backgroundColor: colors.white, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 0 },
   btnText: { color: colors.primary, fontWeight: "700", fontSize: 14 },
 });

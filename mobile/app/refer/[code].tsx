@@ -71,7 +71,7 @@ const s = StyleSheet.create({
   subtitle: { fontSize: 14, color: colors.gray600, marginBottom: 4, textAlign: "center" },
   desc: { fontSize: 13, color: colors.gray500, textAlign: "center", marginBottom: 24, lineHeight: 19 },
   codeText: { color: colors.primary, fontWeight: "700" },
-  primaryBtn: { width: "100%", backgroundColor: colors.primary, borderRadius: 8, paddingVertical: 14, alignItems: "center" },
+  primaryBtn: { width: "100%", backgroundColor: colors.primary, borderRadius: 0, paddingVertical: 14, alignItems: "center" },
   primaryBtnText: { color: colors.white, fontWeight: "700", fontSize: 14 },
   browseText: { color: colors.gray500, fontSize: 13, textDecorationLine: "underline" },
   errorTitle: { fontSize: 20, fontWeight: "700", color: colors.gray900, marginBottom: 8 },

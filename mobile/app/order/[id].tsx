@@ -419,9 +419,9 @@ const s = StyleSheet.create({
   grandLabel: { fontSize: 13, fontWeight: "700", color: colors.gray900 },
   grandVal: { fontSize: 18, fontWeight: "800", color: colors.gray900 },
   orderActionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 16 },
-  orderActionBtnDark: { flexGrow: 1, backgroundColor: colors.gray800, borderRadius: 6, paddingVertical: 12, alignItems: "center" },
+  orderActionBtnDark: { flexGrow: 1, backgroundColor: colors.gray800, borderRadius: 0, paddingVertical: 12, alignItems: "center" },
   orderActionBtnDarkText: { color: colors.white, fontSize: 12, fontWeight: "700" },
-  orderActionBtnPrimary: { flexGrow: 1, backgroundColor: colors.primary, borderRadius: 6, paddingVertical: 12, alignItems: "center" },
+  orderActionBtnPrimary: { flexGrow: 1, backgroundColor: colors.primary, borderRadius: 0, paddingVertical: 12, alignItems: "center" },
   orderActionBtnPrimaryText: { color: colors.white, fontSize: 12, fontWeight: "700" },
 
   // Bank Details
