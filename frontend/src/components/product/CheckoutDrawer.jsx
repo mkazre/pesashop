@@ -7,6 +7,7 @@ import toast from '@/utils/toast';
 import LaybyWidget from './LaybyWidget';
 import OfferCard from '@/components/offers/OfferCard';
 import SmartIcon from '@/components/common/SmartIcon';
+import useAnalytics from '@/hooks/useAnalytics';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -25,6 +26,7 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
   const { formatPrice } = useCurrencyStore();
   const { openAuthModal } = useUIStore();
   const navigate = useNavigate();
+  const { trackPurchase } = useAnalytics();
 
   const [fulfilment, setFulfilment] = useState('delivery');
   const [couponCode, setCouponCode] = useState('');
@@ -232,10 +234,11 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
   const orderMutation = useMutation(
     (orderData) => ordersAPI.create(orderData),
     {
-      onSuccess: (response) => {
+      onSuccess: (response, orderData) => {
         toast.success('Order placed successfully!');
-        cart.clearCart();
         const orderId = response.data?.data?._id || response.data?._id;
+        trackPurchase(orderId, orderData.items);
+        cart.clearCart();
         onClose();
         if (typeof onOrderPlaced === 'function') {
           onOrderPlaced(orderId, response);
@@ -339,6 +342,7 @@ export default function CheckoutDrawer({ open, onClose, product, quantity: initi
       })),
       payments,
       paymentMethod: payments[0]?.method || 'eft',
+      sessionId: sessionStorage.getItem('pesa_sid') || undefined,
     };
 
     orderMutation.mutate(orderData);

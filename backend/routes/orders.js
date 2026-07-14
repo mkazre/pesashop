@@ -157,6 +157,7 @@ router.post('/', protect, async (req, res, next) => {
       pickupAddress: clientPickupAddress,
       currency: clientCurrency,
       exchangeRate: clientExchangeRate,
+      sessionId,
     } = req.body;
     
     let subtotal = 0;
@@ -268,6 +269,7 @@ router.post('/', protect, async (req, res, next) => {
     
     const order = await Order.create({
       customer: req.user._id,
+      sessionId: sessionId || undefined,
       items: orderItems,
       subtotal: finalSubtotal,
       tax: finalTax,

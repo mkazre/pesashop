@@ -64,6 +64,14 @@ const orderSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+
+  // Anonymous browsing session that led to this order (pesa_sid from sessionStorage).
+  // Lets analytics join pre-login SiteEvents (search, add_to_cart) to this order even
+  // though those earlier events may have no userId attached.
+  sessionId: {
+    type: String,
+    index: true
+  },
   
   // Order Items
   items: [orderItemSchema],

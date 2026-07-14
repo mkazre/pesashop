@@ -13,6 +13,7 @@ import CheckoutLoyaltyPoints from '@/components/loyalty/CheckoutLoyaltyPoints';
 import CouponWidget from '@/components/coupon/CouponWidget';
 import { usePageTemplate } from '@/hooks/usePageTemplate';
 import PageRenderer from '@/components/pagebuilder/PageRenderer';
+import useAnalytics from '@/hooks/useAnalytics';
 
 export default function CheckoutPage() {
   const { formatPrice } = useCurrencyStore();
@@ -20,6 +21,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, getTotal, clearCart, giftCardCode, giftCardAmount, giftCardBalance, setGiftCard, clearGiftCard } = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
+  const { trackPurchase } = useAnalytics();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [giftCardCodeInput, setGiftCardCodeInput] = useState('');
@@ -134,12 +136,15 @@ export default function CheckoutPage() {
         loyaltyDiscount: loyaltyDiscount || undefined,
         couponCode: couponCode || undefined,
         couponDiscount: couponDiscount || undefined,
+        sessionId: sessionStorage.getItem('pesa_sid') || undefined,
       };
 
       const response = await ordersAPI.create(orderData);
+      const orderId = response.data.data?._id || response.data._id;
+      trackPurchase(orderId, orderData.items);
       clearCart();
       toast.success('Order placed successfully!');
-      navigate(`/order-success/${response.data.data?._id || response.data._id}`);
+      navigate(`/order-success/${orderId}`);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to place order');
     } finally {
