@@ -8,6 +8,10 @@ const AutoposterOAuthState = require('../models/AutoposterOAuthState');
 const AutoposterAuditLog = require('../models/AutoposterAuditLog');
 const AutoposterPost = require('../models/AutoposterPost');
 const AutoposterPostTarget = require('../models/AutoposterPostTarget');
+const AutoposterPostProfile = require('../models/AutoposterPostProfile');
+const AutoposterCaptionTemplate = require('../models/AutoposterCaptionTemplate');
+const Product = require('../models/Product');
+const { resolveProductPost } = require('../services/autoposterProductPostResolver');
 const { encryptToken } = require('../services/autoposterTokenCrypto');
 const {
   AUTOPOSTER_PLATFORMS,
@@ -483,6 +487,114 @@ router.get('/queue-status', protect, adminOnly, async (req, res) => {
       AutoposterPostTarget.countDocuments({ status: AUTOPOSTER_TARGET_STATUS.FAILED, updatedAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }),
     ]);
     res.json({ success: true, data: { pending, publishing, published24h, failed24h } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Product Post Profiles (Spec Section 9.5.2) ────────────────────────────
+router.get('/profiles', protect, adminOnly, async (req, res) => {
+  try {
+    const profiles = await AutoposterPostProfile.find().sort({ isDefault: -1, name: 1 });
+    res.json({ success: true, data: profiles });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/profiles', protect, adminOnly, async (req, res) => {
+  try {
+    const profile = await AutoposterPostProfile.create({ ...req.body, createdBy: req.user._id });
+    res.status(201).json({ success: true, data: profile });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.put('/profiles/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const profile = await AutoposterPostProfile.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!profile) return res.status(404).json({ success: false, message: 'Profile not found' });
+    res.json({ success: true, data: profile });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.delete('/profiles/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const profile = await AutoposterPostProfile.findById(req.params.id);
+    if (!profile) return res.status(404).json({ success: false, message: 'Profile not found' });
+    if (profile.isDefault) return res.status(400).json({ success: false, message: 'Cannot delete the default profile — set a different profile as default first' });
+    await profile.deleteOne();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Caption Templates (Spec Section 9.3) ──────────────────────────────────
+router.get('/caption-templates', protect, adminOnly, async (req, res) => {
+  try {
+    const templates = await AutoposterCaptionTemplate.find().sort({ name: 1 });
+    res.json({ success: true, data: templates });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/caption-templates', protect, adminOnly, async (req, res) => {
+  try {
+    const template = await AutoposterCaptionTemplate.create({ ...req.body, createdBy: req.user._id });
+    res.status(201).json({ success: true, data: template });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.put('/caption-templates/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const template = await AutoposterCaptionTemplate.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!template) return res.status(404).json({ success: false, message: 'Template not found' });
+    res.json({ success: true, data: template });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.delete('/caption-templates/:id', protect, adminOnly, async (req, res) => {
+  try {
+    await AutoposterCaptionTemplate.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/autoposter/products/:id/preview — renders the resolved caption per
+// selected platform exactly as an auto-post would generate it (Spec 9.5.5),
+// without creating any post. Query params: profileId (optional, falls back
+// to the store default), templateId (optional), platforms (comma-separated).
+router.get('/products/:id/preview', protect, adminOnly, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).populate('categories', 'name');
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+
+    const profile = req.query.profileId
+      ? await AutoposterPostProfile.findById(req.query.profileId)
+      : await AutoposterPostProfile.findOne({ isDefault: true });
+    if (!profile) return res.status(400).json({ success: false, message: 'No profile available to preview with' });
+
+    const template = req.query.templateId ? await AutoposterCaptionTemplate.findById(req.query.templateId) : null;
+    const platforms = (req.query.platforms || '').split(',').map((p) => p.trim()).filter(Boolean);
+    if (platforms.length === 0) return res.status(400).json({ success: false, message: 'At least one platform is required to preview' });
+
+    const preview = platforms.map((platform) => {
+      const resolved = resolveProductPost(product, profile, platform, template);
+      return { platform, caption: resolved.caption, hashtags: resolved.hashtags, media: resolved.media };
+    });
+
+    res.json({ success: true, data: preview });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

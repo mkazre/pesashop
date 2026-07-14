@@ -275,7 +275,8 @@ productSchema.pre('save', function (next) {
 productSchema.add({
   postProfileId: { type: mongoose.Schema.Types.ObjectId, ref: 'AutoposterPostProfile', default: null },
   autoPostEnabled: { type: Boolean, default: false },
-  autoPostPlatforms: { type: [String], default: [] }
+  autoPostPlatforms: { type: [String], default: [] },
+  captionTemplateId: { type: mongoose.Schema.Types.ObjectId, ref: 'AutoposterCaptionTemplate', default: null }
 });
 
 module.exports = mongoose.model('Product', productSchema);

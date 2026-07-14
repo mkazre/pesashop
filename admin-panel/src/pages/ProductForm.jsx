@@ -1,14 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { productsAPI, categoriesAPI, imagesAPI, currenciesAPI } from '@/services/api';
+import { productsAPI, categoriesAPI, imagesAPI, currenciesAPI, autoposterAPI } from '@/services/api';
 import { useNavigate, useParams } from 'react-router-dom';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import toast from '@/utils/toast';
-import { IoArrowBack, IoAdd, IoTrash, IoCloudUpload, IoSparkles, IoCash } from 'react-icons/io5';
+import { IoArrowBack, IoAdd, IoTrash, IoCloudUpload, IoSparkles, IoCash, IoEyeOutline } from 'react-icons/io5';
+
+const AUTOPOSTER_PLATFORMS = ['facebook', 'instagram', 'x', 'linkedin', 'tiktok'];
 
 const ProductForm = () => {
   const { id } = useParams();
@@ -39,8 +41,54 @@ const ProductForm = () => {
       productType: 'simple',
       attributes: {},
       variations: [],
+      autoPostEnabled: false,
+      autoPostPlatforms: [],
+      postProfileId: '',
+      captionTemplateId: '',
     },
   });
+
+  // Social Auto-Poster (Phase 6)
+  const [previewModal, setPreviewModal] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const autoPostEnabled = watch('autoPostEnabled');
+  const autoPostPlatforms = watch('autoPostPlatforms') || [];
+
+  const { data: profilesData } = useQuery('autoposter-profiles', () => autoposterAPI.listProfiles());
+  const profiles = profilesData?.data?.data || [];
+  const { data: templatesData } = useQuery('autoposter-caption-templates', () => autoposterAPI.listCaptionTemplates());
+  const captionTemplates = templatesData?.data?.data || [];
+
+  const toggleAutoPostPlatform = (platform) => {
+    const current = watch('autoPostPlatforms') || [];
+    setValue('autoPostPlatforms', current.includes(platform) ? current.filter((p) => p !== platform) : [...current, platform]);
+  };
+
+  const handlePreview = async () => {
+    if (!isEdit) {
+      toast.error('Save the product first — the preview needs a real product to resolve against');
+      return;
+    }
+    if (autoPostPlatforms.length === 0) {
+      toast.error('Select at least one platform to preview');
+      return;
+    }
+    setPreviewLoading(true);
+    try {
+      const res = await autoposterAPI.previewProductPost(id, {
+        profileId: watch('postProfileId') || undefined,
+        templateId: watch('captionTemplateId') || undefined,
+        platforms: autoPostPlatforms.join(',')
+      });
+      setPreviewData(res.data.data);
+      setPreviewModal(true);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Preview failed');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   const [attributes, setAttributes] = useState([]);
   const [variations, setVariations] = useState([]);
@@ -754,6 +802,58 @@ const ProductForm = () => {
           />
         </Card>
 
+        {/* Social Auto-Poster (Phase 6) */}
+        <Card title="Social Auto-Poster">
+          <div className="space-y-4">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" {...register('autoPostEnabled')} />
+              Auto-post when this product goes live
+            </label>
+
+            {autoPostEnabled && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Platforms</label>
+                  <div className="flex flex-wrap gap-3">
+                    {AUTOPOSTER_PLATFORMS.map((platform) => (
+                      <label key={platform} className="flex items-center gap-1 text-sm capitalize">
+                        <input
+                          type="checkbox"
+                          checked={autoPostPlatforms.includes(platform)}
+                          onChange={() => toggleAutoPostPlatform(platform)}
+                        />
+                        {platform}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Content profile</label>
+                    <select className="input w-full" {...register('postProfileId')}>
+                      <option value="">Use store default</option>
+                      {profiles.map((p) => <option key={p._id} value={p._id}>{p.name}{p.isDefault ? ' (default)' : ''}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Caption template</label>
+                    <select className="input w-full" {...register('captionTemplateId')}>
+                      <option value="">Auto-generate from profile</option>
+                      {captionTemplates.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <Button type="button" variant="ghost" onClick={handlePreview} loading={previewLoading}>
+                  <IoEyeOutline size={18} className="mr-2" />
+                  Preview
+                </Button>
+              </>
+            )}
+          </div>
+        </Card>
+
         {/* Submit Buttons */}
         <div className="flex items-center justify-end gap-4">
           <Button type="button" variant="ghost" onClick={() => navigate('/products')}>
@@ -796,6 +896,23 @@ const ProductForm = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Social Auto-Poster Preview Modal (Spec 9.5.5) */}
+      <Modal isOpen={previewModal} onClose={() => setPreviewModal(false)} title="Auto-Post Preview" size="lg" showFooter={false}>
+        <div className="space-y-4">
+          {(previewData || []).map((item) => (
+            <div key={item.platform} className="border rounded-lg p-3">
+              <p className="text-xs font-semibold uppercase text-gray-400 mb-1">{item.platform}</p>
+              <p className="text-sm whitespace-pre-wrap">{item.caption}</p>
+              {item.media?.length > 0 && (
+                <div className="flex gap-2 mt-2">
+                  {item.media.map((m) => <img key={m.url} src={m.url} alt={m.alt} className="w-16 h-16 object-cover rounded" />)}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </Modal>
     </div>
   );

@@ -91,6 +91,8 @@ import LiveStreamControlPage from './pages/LiveStreamControlPage';
 import BundlesPage from './pages/BundlesPage';
 import AutoposterAccountsPage from './pages/AutoposterAccountsPage';
 import AutoposterComposePage from './pages/AutoposterComposePage';
+import AutoposterProfilesPage from './pages/AutoposterProfilesPage';
+import AutoposterCaptionTemplatesPage from './pages/AutoposterCaptionTemplatesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -218,6 +220,8 @@ function App() {
             <Route path="bundles" element={<BundlesPage />} />
             <Route path="autoposter/accounts" element={<AutoposterAccountsPage />} />
             <Route path="autoposter/compose" element={<AutoposterComposePage />} />
+            <Route path="autoposter/profiles" element={<AutoposterProfilesPage />} />
+            <Route path="autoposter/caption-templates" element={<AutoposterCaptionTemplatesPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

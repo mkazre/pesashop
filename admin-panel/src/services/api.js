@@ -790,6 +790,18 @@ export const autoposterAPI = {
   updatePost: (id, data) => api.patch(`/autoposter/posts/${id}`, data),
   cancelPost: (id) => api.delete(`/autoposter/posts/${id}`),
   publishNow: (id) => api.post(`/autoposter/posts/${id}/publish-now`),
+  // Product Post Profiles (Phase 6)
+  listProfiles: () => api.get('/autoposter/profiles'),
+  createProfile: (data) => api.post('/autoposter/profiles', data),
+  updateProfile: (id, data) => api.put(`/autoposter/profiles/${id}`, data),
+  deleteProfile: (id) => api.delete(`/autoposter/profiles/${id}`),
+  // Caption Templates (Phase 6)
+  listCaptionTemplates: () => api.get('/autoposter/caption-templates'),
+  createCaptionTemplate: (data) => api.post('/autoposter/caption-templates', data),
+  updateCaptionTemplate: (id, data) => api.put(`/autoposter/caption-templates/${id}`, data),
+  deleteCaptionTemplate: (id) => api.delete(`/autoposter/caption-templates/${id}`),
+  // Product auto-post preview (Phase 6)
+  previewProductPost: (productId, params) => api.get(`/autoposter/products/${productId}/preview`, { params }),
 };
 
 export default api;

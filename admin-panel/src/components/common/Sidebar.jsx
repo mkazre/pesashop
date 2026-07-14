@@ -123,6 +123,8 @@ const menuGroups = [
       { path: '/notifications', icon: IoNotificationsOutline, label: 'Notifications' },
       { path: '/autoposter/accounts', icon: IoShareSocialOutline, label: 'Auto-Poster: Accounts' },
       { path: '/autoposter/compose', icon: IoShareSocialOutline, label: 'Auto-Poster: Compose' },
+      { path: '/autoposter/profiles', icon: IoShareSocialOutline, label: 'Auto-Poster: Profiles' },
+      { path: '/autoposter/caption-templates', icon: IoShareSocialOutline, label: 'Auto-Poster: Templates' },
     ],
   },
   {

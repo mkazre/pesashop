@@ -7,6 +7,7 @@ const sharp = require('sharp');
 const { protect, authorize, adminOnly, optionalAuth } = require('../middleware/auth');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const { triggerProductAutoPost, wasJustPublished } = require('../services/autoposterProductAutoPostTrigger');
 
 // Configure multer for image uploads (store in memory for processing)
 const storage = multer.memoryStorage();
@@ -464,6 +465,14 @@ router.post('/', protect, adminOnly, authorize('admin', 'shop_manager'), async (
     
     const product = await Product.create(productData);
 
+    // Social Auto-Poster (Spec Section 9.1): a brand-new product created
+    // directly in a published state (the default) counts as "going live".
+    // Never awaited into the response — a problem here must not block or
+    // fail product creation (triggerProductAutoPost never throws anyway).
+    if (product.status === 'active' && product.isActive === true) {
+      triggerProductAutoPost(product);
+    }
+
     res.status(201).json({
       success: true,
       data: product
@@ -493,7 +502,12 @@ router.put('/:id', protect, authorize('admin', 'shop_manager'), async (req, res)
         message: 'Product not found'
       });
     }
-    
+
+    // Snapshot before applying updates — Social Auto-Poster (Spec 9.1) only
+    // fires on the transition INTO published, not on every edit of an
+    // already-published product.
+    const wasPublishedBefore = { status: product.status, isActive: product.isActive };
+
     const productData = req.body;
     
     // Don't allow SKU changes
@@ -549,7 +563,13 @@ router.put('/:id', protect, authorize('admin', 'shop_manager'), async (req, res)
     }
     
     await product.save();
-    
+
+    // Social Auto-Poster (Spec Section 9.1): only fire on the transition
+    // into published, not on every edit of an already-published product.
+    if (wasJustPublished(wasPublishedBefore, product)) {
+      triggerProductAutoPost(product);
+    }
+
     product = await Product.findById(req.params.id).populate('categories', 'name slug');
 
     res.json({
