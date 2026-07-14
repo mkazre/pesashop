@@ -189,5 +189,104 @@ module.exports = {
     POD_CAPTURED: 'pod_captured',
     NOTE_ADDED: 'note_added',
     CANCELLED: 'cancelled'
+  },
+
+  // Autoposter (Social Auto-Poster module) — Connected Account Platforms
+  AUTOPOSTER_PLATFORMS: {
+    FACEBOOK: 'facebook',
+    INSTAGRAM: 'instagram',
+    X: 'x',
+    TIKTOK: 'tiktok',
+    LINKEDIN: 'linkedin'
+  },
+
+  // Autoposter — Connected Account Status
+  AUTOPOSTER_ACCOUNT_STATUS: {
+    ACTIVE: 'active',
+    EXPIRED: 'expired',
+    REVOKED: 'revoked',
+    NEEDS_REAUTH: 'needs_reauth'
+  },
+
+  // Autoposter — Post Source
+  // NOTE: Spec Section 4.2 only lists manual/product_auto/campaign, but the trend
+  // engine pipeline (Spec 10.1, 11.4) clearly produces real posts once a trend+product
+  // pairing is approved. Added TREND as an implied 4th value — flagged in the Phase 1 report.
+  AUTOPOSTER_POST_SOURCE: {
+    MANUAL: 'manual',
+    PRODUCT_AUTO: 'product_auto',
+    CAMPAIGN: 'campaign',
+    TREND: 'trend'
+  },
+
+  // Autoposter — Post Status
+  AUTOPOSTER_POST_STATUS: {
+    DRAFT: 'draft',
+    SCHEDULED: 'scheduled',
+    PUBLISHING: 'publishing',
+    PARTIAL: 'partial',
+    PUBLISHED: 'published',
+    FAILED: 'failed',
+    CANCELLED: 'cancelled'
+  },
+
+  // Autoposter — Target Region (local + global diaspora, Spec 10.12.1)
+  AUTOPOSTER_TARGET_REGIONS: {
+    LOCAL_ZW: 'local_zw',
+    DIASPORA_ZA: 'diaspora_za',
+    DIASPORA_UK: 'diaspora_uk',
+    DIASPORA_US: 'diaspora_us',
+    DIASPORA_CA: 'diaspora_ca',
+    DIASPORA_AU: 'diaspora_au',
+    DIASPORA_EU: 'diaspora_eu',
+    DIASPORA_BW: 'diaspora_bw',
+    GLOBAL: 'global'
+  },
+
+  // Autoposter — Post Target Status
+  AUTOPOSTER_TARGET_STATUS: {
+    PENDING: 'pending',
+    PUBLISHING: 'publishing',
+    PUBLISHED: 'published',
+    FAILED: 'failed',
+    SKIPPED: 'skipped'
+  },
+
+  // Autoposter — Trend Audience Tag
+  AUTOPOSTER_TREND_AUDIENCE: {
+    LOCAL_ZW: 'local_zw',
+    DIASPORA_ZA: 'diaspora_za',
+    DIASPORA_UK: 'diaspora_uk',
+    DIASPORA_US: 'diaspora_us',
+    DIASPORA_CA: 'diaspora_ca',
+    DIASPORA_AU: 'diaspora_au',
+    DIASPORA_EU: 'diaspora_eu',
+    DIASPORA_BW: 'diaspora_bw',
+    YOUTH: 'youth',
+    PROFESSIONAL: 'professional',
+    MIXED: 'mixed'
+  },
+
+  // Autoposter — Trend Sensitivity Flag (Brand Safety Filter, Spec 10.10)
+  AUTOPOSTER_SENSITIVITY: {
+    SAFE: 'safe',
+    REVIEW: 'review',
+    BLOCKED: 'blocked'
+  },
+
+  // Autoposter — Approval Queue Status (Spec 10.11)
+  AUTOPOSTER_APPROVAL_STATUS: {
+    AUTO_PUBLISHED: 'auto_published',
+    APPROVED: 'approved',
+    REJECTED: 'rejected',
+    PENDING: 'pending',
+    EXPIRED: 'expired'
+  },
+
+  // Autoposter — Blocklist Entry Type
+  AUTOPOSTER_BLOCKLIST_TYPES: {
+    EXACT: 'exact',
+    REGEX: 'regex',
+    CATEGORY: 'category'
   }
 };

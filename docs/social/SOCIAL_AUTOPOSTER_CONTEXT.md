@@ -89,6 +89,28 @@ Per MK's decision to fix the (corrected) cart/purchase signal gap now rather tha
 
 With the cart/purchase signal fix and the Jest foundation now in place, next is MK's "proceed" to begin Phase 1 (Database Schema and Migrations) per Brief Section 3.2 — noting throughout that "migrations" now means Mongoose schemas/scripts, not SQL, per the MongoDB-native decision above.
 
+## Phase 1 — Database Schema (complete, 2026-07-14)
+
+**Naming convention**: every new model/route/service uses an **`Autoposter`** prefix (e.g. `AutoposterAccount`, `AutoposterPost`) — deliberately distinct from the existing unrelated `socialEngine.js` (TikTok UGC feed) to avoid confusion, per the Phase 0 finding.
+
+**New Mongoose models** (`backend/models/`), one file each, following the exact style of `Order.js`/`SiteEvent.js`:
+- `AutoposterAccount` (Spec 4.1), `AutoposterPost` (4.2), `AutoposterPostTarget` (4.3), `AutoposterInsight` (4.4), `AutoposterAuditLog` (4.5)
+- Trend Engine (Spec 11): `AutoposterTrend`, `AutoposterTrendCandidate`, `AutoposterCulturalEvent`, `AutoposterDecision`, `AutoposterBlocklistTerm`, `AutoposterVariantPerformance`
+- `AutoposterDesign` (Spec 7.5, Visual Post Designer)
+- `AutoposterPostProfile` (Spec 9.5.2, with all 17 configurable fields as a validated sub-schema, not a Mixed blob)
+
+**Enums**: added as a new `AUTOPOSTER_*` section in `backend/config/constants.js`, matching the existing shared-constants-file convention exactly (not invented ad hoc per-schema).
+
+**Deviation from spec, flagged**: added a 4th `AUTOPOSTER_POST_SOURCE` value, `trend`, alongside the spec's literal `manual`/`product_auto`/`campaign` (Section 4.2) — the trend engine pipeline (10.1, 11.4) clearly needs to create real posts once a trend+product pairing is approved, but the spec's `posts.source` enum doesn't literally list a 4th value for it. Worth MK's eyes at the Phase 1 gate.
+
+**Product model**: additive-only fields (`postProfileId`, `autoPostEnabled`, `autoPostPlatforms`) added via `productSchema.add({...})` right before `module.exports`, mirroring exactly how the existing `embedding`/`embeddingUpdatedAt` fields were added — same safe, established pattern, not a new one.
+
+**Seed script**: `backend/seeders/autoposterSeed.js` — idempotent (upsert-based, never `deleteMany`), unlike the destructive `seeders/index.js`. Seeds the 8 Zimbabwe cultural events (10.5), the 5 starter post profiles (9.5.3), and blocklist placeholders. **Brand-safety blocklist seeding was deliberately conservative**: seeded as category-level placeholders (`political_figures`, `political_parties`, etc.) plus a few generic economic/utility terms (`sanctions`, `load shedding`, `fuel queue`, `zesa outage`) — did not fabricate specific real-world names of politicians, parties, or events, since which real-world entities count as sensitive is MK's judgment call to make deliberately via the Blocklist editor (Spec 12.5), not something to guess from training data. **Cultural events' `categoryIds` are empty** — real Category ObjectIds aren't knowable without a live DB connection from this environment; `categoryHints` (plain category-name strings) are populated instead, for an admin to map to real categories later.
+
+**Not yet run against any real database** — no local MongoDB is reachable from this environment, and this environment does not have Atlas credentials for the real cluster. All new models were validated with Mongoose's `validateSync()` (in-memory schema validation, no DB connection) and the full `backend/models/` directory (82 files) was required end-to-end with zero failures and no new warnings. **MK needs to run `node seeders/autoposterSeed.js` against the real dev/staging database** to actually populate the seed data — that's real "evidence" this session can't produce safely from here.
+
+**Tests**: `backend/tests/social/models.test.js` — 21 new tests (22 total with the harness smoke test), all passing, covering required fields, enum validation, and defaults for every new model.
+
 ## Separate, time-sensitive, not blocked by code
 
 Platform developer approvals are the critical path (Spec Section 3.1): Meta 2–7 business days, LinkedIn 1–3 weeks, TikTok up to 6 weeks *plus* a separate Direct Post approval. **Submit all five applications on day one** (Spec Section 25). None of this depends on any code existing.

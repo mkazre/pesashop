@@ -270,4 +270,12 @@ productSchema.pre('save', function (next) {
   next();
 });
 
+// Social Auto-Poster additive fields (Spec Section 9.5.2). Optional, defaulted,
+// purely additive — existing documents are unaffected until explicitly set.
+productSchema.add({
+  postProfileId: { type: mongoose.Schema.Types.ObjectId, ref: 'AutoposterPostProfile', default: null },
+  autoPostEnabled: { type: Boolean, default: false },
+  autoPostPlatforms: { type: [String], default: [] }
+});
+
 module.exports = mongoose.model('Product', productSchema);
