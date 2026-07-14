@@ -299,5 +299,28 @@ module.exports = {
     x: 280,
     linkedin: 3000,
     tiktok: 2200
-  }
+  },
+
+  // Autoposter — per-(platform,account) rate limits (Spec Section 8.3). Only
+  // X's figure comes from the spec itself (Basic tier: 100 tweets/24h,
+  // Section 8.3's own example) — the other four are conservative placeholders,
+  // not asserted platform truths, since the spec doesn't give concrete numbers
+  // for them. Tune these once real usage patterns or platform docs are
+  // reviewed in Phase 5.
+  AUTOPOSTER_RATE_LIMITS: {
+    facebook: { max: 50, windowHours: 24 },
+    instagram: { max: 50, windowHours: 24 },
+    x: { max: 100, windowHours: 24 },
+    linkedin: { max: 25, windowHours: 24 },
+    tiktok: { max: 25, windowHours: 24 }
+  },
+
+  // Autoposter — retry backoff schedule in minutes, indexed by attempt number
+  // (Spec Section 8.2: 1m, 5m, 15m, 1h, 4h — max 5 attempts).
+  AUTOPOSTER_RETRY_BACKOFF_MINUTES: [1, 5, 15, 60, 240],
+  AUTOPOSTER_MAX_ATTEMPTS: 5,
+
+  // How long a target can sit in 'publishing' before the worker assumes the
+  // process crashed mid-job and resets it to 'pending' for retry.
+  AUTOPOSTER_STALLED_THRESHOLD_MINUTES: 5
 };

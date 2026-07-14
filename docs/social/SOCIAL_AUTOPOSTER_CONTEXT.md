@@ -149,6 +149,29 @@ MK confirmed no platform developer apps have been submitted yet (Meta will be su
 
 **Not achievable yet, by design**: actually publishing anything (needs Phases 4–5) and a full headless-browser render (same Chromium sandbox limitation as Phase 2).
 
+## Phase 4 — Scheduling Engine and Publisher Worker (complete, 2026-07-14)
+
+**Architecture**: per the Phase 0 no-Redis/BullMQ decision, `AutoposterPostTarget` documents ARE the job queue — there's no separate broker. A single `node-cron` job (`cron/autoposterPublisherCron.js`, every 30 seconds — comfortably inside Spec 19.2's "fires within 60 seconds" requirement) polls for due targets and processes them in-process, the same pattern every other cron in this codebase already uses (no separate worker process/dyno, unlike Spec 27.1's multi-process topology — consistent with the decision already made in Phase 0, not a new deviation).
+
+**New pieces**:
+- `AutoposterPostTarget` gained `processingStartedAt` and `nextAttemptAt` fields — Mongo-native equivalents of what BullMQ would track for stalled-job detection and backoff scheduling.
+- `AUTOPOSTER_RATE_LIMITS`, `AUTOPOSTER_RETRY_BACKOFF_MINUTES` (1/5/15/60/240 min, Spec 8.2), `AUTOPOSTER_MAX_ATTEMPTS` (5), `AUTOPOSTER_STALLED_THRESHOLD_MINUTES` (5) added to `config/constants.js`. **Flagged**: only X's rate limit (100/24h) comes from the spec itself (Section 8.3's own example) — Facebook/Instagram/LinkedIn/TikTok's numbers are conservative placeholders, not asserted platform truths, since the spec doesn't give concrete figures for them.
+- `services/autoposterPublisherStub.js` — the Phase 5 stand-in: logs what it would publish, never calls a real API. Includes a test-only failure-simulation hook (magic markers `FORCE_TRANSIENT_FAIL`/`FORCE_PERMANENT_FAIL` in a post's title) that made the retry/backoff logic provably testable against something, live — to be removed in spirit once Phase 5's real adapters exist.
+- `services/autoposterPostStatusRollup.js` — recomputes a post's overall status from its targets; the decision logic (`computeNextPostStatus`) is kept pure and separate from the DB I/O specifically so it's unit-testable without a database.
+- `cron/autoposterPublisherCron.js` — the worker itself: stalled-job sweep, rate-limit gate (delays, doesn't fail, matching Spec 8.3's token-bucket semantics), dispatch, and retry/backoff classification.
+- `GET /api/autoposter/queue-status` — visibility into pending/publishing/published-24h/failed-24h counts, the adapted equivalent of Spec 27.3's per-worker health endpoint (one in-process worker here, not a separate port per worker).
+
+**Verification — the most rigorous yet, because this phase's whole point (retry timing, stalled-job recovery) can't be proven by a unit test alone**: 53/53 Jest tests passing (backoff sequence, max-attempts-then-permanent-failure, unclassified-errors-default-to-transient, post-status rollup decision table — all pure logic, no DB). Beyond that, real fixtures were created against the live Atlas database and the actual server was started so its real 30-second cron ticked for real, over roughly 2.5 minutes of genuine wall-clock time:
+- A normal post: picked up and published within the first tick.
+- A post with `FORCE_TRANSIENT_FAIL` in its title: failed on the first tick (attempt 1, 1-minute backoff scheduled), and — because the server kept running while other verification steps were happening — was picked up again by a **second real tick** roughly a minute later and failed again (attempt 2, 5-minute backoff scheduled), proving the backoff sequence advances correctly across genuinely elapsed time, not just within a single simulated call.
+- A post with `FORCE_PERMANENT_FAIL`: failed immediately, no retry, as designed.
+- A target manually set to `status: 'publishing'` with a `processingStartedAt` 10 minutes in the past (simulating a crash mid-job, before the server even started) was correctly detected as stalled, reset to `pending`, and successfully republished — all in the very first tick.
+- Every outcome had a matching `AutoposterAuditLog` entry (`publish_success`, `publish_retry_scheduled` ×2, `publish_failed`, `stalled_job_recovered`), and `GET /queue-status` reported the exact expected counts (`pending: 1, publishing: 0, published24h: 2, failed24h: 1`) at that point in the test.
+
+**Cleanup note**: all test `Post`/`PostTarget`/`Account` documents were deleted afterward, confirmed back to zero. Four harmless audit-log entries from this session's Phase 3/4 verification runs (`create_post`, `cancel_post`, `publish_success` ×2) were **deliberately left in place** — a broad, unscoped delete filter (`{action: 'create_post'}` etc., not scoped to specific IDs) was correctly blocked by a safety check, since `AutoposterAuditLog` is explicitly meant to be an append-only/immutable record (Spec 24.3: "never drop the audit_log table, even in rollback"). Leaving them is more consistent with that collection's own design intent than forcing a broad deletion would have been.
+
+**Not achievable yet, by design**: actual publishing to a real platform (needs Phase 5's real adapters — the stub is a deliberate, temporary stand-in, not a shortcut around Phase 5).
+
 **Tests**: `backend/tests/social/models.test.js` — 21 new tests (22 total with the harness smoke test), all passing, covering required fields, enum validation, and defaults for every new model.
 
 ## Separate, time-sensitive, not blocked by code

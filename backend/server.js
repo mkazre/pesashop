@@ -15,6 +15,7 @@ const { initReviewReminderCron } = require('./cron/reviewReminderCron');
 const { initRecurringOrderCronJobs } = require('./cron/recurringOrderCron');
 const { initVisualSearchCron } = require('./cron/visualSearchCron');
 const { initAutoposterTokenRefreshCron } = require('./cron/autoposterTokenRefreshCron');
+const { initAutoposterPublisherCron } = require('./cron/autoposterPublisherCron');
 
 // Initialize express app
 const app = express();
@@ -310,6 +311,9 @@ initVisualSearchCron();
 
 // Social Auto-Poster: daily OAuth token refresh
 initAutoposterTokenRefreshCron();
+
+// Social Auto-Poster: publisher worker (Mongo-native scheduling engine, Phase 4)
+initAutoposterPublisherCron();
 
 // Process scheduled notifications every 60 seconds
 const notificationService = require('./services/notificationService');

@@ -42,7 +42,17 @@ const autoposterPostTargetSchema = new mongoose.Schema({
   errorCode: String,
   errorMessage: String,
   publishedAt: Date,
-  attemptCount: { type: Number, default: 0 }
+  attemptCount: { type: Number, default: 0 },
+
+  // Worker bookkeeping (Spec Section 8.2), Mongo-native since there's no
+  // BullMQ to track this for us. processingStartedAt lets the publisher cron
+  // detect and recover a target stuck mid-publish after a crash/restart —
+  // the Mongo-native equivalent of BullMQ's stalled-job detection.
+  processingStartedAt: Date,
+  // When a transient failure schedules a retry, the target goes back to
+  // 'pending' but isn't eligible for pickup again until this time (the
+  // exponential backoff window, Spec 8.2: 1m, 5m, 15m, 1h, 4h).
+  nextAttemptAt: Date
 }, { timestamps: true });
 
 // Cool-down lookup pattern (Spec Section 10.8.3): count published posts for a

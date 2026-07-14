@@ -470,5 +470,23 @@ router.post('/posts/:id/publish-now', protect, adminOnly, async (req, res) => {
   });
 });
 
+// GET /api/autoposter/queue-status — visibility into the publisher worker
+// (Spec 27.3's per-worker health endpoint concept, adapted: there's one
+// in-process worker here, not a separate process/port, so this is a status
+// summary rather than a liveness probe).
+router.get('/queue-status', protect, adminOnly, async (req, res) => {
+  try {
+    const [pending, publishing, published24h, failed24h] = await Promise.all([
+      AutoposterPostTarget.countDocuments({ status: AUTOPOSTER_TARGET_STATUS.PENDING }),
+      AutoposterPostTarget.countDocuments({ status: AUTOPOSTER_TARGET_STATUS.PUBLISHING }),
+      AutoposterPostTarget.countDocuments({ status: AUTOPOSTER_TARGET_STATUS.PUBLISHED, publishedAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }),
+      AutoposterPostTarget.countDocuments({ status: AUTOPOSTER_TARGET_STATUS.FAILED, updatedAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }),
+    ]);
+    res.json({ success: true, data: { pending, publishing, published24h, failed24h } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;
 module.exports.validateCaptionLengths = validateCaptionLengths; // exported for unit testing only
