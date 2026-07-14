@@ -802,6 +802,12 @@ export const autoposterAPI = {
   deleteCaptionTemplate: (id) => api.delete(`/autoposter/caption-templates/${id}`),
   // Product auto-post preview (Phase 6)
   previewProductPost: (productId, params) => api.get(`/autoposter/products/${productId}/preview`, { params }),
+  // Visual Post Designer — Designs Library (Phase 7)
+  listDesigns: (params) => api.get('/autoposter/designs', { params }),
+  getDesign: (id) => api.get(`/autoposter/designs/${id}`),
+  createDesign: (data) => api.post('/autoposter/designs', data),
+  updateDesign: (id, data) => api.put(`/autoposter/designs/${id}`, data),
+  deleteDesign: (id) => api.delete(`/autoposter/designs/${id}`),
 };
 
 export default api;

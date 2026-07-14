@@ -4,6 +4,7 @@ const User = require('../models/User');
 const AutoposterCulturalEvent = require('../models/AutoposterCulturalEvent');
 const AutoposterBlocklistTerm = require('../models/AutoposterBlocklistTerm');
 const AutoposterPostProfile = require('../models/AutoposterPostProfile');
+const AutoposterDesign = require('../models/AutoposterDesign');
 
 // Idempotent, additive-only seed for the Social Auto-Poster module (Phase 1).
 // Safe to run repeatedly: every insert is an upsert keyed on a natural unique
@@ -172,6 +173,105 @@ const POST_PROFILES = [
   }
 ];
 
+// ─── Visual Post Designer starter templates (Spec Section 7.6) ────────────
+// Simple, real, editable layer trees — not empty placeholders — using
+// PesaShop's admin-UI brand tokens (Phase 0 decision: existing Tailwind
+// primary/secondary, not the spec's email-only hex values). Each is a real
+// AutoposterDesign document with templateFlag:true, ready to duplicate and
+// customise from the Designer (Spec 7.6, 7.9).
+const BRAND_GREEN = '#0e604a';
+const BRAND_GOLD = '#f7bd20';
+
+function layer(type, props) {
+  return { id: `${type}-${Math.random().toString(36).slice(2, 9)}`, type, ...props };
+}
+
+const DESIGN_TEMPLATES = [
+  {
+    title: 'New Arrival',
+    canvasPreset: 'instagram_feed_portrait',
+    canvasWidth: 1080,
+    canvasHeight: 1350,
+    templateFlag: true,
+    tags: ['new-arrival'],
+    layers: [
+      layer('background', { fill: '#eceae6' }),
+      layer('shape', { shape: 'rect', x: 40, y: 40, width: 260, height: 70, fill: BRAND_GREEN, cornerRadius: 8 }),
+      layer('text', { x: 60, y: 60, width: 220, text: 'NEW ARRIVAL', fontSize: 28, fontFamily: 'Inter', fill: '#ffffff', fontStyle: 'bold' }),
+      layer('image', { x: 90, y: 200, width: 900, height: 900, url: '' }),
+      layer('shape', { shape: 'rect', x: 700, y: 1120, width: 320, height: 100, fill: BRAND_GOLD, cornerRadius: 8 }),
+      layer('text', { x: 720, y: 1150, width: 280, text: 'R000.00', fontSize: 36, fontFamily: 'Inter', fill: BRAND_GREEN, fontStyle: 'bold' })
+    ]
+  },
+  {
+    title: 'Flash Sale',
+    canvasPreset: 'instagram_feed_square',
+    canvasWidth: 1080,
+    canvasHeight: 1080,
+    templateFlag: true,
+    tags: ['flash-sale'],
+    layers: [
+      layer('background', { fill: BRAND_GREEN }),
+      layer('text', { x: 90, y: 350, width: 900, text: '50% OFF', fontSize: 140, fontFamily: 'Inter', fill: BRAND_GOLD, fontStyle: 'bold', align: 'center' }),
+      layer('text', { x: 90, y: 520, width: 900, text: 'Today only — while stocks last', fontSize: 36, fontFamily: 'Inter', fill: '#ffffff', align: 'center' })
+    ]
+  },
+  {
+    title: 'Back in Stock',
+    canvasPreset: 'instagram_feed_square',
+    canvasWidth: 1080,
+    canvasHeight: 1080,
+    templateFlag: true,
+    tags: ['back-in-stock'],
+    layers: [
+      layer('background', { fill: '#ffffff' }),
+      layer('image', { x: 90, y: 90, width: 900, height: 750, url: '' }),
+      layer('shape', { shape: 'rect', x: 90, y: 880, width: 300, height: 80, fill: BRAND_GREEN, cornerRadius: 40 }),
+      layer('text', { x: 110, y: 902, width: 260, text: 'Back in Stock', fontSize: 26, fontFamily: 'Inter', fill: '#ffffff', fontStyle: 'bold' })
+    ]
+  },
+  {
+    title: 'Festive Greeting',
+    canvasPreset: 'instagram_feed_square',
+    canvasWidth: 1080,
+    canvasHeight: 1080,
+    templateFlag: true,
+    tags: ['festive', 'seasonal'],
+    layers: [
+      layer('background', { fill: BRAND_GREEN }),
+      layer('text', { x: 90, y: 440, width: 900, text: 'Happy Holidays\nfrom PesaShop', fontSize: 64, fontFamily: 'Playfair Display', fill: BRAND_GOLD, align: 'center', fontStyle: 'bold' })
+    ]
+  },
+  {
+    title: 'Diaspora Special',
+    canvasPreset: 'instagram_feed_portrait',
+    canvasWidth: 1080,
+    canvasHeight: 1350,
+    templateFlag: true,
+    tags: ['diaspora'],
+    layers: [
+      layer('background', { fill: '#eceae6' }),
+      layer('image', { x: 90, y: 150, width: 900, height: 700, url: '' }),
+      layer('text', { x: 90, y: 900, width: 900, text: 'For family back home', fontSize: 48, fontFamily: 'Inter', fill: BRAND_GREEN, fontStyle: 'bold', align: 'center' }),
+      layer('text', { x: 90, y: 980, width: 900, text: 'Delivered anywhere in Zimbabwe', fontSize: 28, fontFamily: 'Inter', fill: '#333333', align: 'center' })
+    ]
+  },
+  {
+    title: 'Quote / Testimonial',
+    canvasPreset: 'instagram_feed_square',
+    canvasWidth: 1080,
+    canvasHeight: 1080,
+    templateFlag: true,
+    tags: ['testimonial', 'reviews'],
+    layers: [
+      layer('background', { fill: '#ffffff' }),
+      layer('image', { x: 440, y: 80, width: 200, height: 200, url: '' }),
+      layer('text', { x: 340, y: 300, width: 400, text: '★★★★★', fontSize: 36, fontFamily: 'Inter', fill: BRAND_GOLD, align: 'center' }),
+      layer('text', { x: 140, y: 400, width: 800, text: '"Absolutely love this product — fast delivery and great quality!"', fontSize: 32, fontFamily: 'Inter', fill: '#333333', align: 'center', fontStyle: 'italic' })
+    ]
+  }
+];
+
 async function run() {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
@@ -214,6 +314,18 @@ async function run() {
       if (res.upsertedCount) profilesCreated++;
     }
     console.log(`   ${profilesCreated} created, ${POST_PROFILES.length - profilesCreated} already present`);
+
+    console.log('🎨 Seeding starter design templates...');
+    let designsCreated = 0;
+    for (const design of DESIGN_TEMPLATES) {
+      const res = await AutoposterDesign.updateOne(
+        { title: design.title, templateFlag: true },
+        { $setOnInsert: { ...design, createdBy: admin?._id } },
+        { upsert: true }
+      );
+      if (res.upsertedCount) designsCreated++;
+    }
+    console.log(`   ${designsCreated} created, ${DESIGN_TEMPLATES.length - designsCreated} already present`);
 
     console.log('✅ Autoposter seed complete');
     process.exit(0);

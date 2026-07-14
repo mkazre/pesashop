@@ -10,6 +10,7 @@ const AutoposterPost = require('../models/AutoposterPost');
 const AutoposterPostTarget = require('../models/AutoposterPostTarget');
 const AutoposterPostProfile = require('../models/AutoposterPostProfile');
 const AutoposterCaptionTemplate = require('../models/AutoposterCaptionTemplate');
+const AutoposterDesign = require('../models/AutoposterDesign');
 const Product = require('../models/Product');
 const { resolveProductPost } = require('../services/autoposterProductPostResolver');
 const { encryptToken } = require('../services/autoposterTokenCrypto');
@@ -595,6 +596,57 @@ router.get('/products/:id/preview', protect, adminOnly, async (req, res) => {
     });
 
     res.json({ success: true, data: preview });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Visual Post Designer — Designs Library (Spec Section 7.5) ─────────────
+router.get('/designs', protect, adminOnly, async (req, res) => {
+  try {
+    const query = {};
+    if (req.query.templatesOnly === 'true') query.templateFlag = true;
+    const designs = await AutoposterDesign.find(query).sort({ updatedAt: -1 });
+    res.json({ success: true, data: designs });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.get('/designs/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const design = await AutoposterDesign.findById(req.params.id);
+    if (!design) return res.status(404).json({ success: false, message: 'Design not found' });
+    res.json({ success: true, data: design });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/designs', protect, adminOnly, async (req, res) => {
+  try {
+    const design = await AutoposterDesign.create({ ...req.body, createdBy: req.user._id });
+    res.status(201).json({ success: true, data: design });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// PUT also serves the auto-save flow (Spec 7.4 — every 10 seconds).
+router.put('/designs/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const design = await AutoposterDesign.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!design) return res.status(404).json({ success: false, message: 'Design not found' });
+    res.json({ success: true, data: design });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.delete('/designs/:id', protect, adminOnly, async (req, res) => {
+  try {
+    await AutoposterDesign.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
