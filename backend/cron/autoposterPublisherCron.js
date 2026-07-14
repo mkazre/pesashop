@@ -5,6 +5,7 @@ const AutoposterAccount = require('../models/AutoposterAccount');
 const AutoposterAuditLog = require('../models/AutoposterAuditLog');
 const { rollupPostStatus } = require('../services/autoposterPostStatusRollup');
 const publisherStub = require('../services/autoposterPublisherStub');
+const { getAdapter } = require('../services/autoposterAdapterRegistry');
 const {
   AUTOPOSTER_ACCOUNT_STATUS,
   AUTOPOSTER_TARGET_STATUS,
@@ -108,7 +109,14 @@ async function processTarget(target) {
   await target.save();
 
   try {
-    const result = await publisherStub.publish(target.platform, target, account, post);
+    // AUTOPOSTER_DRY_RUN=true uses the Phase 4 stub (including its
+    // FORCE_TRANSIENT_FAIL/FORCE_PERMANENT_FAIL test markers) instead of
+    // calling a real platform — for local testing without needing real,
+    // approved developer-app credentials. Real adapters (Phase 5) are the
+    // default path otherwise.
+    const result = process.env.AUTOPOSTER_DRY_RUN === 'true'
+      ? await publisherStub.publish(target.platform, target, account, post)
+      : await getAdapter(target.platform).publish(target, account, post);
     target.status = AUTOPOSTER_TARGET_STATUS.PUBLISHED;
     target.externalPostId = result.externalPostId;
     target.externalUrl = result.externalUrl;

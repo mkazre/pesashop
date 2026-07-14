@@ -172,6 +172,25 @@ MK confirmed no platform developer apps have been submitted yet (Meta will be su
 
 **Not achievable yet, by design**: actual publishing to a real platform (needs Phase 5's real adapters — the stub is a deliberate, temporary stand-in, not a shortcut around Phase 5).
 
+## Phase 5 — Platform Adapters (complete, 2026-07-14)
+
+MK confirmed (turn preceding this phase) that no platform developer apps are submitted yet, and asked for all five real adapters built now regardless, same directive as Phase 2's OAuth work. Delivered all five in one pass rather than the Brief's original "one at a time, per approval order" sequencing (Section 3.6) — consistent with what MK already established for Phase 2, not a new deviation.
+
+**Real `publish()` and `fetchInsights()` added to each Phase 2 OAuth adapter file** (kept in the same file rather than split into separate "adapter" files — each file is now the full PlatformAdapter per Spec 2.2: OAuth + publish + insights together, matching the spec's single-interface concept):
+- **Facebook** (`autoposterOAuthFacebook.js`): picks `/feed`, `/photos`, or `/videos` based on media present. Error classification uses Meta's documented Graph API codes (190 = OAuthException → permanent; 4/17/32/613 = rate limits → transient).
+- **Instagram** (`autoposterOAuthInstagram.js`): the two-step container → poll (video only) → publish flow (Spec 14.2), plus an optional best-effort first-comment hashtag post.
+- **X** (`autoposterOAuthX.js`): tweet posting with media (simple image upload + chunked video upload with status polling), thread mode (splits caption into ≤280-char chunks on word boundaries, chains replies). Error classification by HTTP status (429/5xx → transient; else permanent) since X's JSON error shape isn't uniform across endpoints.
+- **LinkedIn** (`autoposterOAuthLinkedIn.js`): personal-profile posting fully implemented (image upload via the two-step asset-registration flow). **Flagged gap, not silently faked**: Company Page posting throws a clear permanent error, since resolving an organization's URN isn't built into the OAuth flow yet — posting as the wrong author would be worse than refusing.
+- **TikTok** (`autoposterOAuthTikTok.js`): video-only publish via `PULL_FROM_URL` (our media is already public on Cloudinary as the actual post content, so there's no exposure concern `FILE_UPLOAD` chunking would avoid — and it's dramatically simpler). Both Direct Post and Upload-to-Inbox modes. **Flagged gap**: TikTok native image posts and `FILE_UPLOAD` chunked upload aren't built in this pass.
+- `services/autoposterAdapterRegistry.js` — platform → adapter lookup, used by the publisher cron.
+- `cron/autoposterPublisherCron.js` now calls the real adapters by default; `AUTOPOSTER_DRY_RUN=true` switches back to the Phase 4 stub (including its `FORCE_TRANSIENT_FAIL`/`FORCE_PERMANENT_FAIL` test markers) for local testing without real credentials.
+
+**Verification — two layers, since neither alone would be honest**:
+1. **69/69 Jest tests** (16 new): `nock`-mocked contract tests per platform verifying request shape (correct endpoint, correct body/params) and error classification against realistic mocked response bodies.
+2. **Real reachability + real error-classification check**, beyond mocks: called `publish()` on Facebook, X, LinkedIn, and TikTok with a real (deliberately invalid) token against each platform's actual live API — no approved developer app needed, since getting a real *error* response requires no permissions, just a reachable endpoint. All four returned genuine, well-formed error responses (Facebook: real code 190; X: real 403 revealing a genuine API nuance — the tweet-publish endpoint needs OAuth 2.0 User Context, not just any bearer token; LinkedIn: real 401; TikTok: real 401), and my classification logic correctly identified every single one as permanent. This confirms the endpoint URLs and request shapes are genuinely correct against the real platforms, not just internally consistent with my own mocks. Instagram wasn't checked separately since it shares Facebook's exact OAuth/error-handling code path.
+
+**Not achievable without real approved developer apps, by design**: an actual successful publish to a real test account, verifiable in the platform's own UI (Brief 3.6's literal expected output) — this requires what MK has explicitly deferred (app submission), same honest limitation as Phase 2.
+
 **Tests**: `backend/tests/social/models.test.js` — 21 new tests (22 total with the harness smoke test), all passing, covering required fields, enum validation, and defaults for every new model.
 
 ## Separate, time-sensitive, not blocked by code

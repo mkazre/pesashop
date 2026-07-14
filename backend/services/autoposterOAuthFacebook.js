@@ -1,11 +1,42 @@
 const axios = require('axios');
+const { decryptToken } = require('./autoposterTokenCrypto');
+const { buildCaption } = require('./autoposterCaptionBuilder');
 
 // Meta Graph API v19+ (Spec Sections 3, 5, 14.1, 25.1). Facebook and Instagram
 // share one Meta app (same META_APP_ID/META_APP_SECRET) — this file owns the
 // shared OAuth mechanics; autoposterOAuthInstagram.js delegates here and only
 // adds Instagram-specific scopes and the IG-business-account resolution step.
+// This file is the full PlatformAdapter (Spec 2.2) for Facebook: OAuth,
+// publish, and fetchInsights all live together rather than split across
+// files, matching the spec's single-interface concept.
 const GRAPH_VERSION = 'v19.0';
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
+
+// Well-documented Meta Graph API error codes (developers.facebook.com/docs/graph-api/guides/error-handling).
+// 190 = OAuthException (token invalid/expired) -> permanent, needs re-auth.
+// 4/17/32/613 = various rate-limit codes -> transient, safe to retry with backoff.
+// Anything else defaults to transient (Spec design choice, Phase 4: safer to
+// retry an unrecognised error than to silently give up on it).
+const RATE_LIMIT_CODES = [4, 17, 32, 613];
+const AUTH_ERROR_CODES = [190];
+
+function classifyGraphError(error) {
+  const fbError = error.response?.data?.error;
+  if (!fbError) return { transient: true, code: 'network_error', message: error.message };
+  if (AUTH_ERROR_CODES.includes(fbError.code)) {
+    return { transient: false, code: String(fbError.code), message: `Meta OAuthException: ${fbError.message}` };
+  }
+  const transient = RATE_LIMIT_CODES.includes(fbError.code) || fbError.code >= 500;
+  return { transient, code: String(fbError.code), message: fbError.message };
+}
+
+function throwClassified(error) {
+  const classified = classifyGraphError(error);
+  const err = new Error(classified.message);
+  err.transient = classified.transient;
+  err.platformErrorCode = classified.code;
+  throw err;
+}
 
 const FACEBOOK_SCOPES = ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'];
 
@@ -82,6 +113,62 @@ async function refreshAccessToken(currentAccessToken) {
   return { accessToken: res.data.access_token, expiresInSeconds: res.data.expires_in };
 }
 
+// Publishes a target to its Facebook Page (Spec Section 14.1). Picks the
+// endpoint based on media present: video -> /videos, image -> /photos,
+// otherwise text+link -> /feed. Carousels/multi-image posts are not built
+// yet — single image or none only, for this first pass.
+async function publish(target, account, post) {
+  const accessToken = decryptToken(account.accessTokenEnc);
+  const caption = buildCaption(target, post);
+  const media = post.mediaRefs || [];
+  const video = media.find((m) => m.type === 'video');
+  const image = media.find((m) => m.type === 'image');
+
+  let endpoint, params;
+  if (video) {
+    endpoint = `${GRAPH_BASE}/${account.externalId}/videos`;
+    params = { access_token: accessToken, description: caption, file_url: video.url };
+  } else if (image) {
+    endpoint = `${GRAPH_BASE}/${account.externalId}/photos`;
+    params = { access_token: accessToken, caption, url: image.url };
+  } else {
+    endpoint = `${GRAPH_BASE}/${account.externalId}/feed`;
+    params = { access_token: accessToken, message: caption, link: post.linkUrl || undefined };
+  }
+
+  try {
+    const res = await axios.post(endpoint, null, { params });
+    const externalPostId = res.data.post_id || res.data.id;
+    return { externalPostId, externalUrl: `https://facebook.com/${externalPostId}` };
+  } catch (error) {
+    throwClassified(error);
+  }
+}
+
+// Fetches basic post-level insights (Spec Section 4.4's metric set, as far as
+// Meta's post_impressions/post_engaged_users metrics map onto it).
+async function fetchInsights(externalPostId, account) {
+  const accessToken = decryptToken(account.accessTokenEnc);
+  try {
+    const res = await axios.get(`${GRAPH_BASE}/${externalPostId}/insights`, {
+      params: { access_token: accessToken, metric: 'post_impressions,post_engaged_users' }
+    });
+    const data = res.data.data || [];
+    const metricValue = (name) => data.find((d) => d.name === name)?.values?.[0]?.value || 0;
+    return {
+      impressions: metricValue('post_impressions'),
+      reach: 0,
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      clicks: 0,
+      raw: res.data
+    };
+  } catch (error) {
+    throwClassified(error);
+  }
+}
+
 module.exports = {
   platform: 'facebook',
   requiredEnv: ['META_APP_ID', 'META_APP_SECRET', 'META_OAUTH_REDIRECT_URI'],
@@ -89,5 +176,8 @@ module.exports = {
   buildAuthorizeUrl,
   exchangeCodeForLongLivedUserToken,
   fetchManagedPages,
-  refreshAccessToken
+  refreshAccessToken,
+  publish,
+  fetchInsights,
+  classifyGraphError // exported for unit testing only
 };
