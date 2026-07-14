@@ -288,5 +288,16 @@ module.exports = {
     EXACT: 'exact',
     REGEX: 'regex',
     CATEGORY: 'category'
+  },
+
+  // Autoposter — Composer character limits (Spec Section 6.4). X is enforced
+  // per-tweet only when NOT in thread mode; thread mode splits across tweets
+  // client-side instead of enforcing a single hard cap server-side.
+  AUTOPOSTER_CAPTION_LIMITS: {
+    facebook: 63206,
+    instagram: 2200,
+    x: 280,
+    linkedin: 3000,
+    tiktok: 2200
   }
 };

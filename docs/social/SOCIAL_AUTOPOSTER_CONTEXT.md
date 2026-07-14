@@ -133,6 +133,22 @@ MK confirmed no platform developer apps have been submitted yet (Meta will be su
 
 **Not achievable without real platform credentials, by design, not a gap**: an actual end-to-end OAuth connection (clicking Connect → real platform login → token stored). This requires Phase 2's stated prerequisite (Spec Section 25 developer app submissions) regardless of how much code exists.
 
+## Phase 3 — Composer UI (complete, 2026-07-14)
+
+**Backend**: added Posts CRUD to `routes/autoposter.js` — `POST/GET /posts`, `GET/PATCH/DELETE /posts/:id`, `POST /posts/:id/publish-now` (mounted under `/api/autoposter`, same as Phase 2). Server-side caption-length validation (`AUTOPOSTER_CAPTION_LIMITS` in `config/constants.js`, Spec 6.4) runs on both create and edit, skipping X's limit when a target has `threadMode` on. `publish-now` correctly returns `501` with an honest message — the scheduling engine (Phase 4) and platform adapters (Phase 5) don't exist yet, so there's nothing to actually publish with; the post itself saves fine regardless. Cancelling a never-published draft hard-deletes it; cancelling anything already scheduled marks it `cancelled` instead, preserving the record.
+
+**Admin UI**: `AutoposterComposePage.jsx` at `/autoposter/compose` (linked from the sidebar). Platform toggle chips, shared fields (media upload — reusing the *existing* `/api/media/upload` endpoint rather than building a duplicate, base caption, link URL, hashtag chips), per-platform tabs with account selector (pulled from Phase 2's connected-accounts list), caption override with live character counter (red when over the limit, yellow near it), and the platform-specific fields from Spec 6.3 (IG post type + first-comment toggle, X thread mode + reply settings, LinkedIn author/visibility, TikTok privacy/duet/stitch/disclose-commercial/posting-mode). Publish Now / Schedule For / Save Draft all wire through to the backend.
+
+**Simplifications made, flagged rather than silently skipped**:
+- Media upload is a plain file picker, not a full drag-and-drop zone.
+- Hashtags are a free-text chip input, not the "reusable saved sets" library Spec 6.2 describes.
+- Platform previews show the resolved caption + character counter, not a pixel-accurate mock of each platform's actual post layout.
+- "Add to queue" recurring-schedule-template posting (Spec 6.5) isn't built — "Publish Now" and "Schedule For" are, which covers the core need.
+
+**Verification performed**: 41/41 Jest tests passing (5 new, covering the caption-validation logic in isolation — no DB dependency, consistent with this repo's test-suite convention). Both dev servers started against the real Atlas database; every new/changed frontend file confirmed to compile cleanly via Vite. Since `AutoposterPostTarget.account` is correctly `required: true` (matching the spec's data model — a target always references a real connected account), a temporary test `AutoposterAccount` was created solely to exercise the real HTTP flow — full `create → list → get → patch → publish-now (501, as expected) → cancel` round-trip against live data, then both the test post and the temporary account were deleted, and a final count confirmed all three collections (`posts`, `post targets`, `accounts`) were back to zero — nothing left behind.
+
+**Not achievable yet, by design**: actually publishing anything (needs Phases 4–5) and a full headless-browser render (same Chromium sandbox limitation as Phase 2).
+
 **Tests**: `backend/tests/social/models.test.js` — 21 new tests (22 total with the harness smoke test), all passing, covering required fields, enum validation, and defaults for every new model.
 
 ## Separate, time-sensitive, not blocked by code

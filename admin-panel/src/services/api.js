@@ -783,6 +783,13 @@ export const autoposterAPI = {
   listAccounts: () => api.get('/autoposter/accounts'),
   disconnectAccount: (id) => api.delete(`/autoposter/accounts/${id}`),
   refreshAccount: (id) => api.post(`/autoposter/accounts/${id}/refresh`),
+  // Composer / Posts (Phase 3)
+  createPost: (data) => api.post('/autoposter/posts', data),
+  listPosts: (params) => api.get('/autoposter/posts', { params }),
+  getPost: (id) => api.get(`/autoposter/posts/${id}`),
+  updatePost: (id, data) => api.patch(`/autoposter/posts/${id}`, data),
+  cancelPost: (id) => api.delete(`/autoposter/posts/${id}`),
+  publishNow: (id) => api.post(`/autoposter/posts/${id}/publish-now`),
 };
 
 export default api;

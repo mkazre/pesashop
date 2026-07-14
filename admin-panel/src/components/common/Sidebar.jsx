@@ -121,7 +121,8 @@ const menuGroups = [
       { path: '/emails', icon: IoMailOutline, label: 'Email Templates' },
       { path: '/popups', icon: IoMegaphoneOutline, label: 'Popup Builder' },
       { path: '/notifications', icon: IoNotificationsOutline, label: 'Notifications' },
-      { path: '/autoposter/accounts', icon: IoShareSocialOutline, label: 'Social Auto-Poster' },
+      { path: '/autoposter/accounts', icon: IoShareSocialOutline, label: 'Auto-Poster: Accounts' },
+      { path: '/autoposter/compose', icon: IoShareSocialOutline, label: 'Auto-Poster: Compose' },
     ],
   },
   {

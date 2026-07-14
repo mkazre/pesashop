@@ -6,8 +6,16 @@ const { protect, adminOnly } = require('../middleware/auth');
 const AutoposterAccount = require('../models/AutoposterAccount');
 const AutoposterOAuthState = require('../models/AutoposterOAuthState');
 const AutoposterAuditLog = require('../models/AutoposterAuditLog');
+const AutoposterPost = require('../models/AutoposterPost');
+const AutoposterPostTarget = require('../models/AutoposterPostTarget');
 const { encryptToken } = require('../services/autoposterTokenCrypto');
-const { AUTOPOSTER_PLATFORMS, AUTOPOSTER_ACCOUNT_STATUS } = require('../config/constants');
+const {
+  AUTOPOSTER_PLATFORMS,
+  AUTOPOSTER_ACCOUNT_STATUS,
+  AUTOPOSTER_POST_STATUS,
+  AUTOPOSTER_TARGET_STATUS,
+  AUTOPOSTER_CAPTION_LIMITS
+} = require('../config/constants');
 
 const facebookOAuth = require('../services/autoposterOAuthFacebook');
 const instagramOAuth = require('../services/autoposterOAuthInstagram');
@@ -236,4 +244,231 @@ router.post('/accounts/:id/refresh', protect, adminOnly, async (req, res) => {
   }
 });
 
+// ─── Composer / Posts (Spec Sections 6, 15) ────────────────────────────────
+
+// Validates each target's effective caption (override, falling back to the
+// shared base caption) against its platform's hard limit (Spec 6.4). X's
+// limit is skipped when a target is in thread mode, since thread mode splits
+// the caption across multiple tweets client-side instead of one hard cap.
+function validateCaptionLengths(baseCaption, targets) {
+  const errors = [];
+  for (const target of targets) {
+    const caption = target.captionOverride || baseCaption || '';
+    const limit = AUTOPOSTER_CAPTION_LIMITS[target.platform];
+    const isThreadMode = target.platform === 'x' && target.extra?.threadMode;
+    if (limit && !isThreadMode && caption.length > limit) {
+      errors.push(`${target.platform}: caption is ${caption.length} characters, limit is ${limit}`);
+    }
+  }
+  return errors;
+}
+
+// POST /api/autoposter/posts — create a draft or scheduled post with one
+// target per selected platform.
+router.post('/posts', protect, adminOnly, async (req, res) => {
+  try {
+    const { title, baseCaption, mediaRefs, linkUrl, scheduledFor, targets } = req.body;
+
+    if (!Array.isArray(targets) || targets.length === 0) {
+      return res.status(400).json({ success: false, message: 'At least one platform target is required' });
+    }
+
+    const captionErrors = validateCaptionLengths(baseCaption, targets);
+    if (captionErrors.length > 0) {
+      return res.status(400).json({ success: false, message: captionErrors.join('; ') });
+    }
+
+    const post = await AutoposterPost.create({
+      title,
+      baseCaption,
+      mediaRefs: mediaRefs || [],
+      linkUrl,
+      source: 'manual',
+      scheduledFor: scheduledFor || undefined,
+      status: scheduledFor ? AUTOPOSTER_POST_STATUS.SCHEDULED : AUTOPOSTER_POST_STATUS.DRAFT,
+      createdBy: req.user._id
+    });
+
+    const createdTargets = await AutoposterPostTarget.insertMany(
+      targets.map(t => ({
+        post: post._id,
+        account: t.account,
+        platform: t.platform,
+        targetRegion: t.targetRegion,
+        captionOverride: t.captionOverride,
+        hashtags: t.hashtags,
+        firstComment: t.firstComment,
+        extra: t.extra,
+        scheduledFor: t.scheduledFor || scheduledFor || undefined
+      }))
+    );
+
+    await AutoposterAuditLog.create({
+      actor: req.user._id,
+      action: 'create_post',
+      entityType: 'AutoposterPost',
+      entityId: String(post._id),
+      payload: { platforms: targets.map(t => t.platform), status: post.status }
+    });
+
+    res.status(201).json({ success: true, data: { ...post.toObject(), targets: createdTargets } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/autoposter/posts — list posts, optionally filtered by status,
+// platform, or a created-date range. Each post gets a lightweight targets
+// summary (platform + status only) for the list view.
+router.get('/posts', protect, adminOnly, async (req, res) => {
+  try {
+    const { status, platform, from, to } = req.query;
+    const query = {};
+    if (status) query.status = status;
+    if (from || to) {
+      query.createdAt = {};
+      if (from) query.createdAt.$gte = new Date(from);
+      if (to) query.createdAt.$lte = new Date(to);
+    }
+
+    let posts = await AutoposterPost.find(query).sort({ createdAt: -1 }).lean();
+
+    if (platform) {
+      const matchingPostIds = new Set((await AutoposterPostTarget.find({ platform }).distinct('post')).map(String));
+      posts = posts.filter(p => matchingPostIds.has(String(p._id)));
+    }
+
+    const allTargets = await AutoposterPostTarget.find({ post: { $in: posts.map(p => p._id) } })
+      .select('post platform status')
+      .lean();
+    const targetsByPost = allTargets.reduce((acc, t) => {
+      const key = String(t.post);
+      (acc[key] = acc[key] || []).push({ platform: t.platform, status: t.status });
+      return acc;
+    }, {});
+
+    res.json({ success: true, data: posts.map(p => ({ ...p, targets: targetsByPost[String(p._id)] || [] })) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/autoposter/posts/:id — full post + targets (account populated).
+router.get('/posts/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const post = await AutoposterPost.findById(req.params.id).lean();
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+
+    const targets = await AutoposterPostTarget.find({ post: post._id })
+      .populate('account', 'platform displayName status')
+      .lean();
+
+    res.json({ success: true, data: { ...post, targets } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PATCH /api/autoposter/posts/:id — edit before publish. Replaces the full
+// targets set when `targets` is provided, same as the create shape.
+router.patch('/posts/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const post = await AutoposterPost.findById(req.params.id);
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (![AUTOPOSTER_POST_STATUS.DRAFT, AUTOPOSTER_POST_STATUS.SCHEDULED].includes(post.status)) {
+      return res.status(400).json({ success: false, message: `Cannot edit a post with status "${post.status}"` });
+    }
+
+    const { title, baseCaption, mediaRefs, linkUrl, scheduledFor, targets } = req.body;
+
+    if (targets) {
+      const captionErrors = validateCaptionLengths(baseCaption ?? post.baseCaption, targets);
+      if (captionErrors.length > 0) {
+        return res.status(400).json({ success: false, message: captionErrors.join('; ') });
+      }
+    }
+
+    if (title !== undefined) post.title = title;
+    if (baseCaption !== undefined) post.baseCaption = baseCaption;
+    if (mediaRefs !== undefined) post.mediaRefs = mediaRefs;
+    if (linkUrl !== undefined) post.linkUrl = linkUrl;
+    if (scheduledFor !== undefined) {
+      post.scheduledFor = scheduledFor || undefined;
+      post.status = scheduledFor ? AUTOPOSTER_POST_STATUS.SCHEDULED : AUTOPOSTER_POST_STATUS.DRAFT;
+    }
+    await post.save();
+
+    if (targets) {
+      await AutoposterPostTarget.deleteMany({ post: post._id });
+      await AutoposterPostTarget.insertMany(
+        targets.map(t => ({
+          post: post._id,
+          account: t.account,
+          platform: t.platform,
+          targetRegion: t.targetRegion,
+          captionOverride: t.captionOverride,
+          hashtags: t.hashtags,
+          firstComment: t.firstComment,
+          extra: t.extra,
+          scheduledFor: t.scheduledFor || post.scheduledFor || undefined
+        }))
+      );
+    }
+
+    res.json({ success: true, data: post });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /api/autoposter/posts/:id — cancel. A never-published draft is
+// hard-deleted (nothing to preserve); anything already scheduled is marked
+// cancelled instead, so there's a record of what was scheduled and pulled.
+router.delete('/posts/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const post = await AutoposterPost.findById(req.params.id);
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+
+    const previousStatus = post.status;
+    if (previousStatus === AUTOPOSTER_POST_STATUS.DRAFT) {
+      await AutoposterPostTarget.deleteMany({ post: post._id });
+      await post.deleteOne();
+    } else {
+      post.status = AUTOPOSTER_POST_STATUS.CANCELLED;
+      await post.save();
+      await AutoposterPostTarget.updateMany(
+        { post: post._id, status: AUTOPOSTER_TARGET_STATUS.PENDING },
+        { status: AUTOPOSTER_TARGET_STATUS.SKIPPED }
+      );
+    }
+
+    await AutoposterAuditLog.create({
+      actor: req.user._id,
+      action: 'cancel_post',
+      entityType: 'AutoposterPost',
+      entityId: String(post._id),
+      payload: { previousStatus }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/autoposter/posts/:id/publish-now — stubbed 501. The scheduling
+// engine (Phase 4) and platform adapters (Phase 5) don't exist yet, so there
+// is nothing that can actually publish. The post itself is already saved via
+// POST /posts — this endpoint just can't act on it yet, honestly.
+router.post('/posts/:id/publish-now', protect, adminOnly, async (req, res) => {
+  const post = await AutoposterPost.findById(req.params.id);
+  if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+
+  res.status(501).json({
+    success: false,
+    message: 'Publishing isn\'t available yet — the scheduling engine (Phase 4) and platform adapters (Phase 5) haven\'t been built. This post is saved and will be publishable once those land.'
+  });
+});
+
 module.exports = router;
+module.exports.validateCaptionLengths = validateCaptionLengths; // exported for unit testing only

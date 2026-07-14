@@ -90,6 +90,7 @@ import LiveStreamsPage from './pages/LiveStreamsPage';
 import LiveStreamControlPage from './pages/LiveStreamControlPage';
 import BundlesPage from './pages/BundlesPage';
 import AutoposterAccountsPage from './pages/AutoposterAccountsPage';
+import AutoposterComposePage from './pages/AutoposterComposePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -216,6 +217,7 @@ function App() {
             <Route path="live-streams/:id/control" element={<LiveStreamControlPage />} />
             <Route path="bundles" element={<BundlesPage />} />
             <Route path="autoposter/accounts" element={<AutoposterAccountsPage />} />
+            <Route path="autoposter/compose" element={<AutoposterComposePage />} />
           </Route>
         </Routes>
       </BrowserRouter>
