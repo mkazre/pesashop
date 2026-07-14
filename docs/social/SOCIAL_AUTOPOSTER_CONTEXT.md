@@ -111,6 +111,28 @@ With the cart/purchase signal fix and the Jest foundation now in place, next is 
 
 Note for MK: changing an existing shared DB user's password (e.g. the one production's backend uses) would break production the next time it reconnects, since nothing else knows the password changed — that's why a brand-new, separate dev-only user was the right call here rather than resetting the existing one. Repo visibility (public/private) and credential rotation for anything previously exposed are being handled separately, outside this doc.
 
+## Phase 2 — OAuth Foundations and Account Connection (complete, 2026-07-14)
+
+MK confirmed no platform developer apps have been submitted yet (Meta will be submitted later; timing on the rest wasn't specified) but asked for all five platforms built now regardless — consistent with the Brief's own allowance (Section 3.3) for a "documented blocker" instead of a live green-checkmark connection where a platform isn't approved yet.
+
+**New backend files**:
+- `models/AutoposterOAuthState.js` — Mongo TTL collection (10-minute expiry) replacing the spec's Redis-backed OAuth state/PKCE store (Section 5.1), consistent with the Phase 0 node-cron/no-Redis decision.
+- `services/autoposterTokenCrypto.js` — AES-256-GCM encrypt/decrypt (Spec 5.3), packs iv+authTag+ciphertext into one Buffer per token.
+- `services/autoposterOAuth{Facebook,Instagram,X,LinkedIn,TikTok}.js` — one file per platform: authorize-URL builder, code-for-token exchange, and (where the platform supports it) programmatic refresh. Instagram deliberately delegates almost everything to the Facebook file since they share one Meta app.
+- `routes/autoposter.js` — `GET /oauth/:platform/start` (admin-authenticated), `GET /oauth/:platform/callback` (public — platforms redirect the browser directly, so state validation is the security boundary, not a bearer token), `GET/DELETE /accounts`, `POST /accounts/:id/refresh`. Mounted at `/api/autoposter` in `server.js`.
+- `cron/autoposterTokenRefreshCron.js` — daily 03:00 node-cron job refreshing accounts expiring within 72h (Spec 5.2); marks `needs_reauth` on failure or on any platform with no refresh mechanism (currently LinkedIn).
+- `.env.example` — all required OAuth env vars documented with placeholders (never real values).
+
+**Bug caught and fixed during build, not after**: Facebook and Instagram share one Meta app and therefore one registered redirect URI (Meta's dashboard requires an exact match, can't register two). The callback handler initially trusted the URL's `:platform` segment to pick which adapter to use — which would have silently misrouted every Instagram connection through the Facebook resolver, since Meta always redirects to whichever single URI is registered. Fixed by having the callback resolve the true platform from the stored OAuth state document (set correctly at `/start` time, based on which "Connect X" button was clicked) instead of trusting the callback URL.
+
+**New admin UI**: `admin-panel/src/pages/AutoposterAccountsPage.jsx` at `/autoposter/accounts` (linked from the sidebar under "Marketing" → "Social Auto-Poster"). Five platform cards, connect/disconnect/refresh actions, a needs-reauth banner, and toast handling for the `?connected=`/`?error=` query params the OAuth callback redirects back with.
+
+**Verification performed, and its limits**: `admin-panel` had no `node_modules` installed in this environment — ran `npm install` there first. Backend Jest suite: 36/36 passing, including URL-builder tests for all 5 platforms and a crypto round-trip/tamper test — no network calls, no DB connection. Beyond that, both dev servers were actually started against the real Atlas database: `GET /health` returned 200; a JWT was generated in-memory for the real admin user (via the same `generateToken` helper the app itself uses — no password needed, nothing written to disk) and used to hit `GET /api/autoposter/accounts` live, returning `{"success":true,"data":[]}` as expected; hitting `/oauth/:platform/start` for all 5 platforms correctly returned clean, actionable errors (e.g. `"META_APP_ID, META_APP_SECRET, and META_OAUTH_REDIRECT_URI must all be set"`) rather than crashing, since no real platform credentials exist yet — that's the expected "documented blocker" state, not a bug. Every new/changed frontend file (`AutoposterAccountsPage.jsx`, `App.jsx`, `Sidebar.jsx`) was confirmed to compile cleanly by Vite (200, valid transformed JS, contains the expected new references).
+
+**What was not verified**: a full headless-browser render of the actual page (Playwright's Chromium install timed out in this sandboxed container — no reliable path to download browser binaries here). So the page's HTML/CSS/component tree has not been visually confirmed, only that every file involved compiles without error and the API calls it depends on work correctly against real data. If this gets pushed and Railway auto-deploys from `main`, checking `/autoposter/accounts` on the real deployed admin panel would be better verification than anything achievable from this sandbox.
+
+**Not achievable without real platform credentials, by design, not a gap**: an actual end-to-end OAuth connection (clicking Connect → real platform login → token stored). This requires Phase 2's stated prerequisite (Spec Section 25 developer app submissions) regardless of how much code exists.
+
 **Tests**: `backend/tests/social/models.test.js` — 21 new tests (22 total with the harness smoke test), all passing, covering required fields, enum validation, and defaults for every new model.
 
 ## Separate, time-sensitive, not blocked by code

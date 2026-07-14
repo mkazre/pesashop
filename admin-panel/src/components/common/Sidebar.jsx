@@ -14,6 +14,7 @@ import {
   IoCodeSlashOutline,
   IoLayersOutline,
   IoSettingsOutline,
+  IoShareSocialOutline,
   IoCloudUploadOutline,
   IoImagesOutline,
   IoFolderOutline,
@@ -120,6 +121,7 @@ const menuGroups = [
       { path: '/emails', icon: IoMailOutline, label: 'Email Templates' },
       { path: '/popups', icon: IoMegaphoneOutline, label: 'Popup Builder' },
       { path: '/notifications', icon: IoNotificationsOutline, label: 'Notifications' },
+      { path: '/autoposter/accounts', icon: IoShareSocialOutline, label: 'Social Auto-Poster' },
     ],
   },
   {

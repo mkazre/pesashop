@@ -89,6 +89,7 @@ import WhatsAppPage from './pages/WhatsAppPage';
 import LiveStreamsPage from './pages/LiveStreamsPage';
 import LiveStreamControlPage from './pages/LiveStreamControlPage';
 import BundlesPage from './pages/BundlesPage';
+import AutoposterAccountsPage from './pages/AutoposterAccountsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -214,6 +215,7 @@ function App() {
             <Route path="live-streams" element={<LiveStreamsPage />} />
             <Route path="live-streams/:id/control" element={<LiveStreamControlPage />} />
             <Route path="bundles" element={<BundlesPage />} />
+            <Route path="autoposter/accounts" element={<AutoposterAccountsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -14,6 +14,7 @@ const { initCouponEmailCronJobs } = require('./cron/couponEmailCron');
 const { initReviewReminderCron } = require('./cron/reviewReminderCron');
 const { initRecurringOrderCronJobs } = require('./cron/recurringOrderCron');
 const { initVisualSearchCron } = require('./cron/visualSearchCron');
+const { initAutoposterTokenRefreshCron } = require('./cron/autoposterTokenRefreshCron');
 
 // Initialize express app
 const app = express();
@@ -165,6 +166,7 @@ const whatsappRoutes = require('./routes/whatsapp');
 const liveStreamsRoutes = require('./routes/liveStreams');
 const visualSearchRoutes = require('./routes/visualSearch');
 const invoicesRoutes = require('./routes/invoices');
+const autoposterRoutes = require('./routes/autoposter');
 
 // Mount API routes FIRST (before static files)
 app.use('/api/auth', authRoutes);
@@ -226,6 +228,7 @@ app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/live-streams', liveStreamsRoutes);
 app.use('/api/visual-search', visualSearchRoutes);
 app.use('/api/invoices', invoicesRoutes);
+app.use('/api/autoposter', autoposterRoutes);
 
 // Serve React frontend static files AFTER API routes
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
@@ -304,6 +307,9 @@ initRecurringOrderCronJobs();
 
 // Visual Search: auto-embed products as they're added/modified
 initVisualSearchCron();
+
+// Social Auto-Poster: daily OAuth token refresh
+initAutoposterTokenRefreshCron();
 
 // Process scheduled notifications every 60 seconds
 const notificationService = require('./services/notificationService');

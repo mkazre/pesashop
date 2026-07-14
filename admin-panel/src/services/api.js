@@ -775,4 +775,14 @@ export const bundlesAPI = {
   remove: (id) => api.delete(`/visual-search/admin/bundles/${id}`),
 };
 
+// Social Auto-Poster — account connections (Phase 2). Named "autoposter" (not
+// "social") to avoid confusion with the unrelated existing Social Engine
+// (TikTok UGC video feed) settings.
+export const autoposterAPI = {
+  oauthStart: (platform) => api.get(`/autoposter/oauth/${platform}/start`),
+  listAccounts: () => api.get('/autoposter/accounts'),
+  disconnectAccount: (id) => api.delete(`/autoposter/accounts/${id}`),
+  refreshAccount: (id) => api.post(`/autoposter/accounts/${id}/refresh`),
+};
+
 export default api;
