@@ -1,5 +1,6 @@
 const AutoposterPost = require('../models/AutoposterPost');
 const AutoposterPostTarget = require('../models/AutoposterPostTarget');
+const AutoposterEngineConfig = require('../models/AutoposterEngineConfig');
 
 // Cool-down and saturation guard (Spec Section 10.8), scoped per (platform,
 // region) with a global outer envelope, per Spec 10.8.3's query pattern
@@ -64,6 +65,10 @@ async function computeCrossRegionDiscount(productId, platform, excludeRegion) {
 // should be excluded from the sampler's candidate set entirely, not just
 // down-weighted.
 async function checkHardCaps(productId, platform, region) {
+  // Every threshold below defaults to the schema's own default, which
+  // matches the values this function always used pre-Phase-11 — an admin
+  // who never opens the Configuration tab sees identical behaviour.
+  const { cooldown } = await AutoposterEngineConfig.getConfig();
   const sevenDaysAgo = new Date(Date.now() - 7 * DAY_MS);
 
   const regionCount = await AutoposterPostTarget.aggregate([
@@ -73,8 +78,8 @@ async function checkHardCaps(productId, platform, region) {
     { $match: { 'post.sourceRef': String(productId) } },
     { $count: 'n' }
   ]);
-  if ((regionCount[0]?.n || 0) >= 2) {
-    return { blocked: true, reason: `Already posted to (${platform}, ${region}) twice in the last 7 days` };
+  if ((regionCount[0]?.n || 0) >= cooldown.maxPostsPerProductRegionPer7d) {
+    return { blocked: true, reason: `Already posted to (${platform}, ${region}) ${cooldown.maxPostsPerProductRegionPer7d} times in the last 7 days` };
   }
 
   const globalCount = await AutoposterPostTarget.aggregate([
@@ -84,23 +89,22 @@ async function checkHardCaps(productId, platform, region) {
     { $match: { 'post.sourceRef': String(productId) } },
     { $count: 'n' }
   ]);
-  if ((globalCount[0]?.n || 0) >= 6) {
-    return { blocked: true, reason: 'Already posted 6 times globally in the last 7 days (outer envelope)' };
+  if ((globalCount[0]?.n || 0) >= cooldown.maxPostsPerProductGlobalPer7d) {
+    return { blocked: true, reason: `Already posted ${cooldown.maxPostsPerProductGlobalPer7d} times globally in the last 7 days (outer envelope)` };
   }
 
-  // Minimum spacing: 90 min same (platform,region); 30 min same platform any region.
   const last90 = await lastPostedAt(productId, platform, region);
-  if (last90 && Date.now() - last90.getTime() < 90 * 60 * 1000) {
-    return { blocked: true, reason: `Posted to (${platform}, ${region}) less than 90 minutes ago` };
+  if (last90 && Date.now() - last90.getTime() < cooldown.minSpacingSameRegionMinutes * 60 * 1000) {
+    return { blocked: true, reason: `Posted to (${platform}, ${region}) less than ${cooldown.minSpacingSameRegionMinutes} minutes ago` };
   }
 
   const recentSamePlatform = await AutoposterPostTarget.findOne({
     platform,
     status: 'published',
-    publishedAt: { $gte: new Date(Date.now() - 30 * 60 * 1000) }
+    publishedAt: { $gte: new Date(Date.now() - cooldown.minSpacingSamePlatformMinutes * 60 * 1000) }
   }).sort({ publishedAt: -1 });
   if (recentSamePlatform) {
-    return { blocked: true, reason: `Another post fired on ${platform} less than 30 minutes ago (any region)` };
+    return { blocked: true, reason: `Another post fired on ${platform} less than ${cooldown.minSpacingSamePlatformMinutes} minutes ago (any region)` };
   }
 
   return { blocked: false };
@@ -110,7 +114,13 @@ async function checkHardCaps(productId, platform, region) {
 // region)'s auto-posts, or 30% globally, in a rolling 7-day window.
 async function checkCategoryShareCap(categoryIds, platform, region) {
   if (!categoryIds || categoryIds.length === 0) return { blocked: false };
+  const { cooldown, categories } = await AutoposterEngineConfig.getConfig();
   const sevenDaysAgo = new Date(Date.now() - 7 * DAY_MS);
+
+  // Per-category override (Spec 12.5) — falls back to the global default cap.
+  const categoryIdStrings0 = categoryIds.map(String);
+  const perCategoryOverride = (categories || []).find((c) => categoryIdStrings0.includes(String(c.category)) && c.maxSharePercent != null);
+  const capPercent = perCategoryOverride ? perCategoryOverride.maxSharePercent : cooldown.maxCategorySharePercent;
 
   const targets = await AutoposterPostTarget.aggregate([
     { $match: { platform, targetRegion: region, status: 'published', publishedAt: { $gte: sevenDaysAgo } } },
@@ -128,10 +138,9 @@ async function checkCategoryShareCap(categoryIds, platform, region) {
   ]);
 
   if (targets.length === 0) return { blocked: false };
-  const categoryIdStrings = categoryIds.map(String);
-  const matchingCount = targets.filter((t) => (t.product?.categories || []).some((c) => categoryIdStrings.includes(String(c)))).length;
+  const matchingCount = targets.filter((t) => (t.product?.categories || []).some((c) => categoryIdStrings0.includes(String(c)))).length;
   const share = matchingCount / targets.length;
-  if (share > 0.4) return { blocked: true, reason: `This category is already ${Math.round(share * 100)}% of (${platform}, ${region})'s auto-posts this week (cap: 40%)` };
+  if (share * 100 > capPercent) return { blocked: true, reason: `This category is already ${Math.round(share * 100)}% of (${platform}, ${region})'s auto-posts this week (cap: ${capPercent}%)` };
   return { blocked: false };
 }
 

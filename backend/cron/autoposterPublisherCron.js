@@ -7,6 +7,7 @@ const { rollupPostStatus } = require('../services/autoposterPostStatusRollup');
 const publisherStub = require('../services/autoposterPublisherStub');
 const { getAdapter } = require('../services/autoposterAdapterRegistry');
 const { isKillSwitchEngaged } = require('../services/autoposterKillSwitch');
+const AutoposterEngineConfig = require('../models/AutoposterEngineConfig');
 const {
   AUTOPOSTER_ACCOUNT_STATUS,
   AUTOPOSTER_TARGET_STATUS,
@@ -64,6 +65,23 @@ async function isRateLimited(platform, accountId) {
   return count >= limit.max;
 }
 
+// Admin-configured per-platform hourly cap (Spec 12.5), on top of the
+// existing AUTOPOSTER_RATE_LIMITS window — null/unset means no additional
+// cap, so behaviour is unchanged unless an admin sets one.
+async function isOverConfiguredHourlyCap(platform) {
+  const config = await AutoposterEngineConfig.getConfig();
+  const platformConfig = config.platforms?.get ? config.platforms.get(platform) : config.platforms?.[platform];
+  const hourlyCap = platformConfig?.hourlyCap;
+  if (!hourlyCap) return false;
+  const since = new Date(Date.now() - 60 * 60 * 1000);
+  const count = await AutoposterPostTarget.countDocuments({
+    platform,
+    status: AUTOPOSTER_TARGET_STATUS.PUBLISHED,
+    publishedAt: { $gte: since }
+  });
+  return count >= hourlyCap;
+}
+
 // Classifies a publish failure and either schedules a backoff retry or marks
 // the target permanently failed (Spec 8.2). Unclassified errors default to
 // transient — safer to retry an unknown failure than to silently give up.
@@ -97,6 +115,15 @@ async function processTarget(target) {
   // engine picking them autonomously.
   if (post?.source === 'trend' && (await isKillSwitchEngaged())) {
     return 'kill_switch_engaged'; // left pending, untouched — resumes automatically once released
+  }
+
+  const engineConfig = await AutoposterEngineConfig.getConfig();
+  const platformConfig = engineConfig.platforms?.get ? engineConfig.platforms.get(target.platform) : engineConfig.platforms?.[target.platform];
+  if (platformConfig?.enabled === false) {
+    return 'platform_disabled'; // left pending, untouched — Spec 12.5's per-platform master ON/OFF
+  }
+  if (await isOverConfiguredHourlyCap(target.platform)) {
+    return 'hourly_cap_reached'; // left pending, untouched — retried next tick once the hour rolls over
   }
 
   if (!account || account.status !== AUTOPOSTER_ACCOUNT_STATUS.ACTIVE) {
@@ -198,5 +225,6 @@ module.exports = {
   runPublisherTick,
   recoverStalledTargets,
   isRateLimited,
+  isOverConfiguredHourlyCap,
   classifyAndScheduleRetry
 };

@@ -205,6 +205,32 @@ export default function AutoposterApprovalQueuePage() {
     }
   );
 
+  const bulkApproveMutation = useMutation(
+    (platform) => autoposterAPI.bulkApproveByPlatform(platform),
+    {
+      onSuccess: (res, platform) => {
+        const results = res.data?.data || [];
+        const okCount = results.filter((r) => r.ok).length;
+        toast.success(`Approved ${okCount}/${results.length} pending ${platform} post(s)`);
+        invalidate();
+      },
+      onError: (error) => { toast.error(error.response?.data?.message || 'Bulk approve failed'); invalidate(); },
+    }
+  );
+
+  const bulkRejectMutation = useMutation(
+    (trendId) => autoposterAPI.bulkRejectByTrend(trendId, 'Bulk rejected from approval queue'),
+    {
+      onSuccess: (res) => {
+        const results = res.data?.data || [];
+        const okCount = results.filter((r) => r.ok).length;
+        toast.success(`Rejected ${okCount}/${results.length} post(s) for that trend`);
+        invalidate();
+      },
+      onError: (error) => { toast.error(error.response?.data?.message || 'Bulk reject failed'); invalidate(); },
+    }
+  );
+
   const killSwitchMutation = useMutation(
     () => (killSwitchEngaged ? autoposterAPI.resumeEngine() : autoposterAPI.pauseEngine()),
     {
@@ -232,6 +258,21 @@ export default function AutoposterApprovalQueuePage() {
     setBusyAction('snooze');
     snoozeMutation.mutate(decision._id);
   };
+
+  // Bulk actions (Spec 12.2): "approve all under one platform" / "reject all
+  // from one trend" — derived from whatever's actually in the current queue,
+  // not a fixed platform/trend list, so a button never targets something
+  // with nothing pending.
+  const platformCounts = decisions.reduce((acc, d) => { acc[d.platform] = (acc[d.platform] || 0) + 1; return acc; }, {});
+  const trendGroups = Object.values(
+    decisions.reduce((acc, d) => {
+      const id = d.trend?._id;
+      if (!id) return acc;
+      if (!acc[id]) acc[id] = { id, term: d.trend.term, count: 0 };
+      acc[id].count++;
+      return acc;
+    }, {})
+  );
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -264,6 +305,47 @@ export default function AutoposterApprovalQueuePage() {
           {killSwitchEngaged ? 'Resume Engine' : 'Pause Engine'}
         </Button>
       </div>
+
+      {decisions.length > 0 && (
+        <Card title="Bulk actions">
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-1.5">Approve all pending, by platform</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(platformCounts).map(([platform, count]) => (
+                  <Button
+                    key={platform}
+                    variant="success"
+                    size="sm"
+                    loading={bulkApproveMutation.isLoading && bulkApproveMutation.variables === platform}
+                    onClick={() => bulkApproveMutation.mutate(platform)}
+                  >
+                    Approve all {platform} ({count})
+                  </Button>
+                ))}
+              </div>
+            </div>
+            {trendGroups.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-1.5">Reject all pending, by trend</p>
+                <div className="flex flex-wrap gap-2">
+                  {trendGroups.map((g) => (
+                    <Button
+                      key={g.id}
+                      variant="danger"
+                      size="sm"
+                      loading={bulkRejectMutation.isLoading && bulkRejectMutation.variables === g.id}
+                      onClick={() => bulkRejectMutation.mutate(g.id)}
+                    >
+                      Reject all "{g.term}" ({g.count})
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
 
       {isLoading ? (
         <p className="text-sm text-gray-400">Loading…</p>

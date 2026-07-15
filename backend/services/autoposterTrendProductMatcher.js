@@ -2,6 +2,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const AutoposterTrend = require('../models/AutoposterTrend');
 const AutoposterTrendCandidate = require('../models/AutoposterTrendCandidate');
+const AutoposterEngineConfig = require('../models/AutoposterEngineConfig');
 const { embed, cosineSimilarity } = require('./visualSearchService');
 
 // Semantic trend-product matching (Spec Section 10.6). Reuses the exact
@@ -86,8 +87,21 @@ async function matchTrendToProducts(trendId) {
     return [];
   }
 
-  const relevantCategories = await findRelevantCategories(vec);
+  // Category "graduation" (Spec 12.5) — an admin can exclude a category from
+  // auto-posting entirely as a manual quality gate. Defaults to every
+  // category graduated (nothing excluded), so this changes nothing for an
+  // admin who never opens the Configuration tab.
+  const { categories: categoryConfig } = await AutoposterEngineConfig.getConfig();
+  const excludedCategoryIds = new Set((categoryConfig || []).filter((c) => c.graduated === false).map((c) => String(c.category)));
+
+  let relevantCategories = await findRelevantCategories(vec);
+  if (excludedCategoryIds.size > 0) relevantCategories = relevantCategories.filter((c) => !excludedCategoryIds.has(String(c.id)));
+
   const productQuery = { isActive: true, embedding: { $exists: true, $ne: null } };
+  // $nin here only matters for the no-category-matched fallback branch below —
+  // relevantCategories is already pre-filtered, so the $in branch never
+  // needs it (excluded categories can't appear in that list at all).
+  if (excludedCategoryIds.size > 0) productQuery.categories = { $nin: [...excludedCategoryIds] };
   if (relevantCategories.length > 0) {
     productQuery.categories = { $in: relevantCategories.map((c) => c.id) };
     console.log(`[autoposter-trends] "${trend.term}" narrowed to categories: ${relevantCategories.map((c) => c.name).join(', ')}`);

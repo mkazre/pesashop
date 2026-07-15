@@ -33,7 +33,21 @@ const autoposterTrendSchema = new mongoose.Schema({
 
   firstSeen: { type: Date, default: Date.now },
   lastRefreshed: { type: Date, default: Date.now },
-  active: { type: Boolean, default: true, index: true }
+  active: { type: Boolean, default: true, index: true },
+
+  // A real snapshot per ingestion run (Spec 12.1's "velocity sparkline"),
+  // capped to the last 14 points — this is genuine history, not a
+  // decoration; a brand-new trend has 0-1 points until more runs accumulate.
+  scoreHistory: {
+    type: [{ at: { type: Date, default: Date.now }, trendScore: Number, velocity: Number, _id: false }],
+    default: []
+  },
+
+  // Admin "Pin" action (Spec 12.1) — forces a high effective weight for 24h
+  // regardless of the computed trendScore, e.g. to push a known-good trend
+  // during a promotion. Read at sampling time, not baked into trendScore
+  // itself, so it naturally expires without a cron needing to unset it.
+  pinnedUntil: { type: Date, default: null }
 }, { timestamps: true });
 
 autoposterTrendSchema.index({ active: 1, sensitivityFlag: 1, trendScore: -1 });

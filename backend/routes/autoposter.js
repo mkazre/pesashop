@@ -15,13 +15,22 @@ const AutoposterTrend = require('../models/AutoposterTrend');
 const { runTrendIngestion } = require('../services/autoposterTrendIngestionRun');
 const { runTrendSampling } = require('../services/autoposterTrendSamplingRun');
 const AutoposterDecision = require('../models/AutoposterDecision');
+const AutoposterBlocklistTerm = require('../models/AutoposterBlocklistTerm');
+const AutoposterCulturalEvent = require('../models/AutoposterCulturalEvent');
+const AutoposterTrendCandidate = require('../models/AutoposterTrendCandidate');
+const AutoposterEngineConfig = require('../models/AutoposterEngineConfig');
+const AutoposterInsight = require('../models/AutoposterInsight');
+const AutoposterVariantPerformance = require('../models/AutoposterVariantPerformance');
+const { matchTrendToProducts } = require('../services/autoposterTrendProductMatcher');
 const {
   listApprovalQueue,
   approveDecision,
   rejectDecision,
   snoozeDecision,
   isKillSwitchEngaged,
-  setKillSwitch
+  setKillSwitch,
+  bulkApproveByPlatform,
+  bulkRejectByTrend
 } = require('../services/autoposterApprovalQueue');
 const Product = require('../models/Product');
 const { resolveProductPost } = require('../services/autoposterProductPostResolver');
@@ -31,7 +40,8 @@ const {
   AUTOPOSTER_ACCOUNT_STATUS,
   AUTOPOSTER_POST_STATUS,
   AUTOPOSTER_TARGET_STATUS,
-  AUTOPOSTER_CAPTION_LIMITS
+  AUTOPOSTER_CAPTION_LIMITS,
+  AUTOPOSTER_SENSITIVITY
 } = require('../config/constants');
 
 const facebookOAuth = require('../services/autoposterOAuthFacebook');
@@ -704,6 +714,87 @@ router.post('/trends/sample', protect, adminOnly, async (req, res) => {
   }
 });
 
+// ─── Live Trends Panel row actions (Spec 12.1) ─────────────────────────────
+router.post('/trends/:id/block', protect, adminOnly, async (req, res) => {
+  try {
+    const trend = await AutoposterTrend.findById(req.params.id);
+    if (!trend) return res.status(404).json({ success: false, message: 'Trend not found' });
+    trend.sensitivityFlag = AUTOPOSTER_SENSITIVITY.BLOCKED;
+    trend.blocklistReason = req.body?.reason || 'Blocked from Live Trends panel';
+    await trend.save();
+    if (req.body?.addToBlocklist) {
+      await AutoposterBlocklistTerm.create({ term: trend.term, type: 'exact', reason: trend.blocklistReason, addedBy: req.user._id });
+    }
+    await AutoposterAuditLog.create({ actor: req.user._id, action: 'trend_blocked', entityType: 'AutoposterTrend', entityId: String(trend._id), payload: { reason: trend.blocklistReason } });
+    res.json({ success: true, data: trend });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/trends/:id/pin', protect, adminOnly, async (req, res) => {
+  try {
+    const trend = await AutoposterTrend.findById(req.params.id);
+    if (!trend) return res.status(404).json({ success: false, message: 'Trend not found' });
+    const hours = Number(req.body?.hours) || 24;
+    trend.pinnedUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
+    await trend.save();
+    await AutoposterAuditLog.create({ actor: req.user._id, action: 'trend_pinned', entityType: 'AutoposterTrend', entityId: String(trend._id), payload: { hours } });
+    res.json({ success: true, data: trend });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.get('/trends/:id/candidates', protect, adminOnly, async (req, res) => {
+  try {
+    let candidates = await AutoposterTrendCandidate.find({ trend: req.params.id })
+      .populate('product', 'name slug featuredImage regularPrice salePrice')
+      .sort({ weight: -1, similarity: -1 });
+    if (candidates.length === 0) {
+      // Nothing matched yet for this trend — run the matcher now rather than
+      // showing an empty panel with no way to populate it from the UI.
+      await matchTrendToProducts(req.params.id);
+      candidates = await AutoposterTrendCandidate.find({ trend: req.params.id })
+        .populate('product', 'name slug featuredImage regularPrice salePrice')
+        .sort({ weight: -1, similarity: -1 });
+    }
+    res.json({ success: true, data: candidates });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Blocklist editor (Spec 12.5, 13) ──────────────────────────────────────
+router.get('/trends/blocklist', protect, adminOnly, async (req, res) => {
+  try {
+    const entries = await AutoposterBlocklistTerm.find().populate('addedBy', 'name email').sort({ createdAt: -1 });
+    res.json({ success: true, data: entries });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/trends/blocklist', protect, adminOnly, async (req, res) => {
+  try {
+    const { term, type, reason } = req.body || {};
+    if (!term || !type) return res.status(400).json({ success: false, message: 'term and type are required' });
+    const entry = await AutoposterBlocklistTerm.create({ term, type, reason, addedBy: req.user._id });
+    res.json({ success: true, data: entry });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.delete('/trends/blocklist/:id', protect, adminOnly, async (req, res) => {
+  try {
+    await AutoposterBlocklistTerm.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.get('/decisions', protect, adminOnly, async (req, res) => {
   try {
     const query = {};
@@ -752,6 +843,142 @@ router.post('/approvals/:id/snooze', protect, adminOnly, async (req, res) => {
   try {
     const decision = await snoozeDecision(req.params.id, req.body?.minutes || 60);
     res.json({ success: true, data: decision });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Bulk actions (Spec 12.2)
+router.post('/approvals/bulk-approve', protect, adminOnly, async (req, res) => {
+  try {
+    const { platform } = req.body || {};
+    if (!platform) return res.status(400).json({ success: false, message: 'platform is required' });
+    const results = await bulkApproveByPlatform(platform, req.user._id);
+    res.json({ success: true, data: results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/approvals/bulk-reject', protect, adminOnly, async (req, res) => {
+  try {
+    const { trendId, reason } = req.body || {};
+    if (!trendId) return res.status(400).json({ success: false, message: 'trendId is required' });
+    const results = await bulkRejectByTrend(trendId, req.user._id, { reason });
+    res.json({ success: true, data: results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Cultural Calendar Manager (Spec 12.3, 13) ─────────────────────────────
+router.get('/cultural-events', protect, adminOnly, async (req, res) => {
+  try {
+    const events = await AutoposterCulturalEvent.find().sort({ name: 1 });
+    res.json({ success: true, data: events });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/cultural-events', protect, adminOnly, async (req, res) => {
+  try {
+    const event = await AutoposterCulturalEvent.create(req.body);
+    res.json({ success: true, data: event });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.patch('/cultural-events/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const event = await AutoposterCulturalEvent.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+    res.json({ success: true, data: event });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.delete('/cultural-events/:id', protect, adminOnly, async (req, res) => {
+  try {
+    await AutoposterCulturalEvent.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Performance Insights (Spec 12.4) ──────────────────────────────────────
+// Engagement-based metrics (by source, by variant style, conversion
+// attribution) require the Phase 12 insights worker, which hasn't run yet —
+// those sections come back empty/zero rather than fabricated. What IS real
+// today: rejection analysis and approval rate, both derived straight from
+// AutoposterDecision, which the trend engine has been writing since Phase 9.
+router.get('/insights/auto-posts', protect, adminOnly, async (req, res) => {
+  try {
+    const [byApprovalStatus, rejectionsByTrend, variantPerformance, insightCount] = await Promise.all([
+      AutoposterDecision.aggregate([{ $group: { _id: '$approvalStatus', count: { $sum: 1 } } }]),
+      AutoposterDecision.aggregate([
+        { $match: { approvalStatus: 'rejected' } },
+        { $group: { _id: '$trend', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+        { $lookup: { from: 'autopostertrends', localField: '_id', foreignField: '_id', as: 'trend' } },
+        { $unwind: { path: '$trend', preserveNullAndEmptyArrays: true } },
+        { $project: { term: '$trend.term', count: 1 } }
+      ]),
+      AutoposterVariantPerformance.find().sort({ totalEngagement: -1 }).limit(20),
+      AutoposterInsight.countDocuments()
+    ]);
+
+    const approvalRateByPlatform = await AutoposterDecision.aggregate([
+      { $group: { _id: { platform: '$platform', status: '$approvalStatus' }, count: { $sum: 1 } } }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        decisionsByApprovalStatus: byApprovalStatus,
+        approvalRateByPlatform,
+        topRejectedTrends: rejectionsByTrend,
+        variantStylePerformance: variantPerformance,
+        engagementDataAvailable: insightCount > 0,
+        note: insightCount === 0
+          ? 'No post-engagement insights yet — the Phase 12 insights worker (1h/24h/7d fetches) hasn\'t been built/run. Rejection analysis and approval rate above are real, derived from the trend engine\'s own decision log.'
+          : undefined
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Configuration panel (Spec 12.5) ───────────────────────────────────────
+router.get('/engine/config', protect, adminOnly, async (req, res) => {
+  try {
+    const config = await AutoposterEngineConfig.getConfig();
+    res.json({ success: true, data: config });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.put('/engine/config', protect, adminOnly, async (req, res) => {
+  try {
+    const config = await AutoposterEngineConfig.getConfig();
+    const { platforms, categories, samplerWeights, cooldown } = req.body || {};
+    if (platforms) {
+      for (const [platform, value] of Object.entries(platforms)) {
+        config.platforms.set(platform, { ...(config.platforms.get(platform)?.toObject?.() || {}), ...value });
+      }
+    }
+    if (categories) config.categories = categories;
+    if (samplerWeights) config.samplerWeights = { ...config.samplerWeights.toObject(), ...samplerWeights };
+    if (cooldown) config.cooldown = { ...config.cooldown.toObject(), ...cooldown };
+    await config.save();
+    await AutoposterAuditLog.create({ actor: req.user._id, action: 'engine_config_updated', entityType: 'AutoposterEngineConfig', entityId: String(config._id), payload: req.body });
+    res.json({ success: true, data: config });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -17,6 +17,7 @@ const {
   computeCrossSourceValidation,
   computeTrendScore
 } = require('./autoposterTrendScoring');
+const AutoposterEngineConfig = require('../models/AutoposterEngineConfig');
 const { AUTOPOSTER_SENSITIVITY } = require('../config/constants');
 
 function slugify(term) {
@@ -48,32 +49,77 @@ async function checkBlocklist(term) {
   return { flagged: false };
 }
 
+const CULTURAL_EVENT_DAY_MS = 24 * 60 * 60 * 1000;
+
+// Days from `from` (inclusive-forward, never negative) until the next
+// occurrence of an annual month/day, wrapping to next year if it already
+// passed this year.
+function daysUntilAnnual(month, day, from) {
+  const fromMidnight = Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate());
+  let target = Date.UTC(from.getUTCFullYear(), month - 1, day);
+  if (target < fromMidnight) target = Date.UTC(from.getUTCFullYear() + 1, month - 1, day);
+  return Math.round((target - fromMidnight) / CULTURAL_EVENT_DAY_MS);
+}
+
 async function getActiveCulturalEventBoosts(date = new Date()) {
   const events = await AutoposterCulturalEvent.find({ active: true });
   const month = date.getUTCMonth() + 1;
   const day = date.getUTCDate();
-  const active = events.filter((event) => {
+  const boosts = [];
+
+  for (const event of events) {
     const r = event.recurrence || {};
-    if (r.type === 'annual') return r.month === month && r.day === day;
-    if (r.type === 'monthly') return day >= (r.dayRange?.[0] ?? 1) && day <= (r.dayRange?.[1] ?? 31);
-    if (r.type === 'annual_multi') return (r.months || []).includes(month);
+
+    if (r.type === 'monthly') {
+      if (day >= (r.dayRange?.[0] ?? 1) && day <= (r.dayRange?.[1] ?? 31)) boosts.push(event.boost);
+      continue;
+    }
+    if (r.type === 'annual_multi') {
+      if ((r.months || []).includes(month)) boosts.push(event.boost);
+      continue;
+    }
     if (r.type === 'annual_range') {
       // Handles year-boundary-spanning ranges (e.g. Dec 15 -> Jan 15).
       const start = { m: r.startMonth, d: r.startDay };
       const end = { m: r.endMonth, d: r.endDay };
       const asNum = (m, d) => m * 100 + d;
       const cur = asNum(month, day);
-      return start.m > end.m
+      const inRange = start.m > end.m
         ? cur >= asNum(start.m, start.d) || cur <= asNum(end.m, end.d)
         : cur >= asNum(start.m, start.d) && cur <= asNum(end.m, end.d);
+      if (inRange) boosts.push(event.boost);
+      continue;
     }
-    // 'annual_nth_weekday' / 'annual_last_weekday' aren't date-matched here —
-    // they need real calendar-week arithmetic that's more naturally a Phase
-    // 9/11 concern (matching against the actual trend-sampling run date);
-    // flagged rather than approximated incorrectly.
-    return false;
-  });
-  return active.map((e) => e.boost);
+
+    // 'once' (Spec 12.3's "add one-off event", e.g. a national football
+    // match) and 'annual' both support the lead-time ramp: ramps up
+    // linearly from `date` up to `leadTimeDays` before the event, reaching
+    // full boost exactly on the day. leadTimeDays=0 (the default) means
+    // "only on the exact day", identical to this function's pre-Phase-11
+    // behaviour.
+    let daysUntil = null;
+    if (r.type === 'once' && r.date) {
+      const d = new Date(r.date);
+      const target = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+      const fromMidnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+      daysUntil = Math.round((target - fromMidnight) / CULTURAL_EVENT_DAY_MS);
+    } else if (r.type === 'annual') {
+      daysUntil = daysUntilAnnual(r.month, r.day, date);
+    } else {
+      // 'annual_nth_weekday' / 'annual_last_weekday' aren't date-matched here
+      // — they need real calendar-week arithmetic, flagged rather than
+      // approximated incorrectly.
+      continue;
+    }
+
+    if (daysUntil === 0) {
+      boosts.push(event.boost);
+    } else if (daysUntil > 0 && daysUntil <= (event.leadTimeDays || 0)) {
+      boosts.push(1 + (event.boost - 1) * (1 - daysUntil / event.leadTimeDays));
+    }
+  }
+
+  return boosts;
 }
 
 // One full ingestion run (Spec Section 10.3): fetch every source, normalise
@@ -107,6 +153,12 @@ async function runTrendIngestion() {
 
   const maxVolumeInRun = Math.max(1, ...[...grouped.values()].map((e) => e.volumeRaw));
   const culturalBoosts = await getActiveCulturalEventBoosts();
+  // Admin-tunable sampler weights (Spec 12.5) — falls back to the spec's own
+  // fixed weights when the config document has no override, so this run
+  // behaves identically to before Phase 11 for anyone who never opens the
+  // Configuration tab.
+  const config = await AutoposterEngineConfig.getConfig();
+  const samplerWeights = config.samplerWeights;
 
   let created = 0, updated = 0, blocked = 0;
 
@@ -117,7 +169,7 @@ async function runTrendIngestion() {
     const sourceConfidence = computeSourceConfidence(entry.sources);
     const culturalEventBoost = computeCulturalEventBoost(culturalBoosts);
     const crossSourceValidation = computeCrossSourceValidation(new Set(entry.sources).size);
-    const trendScore = computeTrendScore({ volumeNormalised, velocityScore: velocity, sourceConfidence, culturalEventBoost, crossSourceValidation });
+    const trendScore = computeTrendScore({ volumeNormalised, velocityScore: velocity, sourceConfidence, culturalEventBoost, crossSourceValidation }, samplerWeights);
 
     const blocklistResult = await checkBlocklist(entry.term);
 
@@ -136,11 +188,17 @@ async function runTrendIngestion() {
     };
     if (blocklistResult.flagged) blocked++;
 
+    // Real per-run snapshot for the Live Trends Panel's velocity sparkline
+    // (Spec 12.1) — capped to the last 14 points, oldest dropped first.
+    const historyPoint = { at: new Date(), trendScore, velocity };
+    const priorHistory = existing?.scoreHistory || [];
+    const scoreHistory = [...priorHistory, historyPoint].slice(-14);
+
     if (existing) {
-      await AutoposterTrend.updateOne({ _id: existing._id }, doc);
+      await AutoposterTrend.updateOne({ _id: existing._id }, { ...doc, scoreHistory });
       updated++;
     } else {
-      await AutoposterTrend.create({ ...doc, firstSeen: new Date() });
+      await AutoposterTrend.create({ ...doc, firstSeen: new Date(), scoreHistory });
       created++;
     }
   }

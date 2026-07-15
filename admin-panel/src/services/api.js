@@ -820,6 +820,22 @@ export const autoposterAPI = {
   getEngineStatus: () => api.get('/autoposter/engine/status'),
   pauseEngine: () => api.post('/autoposter/engine/pause'),
   resumeEngine: () => api.post('/autoposter/engine/resume'),
+  // Admin Trend Dashboard (Phase 11)
+  blockTrend: (id, data) => api.post(`/autoposter/trends/${id}/block`, data),
+  pinTrend: (id, hours) => api.post(`/autoposter/trends/${id}/pin`, { hours }),
+  getTrendCandidates: (id) => api.get(`/autoposter/trends/${id}/candidates`),
+  bulkApproveByPlatform: (platform) => api.post('/autoposter/approvals/bulk-approve', { platform }),
+  bulkRejectByTrend: (trendId, reason) => api.post('/autoposter/approvals/bulk-reject', { trendId, reason }),
+  listBlocklist: () => api.get('/autoposter/trends/blocklist'),
+  addBlocklistEntry: (data) => api.post('/autoposter/trends/blocklist', data),
+  deleteBlocklistEntry: (id) => api.delete(`/autoposter/trends/blocklist/${id}`),
+  listCulturalEvents: () => api.get('/autoposter/cultural-events'),
+  createCulturalEvent: (data) => api.post('/autoposter/cultural-events', data),
+  updateCulturalEvent: (id, data) => api.patch(`/autoposter/cultural-events/${id}`, data),
+  deleteCulturalEvent: (id) => api.delete(`/autoposter/cultural-events/${id}`),
+  getAutoPostInsights: () => api.get('/autoposter/insights/auto-posts'),
+  getEngineConfig: () => api.get('/autoposter/engine/config'),
+  updateEngineConfig: (data) => api.put('/autoposter/engine/config', data),
 };
 
 export default api;

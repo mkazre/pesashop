@@ -54,8 +54,14 @@ async function computeCandidateWeight(trend, product, platform, region) {
   const culturalBoosts = await getActiveCulturalEventBoosts();
   const culturalEventBoost = culturalBoosts.length > 0 ? Math.max(...culturalBoosts) : 1.0;
 
+  // Admin "Pin" action (Spec 12.1) — force a high effective score for 24h,
+  // bypassing the computed trendScore, rather than editing trendScore itself
+  // (which would be overwritten by the next ingestion run anyway).
+  const isPinned = trend.pinnedUntil && new Date(trend.pinnedUntil) > new Date();
+  const effectiveTrendScore = isPinned ? 1.0 : trend.trendScore;
+
   const weight =
-    trend.trendScore *
+    effectiveTrendScore *
     (product._similarity ?? 1) *
     marginFactor *
     stockFactor *
@@ -64,7 +70,7 @@ async function computeCandidateWeight(trend, product, platform, region) {
     platformFit *
     culturalEventBoost;
 
-  return { weight, blocked: false, breakdown: { trendScore: trend.trendScore, similarity: product._similarity, marginFactor, stockFactor, recencyPenalty, crossRegionDiscount, platformFit, culturalEventBoost } };
+  return { weight, blocked: false, breakdown: { trendScore: effectiveTrendScore, pinned: isPinned, similarity: product._similarity, marginFactor, stockFactor, recencyPenalty, crossRegionDiscount, platformFit, culturalEventBoost } };
 }
 
 // Weighted random selection without replacement (numpy.random.choice

@@ -43,8 +43,12 @@ function computeCrossSourceValidation(distinctSourceCount, totalPossibleSources 
   return Math.min(1, distinctSourceCount / totalPossibleSources);
 }
 
-function computeTrendScore({ volumeNormalised, velocityScore, sourceConfidence, culturalEventBoost, crossSourceValidation }) {
-  const w = AUTOPOSTER_TREND_SCORE_WEIGHTS;
+// `weights` defaults to the spec's fixed constants but can be overridden by
+// the admin-editable AutoposterEngineConfig (Spec 12.5's "sampler weight
+// tuning sliders") — kept as a plain parameter, not a DB read in here, so
+// this function stays pure and synchronous for existing callers/tests.
+function computeTrendScore({ volumeNormalised, velocityScore, sourceConfidence, culturalEventBoost, crossSourceValidation }, weights = AUTOPOSTER_TREND_SCORE_WEIGHTS) {
+  const w = weights;
   return (
     w.volume * volumeNormalised +
     w.velocity * velocityScore +
