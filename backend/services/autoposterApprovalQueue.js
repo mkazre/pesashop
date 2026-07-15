@@ -23,10 +23,15 @@ async function createPostFromDecision(decision, caption, createdBy) {
   const account = await AutoposterAccount.findOne({ platform: decision.platform, status: AUTOPOSTER_ACCOUNT_STATUS.ACTIVE });
   if (!account) return null;
 
+  // UTM attribution (Spec 12.4, Phase 12): lets a real PesaShop order be
+  // correlated back to the auto-post that drove it once order-side UTM
+  // capture exists — source/medium fixed, campaign carries the trend so
+  // different trends are distinguishable in analytics.
+  const utm = `utm_source=${decision.platform}&utm_medium=social_autopost&utm_campaign=${encodeURIComponent(decision.trend.slug || decision.trend.term)}`;
   const post = await AutoposterPost.create({
     title: `Trend: ${decision.trend.term}`,
     baseCaption: caption,
-    linkUrl: `${process.env.FRONTEND_URL || 'https://pesashop.com'}/product/${decision.product.slug}`,
+    linkUrl: `${process.env.FRONTEND_URL || 'https://pesashop.com'}/product/${decision.product.slug}?${utm}`,
     source: 'trend',
     sourceRef: String(decision.product._id),
     status: AUTOPOSTER_POST_STATUS.SCHEDULED,
