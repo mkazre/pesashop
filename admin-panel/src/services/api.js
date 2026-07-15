@@ -808,6 +808,18 @@ export const autoposterAPI = {
   createDesign: (data) => api.post('/autoposter/designs', data),
   updateDesign: (id, data) => api.put(`/autoposter/designs/${id}`, data),
   deleteDesign: (id) => api.delete(`/autoposter/designs/${id}`),
+  // Trend Engine (Phase 8-9)
+  listTrends: (params) => api.get('/autoposter/trends', { params }),
+  refreshTrends: () => api.post('/autoposter/trends/refresh'),
+  sampleTrends: (data) => api.post('/autoposter/trends/sample', data),
+  // Approval Queue + Kill Switch (Phase 10)
+  listApprovalQueue: () => api.get('/autoposter/approvals'),
+  approveDecision: (id, data) => api.post(`/autoposter/approvals/${id}/approve`, data),
+  rejectDecision: (id, data) => api.post(`/autoposter/approvals/${id}/reject`, data),
+  snoozeDecision: (id, minutes) => api.post(`/autoposter/approvals/${id}/snooze`, { minutes }),
+  getEngineStatus: () => api.get('/autoposter/engine/status'),
+  pauseEngine: () => api.post('/autoposter/engine/pause'),
+  resumeEngine: () => api.post('/autoposter/engine/resume'),
 };
 
 export default api;

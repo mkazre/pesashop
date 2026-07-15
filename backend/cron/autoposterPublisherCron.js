@@ -6,6 +6,7 @@ const AutoposterAuditLog = require('../models/AutoposterAuditLog');
 const { rollupPostStatus } = require('../services/autoposterPostStatusRollup');
 const publisherStub = require('../services/autoposterPublisherStub');
 const { getAdapter } = require('../services/autoposterAdapterRegistry');
+const { isKillSwitchEngaged } = require('../services/autoposterKillSwitch');
 const {
   AUTOPOSTER_ACCOUNT_STATUS,
   AUTOPOSTER_TARGET_STATUS,
@@ -89,6 +90,14 @@ function classifyAndScheduleRetry(target, error) {
 async function processTarget(target) {
   const account = await AutoposterAccount.findById(target.account);
   const post = await AutoposterPost.findById(target.post);
+
+  // Kill switch (Spec 10.11) pauses trend-driven publishing specifically —
+  // manually composed posts and product auto-posts are left alone, since
+  // the admin explicitly created those themselves rather than the trend
+  // engine picking them autonomously.
+  if (post?.source === 'trend' && (await isKillSwitchEngaged())) {
+    return 'kill_switch_engaged'; // left pending, untouched — resumes automatically once released
+  }
 
   if (!account || account.status !== AUTOPOSTER_ACCOUNT_STATUS.ACTIVE) {
     target.status = AUTOPOSTER_TARGET_STATUS.FAILED;

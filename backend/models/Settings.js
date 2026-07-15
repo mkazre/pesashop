@@ -260,6 +260,14 @@ const settingsSchema = new mongoose.Schema({
     showOnShop:          { type: Boolean, default: true },
     showOnProductDetail: { type: Boolean, default: true },
   },
+
+  // Social Auto-Poster — engine kill switch (Spec 10.11, 12.5). Persisted
+  // here (not just an env var or in-memory flag) so it survives a worker
+  // restart, per the spec's explicit requirement, and can be toggled from
+  // the admin UI at runtime rather than needing a redeploy.
+  autoposter: {
+    killSwitchEnabled: { type: Boolean, default: false }
+  },
 }, {
   timestamps: true
 });

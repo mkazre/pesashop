@@ -26,7 +26,11 @@ const autoposterDecisionSchema = new mongoose.Schema({
   approvalActor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
   createdAt: { type: Date, default: Date.now },
-  actedAt: Date
+  actedAt: Date,
+
+  // Approval queue "Snooze 1h" action (Spec 10.11, Phase 10) — stays
+  // 'pending' but is hidden from the queue until this time passes.
+  snoozedUntil: Date
 }, { timestamps: false, versionKey: false });
 
 autoposterDecisionSchema.index({ approvalStatus: 1, createdAt: -1 });

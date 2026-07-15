@@ -17,6 +17,7 @@ const { initVisualSearchCron } = require('./cron/visualSearchCron');
 const { initAutoposterTokenRefreshCron } = require('./cron/autoposterTokenRefreshCron');
 const { initAutoposterPublisherCron } = require('./cron/autoposterPublisherCron');
 const { initAutoposterTrendIngestionCron } = require('./cron/autoposterTrendIngestionCron');
+const { initAutoposterComposerCron } = require('./cron/autoposterComposerCron');
 
 // Initialize express app
 const app = express();
@@ -318,6 +319,9 @@ initAutoposterPublisherCron();
 
 // Social Auto-Poster: hourly trend ingestion (Phase 8)
 initAutoposterTrendIngestionCron();
+
+// Social Auto-Poster: composer worker — caption generation + safety check (Phase 10)
+initAutoposterComposerCron();
 
 // Process scheduled notifications every 60 seconds
 const notificationService = require('./services/notificationService');

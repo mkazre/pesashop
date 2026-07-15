@@ -15,6 +15,14 @@ const AutoposterTrend = require('../models/AutoposterTrend');
 const { runTrendIngestion } = require('../services/autoposterTrendIngestionRun');
 const { runTrendSampling } = require('../services/autoposterTrendSamplingRun');
 const AutoposterDecision = require('../models/AutoposterDecision');
+const {
+  listApprovalQueue,
+  approveDecision,
+  rejectDecision,
+  snoozeDecision,
+  isKillSwitchEngaged,
+  setKillSwitch
+} = require('../services/autoposterApprovalQueue');
 const Product = require('../models/Product');
 const { resolveProductPost } = require('../services/autoposterProductPostResolver');
 const { encryptToken } = require('../services/autoposterTokenCrypto');
@@ -707,6 +715,70 @@ router.get('/decisions', protect, adminOnly, async (req, res) => {
       .sort({ weight: -1 })
       .limit(200);
     res.json({ success: true, data: decisions });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Human-in-the-Loop Approval Queue (Spec Sections 10.11, 12.2, 13) ──────
+router.get('/approvals', protect, adminOnly, async (req, res) => {
+  try {
+    const queue = await listApprovalQueue();
+    res.json({ success: true, data: queue });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/approvals/:id/approve', protect, adminOnly, async (req, res) => {
+  try {
+    const result = await approveDecision(req.params.id, req.user._id, { editedCaption: req.body?.editedCaption });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/approvals/:id/reject', protect, adminOnly, async (req, res) => {
+  try {
+    const decision = await rejectDecision(req.params.id, req.user._id, { reason: req.body?.reason, banTrend: !!req.body?.banTrend });
+    res.json({ success: true, data: decision });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/approvals/:id/snooze', protect, adminOnly, async (req, res) => {
+  try {
+    const decision = await snoozeDecision(req.params.id, req.body?.minutes || 60);
+    res.json({ success: true, data: decision });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Kill switch (Spec Sections 10.11, 12.5, 13) ───────────────────────────
+router.get('/engine/status', protect, adminOnly, async (req, res) => {
+  try {
+    res.json({ success: true, data: { killSwitchEngaged: await isKillSwitchEngaged() } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/engine/pause', protect, adminOnly, async (req, res) => {
+  try {
+    await setKillSwitch(true, req.user._id);
+    res.json({ success: true, data: { killSwitchEngaged: true } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/engine/resume', protect, adminOnly, async (req, res) => {
+  try {
+    await setKillSwitch(false, req.user._id);
+    res.json({ success: true, data: { killSwitchEngaged: false } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

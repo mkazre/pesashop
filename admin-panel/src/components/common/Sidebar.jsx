@@ -126,6 +126,7 @@ const menuGroups = [
       { path: '/autoposter/profiles', icon: IoShareSocialOutline, label: 'Auto-Poster: Profiles' },
       { path: '/autoposter/caption-templates', icon: IoShareSocialOutline, label: 'Auto-Poster: Templates' },
       { path: '/autoposter/designs', icon: IoShareSocialOutline, label: 'Auto-Poster: Designer' },
+      { path: '/autoposter/approval-queue', icon: IoShareSocialOutline, label: 'Auto-Poster: Approvals' },
     ],
   },
   {

@@ -95,6 +95,7 @@ import AutoposterProfilesPage from './pages/AutoposterProfilesPage';
 import AutoposterCaptionTemplatesPage from './pages/AutoposterCaptionTemplatesPage';
 import AutoposterDesignsPage from './pages/AutoposterDesignsPage';
 import AutoposterDesignerPage from './pages/AutoposterDesignerPage';
+import AutoposterApprovalQueuePage from './pages/AutoposterApprovalQueuePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -226,6 +227,7 @@ function App() {
             <Route path="autoposter/caption-templates" element={<AutoposterCaptionTemplatesPage />} />
             <Route path="autoposter/designs" element={<AutoposterDesignsPage />} />
             <Route path="autoposter/designer" element={<AutoposterDesignerPage />} />
+            <Route path="autoposter/approval-queue" element={<AutoposterApprovalQueuePage />} />
           </Route>
         </Routes>
       </BrowserRouter>
