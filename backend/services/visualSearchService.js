@@ -149,5 +149,6 @@ module.exports = {
   backfillEmbeddings,
   searchByText,
   searchByImage,
-  findSimilar
+  findSimilar,
+  cosineSimilarity // exported for reuse by the Social Auto-Poster's trend-product matcher (Phase 9)
 };

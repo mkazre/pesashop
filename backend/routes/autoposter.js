@@ -13,6 +13,8 @@ const AutoposterCaptionTemplate = require('../models/AutoposterCaptionTemplate')
 const AutoposterDesign = require('../models/AutoposterDesign');
 const AutoposterTrend = require('../models/AutoposterTrend');
 const { runTrendIngestion } = require('../services/autoposterTrendIngestionRun');
+const { runTrendSampling } = require('../services/autoposterTrendSamplingRun');
+const AutoposterDecision = require('../models/AutoposterDecision');
 const Product = require('../models/Product');
 const { resolveProductPost } = require('../services/autoposterProductPostResolver');
 const { encryptToken } = require('../services/autoposterTokenCrypto');
@@ -675,6 +677,36 @@ router.post('/trends/refresh', protect, adminOnly, async (req, res) => {
   try {
     const result = await runTrendIngestion();
     res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/autoposter/trends/sample — runs matching + safety + weighted
+// sampling (Spec 10.6-10.8, 10.10 layer 3) and records the full decision
+// audit trail (Spec 11.4). Doesn't create real posts yet — caption
+// generation and the approval queue are Phase 10.
+router.post('/trends/sample', protect, adminOnly, async (req, res) => {
+  try {
+    const { platforms, region, sampleCount } = req.body || {};
+    const result = await runTrendSampling({ platforms, region, sampleCount });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.get('/decisions', protect, adminOnly, async (req, res) => {
+  try {
+    const query = {};
+    if (req.query.runId) query.runId = req.query.runId;
+    if (req.query.selected !== undefined) query.selected = req.query.selected === 'true';
+    const decisions = await AutoposterDecision.find(query)
+      .populate('trend', 'term trendScore')
+      .populate('product', 'name slug')
+      .sort({ weight: -1 })
+      .limit(200);
+    res.json({ success: true, data: decisions });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

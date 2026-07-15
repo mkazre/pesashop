@@ -125,4 +125,14 @@ categorySchema.methods.getDescendantIds = async function() {
   return descendants;
 };
 
+// Social Auto-Poster: category-level embedding (Phase 9), same pattern as
+// Product.embedding — used to narrow a trend match to a handful of relevant
+// categories BEFORE fetching product embeddings, instead of brute-force
+// scanning the entire 13,000+ catalogue on every trend match (that scan was
+// timing out in practice — see autoposterTrendProductMatcher.js).
+categorySchema.add({
+  embedding: { type: [Number], select: false, default: undefined },
+  embeddingUpdatedAt: { type: Date, select: false }
+});
+
 module.exports = mongoose.model('Category', categorySchema);
