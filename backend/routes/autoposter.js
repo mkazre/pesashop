@@ -11,6 +11,8 @@ const AutoposterPostTarget = require('../models/AutoposterPostTarget');
 const AutoposterPostProfile = require('../models/AutoposterPostProfile');
 const AutoposterCaptionTemplate = require('../models/AutoposterCaptionTemplate');
 const AutoposterDesign = require('../models/AutoposterDesign');
+const AutoposterTrend = require('../models/AutoposterTrend');
+const { runTrendIngestion } = require('../services/autoposterTrendIngestionRun');
 const Product = require('../models/Product');
 const { resolveProductPost } = require('../services/autoposterProductPostResolver');
 const { encryptToken } = require('../services/autoposterTokenCrypto');
@@ -647,6 +649,32 @@ router.delete('/designs/:id', protect, adminOnly, async (req, res) => {
   try {
     await AutoposterDesign.findByIdAndDelete(req.params.id);
     res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Trend Engine (Spec Section 13) ────────────────────────────────────────
+router.get('/trends', protect, adminOnly, async (req, res) => {
+  try {
+    const { sensitivity, audience, minScore } = req.query;
+    const query = { active: true };
+    if (sensitivity) query.sensitivityFlag = sensitivity;
+    if (audience) query.audience = audience;
+    if (minScore) query.trendScore = { $gte: parseFloat(minScore) };
+    const trends = await AutoposterTrend.find(query).sort({ trendScore: -1 }).limit(100);
+    res.json({ success: true, data: trends });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/autoposter/trends/refresh — force an ingestion run outside the
+// hourly cron schedule (Spec 13's admin-triggered refresh).
+router.post('/trends/refresh', protect, adminOnly, async (req, res) => {
+  try {
+    const result = await runTrendIngestion();
+    res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

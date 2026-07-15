@@ -16,6 +16,7 @@ const { initRecurringOrderCronJobs } = require('./cron/recurringOrderCron');
 const { initVisualSearchCron } = require('./cron/visualSearchCron');
 const { initAutoposterTokenRefreshCron } = require('./cron/autoposterTokenRefreshCron');
 const { initAutoposterPublisherCron } = require('./cron/autoposterPublisherCron');
+const { initAutoposterTrendIngestionCron } = require('./cron/autoposterTrendIngestionCron');
 
 // Initialize express app
 const app = express();
@@ -314,6 +315,9 @@ initAutoposterTokenRefreshCron();
 
 // Social Auto-Poster: publisher worker (Mongo-native scheduling engine, Phase 4)
 initAutoposterPublisherCron();
+
+// Social Auto-Poster: hourly trend ingestion (Phase 8)
+initAutoposterTrendIngestionCron();
 
 // Process scheduled notifications every 60 seconds
 const notificationService = require('./services/notificationService');

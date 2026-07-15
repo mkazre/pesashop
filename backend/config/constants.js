@@ -322,5 +322,25 @@ module.exports = {
 
   // How long a target can sit in 'publishing' before the worker assumes the
   // process crashed mid-job and resets it to 'pending' for retry.
-  AUTOPOSTER_STALLED_THRESHOLD_MINUTES: 5
+  AUTOPOSTER_STALLED_THRESHOLD_MINUTES: 5,
+
+  // Autoposter — Trend Engine (Spec Section 10.4). Composite score weights,
+  // summing to 1.0.
+  AUTOPOSTER_TREND_SCORE_WEIGHTS: {
+    volume: 0.30,
+    velocity: 0.40,
+    sourceConfidence: 0.15,
+    culturalEventBoost: 0.10,
+    crossSourceValidation: 0.05
+  },
+  // Source confidence per Spec 10.4: "1.0 first-party, 0.8 SerpAPI, 0.5 scraped".
+  AUTOPOSTER_TREND_SOURCE_CONFIDENCE: {
+    firstparty_search: 1.0,
+    firstparty_order_velocity: 1.0,
+    serpapi: 0.8,
+    google_trends_scraper: 0.5,
+    x: 0.5,
+    tiktok: 0.5
+  },
+  AUTOPOSTER_TREND_INGESTION_INTERVAL_HOURS: 1 // Spec 10.3: "every 60 minutes"
 };
