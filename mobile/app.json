@@ -56,12 +56,31 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/product" },
-            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/order" },
-            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/refer" },
-            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/live" }
+            {
+              "scheme": "https",
+              "host": "pesashop.com",
+              "pathPrefix": "/product"
+            },
+            {
+              "scheme": "https",
+              "host": "pesashop.com",
+              "pathPrefix": "/order"
+            },
+            {
+              "scheme": "https",
+              "host": "pesashop.com",
+              "pathPrefix": "/refer"
+            },
+            {
+              "scheme": "https",
+              "host": "pesashop.com",
+              "pathPrefix": "/live"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -86,7 +105,16 @@
       ],
       "@react-native-google-signin/google-signin",
       "expo-asset",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "targetSdkVersion": 35,
+            "compileSdkVersion": 35
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
