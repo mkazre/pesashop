@@ -371,6 +371,44 @@ function InsightsTab() {
   );
 }
 
+// Graduation criteria (Spec 26.4, Phase 14) — the real, computed reasons a
+// platform can or can't be switched to auto-publish yet. This is a display
+// of the same hard gate the backend enforces on save, not a separate opinion.
+function GraduationStatusCard() {
+  const { data } = useQuery('autoposter-graduation-status', async () => {
+    const results = await Promise.all(PLATFORMS.map((p) => autoposterAPI.getGraduationStatus(p).then((r) => r.data.data)));
+    return results;
+  });
+
+  return (
+    <Card title="Graduation status (Spec 26.4 — required before enabling auto-publish)">
+      <p className="text-xs text-gray-500 mb-2">
+        All three criteria must be met for at least 4 weeks before a platform can be switched to auto-publish. This is enforced on save, not just advisory.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="table">
+          <thead><tr><th>Platform</th><th>Clean run</th><th>Approval rate</th><th>Engagement coverage</th><th>Eligible?</th></tr></thead>
+          <tbody>
+            {(data || []).map((s) => (
+              <tr key={s.platform}>
+                <td className="capitalize">{s.platform}</td>
+                <td className={s.cleanRunMet ? '' : 'text-red-600'}>{s.cleanRunWeeks}/4 weeks</td>
+                <td className={s.approvalRateMet ? '' : 'text-red-600'}>
+                  {s.approvalRatePercent != null ? `${s.approvalRatePercent}% (n=${s.approvalRateSampleSize})` : 'no data yet'}
+                </td>
+                <td className={s.engagementMet ? '' : 'text-red-600'}>
+                  {s.engagementCoveragePercent != null ? `${s.engagementCoveragePercent}% (n=${s.engagementCoverageSampleSize})` : 'no data yet'}
+                </td>
+                <td className={s.allCriteriaMet ? 'text-green-600 font-medium' : 'text-gray-400'}>{s.allCriteriaMet ? 'Yes' : 'Not yet'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
 function ConfigTab() {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(null);
@@ -444,6 +482,8 @@ function ConfigTab() {
           </table>
         </div>
       </Card>
+
+      <GraduationStatusCard />
 
       <Card title="Sampler weight tuning (advanced — weights should sum to ~1.0)">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

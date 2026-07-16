@@ -3,6 +3,7 @@ const { runTrendIngestion } = require('../services/autoposterTrendIngestionRun')
 const AutoposterAuditLog = require('../models/AutoposterAuditLog');
 const { socialLogger } = require('../services/autoposterLogger');
 const log = socialLogger('trend-ingestion');
+const { registerWorker } = require('../services/autoposterWorkerRegistry');
 
 // Hourly trend ingestion (Spec Section 10.3). No Redis-lock-based singleton
 // guard is needed here (unlike Spec 27.2's "use a Redis lock to enforce") —
@@ -11,6 +12,7 @@ const log = socialLogger('trend-ingestion');
 // this job to begin with; the double-execution risk the spec's lock guards
 // against doesn't exist in this deployment shape.
 let isRunning = false;
+registerWorker('trend-ingestion', () => isRunning);
 
 function initAutoposterTrendIngestionCron() {
   cron.schedule('0 * * * *', async () => {

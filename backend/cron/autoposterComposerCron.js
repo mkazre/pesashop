@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const { composeOutstandingDecisions } = require('../services/autoposterApprovalQueue');
 const { socialLogger } = require('../services/autoposterLogger');
 const log = socialLogger('composer');
+const { registerWorker } = require('../services/autoposterWorkerRegistry');
 
 // Generates captions for newly-selected trend/product decisions and runs
 // the caption-level safety check, every 15 minutes — frequent enough that a
@@ -9,6 +10,7 @@ const log = socialLogger('composer');
 // Anthropic API on a tighter schedule than the hourly trend/periodic
 // sampling cadence actually needs.
 let isRunning = false;
+registerWorker('composer', () => isRunning);
 
 function initAutoposterComposerCron() {
   cron.schedule('*/15 * * * *', async () => {

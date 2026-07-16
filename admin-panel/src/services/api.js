@@ -839,6 +839,9 @@ export const autoposterAPI = {
   // Observability + Cost Controls (Phase 13)
   getAutoposterMetrics: () => api.get('/autoposter/metrics'),
   getAutoposterCosts: () => api.get('/autoposter/costs'),
+  getAutoposterHealth: () => api.get('/autoposter/health'),
+  // Phase 14: Hardening and Production Rollout
+  getGraduationStatus: (platform) => api.get(`/autoposter/engine/graduation-status/${platform}`),
 };
 
 export default api;

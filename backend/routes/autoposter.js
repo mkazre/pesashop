@@ -1,6 +1,43 @@
 const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
+const { isSocialModuleEnabled } = require('../services/autoposterModuleFlag');
+const { getActiveWorkers } = require('../services/autoposterWorkerRegistry');
+const { computeGraduationStatus } = require('../services/autoposterGraduationCriteria');
+
+// Feature flag gate (Spec 24.3) — every route in this file is disabled when
+// SOCIAL_MODULE_ENABLED=false, except /health itself, which must still
+// respond so it can report the disabled state rather than 503ing on the
+// one endpoint whose entire job is to say what state the module is in.
+router.use((req, res, next) => {
+  if (req.path === '/health' || isSocialModuleEnabled()) return next();
+  res.status(503).json({ success: false, message: 'Social Auto-Poster module is disabled (SOCIAL_MODULE_ENABLED=false)' });
+});
+
+// Health check (Spec 27.3): "returns DB + Redis + queue depth status" —
+// adapted to our Mongo-native, no-Redis architecture (Phase 0 decision):
+// Mongo connection state, pending-target queue depth, kill switch state,
+// and which crons are mid-tick right now.
+router.get('/health', async (req, res) => {
+  const mongoose = require('mongoose');
+  const dbConnected = mongoose.connection.readyState === 1; // 1 = connected
+  try {
+    const moduleEnabled = isSocialModuleEnabled();
+    const [queueDepth, killSwitchEngaged] = await Promise.all([
+      dbConnected ? AutoposterPostTarget.countDocuments({ status: 'pending' }) : null,
+      dbConnected && moduleEnabled ? isKillSwitchEngaged() : null
+    ]);
+    const activeWorkers = getActiveWorkers();
+    // Module being deliberately disabled is a valid state, not an unhealthy
+    // one — only a lost DB connection makes this endpoint report unhealthy.
+    res.status(dbConnected ? 200 : 503).json({
+      success: true,
+      data: { status: dbConnected ? 'ok' : 'unhealthy', moduleEnabled, dbConnected, queueDepth, killSwitchEngaged, activeWorkers }
+    });
+  } catch (error) {
+    res.status(503).json({ success: false, message: error.message });
+  }
+});
 
 const { protect, adminOnly } = require('../middleware/auth');
 const AutoposterAccount = require('../models/AutoposterAccount');
@@ -1029,7 +1066,25 @@ router.put('/engine/config', protect, adminOnly, async (req, res) => {
     const { platforms, categories, samplerWeights, cooldown } = req.body || {};
     if (platforms) {
       for (const [platform, value] of Object.entries(platforms)) {
-        config.platforms.set(platform, { ...(config.platforms.get(platform)?.toObject?.() || {}), ...value });
+        const existing = config.platforms.get(platform)?.toObject?.() || {};
+        // Graduation gate (Spec 26.4, Phase 14's STOP AND CONFIRM) — a hard
+        // server-side block, not just a UI warning: autoPublish can only be
+        // switched ON (false -> true) for a platform that has genuinely met
+        // all three graduation criteria over a real 4-week window.
+        if (value.autoPublish === true && existing.autoPublish !== true) {
+          const status = await computeGraduationStatus(platform);
+          if (!status.allCriteriaMet) {
+            const err = new Error(
+              `Cannot enable auto-publish for ${platform}: graduation criteria not yet met — ` +
+              `clean run ${status.cleanRunWeeks}/4 weeks, ` +
+              `approval rate ${status.approvalRatePercent ?? 'no data'}% (need >90%), ` +
+              `engagement coverage ${status.engagementCoveragePercent ?? 'no data'}% (need >80%).`
+            );
+            err.statusCode = 400;
+            throw err;
+          }
+        }
+        config.platforms.set(platform, { ...existing, ...value });
       }
     }
     if (categories) config.categories = categories;
@@ -1038,6 +1093,18 @@ router.put('/engine/config', protect, adminOnly, async (req, res) => {
     await config.save();
     await AutoposterAuditLog.create({ actor: req.user._id, action: 'engine_config_updated', entityType: 'AutoposterEngineConfig', entityId: String(config._id), payload: req.body });
     res.json({ success: true, data: config });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /engine/graduation-status/:platform (Spec 26.4) — the real computed
+// criteria, so the admin UI can show exactly why a platform isn't eligible
+// for auto-publish yet rather than just having PUT reject it opaquely.
+router.get('/engine/graduation-status/:platform', protect, adminOnly, async (req, res) => {
+  try {
+    const status = await computeGraduationStatus(req.params.platform);
+    res.json({ success: true, data: status });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

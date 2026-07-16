@@ -20,6 +20,8 @@ const { initAutoposterTrendIngestionCron } = require('./cron/autoposterTrendInge
 const { initAutoposterComposerCron } = require('./cron/autoposterComposerCron');
 const { initAutoposterInsightsCron } = require('./cron/autoposterInsightsCron');
 const { initAutoposterAlertsCron } = require('./cron/autoposterAlertsCron');
+const { isSocialModuleEnabled } = require('./services/autoposterModuleFlag');
+const { waitForWorkersToFinish } = require('./services/autoposterWorkerRegistry');
 
 // Initialize express app
 const app = express();
@@ -313,23 +315,19 @@ initRecurringOrderCronJobs();
 // Visual Search: auto-embed products as they're added/modified
 initVisualSearchCron();
 
-// Social Auto-Poster: daily OAuth token refresh
-initAutoposterTokenRefreshCron();
-
-// Social Auto-Poster: publisher worker (Mongo-native scheduling engine, Phase 4)
-initAutoposterPublisherCron();
-
-// Social Auto-Poster: hourly trend ingestion (Phase 8)
-initAutoposterTrendIngestionCron();
-
-// Social Auto-Poster: composer worker — caption generation + safety check (Phase 10)
-initAutoposterComposerCron();
-
-// Social Auto-Poster: insights collection — 1h/24h/7d post-publish (Phase 12)
-initAutoposterInsightsCron();
-
-// Social Auto-Poster: observability alerts — thresholds from Spec Section 17 (Phase 13)
-initAutoposterAlertsCron();
+// Social Auto-Poster — every cron below is gated on SOCIAL_MODULE_ENABLED
+// (Spec 24.3's feature flag: "toggles all routes and workers without
+// requiring schema rollback"). Defaults to enabled.
+if (isSocialModuleEnabled()) {
+  initAutoposterTokenRefreshCron(); // daily OAuth token refresh
+  initAutoposterPublisherCron(); // Mongo-native scheduling engine (Phase 4)
+  initAutoposterTrendIngestionCron(); // hourly trend ingestion (Phase 8)
+  initAutoposterComposerCron(); // caption generation + safety check (Phase 10)
+  initAutoposterInsightsCron(); // 1h/24h/7d post-publish metrics (Phase 12)
+  initAutoposterAlertsCron(); // observability alert thresholds (Phase 13)
+} else {
+  console.log('⏸️  Social Auto-Poster module disabled (SOCIAL_MODULE_ENABLED=false) — routes return 503, crons not started');
+}
 
 // Process scheduled notifications every 60 seconds
 const notificationService = require('./services/notificationService');
@@ -363,9 +361,16 @@ process.on('unhandledRejection', (err) => {
   server.close(() => process.exit(1));
 });
 
-// Handle SIGTERM
-process.on('SIGTERM', () => {
+// Handle SIGTERM — zero-downtime deploy (Spec 27.5): drain any in-flight
+// Auto-Poster cron tick (e.g. the publisher mid-batch) before closing the
+// HTTP server, capped at 2 minutes so a deploy is never blocked indefinitely
+// by a stuck job.
+process.on('SIGTERM', async () => {
   console.log('SIGTERM signal received');
+  const { drained, stillActive, waitedMs } = await waitForWorkersToFinish(120000);
+  console.log(drained
+    ? `Auto-Poster workers drained after ${waitedMs}ms`
+    : `Auto-Poster workers still active after 2min wait, proceeding anyway: ${stillActive.join(', ')}`);
   server.close(() => {
     console.log('Server closed');
     process.exit(0);

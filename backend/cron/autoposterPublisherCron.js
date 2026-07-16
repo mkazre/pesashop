@@ -10,6 +10,7 @@ const { isKillSwitchEngaged } = require('../services/autoposterKillSwitch');
 const AutoposterEngineConfig = require('../models/AutoposterEngineConfig');
 const { socialLogger } = require('../services/autoposterLogger');
 const log = socialLogger('publisher');
+const { registerWorker } = require('../services/autoposterWorkerRegistry');
 const {
   AUTOPOSTER_ACCOUNT_STATUS,
   AUTOPOSTER_TARGET_STATUS,
@@ -26,6 +27,7 @@ const {
 // seconds" acceptance criterion (Spec 19.2) with margin to spare.
 const BATCH_SIZE = 20;
 let isRunning = false; // same overlap guard as the existing visualSearchCron
+registerWorker('publisher', () => isRunning);
 
 // Stalled-job recovery (Mongo-native equivalent of BullMQ's stalled-job
 // detection, Spec 8.2): a target stuck in 'publishing' past the threshold

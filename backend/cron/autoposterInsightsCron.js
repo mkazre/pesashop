@@ -2,8 +2,10 @@ const cron = require('node-cron');
 const { runInsightsCollection } = require('../services/autoposterInsightsWorker');
 const { socialLogger } = require('../services/autoposterLogger');
 const log = socialLogger('insights');
+const { registerWorker } = require('../services/autoposterWorkerRegistry');
 
 let isRunning = false;
+registerWorker('insights', () => isRunning);
 
 function initAutoposterInsightsCron() {
   cron.schedule('*/30 * * * *', async () => {
