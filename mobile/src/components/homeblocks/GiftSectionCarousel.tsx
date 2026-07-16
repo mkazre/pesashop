@@ -176,7 +176,12 @@ export default function GiftSectionCarousel({ block }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const [activePage, setActivePage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(sections.length / visiblePerSlide));
-  const pageWidth = visiblePerSlide === 1 ? innerWidth : (sectionWidth + sectionGap) * visiblePerSlide;
+  // Distance between consecutive section start-offsets in the flat scroll
+  // content must include the inter-card gap — omitting it here previously
+  // made snapToInterval fall short of each card's true start by `sectionGap`
+  // per step, drifting further right (cutting off the card's own right edge,
+  // including "View all") the deeper you scrolled into the carousel.
+  const pageWidth = (sectionWidth + sectionGap) * visiblePerSlide;
 
   // Autoplay
   useEffect(() => {
