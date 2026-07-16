@@ -111,8 +111,8 @@ export default function InlineLaybyePlans({
         <Switch
           value={enabled}
           onValueChange={handleToggle}
-          trackColor={{ false: colors.gray200, true: colors.primaryLight }}
-          thumbColor={enabled ? colors.primary : colors.gray400}
+          trackColor={{ false: colors.gray300, true: colors.primary }}
+          thumbColor={colors.white}
         />
       </View>
 

@@ -143,6 +143,20 @@ router.post('/my-laybyes/:id/pay', protect, async (req, res, next) => {
           emailService.sendLaybyeCompleted(laybye).catch(e => console.error('Laybye completed email error:', e));
         }
       } catch (emailErr) { console.error('Email sending error (customer laybye payment):', emailErr); }
+
+      // Push notification (non-blocking)
+      try {
+        const notificationService = require('../services/notificationService');
+        const completed = laybye.status === LAYBYE_STATUS.COMPLETED;
+        notificationService.sendToUser(laybye.customer, {
+          title: completed ? 'Laybye completed!' : 'Payment received',
+          body: completed
+            ? `Your laybye #${laybye.laybyeNumber || laybye._id} is now fully paid.`
+            : `We received your payment of R${amount.toFixed(2)} for laybye #${laybye.laybyeNumber || laybye._id}.`,
+          type: 'laybye',
+          actionUrl: `/account/laybye-detail?id=${laybye._id}`,
+        }).catch(e => console.error('Laybye payment push error:', e.message));
+      } catch (pushErr) { console.error('Push send error (laybye payment):', pushErr.message); }
     }
 
     const message = isPending
@@ -454,6 +468,20 @@ router.post('/:id/payments', protect, authorize('admin', 'shop_manager'), async 
         emailService.sendLaybyeCompleted(laybye).catch(e => console.error('Laybye completed email error:', e));
       }
     } catch (emailErr) { console.error('Email sending error (laybye payment):', emailErr); }
+
+    // Push notification (non-blocking)
+    try {
+      const notificationService = require('../services/notificationService');
+      const completed = laybye.status === LAYBYE_STATUS.COMPLETED;
+      notificationService.sendToUser(laybye.customer, {
+        title: completed ? 'Laybye completed!' : 'Payment received',
+        body: completed
+          ? `Your laybye #${laybye.laybyeNumber || laybye._id} is now fully paid.`
+          : `We received your payment of R${amount.toFixed(2)} for laybye #${laybye.laybyeNumber || laybye._id}.`,
+        type: 'laybye',
+        actionUrl: `/account/laybye-detail?id=${laybye._id}`,
+      }).catch(e => console.error('Laybye payment push error:', e.message));
+    } catch (pushErr) { console.error('Push send error (laybye payment):', pushErr.message); }
     
     res.json({
       success: true,

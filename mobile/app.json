@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F604B"
+      "backgroundColor": "#ffffff"
     },
     "newArchEnabled": true,
     "assetBundlePatterns": [
@@ -20,6 +20,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.pesashop.mobile",
       "buildNumber": "1",
+      "associatedDomains": [
+        "applinks:pesashop.com"
+      ],
       "infoPlist": {
         "NSCameraUsageDescription": "Pesa Shop uses your camera to let you upload product review photos.",
         "NSPhotoLibraryUsageDescription": "Pesa Shop accesses your photo library so you can upload profile and review images.",
@@ -32,7 +35,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0F604B"
+        "backgroundColor": "#ffffff"
       },
       "package": "com.pesashop.mobile",
       "versionCode": 1,
@@ -48,6 +51,19 @@
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.WAKE_LOCK"
       ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/product" },
+            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/order" },
+            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/refer" },
+            { "scheme": "https", "host": "pesashop.com", "pathPrefix": "/live" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -68,7 +84,9 @@
           "enableBackgroundRemoteNotifications": true
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-asset",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true

@@ -101,8 +101,39 @@ async function backfillEmbeddings({ limit = 50, force = false } = {}) {
   return { processed: products.length, updated, failed };
 }
 
+// Natural sentences ("I am looking for a Defy Fridge") embed quite differently
+// from the terse catalog-style text products are embedded with ("Defy Fridge
+// Freezer ..."), which dilutes similarity below the relevance threshold.
+// Rewrite conversational queries down to their core search terms first —
+// mirrors the image path, which already goes through describeImage() before
+// embedding. Short queries are left as-is to skip the extra API round trip.
+async function rewriteTextQuery(query) {
+  if (query.trim().split(/\s+/).length <= 3) return query;
+  const apiKey = await getApiKey();
+  if (!apiKey) return query;
+  try {
+    const res = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4o-mini',
+      messages: [{
+        role: 'user',
+        content: `Extract the core product search terms from this shopper's message as a short phrase — brand, product type, and key attributes only, no filler words like "I am looking for" or "do you have". Reply with ONLY the phrase.\n\nMessage: "${query}"`
+      }],
+      max_tokens: 30,
+      temperature: 0,
+    }, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      timeout: 15000,
+    });
+    const rewritten = res.data?.choices?.[0]?.message?.content?.trim();
+    return rewritten || query;
+  } catch (e) {
+    return query; // fail open — fall back to the raw query on any error
+  }
+}
+
 async function searchByText(query, { limit = 12 } = {}) {
-  const vec = await embed(query);
+  const rewritten = await rewriteTextQuery(query);
+  const vec = await embed(rewritten);
   if (!vec) return [];
   return rankByEmbedding(vec, limit);
 }

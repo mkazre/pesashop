@@ -96,6 +96,17 @@ router.post('/:id/take', protect, async (req, res) => {
       });
     } catch (e) { console.error('Offer taken customer email error:', e.message); }
 
+    // Push notification (non-blocking)
+    try {
+      const notificationService = require('../services/notificationService');
+      notificationService.sendToUser(req.user.id, {
+        title: 'Offer confirmed',
+        body: `You've taken "${offer.title}". ${offer.offerType === 'contact_request' ? "We'll be in touch soon." : 'Check My Offers for details.'}`,
+        type: 'offer',
+        actionUrl: '/account/my-offers',
+      }).catch(e => console.error('Offer taken push error:', e.message));
+    } catch (pushErr) { console.error('Push send error (offer taken):', pushErr.message); }
+
     // Admin notification email
     try {
       const settings = await Settings.getSettings();
@@ -284,6 +295,18 @@ router.put('/admin/customer-offers/:id/mark-contacted', protect, authorize('admi
       contactNotes: req.body.notes || ''
     }, { new: true });
     if (!co) return res.status(404).json({ success: false, message: 'Not found.' });
+
+    // Push notification (non-blocking)
+    try {
+      const notificationService = require('../services/notificationService');
+      notificationService.sendToUser(co.customer, {
+        title: 'We\'ve been in touch',
+        body: `You've been marked as contacted for "${co.offerTitle}".`,
+        type: 'offer',
+        actionUrl: '/account/my-offers',
+      }).catch(e => console.error('Offer contacted push error:', e.message));
+    } catch (pushErr) { console.error('Push send error (offer contacted):', pushErr.message); }
+
     res.json({ success: true, data: co });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

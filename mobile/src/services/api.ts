@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { tokenStorage } from '@/utils/tokenStorage';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
@@ -310,6 +312,67 @@ export const notificationsAPI = {
   unsubscribe: (data: any) => api.delete('/api/notifications/subscribe', { data }),
 };
 
+// ─── Returns API ──────────────────────────────────────────────────
+export const returnsAPI = {
+  eligibility: (orderId: string) => api.get(`/api/returns/eligibility/${orderId}`),
+  create: (formData: FormData) => uploadFormData('/api/returns', formData),
+  getMine: () => api.get('/api/returns/mine'),
+  getOne: (id: string) => api.get(`/api/returns/${id}`),
+  dispute: (id: string, reason: string) => api.post(`/api/returns/${id}/dispute`, { reason }),
+};
+
+// ─── Referrals API ────────────────────────────────────────────────
+export const referralsAPI = {
+  lookup: (code: string) => api.get(`/api/referrals/code/${code}`),
+  getMine: () => api.get('/api/referrals/me'),
+  invite: (data: { email: string; channel: string }) => api.post('/api/referrals/invite', data),
+};
+
+// ─── Live Shopping API ────────────────────────────────────────────
+export const liveStreamsAPI = {
+  list: (params?: any) => api.get('/api/live-streams', { params }),
+  current: () => api.get('/api/live-streams/current'),
+  getOne: (id: string) => api.get(`/api/live-streams/${id}`),
+  tap: (id: string, productId: string, action: string) =>
+    api.post(`/api/live-streams/${id}/tap`, { productId, action }),
+};
+
+// ─── Invoices API ─────────────────────────────────────────────────
+export const invoicesAPI = {
+  getMine: () => api.get('/api/invoices/mine'),
+  forOrder: (orderId: string) => api.get(`/api/invoices/order/${orderId}`),
+};
+
+// Downloads the invoice PDF to local cache, then opens the native share/view sheet.
+export async function viewInvoicePDF(orderId: string, invoiceNumber: string): Promise<void> {
+  const token = await tokenStorage.get().catch(() => null);
+  const fileUri = `${FileSystem.cacheDirectory}${invoiceNumber || orderId}.pdf`;
+  const { uri, status, headers } = await FileSystem.downloadAsync(
+    `${API_URL}/api/invoices/order/${orderId}/download`,
+    fileUri,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+  );
+
+  // downloadAsync saves whatever bytes come back regardless of status code —
+  // a 401/404/500 JSON error body would otherwise get written to a .pdf file
+  // and silently handed to the share sheet as if it were a valid invoice.
+  const contentType = headers?.['content-type'] || headers?.['Content-Type'] || '';
+  if (status !== 200 || !contentType.includes('application/pdf')) {
+    const body = await FileSystem.readAsStringAsync(uri).catch(() => '');
+    await FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
+    let message = `Server returned ${status}`;
+    try {
+      const parsed = JSON.parse(body);
+      message = parsed.message || message;
+    } catch {}
+    throw new Error(message);
+  }
+
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
+  }
+}
+
 // ─── Chat API ───────────────────────────────────────────────────
 export const chatAPI = {
   getSettings: () => api.get('/api/chat/settings'),
@@ -366,6 +429,14 @@ export const socialEngineAPI = {
   getVideos: (keywords: string[], limit?: number) =>
     api.get('/api/social-engine/videos', { params: { keywords: (keywords || []).join(','), limit } }),
   getSettings: () => api.get('/api/social-engine/settings'),
+};
+
+// ─── Visual Search API ────────────────────────────────────────────
+export const visualSearchAPI = {
+  byText: (query: string, limit?: number) =>
+    api.post('/api/visual-search/by-text', { query, limit }),
+  byImage: (formData: FormData) =>
+    uploadFormData('/api/visual-search/by-image', formData),
 };
 
 // ─── Service Provider Ads API ────────────────────────────────────

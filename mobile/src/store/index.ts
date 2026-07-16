@@ -15,6 +15,18 @@ interface User {
   phone?: string;
   avatar?: string;
   addresses?: any[];
+  gender?: string;
+  maritalStatus?: string;
+  householdSize?: number;
+  employmentStatus?: string;
+  incomeRange?: string;
+  country?: string;
+  province?: string;
+  suburb?: string;
+  lifeStage?: string;
+  hobbies?: string[];
+  marketingOptIn?: boolean;
+  demographicsConsentGiven?: boolean;
 }
 
 interface AuthState {

@@ -534,6 +534,7 @@ function BannerItemEditor({ banner, index, onChange, onRemove, showRemove }) {
       </div>
       <ImageUploadField label="Image" value={banner.image || ''} onChange={(v) => update('image', v)} />
       <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Heading" value={banner.heading || ''} onChange={(e) => update('heading', e.target.value)} />
+      <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Subtitle" value={banner.subtitle || ''} onChange={(e) => update('subtitle', e.target.value)} />
       <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Label / Tag" value={banner.label || ''} onChange={(e) => update('label', e.target.value)} />
       <div className="grid grid-cols-2 gap-2">
         <input className="text-sm px-3 py-2 border rounded" placeholder="Button Text" value={banner.buttonText || ''} onChange={(e) => update('buttonText', e.target.value)} />

@@ -5,14 +5,18 @@ import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
+import NetInfo from "@react-native-community/netinfo";
 import Toast from "react-native-toast-message";
 import CartSidebar from "@/components/CartSidebar";
 import CheckoutDrawer from "@/components/CheckoutDrawer";
 import OnboardingScreen from "@/components/OnboardingScreen";
 import PopupRenderer from "@/components/PopupRenderer";
+import BiometricLockScreen from "@/components/BiometricLockScreen";
+import NoInternetScreen from "@/components/NoInternetScreen";
 import { useAuthStore, useCurrencyStore } from "@/store";
 import { currenciesAPI } from "@/services/api";
 import { useExpoPush } from "@/hooks/useExpoPush";
+import { isBiometricLockEnabled } from "@/utils/biometricLock";
 import NotificationToast from "@/components/NotificationToast";
 import ChatWidget from "@/components/ChatWidget";
 import { CartSuccessOverlay } from "@/components/CartSuccessOverlay";
@@ -50,7 +54,7 @@ function AppPreloader() {
 
   return (
     <View style={preloaderStyles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Animated.View style={{ opacity: logoOpacity, transform: [{ scale: logoScale }], marginBottom: 48 }}>
         <Image source={LOGO} style={preloaderStyles.logo} contentFit="contain" />
       </Animated.View>
@@ -65,7 +69,7 @@ function AppPreloader() {
 const preloaderStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F604B",
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 40,
@@ -77,13 +81,13 @@ const preloaderStyles = StyleSheet.create({
   progressTrack: {
     width: SCREEN_W * 0.6,
     height: 3,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "#e5e7eb",
     borderRadius: 2,
     overflow: "hidden",
   },
   progressFill: {
     height: 3,
-    backgroundColor: "#E8A838",
+    backgroundColor: "#0F604B",
     borderRadius: 2,
   },
 });
@@ -93,7 +97,26 @@ export default function RootLayout() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const setCurrencies = useCurrencyStore((s) => s.setCurrencies);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [locked, setLocked] = useState(false);
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
+  const [retrying, setRetrying] = useState(false);
   useExpoPush();
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      // Treat "unknown" (null on some platforms/simulators) as connected —
+      // only block on an explicit, confirmed disconnect.
+      setIsConnected(state.isConnected ?? true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const retryConnection = async () => {
+    setRetrying(true);
+    const state = await NetInfo.fetch();
+    setIsConnected(state.isConnected ?? true);
+    setRetrying(false);
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -107,6 +130,7 @@ export default function RootLayout() {
       // Check if onboarding has been completed
       const completed = await OnboardingScreen.hasCompleted();
       setShowOnboarding(!completed);
+      setLocked(await isBiometricLockEnabled());
       await SplashScreen.hideAsync();
     };
     init();
@@ -115,6 +139,17 @@ export default function RootLayout() {
   // Animated preloader while initializing
   if (showOnboarding === null) {
     return <AppPreloader />;
+  }
+
+  // No internet — blocks the whole app until connectivity is confirmed back,
+  // re-checked live via the NetInfo listener above (not just on cold start).
+  if (isConnected === false) {
+    return <NoInternetScreen onRetry={retryConnection} retrying={retrying} />;
+  }
+
+  // Biometric app-unlock gate (checked once per cold start)
+  if (locked) {
+    return <BiometricLockScreen onUnlock={() => setLocked(false)} />;
   }
 
   // Show onboarding if not yet completed
@@ -148,6 +183,10 @@ export default function RootLayout() {
         <Stack.Screen
           name="search"
           options={{ headerShown: false, animation: "fade" }}
+        />
+        <Stack.Screen
+          name="visual-search"
+          options={{ headerShown: false, presentation: "modal" }}
         />
         <Stack.Screen
           name="auth/login"
@@ -247,6 +286,30 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="account/my-offers"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/returns/index"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/returns/new/[orderId]"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/referrals"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account/invoices"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="live/[id]"
+          options={{ headerShown: false, animation: "slide_from_bottom" }}
+        />
+        <Stack.Screen
+          name="refer/[code]"
           options={{ headerShown: false }}
         />
       </Stack>

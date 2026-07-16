@@ -109,7 +109,7 @@ const CountdownBlock = ({ content }: any) => {
   const [timeLeft, setTimeLeft] = useState(calc);
 
   useEffect(() => {
-    const t = setInterval(() => setTimeLeft((p) => Math.max(0, p - 1)), 1000);
+    const t = setInterval(() => setTimeLeft((p: number) => Math.max(0, p - 1)), 1000);
     return () => clearInterval(t);
   }, []);
 
