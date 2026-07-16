@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F604B"
+      "backgroundColor": "#ffffff"
     },
     "newArchEnabled": true,
     "assetBundlePatterns": [
@@ -35,7 +35,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0F604B"
+        "backgroundColor": "#ffffff"
       },
       "package": "com.pesashop.mobile",
       "versionCode": 1,
