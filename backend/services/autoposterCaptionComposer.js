@@ -39,6 +39,18 @@ function cacheKey(trendId, productId, platform, region) {
   return `${trendId}:${productId}:${platform}:${region}`;
 }
 
+// Classifies a caption's opening-hook style (Spec 10.9.2's "differ in
+// opening hook" requirement, and Phase 12's A/B feedback loop needs a label
+// to group performance by). Deterministic and heuristic rather than another
+// LLM call — cheap, and only needs to be roughly right to group variants,
+// not perfectly right for any single caption.
+function classifyVariantStyle(caption) {
+  const opening = (caption || '').trim().slice(0, 40);
+  if (/\?/.test(opening)) return 'question_hook';
+  if (/^[R$£€]?\s*\d/.test(opening)) return 'price_lead';
+  return 'story_lead';
+}
+
 function buildTemplateFallbackCaption(trend, product, platform) {
   const price = product.salePrice || product.regularPrice;
   const priceText = price ? ` — now R${Number(price).toFixed(2)}` : '';
@@ -94,4 +106,4 @@ async function generateCaptionVariants({ trend, product, platform, region = 'loc
   }
 }
 
-module.exports = { generateCaptionVariants, PLATFORM_STYLE_GUIDES, REGION_FRAMING, buildTemplateFallbackCaption };
+module.exports = { generateCaptionVariants, PLATFORM_STYLE_GUIDES, REGION_FRAMING, buildTemplateFallbackCaption, classifyVariantStyle };

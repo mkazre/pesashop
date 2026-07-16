@@ -1,4 +1,4 @@
-const { computeRecencyPenalty, computeCrossRegionDiscount, checkHardCaps, checkCategoryShareCap } = require('./autoposterCooldownGuard');
+const { computeRecencyPenalty, computeCrossRegionDiscount, checkHardCaps, checkCategoryShareCap, computeEngagementGovernor } = require('./autoposterCooldownGuard');
 const { getActiveCulturalEventBoosts } = require('./autoposterTrendIngestionRun');
 
 // Weighted random sampler (Spec Section 10.7):
@@ -53,6 +53,7 @@ async function computeCandidateWeight(trend, product, platform, region) {
   const platformFit = computePlatformFit();
   const culturalBoosts = await getActiveCulturalEventBoosts();
   const culturalEventBoost = culturalBoosts.length > 0 ? Math.max(...culturalBoosts) : 1.0;
+  const engagementGovernor = await computeEngagementGovernor(platform, product.categories);
 
   // Admin "Pin" action (Spec 12.1) — force a high effective score for 24h,
   // bypassing the computed trendScore, rather than editing trendScore itself
@@ -68,9 +69,10 @@ async function computeCandidateWeight(trend, product, platform, region) {
     recencyPenalty *
     crossRegionDiscount *
     platformFit *
-    culturalEventBoost;
+    culturalEventBoost *
+    engagementGovernor;
 
-  return { weight, blocked: false, breakdown: { trendScore: effectiveTrendScore, pinned: isPinned, similarity: product._similarity, marginFactor, stockFactor, recencyPenalty, crossRegionDiscount, platformFit, culturalEventBoost } };
+  return { weight, blocked: false, breakdown: { trendScore: effectiveTrendScore, pinned: isPinned, similarity: product._similarity, marginFactor, stockFactor, recencyPenalty, crossRegionDiscount, platformFit, culturalEventBoost, engagementGovernor } };
 }
 
 // Weighted random selection without replacement (numpy.random.choice

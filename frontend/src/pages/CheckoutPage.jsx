@@ -137,6 +137,11 @@ export default function CheckoutPage() {
         couponCode: couponCode || undefined,
         couponDiscount: couponDiscount || undefined,
         sessionId: sessionStorage.getItem('pesa_sid') || undefined,
+        attribution: {
+          utmSource: sessionStorage.getItem('pesa_utm_source') || undefined,
+          utmMedium: sessionStorage.getItem('pesa_utm_medium') || undefined,
+          utmCampaign: sessionStorage.getItem('pesa_utm_campaign') || undefined,
+        },
       };
 
       const response = await ordersAPI.create(orderData);

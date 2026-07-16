@@ -72,6 +72,31 @@ function ScrollToTop() {
   return null;
 }
 
+// Captures utm_source/utm_medium/utm_campaign from the URL (e.g. a link from
+// a trend-driven auto-post, Social Auto-Poster Phase 12) into sessionStorage,
+// same pass-through pattern as the existing pesa_sid session capture — reads
+// on every location change, writes nothing if the params aren't present, so
+// this has zero effect on the vast majority of visits that don't arrive via
+// a tagged link. Wrapped defensively: a failure here must never affect
+// browsing or checkout.
+function CaptureUtmParams() {
+  const location = useLocation();
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      const utmSource = params.get('utm_source');
+      const utmMedium = params.get('utm_medium');
+      const utmCampaign = params.get('utm_campaign');
+      if (utmSource || utmMedium || utmCampaign) {
+        if (utmSource) sessionStorage.setItem('pesa_utm_source', utmSource);
+        if (utmMedium) sessionStorage.setItem('pesa_utm_medium', utmMedium);
+        if (utmCampaign) sessionStorage.setItem('pesa_utm_campaign', utmCampaign);
+      }
+    } catch { /* sessionStorage unavailable (e.g. private browsing) — never block the page for this */ }
+  }, [location.search]);
+  return null;
+}
+
 function App() {
   const { quickViewProduct, authModalOpen, cartSidebarOpen, checkoutDrawerOpen, closeCheckoutDrawer } = useUIStore();
   const { settings: pageSettings } = useProductPageSettings();
@@ -80,6 +105,7 @@ function App() {
   return (
     <>
       <ScrollToTop />
+      <CaptureUtmParams />
       <Routes>
         {/* Chat Admin - separate login route (outside Layout) - MUST be before catch-all */}
         <Route path="/chat-admin" element={<ChatAdmin />} />

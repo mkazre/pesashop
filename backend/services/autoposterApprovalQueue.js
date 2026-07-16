@@ -3,7 +3,7 @@ const AutoposterPost = require('../models/AutoposterPost');
 const AutoposterPostTarget = require('../models/AutoposterPostTarget');
 const AutoposterAccount = require('../models/AutoposterAccount');
 const AutoposterAuditLog = require('../models/AutoposterAuditLog');
-const { generateCaptionVariants } = require('./autoposterCaptionComposer');
+const { generateCaptionVariants, classifyVariantStyle } = require('./autoposterCaptionComposer');
 const { checkCaptionSafety } = require('./autoposterCaptionSafetyCheck');
 const { isKillSwitchEngaged, setKillSwitch } = require('./autoposterKillSwitch');
 const AutoposterEngineConfig = require('../models/AutoposterEngineConfig');
@@ -32,6 +32,7 @@ async function createPostFromDecision(decision, caption, createdBy) {
     title: `Trend: ${decision.trend.term}`,
     baseCaption: caption,
     linkUrl: `${process.env.FRONTEND_URL || 'https://pesashop.com'}/product/${decision.product.slug}?${utm}`,
+    variantStyle: classifyVariantStyle(caption),
     source: 'trend',
     sourceRef: String(decision.product._id),
     status: AUTOPOSTER_POST_STATUS.SCHEDULED,

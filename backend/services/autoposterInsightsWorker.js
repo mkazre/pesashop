@@ -1,5 +1,9 @@
 const AutoposterPostTarget = require('../models/AutoposterPostTarget');
+const AutoposterPost = require('../models/AutoposterPost');
 const AutoposterInsight = require('../models/AutoposterInsight');
+const AutoposterVariantPerformance = require('../models/AutoposterVariantPerformance');
+const AutoposterAccount = require('../models/AutoposterAccount');
+const Product = require('../models/Product');
 const { getAdapter } = require('./autoposterAdapterRegistry');
 
 // Insights worker (Spec Section 4.4, 12.4, Phase 12): scheduled fetches at
@@ -15,6 +19,32 @@ const WINDOWS = [
 async function windowsAlreadyCaptured(postTargetId) {
   const snapshots = await AutoposterInsight.find({ postTarget: postTargetId }).select('raw.window');
   return new Set(snapshots.map((s) => s.raw?.window).filter(Boolean));
+}
+
+// Feedback loop (Spec 10.9.2, 11.6, Phase 12): feeds ONE mature engagement
+// figure per post into the (platform, category, variantStyle) A/B
+// aggregate — deliberately only the 7d snapshot, not every window. 1h/24h
+// are still-growing numbers; folding them in too would count the same
+// post's engagement multiple times and skew the aggregate toward whichever
+// style happens to get posted more often, not whichever style performs
+// better. A post with no variantStyle (manually composed, not through the
+// trend engine) or no product category simply isn't scored — nothing to
+// group it by.
+async function recordVariantPerformance(target, metrics) {
+  const post = await AutoposterPost.findById(target.post);
+  if (!post?.variantStyle) return;
+
+  const product = post.sourceRef ? await Product.findById(post.sourceRef).select('categories') : null;
+  const category = product?.categories?.[0];
+  if (!category) return;
+
+  const engagement = (metrics?.likes || 0) + (metrics?.comments || 0) + (metrics?.shares || 0) + (metrics?.clicks || 0);
+
+  await AutoposterVariantPerformance.findOneAndUpdate(
+    { platform: target.platform, category: String(category), variantStyle: post.variantStyle },
+    { $inc: { postsCount: 1, totalEngagement: engagement }, $set: { lastUpdated: new Date() } },
+    { upsert: true }
+  );
 }
 
 // Fetches and stores exactly the insight windows that are now due for one
@@ -33,7 +63,7 @@ async function collectInsightsForTarget(target) {
     try {
       const adapter = getAdapter(target.platform);
       if (!adapter.fetchInsights) continue;
-      const account = await require('../models/AutoposterAccount').findById(target.account);
+      const account = await AutoposterAccount.findById(target.account);
       const metrics = await adapter.fetchInsights(target.externalPostId, account);
       await AutoposterInsight.create({
         postTarget: target._id,
@@ -46,6 +76,7 @@ async function collectInsightsForTarget(target) {
         raw: { ...metrics, window: w.key }
       });
       fetched++;
+      if (w.key === '7d') await recordVariantPerformance(target, metrics);
     } catch (error) {
       console.error(`[autoposter-insights] fetch failed for target ${target._id} (${w.key}):`, error.message);
     }
@@ -67,4 +98,4 @@ async function runInsightsCollection() {
   return { targetsChecked: targets.length, snapshotsFetched: totalFetched };
 }
 
-module.exports = { runInsightsCollection, collectInsightsForTarget, windowsAlreadyCaptured, WINDOWS };
+module.exports = { runInsightsCollection, collectInsightsForTarget, windowsAlreadyCaptured, recordVariantPerformance, WINDOWS };

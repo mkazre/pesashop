@@ -158,6 +158,7 @@ router.post('/', protect, async (req, res, next) => {
       currency: clientCurrency,
       exchangeRate: clientExchangeRate,
       sessionId,
+      attribution,
     } = req.body;
     
     let subtotal = 0;
@@ -270,6 +271,7 @@ router.post('/', protect, async (req, res, next) => {
     const order = await Order.create({
       customer: req.user._id,
       sessionId: sessionId || undefined,
+      attribution: (attribution && (attribution.utmSource || attribution.utmMedium || attribution.utmCampaign)) ? attribution : undefined,
       items: orderItems,
       subtotal: finalSubtotal,
       tax: finalTax,

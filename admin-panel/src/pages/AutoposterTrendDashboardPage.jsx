@@ -312,31 +312,59 @@ function InsightsTab() {
         </Card>
 
         <Card title="Variant style performance">
-          <p className="text-sm text-gray-400">
-            {insights.variantStylePerformance.length === 0
-              ? 'No data yet — populated once the Phase 12 insights worker starts recording engagement per variant style.'
-              : `${insights.variantStylePerformance.length} (platform, category, style) cells tracked.`}
-          </p>
+          <div className="space-y-1">
+            {insights.variantStylePerformance.map((v) => (
+              <div key={`${v.platform}-${v.category}-${v.variantStyle}`} className="flex justify-between text-sm">
+                <span className="text-gray-600 truncate">{v.platform} · {v.variantStyle}</span>
+                <span className="font-medium tabular-nums">{v.postsCount === 0 ? 0 : (v.totalEngagement / v.postsCount).toFixed(1)} avg</span>
+              </div>
+            ))}
+            {insights.variantStylePerformance.length === 0 && (
+              <p className="text-sm text-gray-400">No data yet — populated once a post's mature (7-day) engagement is captured by the insights worker.</p>
+            )}
+          </div>
         </Card>
       </div>
 
-      <Card title="Approval rate by platform">
-        <div className="overflow-x-auto">
-          <table className="table">
-            <thead><tr><th>Platform</th><th>Status</th><th className="text-right">Count</th></tr></thead>
-            <tbody>
-              {insights.approvalRateByPlatform.map((r) => (
-                <tr key={`${r._id.platform}-${r._id.status}`}>
-                  <td>{r._id.platform}</td>
-                  <td>{r._id.status}</td>
-                  <td className="text-right tabular-nums">{r.count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {insights.approvalRateByPlatform.length === 0 && <p className="text-sm text-gray-400 py-4">No data yet.</p>}
-        </div>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card title="Approval rate by platform">
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead><tr><th>Platform</th><th>Status</th><th className="text-right">Count</th></tr></thead>
+              <tbody>
+                {insights.approvalRateByPlatform.map((r) => (
+                  <tr key={`${r._id.platform}-${r._id.status}`}>
+                    <td>{r._id.platform}</td>
+                    <td>{r._id.status}</td>
+                    <td className="text-right tabular-nums">{r.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {insights.approvalRateByPlatform.length === 0 && <p className="text-sm text-gray-400 py-4">No data yet.</p>}
+          </div>
+        </Card>
+
+        <Card title="Attributed orders by campaign (real UTM correlation)">
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead><tr><th>Campaign (trend)</th><th className="text-right">Orders</th><th className="text-right">Revenue</th></tr></thead>
+              <tbody>
+                {(insights.attributedOrdersByCampaign || []).map((a) => (
+                  <tr key={a._id || 'unknown'}>
+                    <td className="truncate">{a._id || '(no campaign tag)'}</td>
+                    <td className="text-right tabular-nums">{a.orders}</td>
+                    <td className="text-right tabular-nums">{a.revenue?.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {(!insights.attributedOrdersByCampaign || insights.attributedOrdersByCampaign.length === 0) && (
+              <p className="text-sm text-gray-400 py-4">No attributed orders yet — a customer needs to click a real auto-post link and complete checkout.</p>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

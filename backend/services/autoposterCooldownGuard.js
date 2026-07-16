@@ -1,5 +1,6 @@
 const AutoposterPost = require('../models/AutoposterPost');
 const AutoposterPostTarget = require('../models/AutoposterPostTarget');
+const AutoposterInsight = require('../models/AutoposterInsight');
 const AutoposterEngineConfig = require('../models/AutoposterEngineConfig');
 
 // Cool-down and saturation guard (Spec Section 10.8), scoped per (platform,
@@ -144,10 +145,67 @@ async function checkCategoryShareCap(categoryIds, platform, region) {
   return { blocked: false };
 }
 
+// Engagement governor (Spec 18's risk table: "engagement governor that
+// throttles when performance drops"). Compares the mature (7d) engagement
+// of the most recent posts in this (platform, category) against the batch
+// before them; a real, meaningful drop dampens future weight for that
+// combination rather than continuing to flood a feed that's disengaging.
+// Neutral (1.0, no throttle) whenever there isn't yet enough real data to
+// judge a trend from — exactly the same graceful-degradation default used
+// everywhere else in this module, and the only possible outcome right now
+// since no platform app has been submitted/approved yet.
+const ENGAGEMENT_GOVERNOR_BATCH_SIZE = 5;
+const ENGAGEMENT_GOVERNOR_DROP_THRESHOLD = 0.5; // recent average below 50% of the prior batch's average
+const ENGAGEMENT_GOVERNOR_DAMPING = 0.6;
+
+async function computeEngagementGovernor(platform, categoryIds) {
+  if (!categoryIds || categoryIds.length === 0) return 1.0;
+
+  const targets = await AutoposterPostTarget.aggregate([
+    { $match: { platform, status: 'published' } },
+    { $lookup: { from: 'autoposterposts', localField: 'post', foreignField: '_id', as: 'post' } },
+    { $unwind: '$post' },
+    {
+      $lookup: {
+        from: 'products',
+        let: { sourceRef: '$post.sourceRef' },
+        pipeline: [{ $match: { $expr: { $eq: [{ $toString: '$_id' }, '$$sourceRef'] } } }],
+        as: 'product'
+      }
+    },
+    { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+    { $match: { 'product.categories': { $in: categoryIds } } },
+    { $sort: { publishedAt: -1 } },
+    { $limit: ENGAGEMENT_GOVERNOR_BATCH_SIZE * 2 },
+    { $project: { _id: 1 } }
+  ]);
+
+  if (targets.length < ENGAGEMENT_GOVERNOR_BATCH_SIZE + 3) return 1.0; // not enough mature history to judge a trend
+
+  const insights = await AutoposterInsight.find({
+    postTarget: { $in: targets.map((t) => t._id) },
+    'raw.window': '7d'
+  }).select('postTarget likes comments shares clicks');
+
+  const byTarget = new Map(insights.map((i) => [String(i.postTarget), (i.likes || 0) + (i.comments || 0) + (i.shares || 0) + (i.clicks || 0)]));
+  const ordered = targets.map((t) => byTarget.get(String(t._id))).filter((v) => v !== undefined);
+  if (ordered.length < ENGAGEMENT_GOVERNOR_BATCH_SIZE + 3) return 1.0;
+
+  const recent = ordered.slice(0, ENGAGEMENT_GOVERNOR_BATCH_SIZE);
+  const prior = ordered.slice(ENGAGEMENT_GOVERNOR_BATCH_SIZE);
+  const avg = (arr) => arr.reduce((s, v) => s + v, 0) / arr.length;
+  const recentAvg = avg(recent);
+  const priorAvg = avg(prior);
+
+  if (priorAvg > 0 && recentAvg < priorAvg * ENGAGEMENT_GOVERNOR_DROP_THRESHOLD) return ENGAGEMENT_GOVERNOR_DAMPING;
+  return 1.0;
+}
+
 module.exports = {
   lastPostedAt,
   computeRecencyPenalty,
   computeCrossRegionDiscount,
   checkHardCaps,
-  checkCategoryShareCap
+  checkCategoryShareCap,
+  computeEngagementGovernor
 };

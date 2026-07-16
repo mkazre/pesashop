@@ -33,6 +33,7 @@ const {
   bulkRejectByTrend
 } = require('../services/autoposterApprovalQueue');
 const Product = require('../models/Product');
+const Order = require('../models/Order');
 const { resolveProductPost } = require('../services/autoposterProductPostResolver');
 const { encryptToken } = require('../services/autoposterTokenCrypto');
 const {
@@ -910,11 +911,11 @@ router.delete('/cultural-events/:id', protect, adminOnly, async (req, res) => {
 });
 
 // ─── Performance Insights (Spec 12.4) ──────────────────────────────────────
-// Engagement-based metrics (by source, by variant style, conversion
-// attribution) require the Phase 12 insights worker, which hasn't run yet —
-// those sections come back empty/zero rather than fabricated. What IS real
-// today: rejection analysis and approval rate, both derived straight from
-// AutoposterDecision, which the trend engine has been writing since Phase 9.
+// Rejection analysis and approval rate are derived straight from
+// AutoposterDecision (real since Phase 9). Variant style performance and
+// order attribution are real once the Phase 12 insights worker has actually
+// captured data — both come back empty/zero rather than fabricated until
+// then, since no platform app has been submitted/approved yet.
 router.get('/insights/auto-posts', protect, adminOnly, async (req, res) => {
   try {
     const [byApprovalStatus, rejectionsByTrend, variantPerformance, insightCount] = await Promise.all([
@@ -936,6 +937,17 @@ router.get('/insights/auto-posts', protect, adminOnly, async (req, res) => {
       { $group: { _id: { platform: '$platform', status: '$approvalStatus' }, count: { $sum: 1 } } }
     ]);
 
+    // Order attribution (Spec 12.4): every trend-driven post's link carries
+    // utm_campaign=<trend slug>, utm_medium=social_autopost (Phase 12). Any
+    // real order checked out with matching attribution is a genuine,
+    // traceable conversion — not an estimate.
+    const attributedOrders = await Order.aggregate([
+      { $match: { 'attribution.utmMedium': 'social_autopost' } },
+      { $group: { _id: '$attribution.utmCampaign', orders: { $sum: 1 }, revenue: { $sum: '$total' } } },
+      { $sort: { revenue: -1 } },
+      { $limit: 20 }
+    ]);
+
     res.json({
       success: true,
       data: {
@@ -943,12 +955,24 @@ router.get('/insights/auto-posts', protect, adminOnly, async (req, res) => {
         approvalRateByPlatform,
         topRejectedTrends: rejectionsByTrend,
         variantStylePerformance: variantPerformance,
+        attributedOrdersByCampaign: attributedOrders,
         engagementDataAvailable: insightCount > 0,
         note: insightCount === 0
-          ? 'No post-engagement insights yet — the Phase 12 insights worker (1h/24h/7d fetches) hasn\'t been built/run. Rejection analysis and approval rate above are real, derived from the trend engine\'s own decision log.'
+          ? 'No post-engagement insights captured yet (the Phase 12 worker runs every 30 min but needs a real published post with real platform credentials to fetch anything). Rejection analysis and approval rate above are real, derived from the trend engine\'s own decision log.'
           : undefined
       }
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /insights/:post_target_id (Spec Section 15) — every captured window
+// for one specific published target, most recent first.
+router.get('/insights/:postTargetId', protect, adminOnly, async (req, res) => {
+  try {
+    const snapshots = await AutoposterInsight.find({ postTarget: req.params.postTargetId }).sort({ capturedAt: -1 });
+    res.json({ success: true, data: snapshots });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

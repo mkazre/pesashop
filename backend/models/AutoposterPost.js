@@ -13,6 +13,12 @@ const autoposterPostSchema = new mongoose.Schema({
   }],
   linkUrl: String, // e.g. product URL
 
+  // Which A/B opening-hook style this post's caption used (Spec 10.9.2,
+  // Phase 12's feedback loop) — set at creation time from
+  // autoposterCaptionComposer.classifyVariantStyle, null for manually
+  // composed posts that didn't go through variant generation.
+  variantStyle: String,
+
   source: {
     type: String,
     enum: Object.values(AUTOPOSTER_POST_SOURCE),

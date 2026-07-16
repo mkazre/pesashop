@@ -72,7 +72,18 @@ const orderSchema = new mongoose.Schema({
     type: String,
     index: true
   },
-  
+
+  // UTM attribution (Social Auto-Poster Phase 12, Spec 12.4) — captured
+  // client-side from the URL on landing and carried through checkout, same
+  // sessionStorage pass-through pattern as sessionId above. Entirely
+  // optional; absent for the vast majority of orders that don't originate
+  // from a tagged auto-post link.
+  attribution: {
+    utmSource: String,
+    utmMedium: String,
+    utmCampaign: String
+  },
+
   // Order Items
   items: [orderItemSchema],
   
