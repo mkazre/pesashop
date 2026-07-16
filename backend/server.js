@@ -19,6 +19,7 @@ const { initAutoposterPublisherCron } = require('./cron/autoposterPublisherCron'
 const { initAutoposterTrendIngestionCron } = require('./cron/autoposterTrendIngestionCron');
 const { initAutoposterComposerCron } = require('./cron/autoposterComposerCron');
 const { initAutoposterInsightsCron } = require('./cron/autoposterInsightsCron');
+const { initAutoposterAlertsCron } = require('./cron/autoposterAlertsCron');
 
 // Initialize express app
 const app = express();
@@ -326,6 +327,9 @@ initAutoposterComposerCron();
 
 // Social Auto-Poster: insights collection — 1h/24h/7d post-publish (Phase 12)
 initAutoposterInsightsCron();
+
+// Social Auto-Poster: observability alerts — thresholds from Spec Section 17 (Phase 13)
+initAutoposterAlertsCron();
 
 // Process scheduled notifications every 60 seconds
 const notificationService = require('./services/notificationService');

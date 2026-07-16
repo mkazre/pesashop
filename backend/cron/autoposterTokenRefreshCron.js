@@ -3,6 +3,8 @@ const AutoposterAccount = require('../models/AutoposterAccount');
 const AutoposterAuditLog = require('../models/AutoposterAuditLog');
 const { encryptToken, decryptToken } = require('../services/autoposterTokenCrypto');
 const { AUTOPOSTER_ACCOUNT_STATUS } = require('../config/constants');
+const { socialLogger } = require('../services/autoposterLogger');
+const log = socialLogger('token-refresh');
 
 const ADAPTERS = {
   facebook: require('../services/autoposterOAuthFacebook'),
@@ -49,6 +51,8 @@ async function refreshExpiringAccounts() {
         entityId: String(account._id),
         payload: { platform: account.platform, error: e.message }
       });
+      // Alert-worthy (Spec 17): "any account moving to needs_reauth".
+      log.warn({ account_id: String(account._id), platform: account.platform }, 'Account moved to needs_reauth');
       failed++;
     }
   }
@@ -60,11 +64,9 @@ function initAutoposterTokenRefreshCron() {
   cron.schedule('0 3 * * *', async () => {
     try {
       const result = await refreshExpiringAccounts();
-      if (result.checked > 0) {
-        console.log(`[autoposter] token refresh: ${result.refreshed} refreshed, ${result.failed} need reauth, ${result.checked} checked`);
-      }
+      if (result.checked > 0) log.info(result, 'Token refresh sweep complete');
     } catch (e) {
-      console.error('[autoposter] token refresh cron error:', e.message);
+      log.error({ err: e.message }, 'Token refresh cron error');
     }
   });
 

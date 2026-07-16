@@ -1,5 +1,6 @@
 const axios = require('axios');
 const AutoposterBlocklistTerm = require('../models/AutoposterBlocklistTerm');
+const { recordLLMSpend, isLLMBudgetExceeded } = require('./autoposterCostControl');
 
 // Brand safety, layer 2 of 3 (Spec 10.10): "every generated caption is
 // reviewed by Claude." Distinct from Phase 9's layer 3 (which classifies
@@ -28,6 +29,12 @@ async function checkCaptionWithLLM(caption) {
   if (!apiKey) {
     return { checked: false, safe: true, reason: 'LLM classifier not configured (static blocklist check still applied)' };
   }
+  // Cost control (Spec 28.1) — skipping this layer under budget pressure
+  // never makes a caption LESS safe (it can only widen to "not checked,
+  // static blocklist still applies"), same shape as the missing-API-key path.
+  if (await isLLMBudgetExceeded()) {
+    return { checked: false, safe: true, reason: 'LLM monthly budget exceeded (static blocklist check still applied)' };
+  }
   const prompt = `Is this caption safe for a politically neutral commercial e-commerce brand in Zimbabwe to publish? Consider political figures, parties, currency crises, fuel shortages, ZESA/electricity outages, religious or tribal controversy. Caption: "${caption}"\nReply with exactly one word, "yes" or "no", then a hyphen, then a one-sentence reason.`;
   try {
     const res = await axios.post(
@@ -35,6 +42,7 @@ async function checkCaptionWithLLM(caption) {
       { model: 'claude-haiku-4-5-20251001', max_tokens: 100, messages: [{ role: 'user', content: prompt }] },
       { headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' } }
     );
+    await recordLLMSpend(res.data?.usage);
     const text = res.data?.content?.[0]?.text?.trim() || '';
     return { checked: true, safe: /^yes\b/i.test(text), reason: text };
   } catch (error) {

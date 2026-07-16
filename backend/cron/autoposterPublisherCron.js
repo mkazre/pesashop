@@ -8,6 +8,8 @@ const publisherStub = require('../services/autoposterPublisherStub');
 const { getAdapter } = require('../services/autoposterAdapterRegistry');
 const { isKillSwitchEngaged } = require('../services/autoposterKillSwitch');
 const AutoposterEngineConfig = require('../models/AutoposterEngineConfig');
+const { socialLogger } = require('../services/autoposterLogger');
+const log = socialLogger('publisher');
 const {
   AUTOPOSTER_ACCOUNT_STATUS,
   AUTOPOSTER_TARGET_STATUS,
@@ -144,6 +146,7 @@ async function processTarget(target) {
   target.processingStartedAt = new Date();
   await target.save();
 
+  const startedAt = Date.now();
   try {
     // AUTOPOSTER_DRY_RUN=true uses the Phase 4 stub (including its
     // FORCE_TRANSIENT_FAIL/FORCE_PERMANENT_FAIL test markers) instead of
@@ -167,6 +170,15 @@ async function processTarget(target) {
       payload: { platform: target.platform, externalPostId: result.externalPostId }
     });
 
+    // Spec 29.4's literal example log shape.
+    log.info({
+      platform: target.platform,
+      post_target_id: String(target._id),
+      account_id: String(target.account),
+      attempt: target.attemptCount || 1,
+      duration_ms: Date.now() - startedAt
+    }, 'Publish succeeded');
+
     await rollupPostStatus(target.post);
     return 'published';
   } catch (error) {
@@ -179,6 +191,17 @@ async function processTarget(target) {
       entityId: String(target._id),
       payload: { platform: target.platform, attemptCount: target.attemptCount, error: error.message, ...outcome }
     });
+
+    log.warn({
+      platform: target.platform,
+      post_target_id: String(target._id),
+      account_id: String(target.account),
+      attempt: target.attemptCount,
+      duration_ms: Date.now() - startedAt,
+      outcome: outcome.outcome
+      // never the raw error object — Spec 29.4 forbids logging full API responses;
+      // classifyAndScheduleRetry already extracted just error.message onto the target
+    }, 'Publish failed');
 
     await rollupPostStatus(target.post);
     return outcome.outcome;
@@ -208,10 +231,10 @@ function initAutoposterPublisherCron() {
     isRunning = true;
     try {
       const { recovered, processed } = await runPublisherTick();
-      if (recovered > 0) console.log(`[autoposter] publisher: recovered ${recovered} stalled target(s)`);
-      if (processed > 0) console.log(`[autoposter] publisher: processed ${processed} target(s)`);
+      if (recovered > 0) log.warn({ recovered }, 'Recovered stalled target(s)');
+      if (processed > 0) log.info({ processed }, 'Publisher tick processed target(s)');
     } catch (e) {
-      console.error('[autoposter] publisher cron error:', e.message);
+      log.error({ err: e.message }, 'Publisher cron error');
     } finally {
       isRunning = false;
     }

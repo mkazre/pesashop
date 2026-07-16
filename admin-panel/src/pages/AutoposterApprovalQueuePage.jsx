@@ -160,7 +160,7 @@ function ApprovalCard({ decision, onApprove, onReject, onSnooze, busy }) {
   );
 }
 
-export default function AutoposterApprovalQueuePage() {
+export default function AutoposterApprovalQueuePage({ showKillSwitch = true } = {}) {
   const queryClient = useQueryClient();
   const [busyId, setBusyId] = useState(null);
   const [busyAction, setBusyAction] = useState(null);
@@ -285,26 +285,28 @@ export default function AutoposterApprovalQueuePage() {
         </div>
       </div>
 
-      <div
-        className={`flex items-center justify-between px-4 py-3 rounded-lg border ${
-          killSwitchEngaged ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <IoPowerOutline size={20} className={killSwitchEngaged ? 'text-red-600' : 'text-green-600'} />
-          <span className={`font-medium ${killSwitchEngaged ? 'text-red-700' : 'text-green-700'}`}>
-            Trend Engine: {killSwitchEngaged ? 'Paused' : 'Running'}
-          </span>
-        </div>
-        <Button
-          variant={killSwitchEngaged ? 'success' : 'danger'}
-          size="sm"
-          loading={killSwitchMutation.isLoading}
-          onClick={() => killSwitchMutation.mutate()}
+      {showKillSwitch && (
+        <div
+          className={`flex items-center justify-between px-4 py-3 rounded-lg border ${
+            killSwitchEngaged ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
+          }`}
         >
-          {killSwitchEngaged ? 'Resume Engine' : 'Pause Engine'}
-        </Button>
-      </div>
+          <div className="flex items-center gap-2">
+            <IoPowerOutline size={20} className={killSwitchEngaged ? 'text-red-600' : 'text-green-600'} />
+            <span className={`font-medium ${killSwitchEngaged ? 'text-red-700' : 'text-green-700'}`}>
+              Trend Engine: {killSwitchEngaged ? 'Paused' : 'Running'}
+            </span>
+          </div>
+          <Button
+            variant={killSwitchEngaged ? 'success' : 'danger'}
+            size="sm"
+            loading={killSwitchMutation.isLoading}
+            onClick={() => killSwitchMutation.mutate()}
+          >
+            {killSwitchEngaged ? 'Resume Engine' : 'Pause Engine'}
+          </Button>
+        </div>
+      )}
 
       {decisions.length > 0 && (
         <Card title="Bulk actions">

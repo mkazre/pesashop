@@ -30,6 +30,14 @@ async function embed(text) {
     headers: { Authorization: `Bearer ${apiKey}` },
     timeout: 30000
   });
+  // Cost tracking (Social Auto-Poster Phase 13, Spec 28.1) — this function is
+  // shared with the pre-existing visual search feature, so recording spend
+  // is a side-effect only, wrapped defensively: a ledger write failure must
+  // never break embedding generation for either caller.
+  try {
+    const { recordEmbeddingSpend } = require('./autoposterCostControl');
+    await recordEmbeddingSpend(res.data?.usage?.total_tokens);
+  } catch { /* never let cost tracking break the actual embedding feature */ }
   return res.data?.data?.[0]?.embedding || null;
 }
 

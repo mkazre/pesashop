@@ -836,6 +836,9 @@ export const autoposterAPI = {
   getAutoPostInsights: () => api.get('/autoposter/insights/auto-posts'),
   getEngineConfig: () => api.get('/autoposter/engine/config'),
   updateEngineConfig: (data) => api.put('/autoposter/engine/config', data),
+  // Observability + Cost Controls (Phase 13)
+  getAutoposterMetrics: () => api.get('/autoposter/metrics'),
+  getAutoposterCosts: () => api.get('/autoposter/costs'),
 };
 
 export default api;

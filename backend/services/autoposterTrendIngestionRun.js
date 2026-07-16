@@ -7,7 +7,8 @@ const {
   fetchXTrending,
   fetchTikTokDiscover,
   fetchFirstPartySearch,
-  fetchFirstPartyOrderVelocity
+  fetchFirstPartyOrderVelocity,
+  wasSerpApiLastAttemptFailed
 } = require('./autoposterTrendSources');
 const {
   normaliseVolume,
@@ -203,7 +204,14 @@ async function runTrendIngestion() {
     }
   }
 
-  return { termsProcessed: grouped.size, created, updated, blocked, sourcesReporting: { serpapi: serpapi.length, googleFallback: googleFallback.length, xTrends: xTrends.length, tiktok: tiktok.length, firstPartySearch: firstPartySearch.length, orderVelocity: orderVelocity.length } };
+  return {
+    termsProcessed: grouped.size,
+    created,
+    updated,
+    blocked,
+    sourcesReporting: { serpapi: serpapi.length, googleFallback: googleFallback.length, xTrends: xTrends.length, tiktok: tiktok.length, firstPartySearch: firstPartySearch.length, orderVelocity: orderVelocity.length },
+    primarySourceFailed: wasSerpApiLastAttemptFailed() // Spec 17 alert: "trend ingestion failures from primary source"
+  };
 }
 
 module.exports = { runTrendIngestion, checkBlocklist, getActiveCulturalEventBoosts, slugify };

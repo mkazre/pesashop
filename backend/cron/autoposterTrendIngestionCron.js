@@ -1,5 +1,8 @@
 const cron = require('node-cron');
 const { runTrendIngestion } = require('../services/autoposterTrendIngestionRun');
+const AutoposterAuditLog = require('../models/AutoposterAuditLog');
+const { socialLogger } = require('../services/autoposterLogger');
+const log = socialLogger('trend-ingestion');
 
 // Hourly trend ingestion (Spec Section 10.3). No Redis-lock-based singleton
 // guard is needed here (unlike Spec 27.2's "use a Redis lock to enforce") —
@@ -13,11 +16,16 @@ function initAutoposterTrendIngestionCron() {
   cron.schedule('0 * * * *', async () => {
     if (isRunning) return;
     isRunning = true;
+    const startedAt = Date.now();
     try {
       const result = await runTrendIngestion();
-      console.log(`[autoposter-trends] ingestion run: ${result.termsProcessed} term(s) processed, ${result.created} created, ${result.updated} updated, ${result.blocked} blocked by blocklist`);
+      log.info({ ...result, duration_ms: Date.now() - startedAt }, 'Trend ingestion run complete');
+      // Alert-worthy (Spec 17): "trend ingestion failures from primary source".
+      if (result.primarySourceFailed) {
+        await AutoposterAuditLog.create({ action: 'trend_ingestion_primary_source_failed', entityType: 'AutoposterTrend', entityId: 'ingestion-run', payload: {} });
+      }
     } catch (e) {
-      console.error('[autoposter-trends] ingestion cron error:', e.message);
+      log.error({ err: e.message, duration_ms: Date.now() - startedAt }, 'Trend ingestion cron error');
     } finally {
       isRunning = false;
     }

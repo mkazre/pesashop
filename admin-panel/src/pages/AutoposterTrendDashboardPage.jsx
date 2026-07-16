@@ -18,6 +18,7 @@ import {
   IoAddOutline,
   IoTrashOutline,
   IoCreateOutline,
+  IoPowerOutline,
 } from 'react-icons/io5';
 
 const PLATFORMS = ['facebook', 'instagram', 'x', 'linkedin', 'tiktok'];
@@ -27,6 +28,7 @@ const TABS = [
   { key: 'approvals', label: 'Approval Queue' },
   { key: 'calendar', label: 'Cultural Calendar' },
   { key: 'insights', label: 'Performance Insights' },
+  { key: 'observability', label: 'Observability & Cost' },
   { key: 'config', label: 'Configuration' },
 ];
 
@@ -520,6 +522,133 @@ function ConfigTab() {
   );
 }
 
+// Prominent, dashboard-header-level kill switch (Spec 12.5, 13's "Kill
+// switch is prominent in the dashboard header") — visible regardless of
+// which tab is active, not just when looking at the Approval Queue.
+function DashboardHeaderKillSwitch() {
+  const queryClient = useQueryClient();
+  const { data } = useQuery('autoposter-engine-status', () => autoposterAPI.getEngineStatus(), { refetchInterval: 30000 });
+  const killSwitchEngaged = !!data?.data?.data?.killSwitchEnabled;
+
+  const mutation = useMutation(
+    () => (killSwitchEngaged ? autoposterAPI.resumeEngine() : autoposterAPI.pauseEngine()),
+    {
+      onSuccess: () => {
+        toast.success(killSwitchEngaged ? 'Engine resumed' : 'Engine paused — trend-driven posts will not publish');
+        queryClient.invalidateQueries('autoposter-engine-status');
+      },
+      onError: (error) => toast.error(error.response?.data?.message || 'Could not toggle engine'),
+    }
+  );
+
+  return (
+    <div className={`flex items-center justify-between px-4 py-3 rounded-lg border ${killSwitchEngaged ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+      <div className="flex items-center gap-2">
+        <IoPowerOutline size={22} className={killSwitchEngaged ? 'text-red-600' : 'text-green-600'} />
+        <span className={`font-semibold ${killSwitchEngaged ? 'text-red-700' : 'text-green-700'}`}>
+          Trend Engine: {killSwitchEngaged ? 'PAUSED' : 'Running'}
+        </span>
+      </div>
+      <Button variant={killSwitchEngaged ? 'success' : 'danger'} loading={mutation.isLoading} onClick={() => mutation.mutate()}>
+        {killSwitchEngaged ? 'Resume Engine' : 'Pause Engine'}
+      </Button>
+    </div>
+  );
+}
+
+// Compact admin-dashboard surfaces (Spec 17): needs_reauth count, failed
+// posts in 24h, approval queue depth, LLM spend vs budget — visible at a
+// glance regardless of tab.
+function DashboardHeaderStats() {
+  const { data } = useQuery('autoposter-metrics-summary', () => autoposterAPI.getAutoposterMetrics(), { refetchInterval: 60000 });
+  const { data: costsData } = useQuery('autoposter-costs-summary', () => autoposterAPI.getAutoposterCosts(), { refetchInterval: 60000 });
+  const summary = data?.data?.data;
+  const costs = costsData?.data?.data;
+  if (!summary) return null;
+
+  const stats = [
+    { label: 'Needs reauth', value: summary.dashboard.needsReauthCount, warn: summary.dashboard.needsReauthCount > 0 },
+    { label: 'Failed posts (24h)', value: summary.dashboard.failedPostsLast24h, warn: summary.dashboard.failedPostsLast24h > 0 },
+    { label: 'Approval queue', value: summary.dashboard.approvalQueueDepth, warn: summary.dashboard.approvalQueueDepth > 50 },
+    { label: 'LLM spend this month', value: costs ? `$${costs.llmSpendUSD.toFixed(2)}${costs.llmMonthlyBudgetUSD ? ` / $${costs.llmMonthlyBudgetUSD}` : ''}` : '—', warn: costs?.llmBudgetExceeded },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {stats.map((s) => (
+        <div key={s.label} className={`rounded-lg border px-3 py-2 ${s.warn ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
+          <p className="text-xs text-gray-500">{s.label}</p>
+          <p className={`text-lg font-semibold ${s.warn ? 'text-red-700' : ''}`}>{s.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ObservabilityTab() {
+  const { data } = useQuery('autoposter-metrics-full', () => autoposterAPI.getAutoposterMetrics());
+  const { data: costsData } = useQuery('autoposter-costs-full', () => autoposterAPI.getAutoposterCosts());
+  const m = data?.data?.data;
+  const costs = costsData?.data?.data;
+  if (!m || !costs) return <p className="text-sm text-gray-400">Loading…</p>;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card title="Publishing (last 24h)">
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between"><span className="text-gray-600">Published</span><span className="font-medium tabular-nums">{m.publish.publishedLast24h}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Failed</span><span className="font-medium tabular-nums">{m.publish.failedLast24h}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Success:failure ratio</span><span className="font-medium tabular-nums">{m.publish.successFailureRatio ?? '—'}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Avg schedule→publish latency</span><span className="font-medium tabular-nums">{m.publish.avgEndToEndLatencyMs != null ? `${Math.round(m.publish.avgEndToEndLatencyMs / 1000)}s` : '—'}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Queue depth</span><span className="font-medium tabular-nums">{m.publish.queueDepth}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Token refresh failures (24h)</span><span className="font-medium tabular-nums">{m.tokenRefreshFailuresLast24h}</span></div>
+          </div>
+        </Card>
+
+        <Card title="Trend engine">
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between"><span className="text-gray-600">Candidates in most recent run</span><span className="font-medium tabular-nums">{m.trend.candidatesInMostRecentRun}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Brand-safety rejections (24h)</span><span className="font-medium tabular-nums">{m.trend.brandSafetyRejectionsLast24h}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Avg composer LLM latency</span><span className="font-medium tabular-nums">{m.trend.avgComposerLLMLatencyMs != null ? `${m.trend.avgComposerLLMLatencyMs}ms` : 'not enough data yet'}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Embedding spend this month</span><span className="font-medium tabular-nums">${m.trend.embeddingSpendUSDThisMonth}</span></div>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card title="Cost budget (Spec 28)">
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between"><span className="text-gray-600">LLM spend this month</span><span className="font-medium tabular-nums">${costs.llmSpendUSD}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Monthly budget (LLM_MONTHLY_BUDGET_USD)</span><span className="font-medium tabular-nums">{costs.llmMonthlyBudgetUSD ? `$${costs.llmMonthlyBudgetUSD}` : 'no cap set'}</span></div>
+            {costs.llmBudgetExceeded && <p className="text-red-600 text-xs">Budget exceeded — composer is using template-only captions.</p>}
+            <div className="flex justify-between"><span className="text-gray-600">Embedding spend this month</span><span className="font-medium tabular-nums">${costs.embeddingSpendUSD}</span></div>
+          </div>
+        </Card>
+
+        <Card title="X (Twitter) usage monitor">
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between"><span className="text-gray-600">Posts this month</span><span className="font-medium tabular-nums">{costs.xUsage.count} / {costs.xUsage.cap}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">% of monthly cap</span><span className={`font-medium tabular-nums ${costs.xUsage.percent > 80 ? 'text-red-600' : ''}`}>{costs.xUsage.percent}%</span></div>
+          </div>
+        </Card>
+      </div>
+
+      <Card title="Next 10 scheduled posts">
+        <div className="space-y-1 text-sm">
+          {m.dashboard.nextScheduled.map((t) => (
+            <div key={t._id} className="flex justify-between">
+              <span className="text-gray-600">{t.platform}</span>
+              <span className="tabular-nums">{new Date(t.scheduledFor).toLocaleString()}</span>
+            </div>
+          ))}
+          {m.dashboard.nextScheduled.length === 0 && <p className="text-gray-400">Nothing scheduled.</p>}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 export default function AutoposterTrendDashboardPage() {
   const [tab, setTab] = useState('trends');
 
@@ -529,6 +658,9 @@ export default function AutoposterTrendDashboardPage() {
         <h1 className="text-3xl font-bold">Social Auto-Poster — Trend Dashboard</h1>
         <p className="text-gray-500 mt-1">Full visibility and control over the trend engine (Spec Section 12).</p>
       </div>
+
+      <DashboardHeaderKillSwitch />
+      <DashboardHeaderStats />
 
       <div className="flex gap-1 border-b overflow-x-auto">
         {TABS.map((t) => (
@@ -545,9 +677,10 @@ export default function AutoposterTrendDashboardPage() {
       </div>
 
       {tab === 'trends' && <TrendsTab />}
-      {tab === 'approvals' && <AutoposterApprovalQueuePage />}
+      {tab === 'approvals' && <AutoposterApprovalQueuePage showKillSwitch={false} />}
       {tab === 'calendar' && <CalendarTab />}
       {tab === 'insights' && <InsightsTab />}
+      {tab === 'observability' && <ObservabilityTab />}
       {tab === 'config' && <ConfigTab />}
     </div>
   );

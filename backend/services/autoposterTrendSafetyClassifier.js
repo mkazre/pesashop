@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { AUTOPOSTER_SENSITIVITY } = require('../config/constants');
+const { recordLLMSpend, isLLMBudgetExceeded } = require('./autoposterCostControl');
 
 // Brand safety, layer 3 of 3 (Spec Section 10.10): "any trend term that...
 // the LLM classifies as politically sensitive is excluded from candidacy
@@ -18,6 +19,10 @@ async function classifyTrendSafety(term) {
     console.log(`[autoposter-trends] LLM safety classifier skipped for "${term}" — ANTHROPIC_API_KEY not set (static blocklist, layer 1, still applies)`);
     return { classified: false, sensitive: false, reason: 'LLM classifier not configured' };
   }
+  if (await isLLMBudgetExceeded()) {
+    console.log(`[autoposter-trends] LLM safety classifier skipped for "${term}" — LLM_MONTHLY_BUDGET_USD exceeded (static blocklist, layer 1, still applies)`);
+    return { classified: false, sensitive: false, reason: 'LLM monthly budget exceeded' };
+  }
 
   const prompt = `Is the search/social trend term "${term}" safe for a politically neutral commercial e-commerce brand in Zimbabwe to auto-post content near, in a Zimbabwean cultural context? Consider political figures, parties, currency crises, fuel shortages, ZESA/electricity outages, religious or tribal controversy. Reply with exactly one word, "yes" or "no", then a hyphen, then a one-sentence reason.`;
 
@@ -31,6 +36,7 @@ async function classifyTrendSafety(term) {
       },
       { headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' } }
     );
+    await recordLLMSpend(res.data?.usage);
     const text = res.data?.content?.[0]?.text?.trim() || '';
     const sensitive = /^no\b/i.test(text);
     return { classified: true, sensitive, reason: text };

@@ -417,6 +417,32 @@ class EmailService {
   }
 
   /**
+   * Send a generic admin alert (Social Auto-Poster Phase 13, Spec 17) — a
+   * plain-text/HTML notification for an observability threshold breach.
+   * Deliberately not gated on the emailNotifications preference toggles
+   * (those are customer-lifecycle notifications); only requires a
+   * configured store admin email, same lookup as sendAdminNewOrder.
+   */
+  async sendAdminAlert(subject, message) {
+    try {
+      const Settings = require('../models/Settings');
+      const settings = await Settings.getSettings();
+      const adminEmail = settings.storeEmail;
+      if (!adminEmail) return { sent: false, reason: 'no admin email configured' };
+
+      await this.sendEmail({
+        to: adminEmail,
+        subject: `[PesaShop Auto-Poster Alert] ${subject}`,
+        html: `<p>${message}</p>`,
+        text: message
+      });
+      return { sent: true };
+    } catch (error) {
+      return { sent: false, reason: error.message };
+    }
+  }
+
+  /**
    * Send new order admin notification
    */
   async sendAdminNewOrder(order) {

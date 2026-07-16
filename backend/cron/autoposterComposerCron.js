@@ -1,5 +1,7 @@
 const cron = require('node-cron');
 const { composeOutstandingDecisions } = require('../services/autoposterApprovalQueue');
+const { socialLogger } = require('../services/autoposterLogger');
+const log = socialLogger('composer');
 
 // Generates captions for newly-selected trend/product decisions and runs
 // the caption-level safety check, every 15 minutes — frequent enough that a
@@ -14,9 +16,9 @@ function initAutoposterComposerCron() {
     isRunning = true;
     try {
       const result = await composeOutstandingDecisions();
-      if (result.composed > 0) console.log(`[autoposter-composer] composed captions for ${result.composed} decision(s)`);
+      if (result.composed > 0) log.info(result, 'Composed captions for decision(s)');
     } catch (e) {
-      console.error('[autoposter-composer] composer cron error:', e.message);
+      log.error({ err: e.message }, 'Composer cron error');
     } finally {
       isRunning = false;
     }

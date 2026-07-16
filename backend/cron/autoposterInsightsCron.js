@@ -1,5 +1,7 @@
 const cron = require('node-cron');
 const { runInsightsCollection } = require('../services/autoposterInsightsWorker');
+const { socialLogger } = require('../services/autoposterLogger');
+const log = socialLogger('insights');
 
 let isRunning = false;
 
@@ -9,9 +11,9 @@ function initAutoposterInsightsCron() {
     isRunning = true;
     try {
       const { targetsChecked, snapshotsFetched } = await runInsightsCollection();
-      if (snapshotsFetched > 0) console.log(`[autoposter] insights: fetched ${snapshotsFetched} snapshot(s) across ${targetsChecked} published target(s)`);
+      if (snapshotsFetched > 0) log.info({ targetsChecked, snapshotsFetched }, 'Insights collection complete');
     } catch (e) {
-      console.error('[autoposter] insights cron error:', e.message);
+      log.error({ err: e.message }, 'Insights cron error');
     } finally {
       isRunning = false;
     }

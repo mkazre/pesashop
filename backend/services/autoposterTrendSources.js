@@ -13,6 +13,14 @@ const { AUTOPOSTER_ACCOUNT_STATUS } = require('../config/constants');
 // used for the OAuth adapters in Phases 2/5 — never a fake/fabricated result.
 
 // ─── SerpAPI Google Trends (primary, paid) ─────────────────────────────────
+// Tracked separately from the return value (which stays a plain array, so
+// every existing caller/spread is untouched): whether the LAST real attempt
+// (key configured, request actually made) failed — a missing key is a
+// deliberate skip, not a failure, and shouldn't fire Spec 17's "trend
+// ingestion failures from primary source" alert.
+let lastSerpApiAttemptFailed = false;
+function wasSerpApiLastAttemptFailed() { return lastSerpApiAttemptFailed; }
+
 async function fetchSerpApiTrends() {
   const apiKey = process.env.SERPAPI_KEY;
   if (!apiKey) {
@@ -23,10 +31,12 @@ async function fetchSerpApiTrends() {
     const res = await axios.get('https://serpapi.com/search', {
       params: { engine: 'google_trends_trending_now', geo: 'ZW', api_key: apiKey }
     });
+    lastSerpApiAttemptFailed = false;
     const items = res.data?.trending_searches || res.data?.daily_searches || [];
     return items.slice(0, 25).map((item) => ({ term: item.query || item.title || String(item), source: 'serpapi', geo: 'ZW' }));
   } catch (error) {
     console.error('[autoposter-trends] SerpAPI request failed:', error.message);
+    lastSerpApiAttemptFailed = true;
     return [];
   }
 }
@@ -137,5 +147,6 @@ module.exports = {
   fetchXTrending,
   fetchTikTokDiscover,
   fetchFirstPartySearch,
-  fetchFirstPartyOrderVelocity
+  fetchFirstPartyOrderVelocity,
+  wasSerpApiLastAttemptFailed
 };

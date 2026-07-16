@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { recordLLMSpend, isLLMBudgetExceeded, recordLLMLatency } = require('./autoposterCostControl');
 
 // Per-Platform Format Generator (Spec Section 10.9). Same trend + product,
 // rendered differently per platform, with region-aware framing (Spec
@@ -58,11 +59,14 @@ function buildTemplateFallbackCaption(trend, product, platform) {
 }
 
 async function callClaude(prompt, apiKey) {
+  const startedAt = Date.now();
   const res = await axios.post(
     'https://api.anthropic.com/v1/messages',
     { model: 'claude-haiku-4-5-20251001', max_tokens: 400, messages: [{ role: 'user', content: prompt }] },
     { headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' } }
   );
+  recordLLMLatency(Date.now() - startedAt); // Spec 17's "average composer LLM latency" metric
+  await recordLLMSpend(res.data?.usage); // Spec 28: real spend, from this response's own reported token usage
   return res.data?.content?.[0]?.text?.trim() || '';
 }
 
@@ -76,6 +80,16 @@ async function generateCaptionVariants({ trend, product, platform, region = 'loc
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     console.log(`[autoposter-composer] ANTHROPIC_API_KEY not set — using a plain template caption for ${platform} (no real variant generation)`);
+    const fallback = [buildTemplateFallbackCaption(trend, product, platform)];
+    captionCache.set(key, { variants: fallback, at: Date.now() });
+    return fallback;
+  }
+
+  // Cost control (Spec 28.1): "engine pauses LLM-driven composition when
+  // [the monthly budget is] exceeded, falling back to template-only
+  // captions" — same fallback path as a missing API key.
+  if (await isLLMBudgetExceeded()) {
+    console.log(`[autoposter-composer] LLM_MONTHLY_BUDGET_USD exceeded — using a plain template caption for ${platform}`);
     const fallback = [buildTemplateFallbackCaption(trend, product, platform)];
     captionCache.set(key, { variants: fallback, at: Date.now() });
     return fallback;

@@ -34,6 +34,9 @@ const {
 } = require('../services/autoposterApprovalQueue');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const AutoposterCostLedger = require('../models/AutoposterCostLedger');
+const { getObservabilitySummary } = require('../services/autoposterMetrics');
+const { isLLMBudgetExceeded, getXUsagePercent } = require('../services/autoposterCostControl');
 const { resolveProductPost } = require('../services/autoposterProductPostResolver');
 const { encryptToken } = require('../services/autoposterTokenCrypto');
 const {
@@ -973,6 +976,38 @@ router.get('/insights/:postTargetId', protect, adminOnly, async (req, res) => {
   try {
     const snapshots = await AutoposterInsight.find({ postTarget: req.params.postTargetId }).sort({ capturedAt: -1 });
     res.json({ success: true, data: snapshots });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Observability (Spec Section 17) ───────────────────────────────────────
+router.get('/metrics', protect, adminOnly, async (req, res) => {
+  try {
+    const summary = await getObservabilitySummary();
+    res.json({ success: true, data: summary });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Cost dashboard (Spec Section 28) ──────────────────────────────────────
+router.get('/costs', protect, adminOnly, async (req, res) => {
+  try {
+    const ledger = await AutoposterCostLedger.getCurrentMonth();
+    const budget = parseFloat(process.env.LLM_MONTHLY_BUDGET_USD) || null;
+    const xUsage = await getXUsagePercent();
+    res.json({
+      success: true,
+      data: {
+        month: ledger.month,
+        llmSpendUSD: Math.round(ledger.llmSpendUSD * 10000) / 10000,
+        embeddingSpendUSD: Math.round(ledger.embeddingSpendUSD * 10000) / 10000,
+        llmMonthlyBudgetUSD: budget,
+        llmBudgetExceeded: await isLLMBudgetExceeded(),
+        xUsage
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
