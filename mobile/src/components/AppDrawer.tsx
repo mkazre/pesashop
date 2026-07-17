@@ -23,6 +23,13 @@ import IconValue from "@/components/apppageblocks/IconValue";
 
 const LOGO = require("@/../assets/pesashop-logo.png");
 
+// Module-level cache: the drawer menu rarely changes between app opens, so
+// once fetched it's kept in memory for the life of the app. This lets any
+// AppDrawer instance (even a fresh mount, e.g. after a hot reload) paint
+// the admin-configured items instantly instead of showing them a beat
+// after the hardcoded ones while a fresh request is in flight.
+let cachedMenuItems: any[] | null = null;
+
 interface AppDrawerProps {
   visible: boolean;
   onClose: () => void;
@@ -37,7 +44,7 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
 
-  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>(cachedMenuItems || []);
   const [slideAnim] = useState(new Animated.Value(-drawerWidth));
 
   useEffect(() => {
@@ -53,7 +60,13 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
   }, [visible]);
 
   useEffect(() => {
-    if (!visible) return;
+    // Fetch on mount rather than gating on `visible`: the drawer is mounted
+    // once (see app/(tabs)/index.tsx) well before the user ever taps the
+    // hamburger icon, so kicking the request off immediately — instead of
+    // at the moment the drawer opens — means the admin-configured items are
+    // already in state by the time the drawer actually appears, matching
+    // the hardcoded items' instant render instead of trailing them.
+    //
     // Prefer the dedicated Mobile App > Drawer Menu location (Admin →
     // Mobile App → Drawer Menu) — that's what the new mobile-only Menu
     // Builder writes to. Fall back to the website's 'header' menu, then the
@@ -66,10 +79,11 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
     ]).then(([mobileMenuRes, headerRes, mobileRes]) => {
       const menu = mobileMenuRes?.data?.data || headerRes?.data?.data || mobileRes?.data?.data;
       if (menu?.items?.length) {
+        cachedMenuItems = menu.items;
         setMenuItems(menu.items);
       }
     }).catch(() => {});
-  }, [visible]);
+  }, []);
 
   const handleClose = () => {
     Animated.timing(slideAnim, {
