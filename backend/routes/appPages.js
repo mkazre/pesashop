@@ -3,6 +3,27 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const AppPage = require('../models/AppPage');
 
+// The admin editor generates client-side ids (e.g. "block-<timestamp>-<rand>")
+// for blocks/children before they've ever been saved, needed for React keys
+// and dnd-kit's sortable id prop. Mongoose subdocuments default to an
+// ObjectId _id, so sending one of these non-ObjectId strings back on save
+// throws a CastError ("Failed to save" with no useful detail on the client).
+// Same fix already used by menus.js's cleanMenuItems() for the identical
+// problem in the Menu Builder.
+function cleanBlocks(blocks) {
+  if (!blocks || !Array.isArray(blocks)) return blocks;
+  return blocks.map((block) => {
+    const cleaned = { ...block };
+    if (cleaned._id && !/^[0-9a-fA-F]{24}$/.test(cleaned._id.toString())) {
+      delete cleaned._id;
+    }
+    if (Array.isArray(cleaned.children)) {
+      cleaned.children = cleanBlocks(cleaned.children);
+    }
+    return cleaned;
+  });
+}
+
 // ── Public ────────────────────────────────────────────────────────
 
 // GET published pages list (minimal fields — for a future "browse pages" screen)
@@ -62,7 +83,7 @@ router.post('/', protect, authorize('admin', 'shop_manager'), async (req, res, n
       title,
       slug,
       status: status || 'draft',
-      blocks: blocks || [],
+      blocks: cleanBlocks(blocks || []),
       seo: seo || {},
       createdBy: req.user.id,
     });
@@ -85,7 +106,7 @@ router.put('/:id', protect, authorize('admin', 'shop_manager'), async (req, res,
     }
     if (title !== undefined) page.title = title;
     if (status !== undefined) page.status = status;
-    if (blocks !== undefined) page.blocks = blocks;
+    if (blocks !== undefined) page.blocks = cleanBlocks(blocks);
     if (seo !== undefined) page.seo = seo;
 
     await page.save();
