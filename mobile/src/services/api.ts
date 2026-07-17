@@ -271,11 +271,16 @@ export const badgesAPI = {
     api.get(`/api/badges/evaluate/product/${productId}`),
 };
 
-// ─── Pages API (Page Builder custom pages) ─────────────────────
+// ─── Pages API (website's Page Builder custom pages) ────────────
 export const pagesAPI = {
   getPublished: () => api.get('/api/page-templates/published'),
   getBySlug: (slug: string) => api.get(`/api/page-templates/slug/${slug}`),
   getByType: (type: string) => api.get(`/api/page-templates/type/${type}`),
+};
+
+// ─── App Pages API (mobile-only Page Builder — separate from the above) ──
+export const appPagesAPI = {
+  getBySlug: (slug: string) => api.get(`/api/app-pages/public/${slug}`),
 };
 
 // ─── Mobile App Config API ──────────────────────────────────────

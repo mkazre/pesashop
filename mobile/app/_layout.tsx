@@ -257,6 +257,10 @@ export default function RootLayout() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="app-page/[slug]"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="notifications"
           options={{ headerShown: false, animation: "slide_from_right" }}
         />
