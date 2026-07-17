@@ -72,3 +72,54 @@ registerPreview('list', ({ block }) => {
     </ul>
   );
 });
+
+const VIDEO_EXT_RE = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i;
+
+registerPreview('video', ({ block }) => {
+  const { src } = block.props || {};
+  if (!src) return <div className="w-full h-24 bg-gray-100 flex items-center justify-center text-xs text-gray-400 rounded">No video selected</div>;
+  return VIDEO_EXT_RE.test(src)
+    ? <video src={src} style={{ ...styleToCSS(block.props?.style), width: '100%', maxHeight: 140 }} muted controls />
+    : <img src={src} alt="" style={{ ...styleToCSS(block.props?.style), width: '100%', maxHeight: 140, objectFit: 'cover' }} />;
+});
+
+registerPreview('gallery', ({ block }) => {
+  const images = Array.isArray(block.props?.images) ? block.props.images : [];
+  const columns = block.props?.columns || 2;
+  if (!images.length) return <div className="text-xs text-gray-400 text-center py-4">No images added</div>;
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, 1fr)`, gap: 6 }}>
+      {images.map((img, i) => (
+        img.src ? <img key={i} src={img.src} alt={img.caption || ''} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: block.props?.style?.borderRadius }} /> : null
+      ))}
+    </div>
+  );
+});
+
+registerPreview('link-button', ({ block }) => (
+  <button type="button" style={{ ...styleToCSS(block.props?.style), border: 'none', display: 'inline-block' }} disabled>
+    {block.props?.text || 'Learn more'}
+  </button>
+));
+
+registerPreview('link-text', ({ block }) => (
+  <span style={{ ...styleToCSS(block.props?.style), textDecoration: 'underline', color: block.props?.style?.color || '#0F604B' }}>
+    {block.props?.text || 'Read more'}
+  </span>
+));
+
+registerPreview('link-wrapper', ({ block }) => (
+  <div style={{ ...styleToCSS(block.props?.style), border: '1px dashed #d1d5db', padding: 8 }}>
+    <span className="text-[10px] text-gray-400">Link Wrapper → {block.props?.link || '/'} — {(block.children || []).length} child block(s)</span>
+  </div>
+));
+
+registerPreview('fancy-icon', ({ block }) => {
+  const icon = block.props?.icon;
+  const label = icon?.type === 'emoji' ? icon.value : (icon?.type === 'icon' ? `[${icon.value}]` : '—');
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48 }}>
+      <span style={{ fontSize: 20 }}>{label}</span>
+    </div>
+  );
+});

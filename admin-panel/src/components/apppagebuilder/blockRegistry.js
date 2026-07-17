@@ -134,6 +134,112 @@ export const BLOCK_REGISTRY = {
       },
     ],
   },
+
+  video: {
+    label: 'Video',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      src: '', autoplay: false, loop: false, muted: false, controls: true,
+      style: { borderRadius: 0 },
+    },
+    contentFields: [
+      { key: 'src', label: 'Video File / URL', type: 'image' },
+      { key: 'autoplay', label: 'Autoplay', type: 'toggle' },
+      { key: 'loop', label: 'Loop', type: 'toggle' },
+      { key: 'muted', label: 'Muted', type: 'toggle' },
+      { key: 'controls', label: 'Show Controls', type: 'toggle' },
+    ],
+  },
+
+  gallery: {
+    label: 'Gallery',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      images: [],
+      columns: 2,
+      style: { borderRadius: 0 },
+    },
+    contentFields: [
+      { key: 'columns', label: 'Columns', type: 'select', options: [{ value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }] },
+      {
+        key: 'images', label: 'Images', type: 'items-array',
+        itemFields: [{ key: 'src', label: 'Image', type: 'image' }, { key: 'caption', label: 'Caption', type: 'text' }],
+      },
+    ],
+  },
+
+  'link-button': {
+    label: 'Link Button',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      text: 'Learn more',
+      linkType: 'manual',
+      link: '/',
+      style: { backgroundColor: '#0F604B', color: '#ffffff', fontSize: 14, fontWeight: '700', textAlign: 'center', borderRadius: 0, paddingTop: 12, paddingBottom: 12, paddingLeft: 24, paddingRight: 24 },
+    },
+    contentFields: [
+      { key: 'text', label: 'Button Text', type: 'text' },
+      {
+        key: 'linkType', label: 'Link Type', type: 'select',
+        options: [{ value: 'manual', label: 'Manual URL' }, { value: 'page', label: 'Page' }, { value: 'category', label: 'Category' }, { value: 'product', label: 'Product' }],
+      },
+      { key: 'link', label: 'Link', type: 'text' },
+    ],
+  },
+
+  'link-text': {
+    label: 'Link Text',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      text: 'Read more',
+      linkType: 'manual',
+      link: '/',
+      style: { color: '#0F604B', fontSize: 14, fontWeight: '600' },
+    },
+    contentFields: [
+      { key: 'text', label: 'Text', type: 'text' },
+      {
+        key: 'linkType', label: 'Link Type', type: 'select',
+        options: [{ value: 'manual', label: 'Manual URL' }, { value: 'page', label: 'Page' }, { value: 'category', label: 'Category' }, { value: 'product', label: 'Product' }],
+      },
+      { key: 'link', label: 'Link', type: 'text' },
+    ],
+  },
+
+  'link-wrapper': {
+    label: 'Link Wrapper',
+    category: 'Basic',
+    isContainer: true,
+    defaultProps: {
+      linkType: 'manual',
+      link: '/',
+      style: { paddingTop: 8, paddingBottom: 8 },
+    },
+    contentFields: [
+      {
+        key: 'linkType', label: 'Link Type', type: 'select',
+        options: [{ value: 'manual', label: 'Manual URL' }, { value: 'page', label: 'Page' }, { value: 'category', label: 'Category' }, { value: 'product', label: 'Product' }],
+      },
+      { key: 'link', label: 'Link', type: 'text' },
+    ],
+  },
+
+  'fancy-icon': {
+    label: 'Fancy Icon',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      icon: { type: 'icon', value: 'star' },
+      style: { backgroundColor: '#E8F5F0', color: '#0F604B', borderRadius: 9999, paddingTop: 16, paddingBottom: 16, paddingLeft: 16, paddingRight: 16 },
+    },
+    contentFields: [
+      { key: 'icon', label: 'Icon', type: 'icon' },
+    ],
+  },
 };
 
 export function getBlockMeta(blockType) {

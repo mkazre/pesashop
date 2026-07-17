@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Image as ImageIcon } from 'lucide-react';
 import MediaLibraryModal from '@/components/media/MediaLibraryModal';
+import IconPicker from '@/components/common/IconPicker';
 
 // ── Generic content-field renderer ────────────────────────────────────
 // Renders a block's small set of *content* fields (text, image, items
@@ -15,13 +16,20 @@ const Field = ({ label, children }) => (
   </div>
 );
 
+const VIDEO_EXT_RE = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i;
+
 function ImageField({ value, onChange }) {
   const [open, setOpen] = useState(false);
+  const isVideo = value && VIDEO_EXT_RE.test(value);
   return (
     <div>
       {value ? (
         <div className="relative border border-gray-200 rounded overflow-hidden">
-          <img src={value} alt="" className="w-full h-28 object-cover" />
+          {isVideo ? (
+            <video src={value} className="w-full h-28 object-cover" muted />
+          ) : (
+            <img src={value} alt="" className="w-full h-28 object-cover" />
+          )}
           <button
             type="button"
             onClick={() => setOpen(true)}
@@ -37,7 +45,7 @@ function ImageField({ value, onChange }) {
           className="w-full flex flex-col items-center justify-center gap-1 py-6 border border-dashed border-gray-300 rounded text-gray-400 hover:border-blue-400 hover:text-blue-600"
         >
           <ImageIcon size={20} />
-          <span className="text-xs">Choose image</span>
+          <span className="text-xs">Choose image or video</span>
         </button>
       )}
       <MediaLibraryModal isOpen={open} onClose={() => setOpen(false)} onSelect={(url) => { onChange(url); setOpen(false); }} />
@@ -68,6 +76,8 @@ function ItemsArrayField({ value, onChange, itemFields }) {
             <Field key={f.key} label={f.label}>
               {f.type === 'image' ? (
                 <ImageField value={item[f.key] || ''} onChange={(v) => updateItem(i, f.key, v)} />
+              ) : f.type === 'icon' ? (
+                <IconPicker value={item[f.key]} onChange={(v) => updateItem(i, f.key, v)} allow={['emoji', 'icon']} />
               ) : (
                 <input
                   type="text"
@@ -126,6 +136,9 @@ export default function ContentFieldsPanel({ fields, props, onChange }) {
           )}
           {f.type === 'image' && (
             <ImageField value={props[f.key] || ''} onChange={(v) => setField(f.key, v)} />
+          )}
+          {f.type === 'icon' && (
+            <IconPicker value={props[f.key]} onChange={(v) => setField(f.key, v)} allow={['emoji', 'icon']} />
           )}
           {f.type === 'items-array' && (
             <ItemsArrayField value={props[f.key]} onChange={(v) => setField(f.key, v)} itemFields={f.itemFields} />
