@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
+import { useQuery } from 'react-query';
 import { Plus, Trash2, Image as ImageIcon } from 'lucide-react';
 import MediaLibraryModal from '@/components/media/MediaLibraryModal';
 import IconPicker from '@/components/common/IconPicker';
+import { formsAPI } from '@/services/api';
+
+function FormField({ value, onChange }) {
+  const { data } = useQuery('forms-picker', () => formsAPI.getAll());
+  const forms = data?.data?.data || [];
+  return (
+    <select value={value || ''} onChange={(e) => onChange(e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
+      <option value="">Select a form...</option>
+      {forms.map((f) => <option key={f._id} value={f._id}>{f.title}</option>)}
+    </select>
+  );
+}
 
 // ── Generic content-field renderer ────────────────────────────────────
 // Renders a block's small set of *content* fields (text, image, items
@@ -142,6 +155,9 @@ export default function ContentFieldsPanel({ fields, props, onChange }) {
           )}
           {f.type === 'items-array' && (
             <ItemsArrayField value={props[f.key]} onChange={(v) => setField(f.key, v)} itemFields={f.itemFields} />
+          )}
+          {f.type === 'form' && (
+            <FormField value={props[f.key]} onChange={(v) => setField(f.key, v)} />
           )}
         </Field>
       ))}

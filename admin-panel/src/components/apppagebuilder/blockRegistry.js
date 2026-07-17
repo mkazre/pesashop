@@ -719,6 +719,21 @@ export const BLOCK_REGISTRY = {
     ],
   },
 
+  'form-embed': {
+    label: 'Form',
+    category: 'Layout',
+    isContainer: false,
+    defaultProps: {
+      formId: '',
+      showTitle: true,
+      style: {},
+    },
+    contentFields: [
+      { key: 'formId', label: 'Form', type: 'form' },
+      { key: 'showTitle', label: 'Show Form Title', type: 'toggle' },
+    ],
+  },
+
   repeater: {
     label: 'Product Feed',
     category: 'Layout',

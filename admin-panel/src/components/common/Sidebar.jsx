@@ -14,6 +14,7 @@ import {
   IoMailOutline,
   IoCodeSlashOutline,
   IoLayersOutline,
+  IoClipboardOutline,
   IoSettingsOutline,
   IoShareSocialOutline,
   IoCloudUploadOutline,
@@ -163,6 +164,7 @@ const menuGroups = [
       { path: '/mobile-app/splash', icon: IoPhonePortraitOutline, label: 'Mobile App' },
       { path: '/mobile-app/menu', icon: IoMenuOutline, label: 'Drawer Menu' },
       { path: '/mobile-app/pages', icon: IoLayersOutline, label: 'Page Builder' },
+      { path: '/mobile-app/forms', icon: IoClipboardOutline, label: 'Form Builder' },
     ],
   },
   {

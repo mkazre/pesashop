@@ -558,6 +558,19 @@ export const appPagesAPI = {
   duplicate: (id) => api.post(`/app-pages/${id}/duplicate`),
 };
 
+// Mobile App Form Builder API
+export const formsAPI = {
+  getAll: () => api.get('/forms'),
+  getOne: (id) => api.get(`/forms/${id}`),
+  create: (data) => api.post('/forms', data),
+  update: (id, data) => api.put(`/forms/${id}`, data),
+  delete: (id) => api.delete(`/forms/${id}`),
+  duplicate: (id) => api.post(`/forms/${id}/duplicate`),
+  getSubmissions: (id, params) => api.get(`/forms/${id}/submissions`, { params }),
+  updateSubmission: (id, submissionId, data) => api.put(`/forms/${id}/submissions/${submissionId}`, data),
+  deleteSubmission: (id, submissionId) => api.delete(`/forms/${id}/submissions/${submissionId}`),
+};
+
 // Footer Config API
 export const footerConfigAPI = {
   get: () => api.get('/footer-config'),

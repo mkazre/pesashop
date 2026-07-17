@@ -30,6 +30,7 @@ import PageBuilder from './pages/PageBuilder';
 import PageManager from './pages/PageManager';
 import MenuBuilder from './pages/MenuBuilder';
 import AppPageBuilderPage from './pages/AppPageBuilderPage';
+import FormBuilderPage from './pages/FormBuilderPage';
 import MenuAssignment from './pages/MenuAssignment';
 import ImportExportPage from './pages/ImportExportPage';
 import ImageManagerPage from './pages/ImageManagerPage';
@@ -179,6 +180,7 @@ function App() {
             <Route path="mobile-app/splash" element={<MobileAppSplashPage />} />
             <Route path="mobile-app/menu" element={<MenuBuilder lockedLocation="mobile-menu" />} />
             <Route path="mobile-app/pages" element={<AppPageBuilderPage />} />
+            <Route path="mobile-app/forms" element={<FormBuilderPage />} />
             <Route path="stats" element={<StatsPage />} />
             <Route path="questions" element={<QuestionsPage />} />
             <Route path="users" element={<UsersPage />} />

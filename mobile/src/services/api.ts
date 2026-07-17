@@ -283,6 +283,12 @@ export const appPagesAPI = {
   getBySlug: (slug: string) => api.get(`/api/app-pages/public/${slug}`),
 };
 
+// ─── Form Builder API (mobile-only forms, embedded via Page Builder) ────
+export const formsAPI = {
+  getPublic: (id: string) => api.get(`/api/forms/public/${id}`),
+  submit: (id: string, formData: FormData) => uploadFormData(`/api/forms/${id}/submit`, formData),
+};
+
 // ─── Mobile App Config API ──────────────────────────────────────
 export const mobileAppConfigAPI = {
   getSplash: () => api.get('/api/mobile-app-config/public/splash'),

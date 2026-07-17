@@ -441,6 +441,12 @@ registerPreview('dynamic-list', ({ block }) => {
   );
 });
 
+registerPreview('form-embed', ({ block }) => (
+  <div style={{ ...styleToCSS(block.props?.style), border: '1px dashed #d1d5db', padding: 10 }}>
+    <span className="text-[10px] text-gray-400">Form Embed — {block.props?.formId ? 'form selected' : 'no form selected'}</span>
+  </div>
+));
+
 registerPreview('repeater', ({ block }) => {
   const { source, columns } = block.props || {};
   return (

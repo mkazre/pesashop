@@ -33,6 +33,7 @@ import MenuBlock from "./MenuBlock";
 import EasyPostsBlock from "./EasyPostsBlock";
 import DynamicListBlock from "./DynamicListBlock";
 import ProductFeedBlock from "./ProductFeedBlock";
+import FormEmbedBlock from "./FormEmbedBlock";
 
 // blockType -> native RN renderer. Split into its own file (rather than
 // living inline in AppPageRenderer.tsx) so ContainerBlock can also import it
@@ -89,4 +90,5 @@ export const BLOCK_COMPONENTS: Record<string, React.ComponentType<{ block: any }
   "easy-posts": EasyPostsBlock,
   "dynamic-list": DynamicListBlock,
   repeater: ProductFeedBlock,
+  "form-embed": FormEmbedBlock,
 };
