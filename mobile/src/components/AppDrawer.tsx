@@ -96,6 +96,26 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
     if (dest) navigate(dest);
   };
 
+  // Renders whatever icon the admin picked for a menu item — emoji, an
+  // Ionicons name (the admin's IconPicker catalog maps directly onto
+  // @expo/vector-icons' Ionicons, both being built on the same underlying
+  // Ionicons set), or an uploaded image — falling back to a generic
+  // chevron/link glyph when the item has no icon configured.
+  const renderMenuIcon = (icon: any, fallback: keyof typeof Ionicons.glyphMap, color: string, size: number) => {
+    const normalized = typeof icon === "string" ? (icon ? { type: "emoji", value: icon } : null) : icon;
+    if (normalized?.type === "emoji" && normalized.value) {
+      return <Text style={{ fontSize: size, width: size, textAlign: "center" }}>{normalized.value}</Text>;
+    }
+    if (normalized?.type === "icon" && normalized.value) {
+      return <Ionicons name={normalized.value as any} size={size} color={color} />;
+    }
+    if (normalized?.type === "image" && normalized.value) {
+      const uri = resolveImageUrl(normalized.value);
+      if (uri) return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: 3 }} contentFit="contain" />;
+    }
+    return <Ionicons name={fallback} size={size} color={color} />;
+  };
+
   const staticLinks: { icon: keyof typeof Ionicons.glyphMap; label: string; path: string }[] = [
     { icon: "home-outline",         label: "Home",        path: "/(tabs)" },
     { icon: "grid-outline",         label: "Shop",        path: "/(tabs)/shop" },
@@ -163,7 +183,7 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
                         onPress={() => openMenuEntry(item)}
                         style={s.menuItem}
                       >
-                        <Ionicons name={hasChildren ? "chevron-down-outline" : "link-outline"} size={18} color={colors.gray700} />
+                        {renderMenuIcon(item.icon, hasChildren ? "chevron-down-outline" : "link-outline", colors.gray700, 18)}
                         <Text style={s.menuLabel}>{item.label || item.title}</Text>
                       </Pressable>
                       {hasChildren && item.children.map((child: any, j: number) => (
@@ -172,7 +192,7 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
                           onPress={() => openMenuEntry(child)}
                           style={[s.menuItem, { paddingLeft: 44 }]}
                         >
-                          <Ionicons name="chevron-forward-outline" size={14} color={colors.gray500} />
+                          {renderMenuIcon(child.icon, "chevron-forward-outline", colors.gray500, 14)}
                           <Text style={[s.menuLabel, { fontSize: 13, color: colors.gray600 }]}>{child.label}</Text>
                         </Pressable>
                       ))}
