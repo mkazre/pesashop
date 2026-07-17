@@ -548,6 +548,16 @@ export const homePageConfigAPI = {
   reset: () => api.post('/home-page-config/reset'),
 };
 
+// Mobile App Page Builder API
+export const appPagesAPI = {
+  getAll: () => api.get('/app-pages'),
+  getOne: (id) => api.get(`/app-pages/${id}`),
+  create: (data) => api.post('/app-pages', data),
+  update: (id, data) => api.put(`/app-pages/${id}`, data),
+  delete: (id) => api.delete(`/app-pages/${id}`),
+  duplicate: (id) => api.post(`/app-pages/${id}/duplicate`),
+};
+
 // Footer Config API
 export const footerConfigAPI = {
   get: () => api.get('/footer-config'),

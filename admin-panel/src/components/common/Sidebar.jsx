@@ -162,6 +162,7 @@ const menuGroups = [
     items: [
       { path: '/mobile-app/splash', icon: IoPhonePortraitOutline, label: 'Mobile App' },
       { path: '/mobile-app/menu', icon: IoMenuOutline, label: 'Drawer Menu' },
+      { path: '/mobile-app/pages', icon: IoLayersOutline, label: 'Page Builder' },
     ],
   },
   {

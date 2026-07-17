@@ -29,6 +29,7 @@ import EmergencyDisablePage from './pages/EmergencyDisablePage';
 import PageBuilder from './pages/PageBuilder';
 import PageManager from './pages/PageManager';
 import MenuBuilder from './pages/MenuBuilder';
+import AppPageBuilderPage from './pages/AppPageBuilderPage';
 import MenuAssignment from './pages/MenuAssignment';
 import ImportExportPage from './pages/ImportExportPage';
 import ImageManagerPage from './pages/ImageManagerPage';
@@ -177,6 +178,7 @@ function App() {
             <Route path="footer-builder" element={<FooterBuilderPage />} />
             <Route path="mobile-app/splash" element={<MobileAppSplashPage />} />
             <Route path="mobile-app/menu" element={<MenuBuilder lockedLocation="mobile-menu" />} />
+            <Route path="mobile-app/pages" element={<AppPageBuilderPage />} />
             <Route path="stats" element={<StatsPage />} />
             <Route path="questions" element={<QuestionsPage />} />
             <Route path="users" element={<UsersPage />} />
