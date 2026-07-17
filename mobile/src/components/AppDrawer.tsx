@@ -8,6 +8,7 @@ import {
   Modal,
   Animated,
   Dimensions,
+  Linking,
   useWindowDimensions,
 } from "react-native";
 import { Image } from "expo-image";
@@ -16,7 +17,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store";
 import { menusAPI } from "@/services/api";
-import { colors } from "@/theme";
+import { colors, resolveImageUrl } from "@/theme";
+import { resolveMenuLink } from "@/utils/resolveLink";
 
 const LOGO = require("@/../assets/pesashop-logo.png");
 
@@ -51,15 +53,17 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
 
   useEffect(() => {
     if (!visible) return;
-    // Mirror the website's Header.jsx exactly — it reads the 'header' location
-    // (Admin → Menu Builder). Fall back to a mobile-specific menu only if the
-    // site has never configured a header menu at all.
+    // Prefer the dedicated Mobile App > Drawer Menu location (Admin →
+    // Mobile App → Drawer Menu) — that's what the new mobile-only Menu
+    // Builder writes to. Fall back to the website's 'header' menu, then the
+    // legacy 'mobile' location, only for stores that haven't configured a
+    // mobile-specific menu yet.
     Promise.all([
-      menusAPI.getByLocation("header").catch(() => null),
       menusAPI.getByLocation("mobile-menu").catch(() => null),
+      menusAPI.getByLocation("header").catch(() => null),
       menusAPI.getByLocation("mobile").catch(() => null),
-    ]).then(([headerRes, mobileMenuRes, mobileRes]) => {
-      const menu = headerRes?.data?.data || mobileMenuRes?.data?.data || mobileRes?.data?.data;
+    ]).then(([mobileMenuRes, headerRes, mobileRes]) => {
+      const menu = mobileMenuRes?.data?.data || headerRes?.data?.data || mobileRes?.data?.data;
       if (menu?.items?.length) {
         setMenuItems(menu.items);
       }
@@ -81,36 +85,15 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
     }, 250);
   };
 
-  // Resolve a menu item's link into a route this app actually has. The
-  // website's own menu items use its URL scheme (e.g. /shop/:slug for
-  // categories), which doesn't match any mobile route directly — map the
-  // known web patterns onto their mobile equivalents instead of navigating
-  // to the raw path verbatim (which previously produced "Unmatched Route").
-  const resolveMenuLink = (entry: any): string | null => {
-    const link = entry.link || entry.url || '#';
-    if (entry.linkType === 'page') {
-      const slug = link.replace(/^\//, '') || entry.linkId;
-      return `/page/${slug}`;
+  // Downloadable-file links open externally rather than navigating to a
+  // route — handled separately from resolveMenuLink's route-string contract.
+  const openMenuEntry = (entry: any) => {
+    if (entry.linkType === "file" && entry.fileUrl) {
+      Linking.openURL(resolveImageUrl(entry.fileUrl) || entry.fileUrl);
+      return;
     }
-    if (entry.linkType === 'category' && entry.linkId) {
-      return `/(tabs)/shop?category=${entry.linkId}`;
-    }
-    if (!link || link === '#' || link === 'none') return null;
-    if (link.startsWith('/category/')) {
-      return `/(tabs)/shop?category=${link.replace('/category/', '')}`;
-    }
-    if (link.startsWith('/shop/')) {
-      // Website category pages live at /shop/:slug; mobile's equivalent is
-      // the dedicated category/[slug] screen, not the generic Shop tab.
-      return `/category/${link.replace('/shop/', '')}`;
-    }
-    if (link.startsWith('/product/')) {
-      return `/product/${link.replace('/product/', '')}`;
-    }
-    if (link.startsWith('/')) {
-      return link;
-    }
-    return null;
+    const dest = resolveMenuLink(entry);
+    if (dest) navigate(dest);
   };
 
   const staticLinks: { icon: keyof typeof Ionicons.glyphMap; label: string; path: string }[] = [
@@ -177,10 +160,7 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
                   return (
                     <View key={item._id || i}>
                       <Pressable
-                        onPress={() => {
-                          const dest = resolveMenuLink(item);
-                          if (dest) navigate(dest);
-                        }}
+                        onPress={() => openMenuEntry(item)}
                         style={s.menuItem}
                       >
                         <Ionicons name={hasChildren ? "chevron-down-outline" : "link-outline"} size={18} color={colors.gray700} />
@@ -189,10 +169,7 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
                       {hasChildren && item.children.map((child: any, j: number) => (
                         <Pressable
                           key={child._id || j}
-                          onPress={() => {
-                            const dest = resolveMenuLink(child);
-                            if (dest) navigate(dest);
-                          }}
+                          onPress={() => openMenuEntry(child)}
                           style={[s.menuItem, { paddingLeft: 44 }]}
                         >
                           <Ionicons name="chevron-forward-outline" size={14} color={colors.gray500} />

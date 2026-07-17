@@ -7,10 +7,13 @@ const menuItemSchema = new mongoose.Schema({
   link: { type: String, default: '#' },
   linkType: {
     type: String,
-    enum: ['manual', 'page', 'category', 'product', 'none'], // 'none' = non-clickable parent
+    enum: ['manual', 'page', 'category', 'product', 'file', 'none'], // 'none' = non-clickable parent
     default: 'manual',
   },
   linkId: { type: String }, // Page ID, category ID, or product ID
+  fileUrl: { type: String, default: '' }, // e.g. /uploads/media/xyz.pdf
+  fileName: { type: String, default: '' }, // original filename shown to the user
+  fileSize: { type: Number, default: 0 }, // bytes, optional display
   // emoji string OR { type: 'emoji'|'icon'|'image', value } OR (legacy) lucide icon name / image URL
   icon: { type: mongoose.Schema.Types.Mixed, default: '' },
   iconPosition: { type: String, enum: ['left', 'right', 'top'], default: 'left' },

@@ -176,6 +176,7 @@ function App() {
             <Route path="home-page-builder" element={<HomePageBuilderPage />} />
             <Route path="footer-builder" element={<FooterBuilderPage />} />
             <Route path="mobile-app/splash" element={<MobileAppSplashPage />} />
+            <Route path="mobile-app/menu" element={<MenuBuilder lockedLocation="mobile-menu" />} />
             <Route path="stats" element={<StatsPage />} />
             <Route path="questions" element={<QuestionsPage />} />
             <Route path="users" element={<UsersPage />} />

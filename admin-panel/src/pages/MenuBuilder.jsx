@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
-import { menusAPI, pageTemplatesAPI, categoriesAPI } from '@/services/api';
+import { menusAPI, pageTemplatesAPI, categoriesAPI, productsAPI } from '@/services/api';
+import MediaLibraryModal from '@/components/media/MediaLibraryModal';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Select from '@/components/common/Select';
@@ -46,6 +47,7 @@ import {
   Maximize2,
   Search,
   ArrowRight,
+  File as FileIcon,
 } from 'lucide-react';
 import MegaMenuDesigner from '@/components/menu/MegaMenuDesigner';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -63,7 +65,7 @@ const MENU_LOCATIONS = [
   { value: 'custom', label: 'Custom' },
 ];
 
-const MenuBuilder = () => {
+const MenuBuilder = ({ lockedLocation } = {}) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -74,7 +76,9 @@ const MenuBuilder = () => {
     () => menusAPI.getAll()
   );
 
-  const menus = menusResponse?.data?.data || [];
+  const menus = (menusResponse?.data?.data || []).filter(
+    (m) => !lockedLocation || m.location === lockedLocation
+  );
 
   const deleteMutation = useMutation(
     (id) => menusAPI.delete(id),
@@ -120,17 +124,25 @@ const MenuBuilder = () => {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Menu Builder</h1>
-          <p className="text-gray-600 mt-1">Create and manage navigation menus</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {lockedLocation === 'mobile-menu' ? 'Mobile App — Drawer Menu' : 'Menu Builder'}
+          </h1>
+          <p className="text-gray-600 mt-1">
+            {lockedLocation === 'mobile-menu'
+              ? 'Configure the navigation menu shown in the mobile app\'s drawer'
+              : 'Create and manage navigation menus'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/menu-assignment')}
-          >
-            <LinkIcon size={20} className="mr-2" />
-            Assign Menus
-          </Button>
+          {!lockedLocation && (
+            <Button
+              variant="outline"
+              onClick={() => navigate('/menu-assignment')}
+            >
+              <LinkIcon size={20} className="mr-2" />
+              Assign Menus
+            </Button>
+          )}
           <Button onClick={() => setShowCreateModal(true)}>
             <Plus size={20} className="mr-2" />
             Create New Menu
@@ -239,6 +251,7 @@ const MenuBuilder = () => {
       {/* Create Menu Modal */}
       {showCreateModal && (
         <CreateMenuModal
+          lockedLocation={lockedLocation}
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
             setShowCreateModal(false);
@@ -264,11 +277,11 @@ const MenuBuilder = () => {
 
 
 // Create Menu Modal
-const CreateMenuModal = ({ onClose, onSuccess }) => {
+const CreateMenuModal = ({ onClose, onSuccess, lockedLocation }) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: '',
-    location: 'header',
+    location: lockedLocation || 'header',
     isGlobal: false,
   });
 
@@ -309,14 +322,16 @@ const CreateMenuModal = ({ onClose, onSuccess }) => {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-          <Select
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            options={MENU_LOCATIONS}
-          />
-        </div>
+        {!lockedLocation && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+            <Select
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              options={MENU_LOCATIONS}
+            />
+          </div>
+        )}
 
         <label className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 cursor-pointer">
           <input
@@ -1141,11 +1156,31 @@ const MenuItemRow = ({ item, selectedItem, onSelect, onDelete, onAddChild, onUpd
 const MenuItemProperties = ({ item, onUpdate, onOpenMegaMenu }) => {
   const [formData, setFormData] = useState(item);
   const [propsTab, setPropsTab] = useState('general'); // general | style | mega | visibility
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const [productResults, setProductResults] = useState([]);
+  const [productSearching, setProductSearching] = useState(false);
 
   const { data: pagesResponse } = useQuery('pages', () => pageTemplatesAPI.getAll());
   const { data: categoriesResponse } = useQuery('categories', () => categoriesAPI.getAll());
   const pages = pagesResponse?.data?.data || [];
   const categories = categoriesResponse?.data?.data || [];
+
+  // Debounced product search — the catalog is too large for a plain <select>
+  useEffect(() => {
+    if (!productSearch || productSearch.trim().length < 2) {
+      setProductResults([]);
+      return;
+    }
+    setProductSearching(true);
+    const t = setTimeout(() => {
+      productsAPI.getAll({ search: productSearch.trim(), limit: 15 })
+        .then((res) => setProductResults(res.data?.data || []))
+        .catch(() => setProductResults([]))
+        .finally(() => setProductSearching(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [productSearch]);
 
   const formDataRef = useRef(item);
 
@@ -1202,13 +1237,15 @@ const MenuItemProperties = ({ item, onUpdate, onOpenMegaMenu }) => {
             const updates = { linkType: newType };
             if (newType === 'manual') { updates.link = '#'; updates.linkId = ''; }
             if (newType === 'none') { updates.link = ''; updates.linkId = ''; }
+            if (newType === 'file') { updates.link = ''; updates.linkId = ''; }
             const updated = { ...formDataRef.current, ...updates };
             setFormData(updated);
             formDataRef.current = updated;
             onUpdate(updated);
           }} options={[
             { value: 'manual', label: 'Manual URL' }, { value: 'page', label: 'Page' },
-            { value: 'category', label: 'Category' }, { value: 'product', label: 'Product' }, { value: 'none', label: 'Non-clickable' },
+            { value: 'category', label: 'Category' }, { value: 'product', label: 'Product' },
+            { value: 'file', label: 'File download' }, { value: 'none', label: 'Non-clickable' },
           ]} />
 
           {formData.linkType === 'manual' && (
@@ -1243,6 +1280,73 @@ const MenuItemProperties = ({ item, onUpdate, onOpenMegaMenu }) => {
                 <option value="">-- Select --</option>
                 {categories.map(c => <option key={c._id} value={String(c._id)}>{c.name}</option>)}
               </select>
+            </div>
+          )}
+
+          {formData.linkType === 'product' && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Search Product</label>
+              <input
+                type="text"
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                placeholder="Type at least 2 characters to search..."
+                className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+              />
+              {productSearching && <p className="text-xs text-gray-400 mt-1">Searching...</p>}
+              {productResults.length > 0 && (
+                <div className="mt-1 border border-gray-200 rounded max-h-40 overflow-y-auto">
+                  {productResults.map((p) => (
+                    <button
+                      key={p._id}
+                      type="button"
+                      onClick={() => {
+                        const updated = { ...formDataRef.current, linkId: String(p._id), link: `/product/${p.slug}` };
+                        setFormData(updated); formDataRef.current = updated; onUpdate(updated);
+                        setProductSearch(''); setProductResults([]);
+                      }}
+                      className="w-full text-left px-2 py-1.5 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {formData.linkId && formData.link?.startsWith('/product/') && (
+                <p className="text-xs text-gray-500 mt-1">Selected: {formData.link.replace('/product/', '')}</p>
+              )}
+            </div>
+          )}
+
+          {formData.linkType === 'file' && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Attached File</label>
+              {formData.fileUrl ? (
+                <div className="flex items-center gap-2 p-2 border border-gray-200 rounded bg-gray-50">
+                  <FileIcon size={16} className="text-gray-400 flex-shrink-0" />
+                  <span className="text-sm text-gray-700 truncate flex-1">{formData.fileName || formData.fileUrl}</span>
+                  <button type="button" onClick={() => setMediaOpen(true)} className="text-xs text-blue-600 hover:text-blue-800">Change</button>
+                  <button type="button" onClick={() => handleChange('fileUrl', '')} className="text-xs text-red-600 hover:text-red-800">Remove</button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setMediaOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600"
+                >
+                  <FileIcon size={16} /> Choose or upload a file
+                </button>
+              )}
+              <MediaLibraryModal
+                isOpen={mediaOpen}
+                onClose={() => setMediaOpen(false)}
+                onSelect={(url) => {
+                  const fileName = String(url).split('/').pop();
+                  const updated = { ...formDataRef.current, fileUrl: url, fileName };
+                  setFormData(updated); formDataRef.current = updated; onUpdate(updated);
+                  setMediaOpen(false);
+                }}
+              />
             </div>
           )}
 

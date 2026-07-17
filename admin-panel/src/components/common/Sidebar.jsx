@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   IoHomeOutline,
+  IoMenuOutline,
   IoCubeOutline,
   IoReceiptOutline,
   IoPeopleOutline,
@@ -160,6 +161,7 @@ const menuGroups = [
     label: 'Mobile App',
     items: [
       { path: '/mobile-app/splash', icon: IoPhonePortraitOutline, label: 'Mobile App' },
+      { path: '/mobile-app/menu', icon: IoMenuOutline, label: 'Drawer Menu' },
     ],
   },
   {
