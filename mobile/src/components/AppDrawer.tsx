@@ -81,6 +81,38 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
     }, 250);
   };
 
+  // Resolve a menu item's link into a route this app actually has. The
+  // website's own menu items use its URL scheme (e.g. /shop/:slug for
+  // categories), which doesn't match any mobile route directly — map the
+  // known web patterns onto their mobile equivalents instead of navigating
+  // to the raw path verbatim (which previously produced "Unmatched Route").
+  const resolveMenuLink = (entry: any): string | null => {
+    const link = entry.link || entry.url || '#';
+    if (entry.linkType === 'page') {
+      const slug = link.replace(/^\//, '') || entry.linkId;
+      return `/page/${slug}`;
+    }
+    if (entry.linkType === 'category' && entry.linkId) {
+      return `/(tabs)/shop?category=${entry.linkId}`;
+    }
+    if (!link || link === '#' || link === 'none') return null;
+    if (link.startsWith('/category/')) {
+      return `/(tabs)/shop?category=${link.replace('/category/', '')}`;
+    }
+    if (link.startsWith('/shop/')) {
+      // Website category pages live at /shop/:slug; mobile's equivalent is
+      // the dedicated category/[slug] screen, not the generic Shop tab.
+      return `/category/${link.replace('/shop/', '')}`;
+    }
+    if (link.startsWith('/product/')) {
+      return `/product/${link.replace('/product/', '')}`;
+    }
+    if (link.startsWith('/')) {
+      return link;
+    }
+    return null;
+  };
+
   const staticLinks: { icon: keyof typeof Ionicons.glyphMap; label: string; path: string }[] = [
     { icon: "home-outline",         label: "Home",        path: "/(tabs)" },
     { icon: "grid-outline",         label: "Shop",        path: "/(tabs)/shop" },
@@ -141,26 +173,13 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
               <View style={s.section}>
                 <Text style={s.sectionTitle}>Menu</Text>
                 {menuItems.map((item: any, i: number) => {
-                  const itemLink = item.link || item.url || '#';
                   const hasChildren = item.children?.length > 0;
                   return (
                     <View key={item._id || i}>
                       <Pressable
                         onPress={() => {
-                          if (item.linkType === 'page') {
-                            const slug = itemLink.replace(/^\//, '') || item.linkId;
-                            navigate(`/page/${slug}`);
-                          } else if (item.linkType === 'category' && item.linkId) {
-                            navigate(`/(tabs)/shop?category=${item.linkId}`);
-                          } else if (itemLink && itemLink !== '#' && itemLink !== 'none') {
-                            if (itemLink.startsWith('/category/')) {
-                              navigate(`/(tabs)/shop?category=${itemLink.replace('/category/', '')}`);
-                            } else if (itemLink.startsWith('/product/')) {
-                              navigate(`/product/${itemLink.replace('/product/', '')}`);
-                            } else if (itemLink.startsWith('/')) {
-                              navigate(itemLink);
-                            }
-                          }
+                          const dest = resolveMenuLink(item);
+                          if (dest) navigate(dest);
                         }}
                         style={s.menuItem}
                       >
@@ -171,21 +190,8 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
                         <Pressable
                           key={child._id || j}
                           onPress={() => {
-                            const childLink = child.link || child.url || '#';
-                            if (child.linkType === 'page') {
-                              const slug = childLink.replace(/^\//, '') || child.linkId;
-                              navigate(`/page/${slug}`);
-                            } else if (child.linkType === 'category' && child.linkId) {
-                              navigate(`/(tabs)/shop?category=${child.linkId}`);
-                            } else if (childLink && childLink !== '#') {
-                              if (childLink.startsWith('/category/')) {
-                                navigate(`/(tabs)/shop?category=${childLink.replace('/category/', '')}`);
-                              } else if (childLink.startsWith('/product/')) {
-                                navigate(`/product/${childLink.replace('/product/', '')}`);
-                              } else if (childLink.startsWith('/')) {
-                                navigate(childLink);
-                              }
-                            }
+                            const dest = resolveMenuLink(child);
+                            if (dest) navigate(dest);
                           }}
                           style={[s.menuItem, { paddingLeft: 44 }]}
                         >
