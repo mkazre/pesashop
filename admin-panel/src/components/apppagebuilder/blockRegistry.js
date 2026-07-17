@@ -414,6 +414,54 @@ export const BLOCK_REGISTRY = {
       },
     ],
   },
+  map: {
+    label: 'Map',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      address: 'Johannesburg, South Africa',
+      latitude: '',
+      longitude: '',
+      buttonText: 'Open in Maps',
+      style: { backgroundColor: '#f3f4f6', borderRadius: 0, paddingTop: 24, paddingBottom: 24, paddingLeft: 20, paddingRight: 20 },
+    },
+    contentFields: [
+      { key: 'address', label: 'Address / Place Name', type: 'text' },
+      { key: 'latitude', label: 'Latitude (optional, for precise pin)', type: 'text' },
+      { key: 'longitude', label: 'Longitude (optional, for precise pin)', type: 'text' },
+      { key: 'buttonText', label: 'Button Text', type: 'text' },
+    ],
+  },
+
+  'search-form': {
+    label: 'Search Form',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      placeholder: 'Search products…',
+      style: { backgroundColor: '#ffffff', borderColor: '#e5e7eb', borderWidth: 1, borderRadius: 8, color: '#374151' },
+    },
+    contentFields: [
+      { key: 'placeholder', label: 'Placeholder Text', type: 'text' },
+    ],
+  },
+
+  'login-form': {
+    label: 'Login Form',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      title: 'Sign in to your account',
+      description: 'Access your orders, wishlist and more.',
+      buttonText: 'Sign In',
+      style: { backgroundColor: '#f9fafb', borderRadius: 0, paddingTop: 24, paddingBottom: 24, paddingLeft: 20, paddingRight: 20 },
+    },
+    contentFields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'description', label: 'Description', type: 'text' },
+      { key: 'buttonText', label: 'Button Text', type: 'text' },
+    ],
+  },
 };
 
 export function getBlockMeta(blockType) {

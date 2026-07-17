@@ -235,3 +235,36 @@ registerPreview('social-icons', ({ block }) => {
     </div>
   );
 });
+
+registerPreview('map', ({ block }) => {
+  const { address, buttonText } = block.props || {};
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), textAlign: 'center' }}>
+      <div style={{ fontSize: 24 }}>📍</div>
+      <div style={{ fontSize: 12, color: '#374151', marginTop: 6 }}>{address || 'No address set'}</div>
+      <button type="button" disabled style={{ marginTop: 10, border: '1px solid #d1d5db', background: '#fff', padding: '6px 14px', fontSize: 12 }}>
+        {buttonText || 'Open in Maps'}
+      </button>
+    </div>
+  );
+});
+
+registerPreview('search-form', ({ block }) => (
+  <div style={{ ...styleToCSS(block.props?.style), display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px' }}>
+    <span style={{ fontSize: 14 }}>🔍</span>
+    <span style={{ fontSize: 13, color: '#9ca3af' }}>{block.props?.placeholder || 'Search…'}</span>
+  </div>
+));
+
+registerPreview('login-form', ({ block }) => {
+  const { title, description, buttonText } = block.props || {};
+  return (
+    <div style={styleToCSS(block.props?.style)}>
+      {!!title && <div style={{ fontWeight: 700, fontSize: 15 }}>{title}</div>}
+      {!!description && <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{description}</div>}
+      <button type="button" disabled style={{ marginTop: 12, background: '#0F604B', color: '#fff', border: 'none', padding: '10px 0', width: '100%', fontWeight: 700, fontSize: 12 }}>
+        {buttonText || 'Sign In'}
+      </button>
+    </div>
+  );
+});

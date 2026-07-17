@@ -17,6 +17,9 @@ import ProgressBarBlock from "./ProgressBarBlock";
 import TestimonialBlock from "./TestimonialBlock";
 import PricingBoxBlock from "./PricingBoxBlock";
 import SocialIconsBlock from "./SocialIconsBlock";
+import MapBlock from "./MapBlock";
+import SearchFormBlock from "./SearchFormBlock";
+import LoginFormBlock from "./LoginFormBlock";
 
 // blockType -> native RN renderer. Split into its own file (rather than
 // living inline in AppPageRenderer.tsx) so ContainerBlock can also import it
@@ -51,4 +54,7 @@ export const BLOCK_COMPONENTS: Record<string, React.ComponentType<{ block: any }
   testimonial: TestimonialBlock,
   "pricing-box": PricingBoxBlock,
   "social-icons": SocialIconsBlock,
+  map: MapBlock,
+  "search-form": SearchFormBlock,
+  "login-form": LoginFormBlock,
 };
