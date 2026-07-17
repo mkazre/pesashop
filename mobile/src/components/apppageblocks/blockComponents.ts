@@ -34,6 +34,42 @@ import EasyPostsBlock from "./EasyPostsBlock";
 import DynamicListBlock from "./DynamicListBlock";
 import ProductFeedBlock from "./ProductFeedBlock";
 import FormEmbedBlock from "./FormEmbedBlock";
+import AlertBoxBlock from "./AlertBoxBlock";
+import AnimatedHeadingBlock from "./AnimatedHeadingBlock";
+import BackToTopBlock from "./BackToTopBlock";
+import BeforeAfterBlock from "./BeforeAfterBlock";
+import CircularProgressBlock from "./CircularProgressBlock";
+import CountdownBlock from "./CountdownBlock";
+import DualButtonBlock from "./DualButtonBlock";
+import DualColorTextBlock from "./DualColorTextBlock";
+import FancyHeadingBlock from "./FancyHeadingBlock";
+import HighlightedHeadingBlock from "./HighlightedHeadingBlock";
+import HotspotBlock from "./HotspotBlock";
+import HoverAnimatedButtonBlock from "./HoverAnimatedButtonBlock";
+import IconListBlock from "./IconListBlock";
+import ImageMaskBlock from "./ImageMaskBlock";
+import ImagePanelsBlock from "./ImagePanelsBlock";
+import LightboxBlock from "./LightboxBlock";
+import RatingBlock from "./RatingBlock";
+import ShowMoreLessBlock from "./ShowMoreLessBlock";
+import TooltipBlock from "./TooltipBlock";
+import UltimateImageBlock from "./UltimateImageBlock";
+import UltimateVideoBlock from "./UltimateVideoBlock";
+import AdjacentPostsBlock from "./AdjacentPostsBlock";
+import AuthorBoxBlock from "./AuthorBoxBlock";
+import ContentSwitcherBlock from "./ContentSwitcherBlock";
+import ContentTimelineBlock from "./ContentTimelineBlock";
+import CopyrightYearBlock from "./CopyrightYearBlock";
+import CounterBlock from "./CounterBlock";
+import InfiniteScrollerBlock from "./InfiniteScrollerBlock";
+import MediaPlayerBlock from "./MediaPlayerBlock";
+import PostTermsBlock from "./PostTermsBlock";
+import PreloaderBlock from "./PreloaderBlock";
+import ReadingProgressBarBlock from "./ReadingProgressBarBlock";
+import ReadingTimeBlock from "./ReadingTimeBlock";
+import SocialShareButtonsBlock from "./SocialShareButtonsBlock";
+import TableOfContentsBlock from "./TableOfContentsBlock";
+import ToggleSwitchBlock from "./ToggleSwitchBlock";
 
 // blockType -> native RN renderer. Split into its own file (rather than
 // living inline in AppPageRenderer.tsx) so ContainerBlock can also import it
@@ -91,4 +127,46 @@ export const BLOCK_COMPONENTS: Record<string, React.ComponentType<{ block: any }
   "dynamic-list": DynamicListBlock,
   repeater: ProductFeedBlock,
   "form-embed": FormEmbedBlock,
+  "alert-box": AlertBoxBlock,
+  "animated-heading": AnimatedHeadingBlock,
+  "back-to-top": BackToTopBlock,
+  "before-after": BeforeAfterBlock,
+  // Carousel Builder, Content Slider and Gallery Slider are all
+  // content-identical to Slider (images + title/caption array) — reuse the
+  // same renderer rather than three near-duplicates.
+  "carousel-builder": SliderBlock,
+  "content-slider": SliderBlock,
+  "gallery-slider": SliderBlock,
+  "circular-progress": CircularProgressBlock,
+  countdown: CountdownBlock,
+  "dual-button": DualButtonBlock,
+  "dual-color-text": DualColorTextBlock,
+  "fancy-heading": FancyHeadingBlock,
+  "highlighted-heading": HighlightedHeadingBlock,
+  hotspot: HotspotBlock,
+  "hover-animated-button": HoverAnimatedButtonBlock,
+  "icon-list": IconListBlock,
+  "image-mask": ImageMaskBlock,
+  "image-panels": ImagePanelsBlock,
+  lightbox: LightboxBlock,
+  rating: RatingBlock,
+  "show-more-less": ShowMoreLessBlock,
+  tooltip: TooltipBlock,
+  "ultimate-image": UltimateImageBlock,
+  "ultimate-video": UltimateVideoBlock,
+  "adjacent-posts": AdjacentPostsBlock,
+  "author-box": AuthorBoxBlock,
+  "content-switcher": ContentSwitcherBlock,
+  "content-timeline": ContentTimelineBlock,
+  "copyright-year": CopyrightYearBlock,
+  counter: CounterBlock,
+  "infinite-scroller": InfiniteScrollerBlock,
+  "media-player": MediaPlayerBlock,
+  "post-terms": PostTermsBlock,
+  preloader: PreloaderBlock,
+  "reading-progress-bar": ReadingProgressBarBlock,
+  "reading-time": ReadingTimeBlock,
+  "social-share-buttons": SocialShareButtonsBlock,
+  "table-of-contents": TableOfContentsBlock,
+  "toggle-switch": ToggleSwitchBlock,
 };

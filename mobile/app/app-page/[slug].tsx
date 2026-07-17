@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet } from "react-native";
+import { useState, useEffect, useRef } from "react";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet, Animated } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { appPagesAPI } from "@/services/api";
 import { colors } from "@/theme";
 import AppPageRenderer from "@/components/apppageblocks/AppPageRenderer";
+import { PageScrollContext } from "@/components/apppageblocks/PageScrollContext";
 import BottomTabBar from "@/components/BottomTabBar";
 
 // Renders pages authored in the mobile-only Page Builder (Admin -> Mobile
@@ -20,6 +21,11 @@ export default function AppPageScreen() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState<any>(null);
   const [error, setError] = useState(false);
+
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const scrollRef = useRef<ScrollView>(null);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [layoutHeight, setLayoutHeight] = useState(0);
 
   useEffect(() => {
     if (!slug) return;
@@ -55,9 +61,26 @@ export default function AppPageScreen() {
   return (
     <View style={[s.screen, { paddingTop: insets.top }]}>
       <Header router={router} title={page.title} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
-        <AppPageRenderer blocks={page.blocks || []} />
-      </ScrollView>
+      <PageScrollContext.Provider
+        value={{
+          scrollY,
+          contentHeight,
+          layoutHeight,
+          scrollToTop: () => scrollRef.current?.scrollTo({ y: 0, animated: true }),
+        }}
+      >
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
+          onContentSizeChange={(_, h) => setContentHeight(h)}
+          onLayout={(e) => setLayoutHeight(e.nativeEvent.layout.height)}
+        >
+          <AppPageRenderer blocks={page.blocks || []} />
+        </ScrollView>
+      </PageScrollContext.Provider>
       <BottomTabBar />
     </View>
   );

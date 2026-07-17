@@ -11,6 +11,7 @@ import BlockStylePanel from './BlockStylePanel';
 import ContentFieldsPanel from './ContentFieldsPanel';
 import { getBlockMeta, createBlockFromType } from './blockRegistry';
 import './previews/basicPreviews'; // side-effect: registers preview renderers
+import './previews/enhancedExtrasPreviews';
 
 const newId = () => `block-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 

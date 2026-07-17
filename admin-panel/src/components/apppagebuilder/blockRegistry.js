@@ -12,7 +12,7 @@
 // batch — that's the single riskiest item on the list (needs a small
 // allow-listed HTML parser since rendering is 100% native, no WebView).
 
-export const BLOCK_CATEGORIES = ['Basic', 'Layout'];
+export const BLOCK_CATEGORIES = ['Basic', 'Layout', 'Enhanced', 'Extras'];
 
 // blockType -> { label, category, icon (lucide-react name), isContainer,
 //                defaultProps: { ...content, style: {...} },
@@ -748,6 +748,695 @@ export const BLOCK_REGISTRY = {
       { key: 'source', label: 'Product Source', type: 'select', options: [{ value: 'all', label: 'All Products' }, { value: 'featured', label: 'Featured' }, { value: 'sale', label: 'On Sale' }, { value: 'newest', label: 'Newest' }, { value: 'top-rated', label: 'Top Rated' }] },
       { key: 'limit', label: 'Number of Products', type: 'number' },
       { key: 'columns', label: 'Columns', type: 'select', options: [{ value: 2, label: '2' }, { value: 3, label: '3' }] },
+    ],
+  },
+  // ── Enhanced ─────────────────────────────────────────────────────
+
+  'alert-box': {
+    label: 'Alert Box',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      type: 'info',
+      title: 'Alert Title',
+      message: 'Alert message',
+      style: {},
+    },
+    contentFields: [
+      { key: 'type', label: 'Type', type: 'select', options: [{ value: 'info', label: 'Info' }, { value: 'success', label: 'Success' }, { value: 'warning', label: 'Warning' }, { value: 'error', label: 'Error' }] },
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'message', label: 'Message', type: 'richtext' },
+    ],
+  },
+
+  'animated-heading': {
+    label: 'Animated Heading',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      text: 'Animated Heading',
+      animationType: 'fadeIn',
+      style: { fontSize: 28, fontWeight: '700', color: '#111827', textAlign: 'left' },
+    },
+    contentFields: [
+      { key: 'text', label: 'Text', type: 'text' },
+      { key: 'animationType', label: 'Animation', type: 'select', options: [{ value: 'fadeIn', label: 'Fade In' }, { value: 'slideUp', label: 'Slide Up' }, { value: 'zoomIn', label: 'Zoom In' }] },
+    ],
+  },
+
+  'back-to-top': {
+    label: 'Back to Top',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      scrollThreshold: 300,
+      style: { backgroundColor: '#0F604B', color: '#ffffff' },
+    },
+    contentFields: [
+      { key: 'scrollThreshold', label: 'Show After Scrolling (px)', type: 'number' },
+    ],
+  },
+
+  'before-after': {
+    label: 'Before / After',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      beforeImage: '',
+      afterImage: '',
+      beforeLabel: 'Before',
+      afterLabel: 'After',
+      height: 260,
+      style: {},
+    },
+    contentFields: [
+      { key: 'beforeImage', label: 'Before Image', type: 'image' },
+      { key: 'afterImage', label: 'After Image', type: 'image' },
+      { key: 'beforeLabel', label: 'Before Label', type: 'text' },
+      { key: 'afterLabel', label: 'After Label', type: 'text' },
+      { key: 'height', label: 'Height (px)', type: 'number' },
+    ],
+  },
+
+  'carousel-builder': {
+    label: 'Carousel Builder',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      slides: [{ src: '', title: 'Slide 1', caption: '' }, { src: '', title: 'Slide 2', caption: '' }],
+      showDots: true,
+      height: 240,
+      style: { borderRadius: 8 },
+    },
+    contentFields: [
+      { key: 'slides', label: 'Slides', type: 'items-array', itemFields: [{ key: 'src', label: 'Image', type: 'image' }, { key: 'title', label: 'Title', type: 'text' }, { key: 'caption', label: 'Caption', type: 'text' }] },
+      { key: 'showDots', label: 'Show Dots', type: 'toggle' },
+      { key: 'height', label: 'Height (px)', type: 'number' },
+    ],
+  },
+
+  'circular-progress': {
+    label: 'Circular Progress',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      value: 75,
+      size: 120,
+      strokeWidth: 10,
+      progressColor: '#0F604B',
+      trackColor: '#e5e7eb',
+      showPercentage: true,
+      text: 'Progress',
+      style: {},
+    },
+    contentFields: [
+      { key: 'value', label: 'Value (%)', type: 'number' },
+      { key: 'size', label: 'Size (px)', type: 'number' },
+      { key: 'strokeWidth', label: 'Stroke Width (px)', type: 'number' },
+      { key: 'progressColor', label: 'Progress Color', type: 'color' },
+      { key: 'trackColor', label: 'Track Color', type: 'color' },
+      { key: 'showPercentage', label: 'Show Percentage', type: 'toggle' },
+      { key: 'text', label: 'Label Text', type: 'text' },
+    ],
+  },
+
+  'content-slider': {
+    label: 'Content Slider',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      slides: [{ src: '', title: 'Slide 1', caption: '' }, { src: '', title: 'Slide 2', caption: '' }],
+      showDots: true,
+      height: 240,
+      style: {},
+    },
+    contentFields: [
+      { key: 'slides', label: 'Slides', type: 'items-array', itemFields: [{ key: 'src', label: 'Image', type: 'image' }, { key: 'title', label: 'Title', type: 'text' }, { key: 'caption', label: 'Caption', type: 'text' }] },
+      { key: 'showDots', label: 'Show Dots', type: 'toggle' },
+      { key: 'height', label: 'Height (px)', type: 'number' },
+    ],
+  },
+
+  countdown: {
+    label: 'Countdown',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      targetDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      expiredText: 'Event has ended!',
+      style: { color: '#111827' },
+    },
+    contentFields: [
+      { key: 'targetDate', label: 'Target Date (ISO, e.g. 2026-12-25T00:00)', type: 'text' },
+      { key: 'expiredText', label: 'Expired Text', type: 'text' },
+    ],
+  },
+
+  'dual-button': {
+    label: 'Dual Button',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      primaryText: 'Primary Action',
+      primaryLink: '/',
+      secondaryText: 'Secondary Action',
+      secondaryLink: '/',
+      style: { backgroundColor: '#0F604B', color: '#ffffff' },
+    },
+    contentFields: [
+      { key: 'primaryText', label: 'Primary Text', type: 'text' },
+      { key: 'primaryLink', label: 'Primary Link', type: 'text' },
+      { key: 'secondaryText', label: 'Secondary Text', type: 'text' },
+      { key: 'secondaryLink', label: 'Secondary Link', type: 'text' },
+    ],
+  },
+
+  'dual-color-text': {
+    label: 'Dual Color Text',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      text: 'Dual Color Text',
+      splitPosition: 50,
+      firstColor: '#0F604B',
+      secondColor: '#111827',
+      style: { fontSize: 24, fontWeight: '700', textAlign: 'left' },
+    },
+    contentFields: [
+      { key: 'text', label: 'Text', type: 'text' },
+      { key: 'splitPosition', label: 'Split Position (%)', type: 'number' },
+      { key: 'firstColor', label: 'First Color', type: 'color' },
+      { key: 'secondColor', label: 'Second Color', type: 'color' },
+    ],
+  },
+
+  'fancy-heading': {
+    label: 'Fancy Heading',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      text: 'Fancy Heading',
+      style: { fontSize: 32, fontWeight: '800', color: '#0F604B', textAlign: 'center', letterSpacing: 0 },
+    },
+    contentFields: [
+      { key: 'text', label: 'Text', type: 'text' },
+    ],
+  },
+
+  'gallery-slider': {
+    label: 'Gallery Slider',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      slides: [{ src: '', title: '', caption: '' }, { src: '', title: '', caption: '' }],
+      showDots: true,
+      height: 240,
+      style: { borderRadius: 8 },
+    },
+    contentFields: [
+      { key: 'slides', label: 'Images', type: 'items-array', itemFields: [{ key: 'src', label: 'Image', type: 'image' }, { key: 'caption', label: 'Caption', type: 'text' }] },
+      { key: 'showDots', label: 'Show Dots', type: 'toggle' },
+      { key: 'height', label: 'Height (px)', type: 'number' },
+    ],
+  },
+
+  'highlighted-heading': {
+    label: 'Highlighted Heading',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      beforeText: 'We provide ',
+      highlightText: 'amazing',
+      afterText: ' solutions',
+      highlightColor: '#fbbf24',
+      highlightStyle: 'background',
+      style: { fontSize: 26, fontWeight: '700', color: '#111827', textAlign: 'center' },
+    },
+    contentFields: [
+      { key: 'beforeText', label: 'Before Text', type: 'text' },
+      { key: 'highlightText', label: 'Highlighted Text', type: 'text' },
+      { key: 'afterText', label: 'After Text', type: 'text' },
+      { key: 'highlightColor', label: 'Highlight Color', type: 'color' },
+      { key: 'highlightStyle', label: 'Highlight Style', type: 'select', options: [{ value: 'background', label: 'Background' }, { value: 'underline', label: 'Underline' }, { value: 'color', label: 'Color Only' }] },
+    ],
+  },
+
+  hotspot: {
+    label: 'Hotspot',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      image: '',
+      markers: [{ x: 50, y: 50, text: 'Hotspot label' }],
+      style: {},
+    },
+    contentFields: [
+      { key: 'image', label: 'Image', type: 'image' },
+      { key: 'markers', label: 'Markers', type: 'items-array', itemFields: [{ key: 'x', label: 'X (%)', type: 'text' }, { key: 'y', label: 'Y (%)', type: 'text' }, { key: 'text', label: 'Label', type: 'text' }] },
+    ],
+  },
+
+  'hover-animated-button': {
+    label: 'Animated Button',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      text: 'Tap Me',
+      linkType: 'manual',
+      link: '/',
+      style: { backgroundColor: '#0F604B', color: '#ffffff', fontSize: 14, fontWeight: '700', textAlign: 'center', borderRadius: 8, paddingTop: 14, paddingBottom: 14, paddingLeft: 24, paddingRight: 24 },
+    },
+    contentFields: [
+      { key: 'text', label: 'Text', type: 'text' },
+      { key: 'link', label: 'Link', type: 'text' },
+    ],
+  },
+
+  'icon-list': {
+    label: 'Icon List',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      items: [{ icon: { type: 'icon', value: 'checkmark-circle' }, text: 'Feature one', color: '#22c55e' }, { icon: { type: 'icon', value: 'checkmark-circle' }, text: 'Feature two', color: '#22c55e' }],
+      layout: 'vertical',
+      style: { fontSize: 14, color: '#374151' },
+    },
+    contentFields: [
+      { key: 'items', label: 'Items', type: 'items-array', itemFields: [{ key: 'icon', label: 'Icon', type: 'icon' }, { key: 'text', label: 'Text', type: 'text' }] },
+      { key: 'layout', label: 'Layout', type: 'select', options: [{ value: 'vertical', label: 'Vertical' }, { value: 'horizontal', label: 'Horizontal' }] },
+    ],
+  },
+
+  'image-mask': {
+    label: 'Image Mask',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      src: '',
+      maskShape: 'circle',
+      size: 220,
+      style: {},
+    },
+    contentFields: [
+      { key: 'src', label: 'Image', type: 'image' },
+      { key: 'maskShape', label: 'Shape', type: 'select', options: [{ value: 'circle', label: 'Circle' }, { value: 'rounded', label: 'Rounded' }, { value: 'diamond', label: 'Diamond' }, { value: 'hexagon', label: 'Hexagon' }, { value: 'star', label: 'Star' }] },
+      { key: 'size', label: 'Size (px)', type: 'number' },
+    ],
+  },
+
+  'image-panels': {
+    label: 'Image Panels',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      panels: [{ src: '', title: 'Panel 1' }, { src: '', title: 'Panel 2' }, { src: '', title: 'Panel 3' }],
+      height: 260,
+      style: {},
+    },
+    contentFields: [
+      { key: 'panels', label: 'Panels', type: 'items-array', itemFields: [{ key: 'src', label: 'Image', type: 'image' }, { key: 'title', label: 'Title', type: 'text' }] },
+      { key: 'height', label: 'Height (px)', type: 'number' },
+    ],
+  },
+
+  lightbox: {
+    label: 'Lightbox',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      images: [{ src: '', alt: '' }, { src: '', alt: '' }, { src: '', alt: '' }],
+      columns: 3,
+      style: {},
+    },
+    contentFields: [
+      { key: 'images', label: 'Images', type: 'items-array', itemFields: [{ key: 'src', label: 'Image', type: 'image' }] },
+      { key: 'columns', label: 'Columns', type: 'select', options: [{ value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }] },
+    ],
+  },
+
+  rating: {
+    label: 'Rating',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      value: 4,
+      max: 5,
+      label: '',
+      activeColor: '#fbbf24',
+      style: {},
+    },
+    contentFields: [
+      { key: 'value', label: 'Value', type: 'number' },
+      { key: 'max', label: 'Max', type: 'number' },
+      { key: 'label', label: 'Label', type: 'text' },
+      { key: 'activeColor', label: 'Star Color', type: 'color' },
+    ],
+  },
+
+  'show-more-less': {
+    label: 'Show More/Less',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      content: 'Add a longer piece of text here that will be truncated until the reader chooses to expand it.',
+      collapsedLines: 3,
+      moreText: 'Show More',
+      lessText: 'Show Less',
+      style: { fontSize: 14, color: '#374151' },
+    },
+    contentFields: [
+      { key: 'content', label: 'Content', type: 'richtext' },
+      { key: 'collapsedLines', label: 'Collapsed Lines', type: 'number' },
+      { key: 'moreText', label: 'More Text', type: 'text' },
+      { key: 'lessText', label: 'Less Text', type: 'text' },
+    ],
+  },
+
+  tooltip: {
+    label: 'Tooltip',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      triggerText: 'Tap for info',
+      tooltipText: 'This is a tooltip',
+      style: { color: '#374151' },
+    },
+    contentFields: [
+      { key: 'triggerText', label: 'Trigger Text', type: 'text' },
+      { key: 'tooltipText', label: 'Tooltip Text', type: 'text' },
+    ],
+  },
+
+  'ultimate-image': {
+    label: 'Ultimate Image',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      src: '',
+      alt: '',
+      caption: '',
+      linkType: 'manual',
+      link: '',
+      lightbox: false,
+      style: { borderRadius: 8 },
+    },
+    contentFields: [
+      { key: 'src', label: 'Image', type: 'image' },
+      { key: 'alt', label: 'Alt Text', type: 'text' },
+      { key: 'caption', label: 'Caption', type: 'text' },
+      { key: 'link', label: 'Link (optional)', type: 'text' },
+      { key: 'lightbox', label: 'Tap to Enlarge', type: 'toggle' },
+    ],
+  },
+
+  'ultimate-video': {
+    label: 'Ultimate Video',
+    category: 'Enhanced',
+    isContainer: false,
+    defaultProps: {
+      type: 'self',
+      src: '',
+      youtubeId: '',
+      vimeoId: '',
+      poster: '',
+      autoplay: false,
+      loop: false,
+      muted: false,
+      controls: true,
+      style: { borderRadius: 8 },
+    },
+    contentFields: [
+      { key: 'type', label: 'Video Type', type: 'select', options: [{ value: 'self', label: 'Self Hosted' }, { value: 'youtube', label: 'YouTube' }, { value: 'vimeo', label: 'Vimeo' }] },
+      { key: 'src', label: 'Video File (self hosted)', type: 'image' },
+      { key: 'youtubeId', label: 'YouTube Video ID', type: 'text' },
+      { key: 'vimeoId', label: 'Vimeo Video ID', type: 'text' },
+      { key: 'poster', label: 'Poster Image', type: 'image' },
+      { key: 'autoplay', label: 'Autoplay (self hosted only)', type: 'toggle' },
+      { key: 'loop', label: 'Loop (self hosted only)', type: 'toggle' },
+      { key: 'muted', label: 'Muted (self hosted only)', type: 'toggle' },
+    ],
+  },
+
+  // ── Extras ───────────────────────────────────────────────────────
+
+  'adjacent-posts': {
+    label: 'Adjacent Posts',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      prevLabel: '← Previous',
+      prevTitle: 'Previous item title',
+      prevLink: '',
+      nextLabel: 'Next →',
+      nextTitle: 'Next item title',
+      nextLink: '',
+      style: {},
+    },
+    contentFields: [
+      { key: 'prevLabel', label: 'Previous Label', type: 'text' },
+      { key: 'prevTitle', label: 'Previous Title', type: 'text' },
+      { key: 'prevLink', label: 'Previous Link', type: 'text' },
+      { key: 'nextLabel', label: 'Next Label', type: 'text' },
+      { key: 'nextTitle', label: 'Next Title', type: 'text' },
+      { key: 'nextLink', label: 'Next Link', type: 'text' },
+    ],
+  },
+
+  'author-box': {
+    label: 'Author Box',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      name: 'Author Name',
+      bio: 'A short author bio goes here.',
+      avatar: '',
+      style: { backgroundColor: '#f9fafb', borderRadius: 12, paddingTop: 16, paddingBottom: 16, paddingLeft: 16, paddingRight: 16 },
+    },
+    contentFields: [
+      { key: 'name', label: 'Name', type: 'text' },
+      { key: 'bio', label: 'Bio', type: 'richtext' },
+      { key: 'avatar', label: 'Avatar', type: 'image' },
+    ],
+  },
+
+  'content-switcher': {
+    label: 'Content Switcher',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      labelA: 'Monthly',
+      labelB: 'Yearly',
+      contentA: 'Monthly content goes here.',
+      contentB: 'Yearly content goes here.',
+      activeColor: '#0F604B',
+      style: {},
+    },
+    contentFields: [
+      { key: 'labelA', label: 'Label A', type: 'text' },
+      { key: 'labelB', label: 'Label B', type: 'text' },
+      { key: 'contentA', label: 'Content A', type: 'richtext' },
+      { key: 'contentB', label: 'Content B', type: 'richtext' },
+      { key: 'activeColor', label: 'Active Color', type: 'color' },
+    ],
+  },
+
+  'content-timeline': {
+    label: 'Content Timeline',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      items: [{ date: '2025', title: 'Milestone one', description: 'Description here.' }, { date: '2026', title: 'Milestone two', description: 'Description here.' }],
+      dotColor: '#0F604B',
+      style: {},
+    },
+    contentFields: [
+      { key: 'items', label: 'Items', type: 'items-array', itemFields: [{ key: 'date', label: 'Date', type: 'text' }, { key: 'title', label: 'Title', type: 'text' }, { key: 'description', label: 'Description', type: 'text' }] },
+      { key: 'dotColor', label: 'Dot Color', type: 'color' },
+    ],
+  },
+
+  'copyright-year': {
+    label: 'Copyright Year',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      text: '© {year} Your Company. All rights reserved.',
+      style: { fontSize: 13, color: '#6b7280', textAlign: 'center' },
+    },
+    contentFields: [
+      { key: 'text', label: 'Text (use {year} for current year)', type: 'text' },
+    ],
+  },
+
+  counter: {
+    label: 'Counter',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      startValue: 0,
+      endValue: 1000,
+      duration: 2000,
+      prefix: '',
+      suffix: '+',
+      title: 'Happy Customers',
+      style: { color: '#111827', textAlign: 'center' },
+    },
+    contentFields: [
+      { key: 'startValue', label: 'Start Value', type: 'number' },
+      { key: 'endValue', label: 'End Value', type: 'number' },
+      { key: 'duration', label: 'Duration (ms)', type: 'number' },
+      { key: 'prefix', label: 'Prefix', type: 'text' },
+      { key: 'suffix', label: 'Suffix', type: 'text' },
+      { key: 'title', label: 'Title', type: 'text' },
+    ],
+  },
+
+  'infinite-scroller': {
+    label: 'Infinite Scroller',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      items: ['Item one', 'Item two', 'Item three'],
+      speed: 8000,
+      style: { fontSize: 15, color: '#374151' },
+    },
+    contentFields: [
+      { key: 'items', label: 'Items', type: 'items-array', itemFields: [{ key: 'text', label: 'Text', type: 'text' }] },
+      { key: 'speed', label: 'Speed (ms per loop)', type: 'number' },
+    ],
+  },
+
+  'media-player': {
+    label: 'Media Player',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      type: 'video',
+      src: '',
+      poster: '',
+      controls: true,
+      loop: false,
+      muted: false,
+      style: { borderRadius: 8 },
+    },
+    contentFields: [
+      { key: 'type', label: 'Type', type: 'select', options: [{ value: 'video', label: 'Video' }, { value: 'audio', label: 'Audio' }] },
+      { key: 'src', label: 'Media File', type: 'image' },
+      { key: 'poster', label: 'Poster (video only)', type: 'image' },
+      { key: 'loop', label: 'Loop', type: 'toggle' },
+      { key: 'muted', label: 'Muted', type: 'toggle' },
+    ],
+  },
+
+  'post-terms': {
+    label: 'Post Terms',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      taxonomy: 'Categories',
+      terms: [{ text: 'Technology' }, { text: 'Design' }],
+      style: { fontSize: 14, color: '#374151' },
+    },
+    contentFields: [
+      { key: 'taxonomy', label: 'Label', type: 'text' },
+      { key: 'terms', label: 'Terms', type: 'items-array', itemFields: [{ key: 'text', label: 'Text', type: 'text' }] },
+    ],
+  },
+
+  preloader: {
+    label: 'Preloader',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      type: 'spinner',
+      text: 'Loading...',
+      showText: true,
+      color: '#0F604B',
+      style: {},
+    },
+    contentFields: [
+      { key: 'type', label: 'Type', type: 'select', options: [{ value: 'spinner', label: 'Spinner' }, { value: 'pulse', label: 'Pulse' }, { value: 'dots', label: 'Dots' }] },
+      { key: 'text', label: 'Text', type: 'text' },
+      { key: 'showText', label: 'Show Text', type: 'toggle' },
+      { key: 'color', label: 'Color', type: 'color' },
+    ],
+  },
+
+  'reading-progress-bar': {
+    label: 'Reading Progress Bar',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      color: '#0F604B',
+      height: 4,
+      style: {},
+    },
+    contentFields: [
+      { key: 'color', label: 'Bar Color', type: 'color' },
+      { key: 'height', label: 'Height (px)', type: 'number' },
+    ],
+  },
+
+  'reading-time': {
+    label: 'Reading Time',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      text: '5 min read',
+      icon: { type: 'icon', value: 'book-outline' },
+      style: { fontSize: 13, color: '#6b7280' },
+    },
+    contentFields: [
+      { key: 'text', label: 'Text', type: 'text' },
+      { key: 'icon', label: 'Icon', type: 'icon' },
+    ],
+  },
+
+  'social-share-buttons': {
+    label: 'Social Share Buttons',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      shareUrl: '',
+      shareText: 'Check this out!',
+      platforms: ['facebook', 'twitter', 'whatsapp', 'email'],
+      style: {},
+    },
+    contentFields: [
+      { key: 'shareUrl', label: 'Share URL', type: 'text' },
+      { key: 'shareText', label: 'Share Text', type: 'text' },
+    ],
+  },
+
+  'table-of-contents': {
+    label: 'Table of Contents',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      title: 'Table of Contents',
+      items: [{ text: 'Introduction', level: 1 }, { text: 'Getting Started', level: 1 }, { text: 'Details', level: 2 }],
+      style: { backgroundColor: '#f9fafb', borderRadius: 8, paddingTop: 16, paddingBottom: 16, paddingLeft: 16, paddingRight: 16 },
+    },
+    contentFields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'items', label: 'Items', type: 'items-array', itemFields: [{ key: 'text', label: 'Text', type: 'text' }] },
+    ],
+  },
+
+  'toggle-switch': {
+    label: 'Toggle Switch',
+    category: 'Extras',
+    isContainer: false,
+    defaultProps: {
+      label: 'Enable feature',
+      defaultChecked: false,
+      activeColor: '#0F604B',
+      style: {},
+    },
+    contentFields: [
+      { key: 'label', label: 'Label', type: 'text' },
+      { key: 'defaultChecked', label: 'Default On', type: 'toggle' },
+      { key: 'activeColor', label: 'Active Color', type: 'color' },
     ],
   },
 };
