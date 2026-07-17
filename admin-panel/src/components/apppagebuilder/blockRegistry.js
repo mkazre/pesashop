@@ -240,6 +240,73 @@ export const BLOCK_REGISTRY = {
       { key: 'icon', label: 'Icon', type: 'icon' },
     ],
   },
+
+  'rich-text': {
+    label: 'Rich Text',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      html: 'Add <b>formatted</b> text here.',
+      style: { fontSize: 14, color: '#374151' },
+    },
+    contentFields: [
+      { key: 'html', label: 'Content (supports <b>, <i>, <u>, <br>)', type: 'richtext' },
+    ],
+  },
+
+  'text-block': {
+    label: 'Text Block',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      html: 'A paragraph of text.',
+      style: { fontSize: 14, color: '#374151' },
+    },
+    contentFields: [
+      { key: 'html', label: 'Content (supports <b>, <i>, <u>, <br>)', type: 'richtext' },
+    ],
+  },
+
+  span: {
+    label: 'Span',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      text: 'Inline text',
+      style: { fontSize: 14, color: '#374151' },
+    },
+    contentFields: [
+      { key: 'text', label: 'Text', type: 'text' },
+    ],
+  },
+
+  'code-block': {
+    label: 'Code Block',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      code: 'console.log("hello");',
+      style: {},
+    },
+    contentFields: [
+      { key: 'code', label: 'Code', type: 'richtext' },
+    ],
+  },
+
+  'svg-icon': {
+    label: 'SVG Icon',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      svg: '',
+      size: 32,
+      style: {},
+    },
+    contentFields: [
+      { key: 'svg', label: 'SVG Markup', type: 'richtext' },
+      { key: 'size', label: 'Size (px)', type: 'number' },
+    ],
+  },
 };
 
 export function getBlockMeta(blockType) {

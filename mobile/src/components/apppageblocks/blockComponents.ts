@@ -9,6 +9,9 @@ import GalleryBlock from "./GalleryBlock";
 import LinkTextBlock from "./LinkTextBlock";
 import LinkWrapperBlock from "./LinkWrapperBlock";
 import FancyIconBlock from "./FancyIconBlock";
+import RichTextBlock from "./RichTextBlock";
+import CodeBlockBlock from "./CodeBlockBlock";
+import SvgIconBlock from "./SvgIconBlock";
 
 // blockType -> native RN renderer. Split into its own file (rather than
 // living inline in AppPageRenderer.tsx) so ContainerBlock can also import it
@@ -28,4 +31,14 @@ export const BLOCK_COMPONENTS: Record<string, React.ComponentType<{ block: any }
   "link-text": LinkTextBlock,
   "link-wrapper": LinkWrapperBlock,
   "fancy-icon": FancyIconBlock,
+  "rich-text": RichTextBlock,
+  // Text Block ("HTML paragraph block") is content-identical to Rich Text —
+  // both are an HTML string rendered through the same allow-listed parser.
+  "text-block": RichTextBlock,
+  // Span is a plain inline text run; reusing TextBlock is a reasonable
+  // simplification since this app's block list has no true inline-flow
+  // concept (each block is its own row).
+  span: TextBlock,
+  "code-block": CodeBlockBlock,
+  "svg-icon": SvgIconBlock,
 };

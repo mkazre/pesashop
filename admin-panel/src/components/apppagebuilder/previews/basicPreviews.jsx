@@ -123,3 +123,27 @@ registerPreview('fancy-icon', ({ block }) => {
     </div>
   );
 });
+
+registerPreview('rich-text', ({ block }) => (
+  <div style={styleToCSS(block.props?.style)} dangerouslySetInnerHTML={{ __html: block.props?.html || '' }} />
+));
+
+registerPreview('text-block', ({ block }) => (
+  <div style={styleToCSS(block.props?.style)} dangerouslySetInnerHTML={{ __html: block.props?.html || '' }} />
+));
+
+registerPreview('span', ({ block }) => (
+  <span style={styleToCSS(block.props?.style)}>{block.props?.text || ''}</span>
+));
+
+registerPreview('code-block', ({ block }) => (
+  <pre style={{ background: '#1f2937', color: '#e5e7eb', padding: 10, fontSize: 11, overflowX: 'auto', margin: 0 }}>
+    {block.props?.code || ''}
+  </pre>
+));
+
+registerPreview('svg-icon', ({ block }) => (
+  block.props?.svg
+    ? <div style={{ width: block.props?.size || 32, height: block.props?.size || 32 }} dangerouslySetInnerHTML={{ __html: block.props.svg }} />
+    : <div className="text-xs text-gray-400 text-center py-2">No SVG markup</div>
+));
