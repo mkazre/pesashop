@@ -37,6 +37,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "googleServicesFile": "./google-services.json",
       "package": "com.pesashop.mobile",
       "versionCode": 1,
       "permissions": [

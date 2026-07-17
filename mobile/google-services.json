@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "839247738336",
+    "project_id": "pesanotifications",
+    "storage_bucket": "pesanotifications.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:839247738336:android:a72af891b5dc8cc2fe2785",
+        "android_client_info": {
+          "package_name": "com.pesashop.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7B7kAUsK4xRflYz1x6jbwgAqMrqT9yfs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
