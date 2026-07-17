@@ -462,6 +462,279 @@ export const BLOCK_REGISTRY = {
       { key: 'buttonText', label: 'Button Text', type: 'text' },
     ],
   },
+  section: {
+    label: 'Section',
+    category: 'Layout',
+    isContainer: true,
+    defaultProps: {
+      direction: 'column',
+      gap: 8,
+      style: { backgroundColor: 'transparent', paddingTop: 32, paddingBottom: 32, paddingLeft: 0, paddingRight: 0 },
+    },
+    contentFields: [
+      {
+        key: 'direction', label: 'Layout Direction', type: 'select',
+        options: [{ value: 'column', label: 'Vertical (stacked)' }, { value: 'row', label: 'Horizontal (side by side)' }],
+      },
+      { key: 'gap', label: 'Gap Between Children (px)', type: 'number' },
+    ],
+  },
+
+  'css-grid': {
+    label: 'CSS Grid',
+    category: 'Layout',
+    isContainer: true,
+    defaultProps: {
+      columns: 2,
+      gap: 12,
+      style: { paddingTop: 8, paddingBottom: 8 },
+    },
+    contentFields: [
+      { key: 'columns', label: 'Columns', type: 'select', options: [{ value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }] },
+      { key: 'gap', label: 'Gap (px)', type: 'number' },
+    ],
+  },
+
+  'div-block': {
+    label: 'Div Block',
+    category: 'Layout',
+    isContainer: true,
+    defaultProps: {
+      direction: 'column',
+      gap: 8,
+      style: { backgroundColor: 'transparent' },
+    },
+    contentFields: [
+      {
+        key: 'direction', label: 'Layout Direction', type: 'select',
+        options: [{ value: 'column', label: 'Vertical (stacked)' }, { value: 'row', label: 'Horizontal (side by side)' }],
+      },
+      { key: 'gap', label: 'Gap Between Children (px)', type: 'number' },
+    ],
+  },
+
+  columns: {
+    label: 'Columns',
+    category: 'Layout',
+    isContainer: true,
+    defaultProps: {
+      columns: 2,
+      gap: 12,
+      style: { paddingTop: 8, paddingBottom: 8 },
+    },
+    contentFields: [
+      { key: 'columns', label: 'Number of Columns', type: 'select', options: [{ value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }] },
+      { key: 'gap', label: 'Gap (px)', type: 'number' },
+    ],
+  },
+
+  accordion: {
+    label: 'Accordion',
+    category: 'Layout',
+    isContainer: false,
+    defaultProps: {
+      items: [
+        { title: 'Accordion item 1', content: 'Content for the first item.' },
+        { title: 'Accordion item 2', content: 'Content for the second item.' },
+      ],
+      allowMultiple: false,
+      style: { borderColor: '#e5e7eb', borderWidth: 1, borderRadius: 8 },
+    },
+    contentFields: [
+      { key: 'items', label: 'Items', type: 'items-array', itemFields: [{ key: 'title', label: 'Title', type: 'text' }, { key: 'content', label: 'Content', type: 'text' }] },
+      { key: 'allowMultiple', label: 'Allow Multiple Open', type: 'toggle' },
+    ],
+  },
+
+  slider: {
+    label: 'Slider',
+    category: 'Layout',
+    isContainer: false,
+    defaultProps: {
+      slides: [
+        { src: '', title: 'Slide 1', caption: '' },
+        { src: '', title: 'Slide 2', caption: '' },
+      ],
+      showDots: true,
+      height: 220,
+      style: { borderRadius: 0 },
+    },
+    contentFields: [
+      { key: 'slides', label: 'Slides', type: 'items-array', itemFields: [{ key: 'src', label: 'Image', type: 'image' }, { key: 'title', label: 'Title', type: 'text' }, { key: 'caption', label: 'Caption', type: 'text' }] },
+      { key: 'showDots', label: 'Show Dots', type: 'toggle' },
+      { key: 'height', label: 'Height (px)', type: 'number' },
+    ],
+  },
+
+  tabs: {
+    label: 'Tabs',
+    category: 'Layout',
+    isContainer: false,
+    defaultProps: {
+      tabs: [
+        { title: 'Tab 1', content: 'Content for tab 1' },
+        { title: 'Tab 2', content: 'Content for tab 2' },
+      ],
+      activeColor: '#0F604B',
+      style: {},
+    },
+    contentFields: [
+      { key: 'tabs', label: 'Tabs', type: 'items-array', itemFields: [{ key: 'title', label: 'Label', type: 'text' }, { key: 'content', label: 'Content', type: 'text' }] },
+      { key: 'activeColor', label: 'Active Color', type: 'color' },
+    ],
+  },
+
+  toggle: {
+    label: 'Toggle',
+    category: 'Layout',
+    isContainer: false,
+    defaultProps: {
+      title: 'Toggle title',
+      content: 'Toggle content goes here. Tap the title to expand or collapse.',
+      defaultOpen: false,
+      style: { borderColor: '#e5e7eb', borderWidth: 1, borderRadius: 8 },
+    },
+    contentFields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'content', label: 'Content', type: 'richtext' },
+      { key: 'defaultOpen', label: 'Open by Default', type: 'toggle' },
+    ],
+  },
+
+  superbox: {
+    label: 'Superbox',
+    category: 'Layout',
+    isContainer: false,
+    defaultProps: {
+      image: '',
+      title: 'Superbox title',
+      description: 'Tap to reveal this overlay text.',
+      height: 220,
+      style: { borderRadius: 8 },
+    },
+    contentFields: [
+      { key: 'image', label: 'Image', type: 'image' },
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'description', label: 'Description', type: 'text' },
+      { key: 'height', label: 'Height (px)', type: 'number' },
+    ],
+  },
+
+  'shape-divider': {
+    label: 'Shape Divider',
+    category: 'Layout',
+    isContainer: false,
+    defaultProps: {
+      shape: 'wave',
+      color: '#0F604B',
+      height: 60,
+      flip: false,
+      position: 'bottom',
+      style: {},
+    },
+    contentFields: [
+      { key: 'shape', label: 'Shape', type: 'select', options: [{ value: 'wave', label: 'Wave' }, { value: 'triangle', label: 'Triangle' }, { value: 'tilt', label: 'Tilt' }, { value: 'curve', label: 'Curve' }, { value: 'zigzag', label: 'Zigzag' }] },
+      { key: 'color', label: 'Color', type: 'color' },
+      { key: 'height', label: 'Height (px)', type: 'number' },
+      { key: 'flip', label: 'Flip Horizontal', type: 'toggle' },
+      { key: 'position', label: 'Position', type: 'select', options: [{ value: 'bottom', label: 'Bottom' }, { value: 'top', label: 'Top' }] },
+    ],
+  },
+
+  menu: {
+    label: 'Menu',
+    category: 'Layout',
+    isContainer: false,
+    defaultProps: {
+      items: [{ label: 'Home', link: '/' }, { label: 'Shop', link: '/categories' }],
+      layout: 'horizontal',
+      style: { fontSize: 14, color: '#374151' },
+    },
+    contentFields: [
+      { key: 'items', label: 'Items', type: 'items-array', itemFields: [{ key: 'label', label: 'Label', type: 'text' }, { key: 'link', label: 'Link', type: 'text' }] },
+      { key: 'layout', label: 'Layout', type: 'select', options: [{ value: 'horizontal', label: 'Horizontal' }, { value: 'vertical', label: 'Vertical' }] },
+    ],
+  },
+
+  header: {
+    label: 'Header',
+    category: 'Layout',
+    isContainer: true,
+    defaultProps: {
+      direction: 'column',
+      gap: 0,
+      style: { backgroundColor: '#ffffff' },
+    },
+    contentFields: [],
+  },
+
+  'header-row': {
+    label: 'Header Row',
+    category: 'Layout',
+    isContainer: true,
+    defaultProps: {
+      layout: 'space-between',
+      alignItems: 'center',
+      gap: 12,
+      style: { paddingTop: 8, paddingBottom: 8, paddingLeft: 16, paddingRight: 16 },
+    },
+    contentFields: [
+      { key: 'layout', label: 'Justify Content', type: 'select', options: [{ value: 'flex-start', label: 'Start' }, { value: 'center', label: 'Center' }, { value: 'flex-end', label: 'End' }, { value: 'space-between', label: 'Space Between' }] },
+      { key: 'alignItems', label: 'Align Items', type: 'select', options: [{ value: 'flex-start', label: 'Top' }, { value: 'center', label: 'Center' }, { value: 'flex-end', label: 'Bottom' }] },
+      { key: 'gap', label: 'Gap (px)', type: 'number' },
+    ],
+  },
+
+  'easy-posts': {
+    label: 'Easy Posts',
+    category: 'Layout',
+    isContainer: false,
+    defaultProps: {
+      posts: [
+        { title: 'Post title one', excerpt: 'A short excerpt of the post.', image: '', date: '' },
+        { title: 'Post title two', excerpt: 'A short excerpt of the post.', image: '', date: '' },
+      ],
+      columns: 1,
+      style: {},
+    },
+    contentFields: [
+      { key: 'posts', label: 'Posts', type: 'items-array', itemFields: [{ key: 'image', label: 'Image', type: 'image' }, { key: 'title', label: 'Title', type: 'text' }, { key: 'excerpt', label: 'Excerpt', type: 'text' }, { key: 'date', label: 'Date', type: 'text' }] },
+      { key: 'columns', label: 'Columns', type: 'select', options: [{ value: 1, label: '1' }, { value: 2, label: '2' }] },
+    ],
+  },
+
+  'dynamic-list': {
+    label: 'Dynamic List',
+    category: 'Layout',
+    isContainer: false,
+    defaultProps: {
+      items: [
+        { icon: { type: 'emoji', value: '📌' }, title: 'Item one', description: 'Description for item one' },
+        { icon: { type: 'emoji', value: '📌' }, title: 'Item two', description: 'Description for item two' },
+      ],
+      style: {},
+    },
+    contentFields: [
+      { key: 'items', label: 'Items', type: 'items-array', itemFields: [{ key: 'icon', label: 'Icon', type: 'icon' }, { key: 'title', label: 'Title', type: 'text' }, { key: 'description', label: 'Description', type: 'text' }] },
+    ],
+  },
+
+  repeater: {
+    label: 'Product Feed',
+    category: 'Layout',
+    isContainer: false,
+    defaultProps: {
+      source: 'featured',
+      limit: 6,
+      columns: 2,
+      style: {},
+    },
+    contentFields: [
+      { key: 'source', label: 'Product Source', type: 'select', options: [{ value: 'all', label: 'All Products' }, { value: 'featured', label: 'Featured' }, { value: 'sale', label: 'On Sale' }, { value: 'newest', label: 'Newest' }, { value: 'top-rated', label: 'Top Rated' }] },
+      { key: 'limit', label: 'Number of Products', type: 'number' },
+      { key: 'columns', label: 'Columns', type: 'select', options: [{ value: 2, label: '2' }, { value: 3, label: '3' }] },
+    ],
+  },
 };
 
 export function getBlockMeta(blockType) {

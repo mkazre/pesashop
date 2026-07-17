@@ -20,6 +20,19 @@ import SocialIconsBlock from "./SocialIconsBlock";
 import MapBlock from "./MapBlock";
 import SearchFormBlock from "./SearchFormBlock";
 import LoginFormBlock from "./LoginFormBlock";
+import CSSGridBlock from "./CSSGridBlock";
+import ColumnsBlock from "./ColumnsBlock";
+import HeaderRowBlock from "./HeaderRowBlock";
+import AccordionBlock from "./AccordionBlock";
+import SliderBlock from "./SliderBlock";
+import TabsBlock from "./TabsBlock";
+import ToggleBlock from "./ToggleBlock";
+import SuperboxBlock from "./SuperboxBlock";
+import ShapeDividerBlock from "./ShapeDividerBlock";
+import MenuBlock from "./MenuBlock";
+import EasyPostsBlock from "./EasyPostsBlock";
+import DynamicListBlock from "./DynamicListBlock";
+import ProductFeedBlock from "./ProductFeedBlock";
 
 // blockType -> native RN renderer. Split into its own file (rather than
 // living inline in AppPageRenderer.tsx) so ContainerBlock can also import it
@@ -57,4 +70,23 @@ export const BLOCK_COMPONENTS: Record<string, React.ComponentType<{ block: any }
   map: MapBlock,
   "search-form": SearchFormBlock,
   "login-form": LoginFormBlock,
+  // Section, Div Block and Header are all plain full-width containers with
+  // a direction/gap content schema identical to Container's — no need for
+  // three near-duplicate renderers.
+  section: ContainerBlock,
+  "div-block": ContainerBlock,
+  header: ContainerBlock,
+  "css-grid": CSSGridBlock,
+  columns: ColumnsBlock,
+  "header-row": HeaderRowBlock,
+  accordion: AccordionBlock,
+  slider: SliderBlock,
+  tabs: TabsBlock,
+  toggle: ToggleBlock,
+  superbox: SuperboxBlock,
+  "shape-divider": ShapeDividerBlock,
+  menu: MenuBlock,
+  "easy-posts": EasyPostsBlock,
+  "dynamic-list": DynamicListBlock,
+  repeater: ProductFeedBlock,
 };

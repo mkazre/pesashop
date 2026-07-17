@@ -268,3 +268,184 @@ registerPreview('login-form', ({ block }) => {
     </div>
   );
 });
+
+registerPreview('section', ({ block }) => (
+  <div style={{ ...styleToCSS(block.props?.style), minHeight: 24, border: '1px dashed #d1d5db' }}>
+    <span className="text-[10px] text-gray-400">Section ({block.props?.direction || 'column'}) — {(block.children || []).length} child block(s)</span>
+  </div>
+));
+
+registerPreview('css-grid', ({ block }) => {
+  const columns = block.props?.columns || 2;
+  const children = block.children || [];
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), display: 'grid', gridTemplateColumns: `repeat(${columns}, 1fr)`, gap: block.props?.gap ?? 12, border: '1px dashed #d1d5db', minHeight: 24, padding: 6 }}>
+      {children.length
+        ? children.map((c, i) => <div key={i} className="text-[10px] text-gray-400 border border-dashed border-gray-300 p-2">{c.blockType}</div>)
+        : <span className="text-[10px] text-gray-400">CSS Grid ({columns} cols) — no children</span>}
+    </div>
+  );
+});
+
+registerPreview('div-block', ({ block }) => (
+  <div style={{ ...styleToCSS(block.props?.style), minHeight: 24, border: '1px dashed #d1d5db' }}>
+    <span className="text-[10px] text-gray-400">Div Block ({block.props?.direction || 'column'}) — {(block.children || []).length} child block(s)</span>
+  </div>
+));
+
+registerPreview('columns', ({ block }) => {
+  const columns = block.props?.columns || 2;
+  const children = block.children || [];
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), display: 'flex', gap: block.props?.gap ?? 12, border: '1px dashed #d1d5db', minHeight: 24, padding: 6 }}>
+      {Array.from({ length: columns }).map((_, i) => (
+        <div key={i} style={{ flex: 1 }} className="text-[10px] text-gray-400 border border-dashed border-gray-300 p-2 text-center">
+          {children[i]?.blockType || `Col ${i + 1}`}
+        </div>
+      ))}
+    </div>
+  );
+});
+
+registerPreview('accordion', ({ block }) => {
+  const items = Array.isArray(block.props?.items) ? block.props.items : [];
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), border: '1px solid #e5e7eb' }}>
+      {items.map((it, i) => (
+        <div key={i} style={{ padding: '8px 10px', borderBottom: i < items.length - 1 ? '1px solid #e5e7eb' : 'none', fontSize: 12 }}>
+          <strong>{it.title}</strong>
+        </div>
+      ))}
+      {!items.length && <div className="text-xs text-gray-400 p-2">No items</div>}
+    </div>
+  );
+});
+
+registerPreview('slider', ({ block }) => {
+  const slides = Array.isArray(block.props?.slides) ? block.props.slides : [];
+  const first = slides[0];
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), height: block.props?.height || 220, background: '#f3f4f6', position: 'relative', overflow: 'hidden' }}>
+      {first?.src ? <img src={first.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div className="text-xs text-gray-400 h-full flex items-center justify-center">No slides added</div>}
+      {slides.length > 1 && (
+        <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4 }}>
+          {slides.map((_, i) => <span key={i} style={{ width: 6, height: 6, borderRadius: 3, background: i === 0 ? '#0F604B' : '#fff' }} />)}
+        </div>
+      )}
+    </div>
+  );
+});
+
+registerPreview('tabs', ({ block }) => {
+  const tabs = Array.isArray(block.props?.tabs) ? block.props.tabs : [];
+  const activeColor = block.props?.activeColor || '#0F604B';
+  return (
+    <div style={styleToCSS(block.props?.style)}>
+      <div style={{ display: 'flex', gap: 12, borderBottom: '2px solid #e5e7eb' }}>
+        {tabs.map((t, i) => (
+          <span key={i} style={{ fontSize: 12, fontWeight: i === 0 ? 700 : 400, color: i === 0 ? activeColor : '#6b7280', paddingBottom: 6, borderBottom: i === 0 ? `2px solid ${activeColor}` : 'none', marginBottom: -2 }}>{t.title}</span>
+        ))}
+      </div>
+      <div style={{ fontSize: 12, color: '#374151', padding: '8px 0' }}>{tabs[0]?.content || ''}</div>
+    </div>
+  );
+});
+
+registerPreview('toggle', ({ block }) => {
+  const { title, defaultOpen } = block.props || {};
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), border: '1px solid #e5e7eb' }}>
+      <div style={{ padding: '10px 12px', display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 500 }}>
+        <span>{title}</span>
+        <span>{defaultOpen ? '▾' : '▸'}</span>
+      </div>
+    </div>
+  );
+});
+
+registerPreview('superbox', ({ block }) => {
+  const { image, title, description, height } = block.props || {};
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), height: height || 220, position: 'relative', background: '#e5e7eb', overflow: 'hidden' }}>
+      {image && <img src={image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', textAlign: 'center', padding: 12 }}>
+        <div style={{ fontWeight: 700, fontSize: 14 }}>{title}</div>
+        <div style={{ fontSize: 11, opacity: 0.85, marginTop: 4 }}>{description}</div>
+      </div>
+    </div>
+  );
+});
+
+registerPreview('shape-divider', ({ block }) => {
+  const { color, height } = block.props || {};
+  return <div style={{ ...styleToCSS(block.props?.style), height: height || 60, background: `linear-gradient(0deg, ${color || '#0F604B'} 0%, transparent 100%)`, opacity: 0.6 }} />;
+});
+
+registerPreview('menu', ({ block }) => {
+  const items = Array.isArray(block.props?.items) ? block.props.items : [];
+  const vertical = block.props?.layout === 'vertical';
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), display: 'flex', flexDirection: vertical ? 'column' : 'row', gap: 14 }}>
+      {items.map((it, i) => <span key={i} style={{ fontSize: 13 }}>{it.label}</span>)}
+    </div>
+  );
+});
+
+registerPreview('header', ({ block }) => (
+  <div style={{ ...styleToCSS(block.props?.style), minHeight: 24, border: '1px dashed #d1d5db' }}>
+    <span className="text-[10px] text-gray-400">Header — {(block.children || []).length} child block(s)</span>
+  </div>
+));
+
+registerPreview('header-row', ({ block }) => (
+  <div style={{ ...styleToCSS(block.props?.style), minHeight: 24, border: '1px dashed #d1d5db', display: 'flex', justifyContent: block.props?.layout || 'space-between', alignItems: block.props?.alignItems || 'center' }}>
+    <span className="text-[10px] text-gray-400">Header Row — {(block.children || []).length} child block(s)</span>
+  </div>
+));
+
+registerPreview('easy-posts', ({ block }) => {
+  const posts = Array.isArray(block.props?.posts) ? block.props.posts : [];
+  const columns = block.props?.columns || 1;
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), display: 'grid', gridTemplateColumns: `repeat(${columns}, 1fr)`, gap: 8 }}>
+      {posts.map((p, i) => (
+        <div key={i} style={{ border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+          {p.image ? <img src={p.image} alt="" style={{ width: '100%', height: 60, objectFit: 'cover' }} /> : <div style={{ height: 60, background: '#f3f4f6' }} />}
+          <div style={{ padding: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700 }}>{p.title}</div>
+            <div style={{ fontSize: 10, color: '#9ca3af' }}>{p.date}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+});
+
+registerPreview('dynamic-list', ({ block }) => {
+  const items = Array.isArray(block.props?.items) ? block.props.items : [];
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {items.map((it, i) => {
+        const label = it.icon?.type === 'emoji' ? it.icon.value : (it.icon?.type === 'icon' ? `[${it.icon.value}]` : '');
+        return (
+          <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', border: '1px solid #e5e7eb', padding: 8 }}>
+            {!!label && <span>{label}</span>}
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 12 }}>{it.title}</div>
+              <div style={{ fontSize: 11, color: '#6b7280' }}>{it.description}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+});
+
+registerPreview('repeater', ({ block }) => {
+  const { source, columns } = block.props || {};
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), border: '1px dashed #d1d5db', padding: 10 }}>
+      <span className="text-[10px] text-gray-400">Product Feed — source: {source || 'featured'}, {columns || 2} cols (live products load on device)</span>
+    </div>
+  );
+});
