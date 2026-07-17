@@ -147,3 +147,91 @@ registerPreview('svg-icon', ({ block }) => (
     ? <div style={{ width: block.props?.size || 32, height: block.props?.size || 32 }} dangerouslySetInnerHTML={{ __html: block.props.svg }} />
     : <div className="text-xs text-gray-400 text-center py-2">No SVG markup</div>
 ));
+
+registerPreview('icon-box', ({ block }) => {
+  const { icon, title, description, layout } = block.props || {};
+  const label = icon?.type === 'emoji' ? icon.value : (icon?.type === 'icon' ? `[${icon.value}]` : '—');
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), display: 'flex', flexDirection: layout === 'left' ? 'row' : 'column', alignItems: layout === 'left' ? 'center' : 'flex-start', gap: 10 }}>
+      <span style={{ fontSize: 22 }}>{label}</span>
+      <div>
+        {!!title && <div style={{ fontWeight: 700 }}>{title}</div>}
+        {!!description && <div style={{ fontSize: 12, color: '#6b7280' }} dangerouslySetInnerHTML={{ __html: description }} />}
+      </div>
+    </div>
+  );
+});
+
+registerPreview('progress-bar', ({ block }) => {
+  const { label, value, max, showPercentage, barColor, trackColor } = block.props || {};
+  const pct = Math.max(0, Math.min(100, ((value ?? 0) / (max || 100)) * 100));
+  return (
+    <div style={styleToCSS(block.props?.style)}>
+      {(!!label || showPercentage) && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+          <span>{label || ''}</span>
+          {showPercentage !== false && <span style={{ color: '#6b7280' }}>{Math.round(pct)}%</span>}
+        </div>
+      )}
+      <div style={{ height: 8, background: trackColor || '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: barColor || '#0F604B' }} />
+      </div>
+    </div>
+  );
+});
+
+registerPreview('testimonial', ({ block }) => {
+  const { quote, author, role, avatar, rating } = block.props || {};
+  const stars = Math.max(0, Math.min(5, rating ?? 0));
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), background: block.props?.style?.backgroundColor || '#f9fafb' }}>
+      {stars > 0 && <div style={{ fontSize: 12, color: '#f59e0b', marginBottom: 6 }}>{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</div>}
+      {!!quote && <div style={{ fontSize: 13, fontStyle: 'italic', color: '#374151' }}>"{quote}"</div>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+        {avatar ? <img src={avatar} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e5e7eb' }} />}
+        <div>
+          {!!author && <div style={{ fontSize: 12, fontWeight: 700 }}>{author}</div>}
+          {!!role && <div style={{ fontSize: 10, color: '#9ca3af' }}>{role}</div>}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+registerPreview('pricing-box', ({ block }) => {
+  const { title, price, period, description, features, buttonText, highlighted } = block.props || {};
+  const list = Array.isArray(features) ? features : [];
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), border: highlighted ? '2px solid #0F604B' : '1px solid #e5e7eb', padding: 16 }}>
+      {!!title && <div style={{ fontWeight: 700 }}>{title}</div>}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginTop: 4 }}>
+        {!!price && <span style={{ fontSize: 22, fontWeight: 800 }}>{price}</span>}
+        {!!period && <span style={{ fontSize: 12, color: '#9ca3af' }}>{period}</span>}
+      </div>
+      {!!description && <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{description}</div>}
+      {list.length > 0 && (
+        <ul style={{ listStyle: 'none', padding: 0, margin: '10px 0 0', fontSize: 12 }}>
+          {list.map((f, i) => <li key={i} style={{ marginBottom: 4 }}>✓ {f.text}</li>)}
+        </ul>
+      )}
+      {!!buttonText && (
+        <button type="button" disabled style={{ marginTop: 12, width: '100%', padding: '8px 0', border: 'none', background: highlighted ? '#0F604B' : '#f3f4f6', color: highlighted ? '#fff' : '#374151', fontWeight: 700, fontSize: 12 }}>
+          {buttonText}
+        </button>
+      )}
+    </div>
+  );
+});
+
+registerPreview('social-icons', ({ block }) => {
+  const icons = Array.isArray(block.props?.icons) ? block.props.icons : [];
+  return (
+    <div style={{ ...styleToCSS(block.props?.style), display: 'flex', gap: 12 }}>
+      {icons.map((item, i) => {
+        const label = item.icon?.type === 'emoji' ? item.icon.value : (item.icon?.type === 'icon' ? `[${item.icon.value}]` : '—');
+        return <span key={i} style={{ fontSize: 16 }}>{label}</span>;
+      })}
+      {!icons.length && <span className="text-xs text-gray-400">No icons added</span>}
+    </div>
+  );
+});

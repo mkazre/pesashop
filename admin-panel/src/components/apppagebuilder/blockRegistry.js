@@ -307,6 +307,113 @@ export const BLOCK_REGISTRY = {
       { key: 'size', label: 'Size (px)', type: 'number' },
     ],
   },
+
+  'icon-box': {
+    label: 'Icon Box',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      icon: { type: 'icon', value: 'checkmark-circle' },
+      title: 'Feature title',
+      description: 'A short description of this feature.',
+      layout: 'top',
+      style: { fontSize: 14, color: '#374151' },
+    },
+    contentFields: [
+      { key: 'icon', label: 'Icon', type: 'icon' },
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'description', label: 'Description', type: 'richtext' },
+      { key: 'layout', label: 'Layout', type: 'select', options: [{ value: 'top', label: 'Icon on top' }, { value: 'left', label: 'Icon on left' }] },
+    ],
+  },
+
+  'progress-bar': {
+    label: 'Progress Bar',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      label: 'Progress',
+      value: 60,
+      max: 100,
+      showPercentage: true,
+      barColor: '#0F604B',
+      trackColor: '#e5e7eb',
+      style: {},
+    },
+    contentFields: [
+      { key: 'label', label: 'Label', type: 'text' },
+      { key: 'value', label: 'Value', type: 'number' },
+      { key: 'max', label: 'Max', type: 'number' },
+      { key: 'showPercentage', label: 'Show Percentage', type: 'toggle' },
+      { key: 'barColor', label: 'Bar Color', type: 'color' },
+      { key: 'trackColor', label: 'Track Color', type: 'color' },
+    ],
+  },
+
+  testimonial: {
+    label: 'Testimonial',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      quote: 'This product changed how I shop online.',
+      author: 'Jane Doe',
+      role: 'Verified Customer',
+      avatar: '',
+      rating: 5,
+      style: { backgroundColor: '#f9fafb', borderRadius: 0, paddingTop: 20, paddingBottom: 20, paddingLeft: 20, paddingRight: 20 },
+    },
+    contentFields: [
+      { key: 'quote', label: 'Quote', type: 'richtext' },
+      { key: 'author', label: 'Author', type: 'text' },
+      { key: 'role', label: 'Role / Title', type: 'text' },
+      { key: 'avatar', label: 'Avatar Image', type: 'image' },
+      { key: 'rating', label: 'Rating (1-5, 0 to hide)', type: 'number' },
+    ],
+  },
+
+  'pricing-box': {
+    label: 'Pricing Box',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      title: 'Standard',
+      price: '$29',
+      period: '/month',
+      description: '',
+      features: [{ text: 'Feature one' }, { text: 'Feature two' }],
+      buttonText: 'Choose plan',
+      linkType: 'manual',
+      buttonUrl: '/',
+      highlighted: false,
+      style: { backgroundColor: '#ffffff', borderColor: '#e5e7eb', borderWidth: 1, borderRadius: 0, paddingTop: 24, paddingBottom: 24, paddingLeft: 20, paddingRight: 20 },
+    },
+    contentFields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'price', label: 'Price', type: 'text' },
+      { key: 'period', label: 'Period (e.g. /month)', type: 'text' },
+      { key: 'description', label: 'Description', type: 'text' },
+      { key: 'features', label: 'Features', type: 'items-array', itemFields: [{ key: 'text', label: 'Text', type: 'text' }] },
+      { key: 'buttonText', label: 'Button Text', type: 'text' },
+      { key: 'buttonUrl', label: 'Button Link', type: 'text' },
+      { key: 'highlighted', label: 'Highlighted Plan', type: 'toggle' },
+    ],
+  },
+
+  'social-icons': {
+    label: 'Social Icons',
+    category: 'Basic',
+    isContainer: false,
+    defaultProps: {
+      icons: [{ icon: { type: 'icon', value: 'logo-facebook' }, url: '' }, { icon: { type: 'icon', value: 'logo-instagram' }, url: '' }],
+      style: { color: '#374151' },
+    },
+    contentFields: [
+      {
+        key: 'icons', label: 'Icons', type: 'items-array',
+        itemFields: [{ key: 'icon', label: 'Icon', type: 'icon' }, { key: 'url', label: 'URL', type: 'text' }],
+      },
+    ],
+  },
 };
 
 export function getBlockMeta(blockType) {
