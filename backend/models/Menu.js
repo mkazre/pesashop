@@ -7,7 +7,7 @@ const menuItemSchema = new mongoose.Schema({
   link: { type: String, default: '#' },
   linkType: {
     type: String,
-    enum: ['manual', 'page', 'category', 'product', 'file', 'none'], // 'none' = non-clickable parent
+    enum: ['manual', 'page', 'category', 'product', 'file', 'app-page', 'none'], // 'app-page' = mobile Page Builder page; 'none' = non-clickable parent
     default: 'manual',
   },
   linkId: { type: String }, // Page ID, category ID, or product ID

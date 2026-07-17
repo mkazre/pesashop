@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
-import { menusAPI, pageTemplatesAPI, categoriesAPI, productsAPI } from '@/services/api';
+import { menusAPI, pageTemplatesAPI, categoriesAPI, productsAPI, appPagesAPI } from '@/services/api';
 import MediaLibraryModal from '@/components/media/MediaLibraryModal';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
@@ -1163,8 +1163,10 @@ const MenuItemProperties = ({ item, onUpdate, onOpenMegaMenu }) => {
 
   const { data: pagesResponse } = useQuery('pages', () => pageTemplatesAPI.getAll());
   const { data: categoriesResponse } = useQuery('categories', () => categoriesAPI.getAll());
+  const { data: appPagesResponse } = useQuery('app-pages-for-menu', () => appPagesAPI.getAll());
   const pages = pagesResponse?.data?.data || [];
   const categories = categoriesResponse?.data?.data || [];
+  const appPages = (appPagesResponse?.data?.data || []).filter((p) => p.status === 'published');
 
   // Debounced product search — the catalog is too large for a plain <select>
   useEffect(() => {
@@ -1243,7 +1245,8 @@ const MenuItemProperties = ({ item, onUpdate, onOpenMegaMenu }) => {
             formDataRef.current = updated;
             onUpdate(updated);
           }} options={[
-            { value: 'manual', label: 'Manual URL' }, { value: 'page', label: 'Page' },
+            { value: 'manual', label: 'Manual URL' }, { value: 'page', label: 'Website Page' },
+            { value: 'app-page', label: 'Mobile App Page' },
             { value: 'category', label: 'Category' }, { value: 'product', label: 'Product' },
             { value: 'file', label: 'File download' }, { value: 'none', label: 'Non-clickable' },
           ]} />
@@ -1267,6 +1270,27 @@ const MenuItemProperties = ({ item, onUpdate, onOpenMegaMenu }) => {
                 <option value="">-- Select a page --</option>
                 {pages.map(p => <option key={p._id} value={String(p._id)}>{p.name}</option>)}
               </select>
+            </div>
+          )}
+
+          {formData.linkType === 'app-page' && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Select Mobile App Page</label>
+              <select value={formData.linkId ? String(formData.linkId) : ''} onChange={(e) => {
+                const val = e.target.value;
+                if (!val) { handleChange('linkId', ''); handleChange('link', '#'); return; }
+                const p = appPages.find(p => String(p._id) === val);
+                if (p) {
+                  const updated = { ...formDataRef.current, linkId: String(p._id), link: `/app-page/${p.slug}` };
+                  setFormData(updated); formDataRef.current = updated; onUpdate(updated);
+                }
+              }} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
+                <option value="">-- Select a page --</option>
+                {appPages.map(p => <option key={p._id} value={String(p._id)}>{p.title}</option>)}
+              </select>
+              {appPages.length === 0 && (
+                <p className="text-xs text-gray-400 mt-1">No published pages yet — create one in Mobile App → Page Builder.</p>
+              )}
             </div>
           )}
 

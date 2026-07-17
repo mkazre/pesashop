@@ -5,8 +5,17 @@
 // instead of navigating to the raw path verbatim (which previously
 // produced "Unmatched Route"). Shared by AppDrawer and the Page Builder's
 // button block so link-resolution logic doesn't drift across the two.
+// The app's own deep-link scheme (app.json "scheme": "pesashop"). Admins
+// naturally paste/type the full deep link (pesashop://path or, with an
+// empty host, pesashop:///path) rather than a bare relative path — strip it
+// down to a path so the rest of this resolver (which only recognizes
+// leading "/") still works.
+function stripAppScheme(link: string): string {
+  return link.replace(/^pesashop:\/+/i, "/");
+}
+
 export function resolveMenuLink(entry: any): string | null {
-  const link = entry.link || entry.url || "#";
+  const link = stripAppScheme(entry.link || entry.url || "#");
   if (entry.linkType === "page") {
     const slug = link.replace(/^\//, "") || entry.linkId;
     return `/page/${slug}`;
