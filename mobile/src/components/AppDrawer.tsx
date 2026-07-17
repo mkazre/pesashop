@@ -19,6 +19,7 @@ import { useAuthStore } from "@/store";
 import { menusAPI } from "@/services/api";
 import { colors, resolveImageUrl } from "@/theme";
 import { resolveMenuLink } from "@/utils/resolveLink";
+import { onContentRefresh } from "@/utils/contentVersion";
 import IconValue from "@/components/apppageblocks/IconValue";
 
 const LOGO = require("@/../assets/pesashop-logo.png");
@@ -72,17 +73,29 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
     // Builder writes to. Fall back to the website's 'header' menu, then the
     // legacy 'mobile' location, only for stores that haven't configured a
     // mobile-specific menu yet.
-    Promise.all([
-      menusAPI.getByLocation("mobile-menu").catch(() => null),
-      menusAPI.getByLocation("header").catch(() => null),
-      menusAPI.getByLocation("mobile").catch(() => null),
-    ]).then(([mobileMenuRes, headerRes, mobileRes]) => {
-      const menu = mobileMenuRes?.data?.data || headerRes?.data?.data || mobileRes?.data?.data;
-      if (menu?.items?.length) {
-        cachedMenuItems = menu.items;
-        setMenuItems(menu.items);
-      }
-    }).catch(() => {});
+    const fetchMenu = () => {
+      Promise.all([
+        menusAPI.getByLocation("mobile-menu").catch(() => null),
+        menusAPI.getByLocation("header").catch(() => null),
+        menusAPI.getByLocation("mobile").catch(() => null),
+      ]).then(([mobileMenuRes, headerRes, mobileRes]) => {
+        const menu = mobileMenuRes?.data?.data || headerRes?.data?.data || mobileRes?.data?.data;
+        if (menu?.items?.length) {
+          cachedMenuItems = menu.items;
+          setMenuItems(menu.items);
+        }
+      }).catch(() => {});
+    };
+
+    fetchMenu();
+    // If the admin bumps mobileContentVersion (Settings → Refresh Mobile App
+    // Content) while this drawer is still mounted from an earlier session,
+    // drop the cache and refetch so a resumed-not-relaunched app also picks
+    // up the change.
+    return onContentRefresh(() => {
+      cachedMenuItems = null;
+      fetchMenu();
+    });
   }, []);
 
   const handleClose = () => {

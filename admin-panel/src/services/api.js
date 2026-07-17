@@ -437,6 +437,7 @@ export const settingsAPI = {
   update: (data) => api.put('/settings', data),
   testEmail: (to) => api.post('/settings/test-email', { to }),
   verifyEmailConfig: () => api.post('/settings/verify-email-config'),
+  refreshMobileContent: () => api.post('/settings/refresh-mobile-content'),
 };
 
 // Social Engine Admin API

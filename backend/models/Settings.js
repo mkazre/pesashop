@@ -268,6 +268,13 @@ const settingsSchema = new mongoose.Schema({
   autoposter: {
     killSwitchEnabled: { type: Boolean, default: false }
   },
+
+  // Bumped by the admin "Refresh Mobile App Content" action. The app reads
+  // this on launch/resume and, if it differs from what it saw last time,
+  // clears its in-memory content caches (drawer menu, etc.) and refetches —
+  // lets an admin force-invalidate stale client-side caches without waiting
+  // for a TTL or shipping an app update.
+  mobileContentVersion: { type: Number, default: 1 },
 }, {
   timestamps: true
 });

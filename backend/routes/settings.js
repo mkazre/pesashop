@@ -187,10 +187,28 @@ router.get('/public', async (req, res) => {
         currency: settings.currency || 'ZAR',
         logo: settings.logo || '',
         favicon: settings.favicon || '',
+        mobileContentVersion: settings.mobileContentVersion || 1,
       }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error fetching public settings' });
+  }
+});
+
+/**
+ * @route   POST /api/settings/refresh-mobile-content
+ * @desc    Bump mobileContentVersion so mobile clients flush their local
+ *          content caches (drawer menu, etc.) next time they launch/resume
+ * @access  Private/Admin
+ */
+router.post('/refresh-mobile-content', protect, authorize('admin'), async (req, res) => {
+  try {
+    const settings = await Settings.getSettings();
+    settings.mobileContentVersion = (settings.mobileContentVersion || 1) + 1;
+    await settings.save();
+    res.json({ success: true, data: { mobileContentVersion: settings.mobileContentVersion } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error refreshing mobile content version' });
   }
 });
 

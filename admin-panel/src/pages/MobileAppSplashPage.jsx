@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import toast from '@/utils/toast';
-import { mobileAppConfigAPI } from '@/services/api';
+import { mobileAppConfigAPI, settingsAPI } from '@/services/api';
 import {
   IoAddOutline,
   IoTrashOutline,
@@ -10,6 +10,7 @@ import {
   IoCloudUploadOutline,
   IoPhonePortraitOutline,
   IoEyeOutline,
+  IoRefreshOutline,
 } from 'react-icons/io5';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -225,6 +226,11 @@ export default function MobileAppSplashPage() {
     }
   );
 
+  const refreshContentMutation = useMutation(() => settingsAPI.refreshMobileContent(), {
+    onSuccess: () => toast.success('Mobile app content refreshed — devices will pick up changes on next open'),
+    onError: () => toast.error('Failed to refresh mobile app content'),
+  });
+
   const handleSave = () => {
     if (!formState) return;
     const payload = {
@@ -284,9 +290,20 @@ export default function MobileAppSplashPage() {
             <p className="text-sm text-gray-500">Configure the onboarding slides shown when users first open the app</p>
           </div>
         </div>
-        <button onClick={handleSave} disabled={saveMutation.isLoading} className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg hover:opacity-90 disabled:opacity-50">
-          {saveMutation.isLoading ? 'Saving...' : 'Save Changes'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => refreshContentMutation.mutate()}
+            disabled={refreshContentMutation.isLoading}
+            title="Force the app to drop any cached menu/page data and re-fetch fresh content next time it's opened or resumed"
+            className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            <IoRefreshOutline size={16} className={refreshContentMutation.isLoading ? 'animate-spin' : ''} />
+            {refreshContentMutation.isLoading ? 'Refreshing...' : 'Refresh Mobile App Content'}
+          </button>
+          <button onClick={handleSave} disabled={saveMutation.isLoading} className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg hover:opacity-90 disabled:opacity-50">
+            {saveMutation.isLoading ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-8">

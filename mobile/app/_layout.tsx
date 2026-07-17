@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { View, Animated, StyleSheet, Dimensions } from "react-native";
+import { View, Animated, StyleSheet, Dimensions, AppState } from "react-native";
 import { Image } from "expo-image";
 import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -17,6 +17,7 @@ import { useAuthStore, useCurrencyStore } from "@/store";
 import { currenciesAPI } from "@/services/api";
 import { useExpoPush } from "@/hooks/useExpoPush";
 import { isBiometricLockEnabled } from "@/utils/biometricLock";
+import { syncContentVersion } from "@/utils/contentVersion";
 import NotificationToast from "@/components/NotificationToast";
 import ChatWidget from "@/components/ChatWidget";
 import { CartSuccessOverlay } from "@/components/CartSuccessOverlay";
@@ -109,6 +110,19 @@ export default function RootLayout() {
       setIsConnected(state.isConnected ?? true);
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Cold start, plus every background→active resume — catches the case
+    // where the app was merely backgrounded (JS engine stays alive, so
+    // in-memory content caches like AppDrawer's would otherwise persist)
+    // rather than force-quit, after an admin used "Refresh Mobile App
+    // Content" in Settings.
+    syncContentVersion();
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") syncContentVersion();
+    });
+    return () => subscription.remove();
   }, []);
 
   const retryConnection = async () => {
