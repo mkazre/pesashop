@@ -413,6 +413,17 @@ const LabeledCheck = ({ label, checked, onChange, description }) => (
 // ── Edit Menu Modal ──────────────────────────────────────────────────
 const EditMenuModal = ({ menu, onClose, onSuccess }) => {
   const [menuData, setMenuData] = useState(menu);
+  // Deleting an item inside this editor has its own confirm dialog, which
+  // reads as final — but it's only a local state change until "Save Menu"
+  // is clicked. Closing the editor any other way (X, backdrop, Cancel)
+  // silently discarded that deletion with no warning. Guard all three exit
+  // paths against that.
+  const initialDataRef = useRef(JSON.stringify(menu));
+  const handleClose = () => {
+    const isDirty = JSON.stringify(menuData) !== initialDataRef.current;
+    if (isDirty && !window.confirm('You have unsaved changes to this menu. Discard them?')) return;
+    onClose();
+  };
   const [selectedItem, setSelectedItem] = useState(null);
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [showMegaMenuDesigner, setShowMegaMenuDesigner] = useState(false);
@@ -572,7 +583,7 @@ const EditMenuModal = ({ menu, onClose, onSuccess }) => {
   ];
 
   return (
-    <Modal isOpen onClose={onClose} title={`Edit Menu: ${menu.name}`} size="xl" showFooter={false}>
+    <Modal isOpen onClose={handleClose} title={`Edit Menu: ${menu.name}`} size="xl" showFooter={false}>
       {/* Tab Bar */}
       <div className="flex items-center gap-1 border-b border-gray-200 -mt-2 mb-4">
         {TABS.map(tab => (
@@ -667,7 +678,7 @@ const EditMenuModal = ({ menu, onClose, onSuccess }) => {
       )}
 
       <div className="flex justify-end gap-2 pt-4 border-t border-gray-200 mt-3">
-        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="ghost" onClick={handleClose}>Cancel</Button>
         <Button onClick={handleSave} loading={updateMutation.isLoading}>Save Menu</Button>
       </div>
     </Modal>
