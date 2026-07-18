@@ -228,7 +228,11 @@ export default function MobileAppSplashPage() {
 
   const refreshContentMutation = useMutation(() => settingsAPI.refreshMobileContent(), {
     onSuccess: () => toast.success('Mobile app content refreshed — devices will pick up changes on next open'),
-    onError: () => toast.error('Failed to refresh mobile app content'),
+    onError: (err) => {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to refresh mobile app content';
+      toast.error(msg);
+      console.error('[MobileAppSplashPage] Refresh content error:', err?.response?.status, err?.response?.data || err);
+    },
   });
 
   const handleSave = () => {

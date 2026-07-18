@@ -201,14 +201,15 @@ router.get('/public', async (req, res) => {
  *          content caches (drawer menu, etc.) next time they launch/resume
  * @access  Private/Admin
  */
-router.post('/refresh-mobile-content', protect, authorize('admin'), async (req, res) => {
+router.post('/refresh-mobile-content', protect, authorize('admin', 'shop_manager'), async (req, res) => {
   try {
     const settings = await Settings.getSettings();
     settings.mobileContentVersion = (settings.mobileContentVersion || 1) + 1;
     await settings.save();
     res.json({ success: true, data: { mobileContentVersion: settings.mobileContentVersion } });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error refreshing mobile content version' });
+    console.error('refresh-mobile-content error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Error refreshing mobile content version' });
   }
 });
 
