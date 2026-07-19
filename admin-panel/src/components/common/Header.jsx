@@ -165,7 +165,7 @@ const Header = () => {
           </button>
 
           {showProfileMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white border-2 border-gray-200 shadow-lg">
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white border-2 border-gray-200 shadow-lg z-50">
               <button
                 onClick={() => { setShowProfileMenu(false); navigate('/profile'); }}
                 className="w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors flex items-center gap-2"
