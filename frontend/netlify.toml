@@ -25,3 +25,11 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Product video gallery embeds this page in an <iframe> (same-origin) to
+# drive the YouTube IFrame Player API — the site-wide X-Frame-Options: DENY
+# above blocks that, so allow same-origin framing for just this one page.
+[[headers]]
+  for = "/youtube-embed.html"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
