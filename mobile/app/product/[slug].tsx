@@ -16,6 +16,8 @@ import {
   Alert,
 } from "react-native";
 import { Image } from "expo-image";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { WebView } from "react-native-webview";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -39,6 +41,7 @@ import PulsingArrows from "@/components/PulsingArrows";
 import FreeShippingBar from "@/components/FreeShippingBar";
 import { useCartSuccessOverlay } from "@/components/CartSuccessOverlay";
 import { colors, resolveImageUrl } from "@/theme";
+import { getVideoRenderInfo } from "@/utils/videoUrl";
 import {
   productsAPI,
   reviewsAPI,
@@ -56,6 +59,34 @@ import {
 } from "@/store";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+function ProductVideoFileSlide({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = false;
+  });
+  return (
+    <VideoView
+      player={player}
+      style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH, backgroundColor: "#000" }}
+      nativeControls
+      contentFit="contain"
+    />
+  );
+}
+
+function ProductVideoEmbedSlide({ uri }: { uri: string }) {
+  return (
+    <View style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH, backgroundColor: "#000" }}>
+      <WebView
+        source={{ uri }}
+        style={{ flex: 1, backgroundColor: "#000" }}
+        allowsFullscreenVideo
+        javaScriptEnabled
+        mediaPlaybackRequiresUserAction={false}
+      />
+    </View>
+  );
+}
 
 export default function ProductDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -204,6 +235,12 @@ export default function ProductDetailScreen() {
     if (raw.length === 0 && product.image) raw.push(product.image);
     return raw;
   })();
+  const slides = [
+    ...images.map((src: string) => ({ type: "image" as const, src })),
+    ...((product.videos || []) as any[])
+      .filter((v) => v && v.url)
+      .map((video) => ({ type: "video" as const, video, ...getVideoRenderInfo(video) })),
+  ];
   const hasDiscount = product.salePrice && product.salePrice < product.regularPrice;
   const discountPercent = hasDiscount ? Math.round(((product.regularPrice - product.salePrice) / product.regularPrice) * 100) : 0;
   const inWishlist = isInWishlist(product._id);
@@ -272,20 +309,28 @@ export default function ProductDetailScreen() {
         <View>
           <FlatList
             horizontal pagingEnabled showsHorizontalScrollIndicator={false}
-            data={images}
+            data={slides}
             keyExtractor={(_: any, i: number) => i.toString()}
             onScroll={(e) => {
               const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
               if (idx !== activeImageIndex) setActiveImageIndex(idx);
             }}
             scrollEventThrottle={16}
-            renderItem={({ item }: any) => (
-              <Image source={{ uri: resolveImageUrl(item) }} style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH, backgroundColor: '#f9fafb' }} contentFit="contain" transition={200} />
-            )}
+            renderItem={({ item }: any) =>
+              item.type === "video" ? (
+                item.kind === "file" ? (
+                  <ProductVideoFileSlide uri={resolveImageUrl(item.src) || ""} />
+                ) : (
+                  <ProductVideoEmbedSlide uri={item.src} />
+                )
+              ) : (
+                <Image source={{ uri: resolveImageUrl(item.src) }} style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH, backgroundColor: '#f9fafb' }} contentFit="contain" transition={200} />
+              )
+            }
           />
-          {images.length > 1 && (
+          {slides.length > 1 && (
             <View style={ps.dotsRow}>
-              {images.map((_: any, i: number) => (
+              {slides.map((_: any, i: number) => (
                 <View key={i} style={[ps.dot, i === activeImageIndex ? ps.dotActive : ps.dotInactive]} />
               ))}
             </View>
