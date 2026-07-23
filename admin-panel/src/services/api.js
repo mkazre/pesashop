@@ -54,6 +54,13 @@ export const productsAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
+  uploadVideo: (file) => {
+    const formData = new FormData();
+    formData.append('video', file);
+    return api.post('/products/upload-video', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
   create: (data) => api.post('/products', data),
   update: (id, data) => api.put(`/products/${id}`, data),
   delete: (id) => api.delete(`/products/${id}`), // Moves to trash

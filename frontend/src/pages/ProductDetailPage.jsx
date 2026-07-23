@@ -171,7 +171,7 @@ export default function ProductDetailPage() {
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 py-8">
           {/* Left: Gallery + Badges */}
           <div className="relative">
-            <ProductGallery images={product.images || []} />
+            <ProductGallery images={product.images || []} videos={product.videos || []} />
             {pageBadges.map(badge => (
               <ProductPageBadge key={badge._id} badge={badge} />
             ))}

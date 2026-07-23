@@ -56,6 +56,23 @@ const upload = multer({
   }
 });
 
+// Configure multer for video uploads (store in memory, write raw to disk)
+const videoUpload = multer({
+  storage: storage,
+  limits: { fileSize: 100 * 1024 * 1024 },
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = /mp4|webm|mov|ogg|ogv|m4v/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = /^video\//.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only video files are allowed!'));
+    }
+  }
+});
+
 /**
  * @route   POST /api/products/upload-image
  * @desc    Upload and optimize a single product image
@@ -92,6 +109,48 @@ router.post('/upload-image', protect, adminOnly, authorize('admin', 'shop_manage
     res.status(500).json({
       success: false,
       message: 'Error uploading image',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route   POST /api/products/upload-video
+ * @desc    Upload a single product video file
+ * @access  Private/Admin
+ */
+router.post('/upload-video', protect, adminOnly, authorize('admin', 'shop_manager'), videoUpload.single('video'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No video file provided'
+      });
+    }
+
+    const uploadPath = path.join(__dirname, '../uploads/products/videos');
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const filename = 'product-video-' + Date.now() + '-' + Math.round(Math.random() * 1E9) + ext;
+    const filepath = path.join(uploadPath, filename);
+
+    fs.writeFileSync(filepath, req.file.buffer);
+
+    const videoUrl = '/uploads/products/videos/' + filename;
+
+    res.json({
+      success: true,
+      url: videoUrl,
+      filename: filename
+    });
+  } catch (error) {
+    console.error('Error uploading video:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading video',
       error: error.message
     });
   }
@@ -685,7 +744,18 @@ router.delete('/:id/permanent', protect, authorize('admin'), async (req, res) =>
         }
       });
     }
-    
+
+    if (product.videos && product.videos.length > 0) {
+      product.videos.forEach(video => {
+        if (video.type === 'upload' && video.url) {
+          const videoPath = path.join(__dirname, '..', video.url);
+          if (fs.existsSync(videoPath)) {
+            fs.unlinkSync(videoPath);
+          }
+        }
+      });
+    }
+
     await product.deleteOne();
     
     res.json({

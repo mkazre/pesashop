@@ -1,18 +1,27 @@
-import { useState } from 'react';
-import { IoChevronBack, IoChevronForward, IoExpand } from 'react-icons/io5';
+import { useState, useMemo } from 'react';
+import { IoChevronBack, IoChevronForward, IoExpand, IoPlayCircle } from 'react-icons/io5';
+import { getVideoRenderInfo } from '@/utils/videoUrl';
 
-export default function ProductGallery({ images = [] }) {
+export default function ProductGallery({ images = [], videos = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
 
-  const currentImage = images[currentIndex] || '/placeholder.jpg';
+  const slides = useMemo(() => {
+    const imageSlides = images.map((src) => ({ type: 'image', src }));
+    const videoSlides = videos
+      .filter((v) => v && v.url)
+      .map((video) => ({ type: 'video', video, ...getVideoRenderInfo(video) }));
+    return [...imageSlides, ...videoSlides];
+  }, [images, videos]);
+
+  const currentSlide = slides[currentIndex] || { type: 'image', src: '/placeholder.jpg' };
 
   const handlePrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    setCurrentIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
   };
 
   const handleThumbnailClick = (index) => {
@@ -20,22 +29,44 @@ export default function ProductGallery({ images = [] }) {
   };
 
   const handleZoomToggle = () => {
+    if (currentSlide.type !== 'image') return;
     setIsZoomed(!isZoomed);
   };
 
   return (
     <div className="space-y-4">
-      {/* Main Image */}
+      {/* Main Slide */}
       <div className="relative bg-gray-100 aspect-square group">
-        <img
-          src={currentImage}
-          alt="Product"
-          className={`w-full h-full object-cover ${isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
-          onClick={handleZoomToggle}
-        />
+        {currentSlide.type === 'video' ? (
+          currentSlide.kind === 'file' ? (
+            <video
+              key={currentSlide.src}
+              src={currentSlide.src}
+              controls
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <iframe
+              key={currentSlide.src}
+              src={currentSlide.src}
+              title="Product video"
+              className="w-full h-full"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          )
+        ) : (
+          <img
+            src={currentSlide.src}
+            alt="Product"
+            className={`w-full h-full object-cover ${isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
+            onClick={handleZoomToggle}
+          />
+        )}
 
         {/* Navigation Arrows */}
-        {images.length > 1 && (
+        {slides.length > 1 && (
           <>
             <button
               onClick={handlePrevious}
@@ -53,52 +84,67 @@ export default function ProductGallery({ images = [] }) {
         )}
 
         {/* Zoom Button */}
-        <button
-          onClick={handleZoomToggle}
-          className="absolute bottom-4 right-4 w-10 h-10 bg-white hover:bg-primary hover:text-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all"
-        >
-          <IoExpand size={20} />
-        </button>
+        {currentSlide.type === 'image' && (
+          <button
+            onClick={handleZoomToggle}
+            className="absolute bottom-4 right-4 w-10 h-10 bg-white hover:bg-primary hover:text-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all"
+          >
+            <IoExpand size={20} />
+          </button>
+        )}
 
-        {/* Image Counter */}
-        {images.length > 1 && (
+        {/* Slide Counter */}
+        {slides.length > 1 && (
           <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 text-sm">
-            {currentIndex + 1} / {images.length}
+            {currentIndex + 1} / {slides.length}
           </div>
         )}
       </div>
 
       {/* Thumbnail Strip */}
-      {images.length > 1 && (
+      {slides.length > 1 && (
         <div className="grid grid-cols-4 gap-2">
-          {images.map((image, index) => (
+          {slides.map((slide, index) => (
             <button
               key={index}
               onClick={() => handleThumbnailClick(index)}
-              className={`aspect-square bg-gray-100 border-2 overflow-hidden transition-all ${
+              className={`relative aspect-square bg-gray-100 border-2 overflow-hidden transition-all ${
                 index === currentIndex
                   ? 'border-primary'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <img
-                src={image}
-                alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
+              {slide.type === 'video' ? (
+                <>
+                  {slide.thumbnail ? (
+                    <img src={slide.thumbnail} alt={`Video ${index + 1}`} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gray-800" />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <IoPlayCircle size={24} className="text-white drop-shadow" />
+                  </div>
+                </>
+              ) : (
+                <img
+                  src={slide.src}
+                  alt={`Thumbnail ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              )}
             </button>
           ))}
         </div>
       )}
 
       {/* Zoom Modal */}
-      {isZoomed && (
+      {isZoomed && currentSlide.type === 'image' && (
         <div
           className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
           onClick={handleZoomToggle}
         >
           <img
-            src={currentImage}
+            src={currentSlide.src}
             alt="Product Zoomed"
             className="max-w-full max-h-full object-contain"
           />

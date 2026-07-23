@@ -8,7 +8,8 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import toast from '@/utils/toast';
-import { IoArrowBack, IoAdd, IoTrash, IoCloudUpload, IoSparkles, IoCash, IoEyeOutline } from 'react-icons/io5';
+import { IoArrowBack, IoAdd, IoTrash, IoCloudUpload, IoSparkles, IoCash, IoEyeOutline, IoVideocam, IoLink, IoPlayCircle } from 'react-icons/io5';
+import { getVideoRenderInfo } from '@/utils/videoUrl';
 
 const AUTOPOSTER_PLATFORMS = ['facebook', 'instagram', 'x', 'linkedin', 'tiktok'];
 
@@ -18,6 +19,8 @@ const ProductForm = () => {
   const queryClient = useQueryClient();
   const isEdit = !!id;
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoUrlInput, setVideoUrlInput] = useState('');
   const [aiPreviewModal, setAiPreviewModal] = useState(false);
   const [aiGeneratedContent, setAiGeneratedContent] = useState(null);
   const [generatingAI, setGeneratingAI] = useState(false);
@@ -37,6 +40,7 @@ const ProductForm = () => {
       weight: '',
       images: [],
       featuredImage: '',
+      videos: [],
       status: 'active',
       productType: 'simple',
       attributes: {},
@@ -255,6 +259,12 @@ const ProductForm = () => {
         formData.images.unshift(formData.featuredImage);
       }
 
+      // Ensure videos is an array of valid { type, url } objects
+      if (!Array.isArray(formData.videos)) {
+        formData.videos = [];
+      }
+      formData.videos = formData.videos.filter(v => v && typeof v.url === 'string' && v.url.trim() !== '');
+
       // Clean up - remove empty values
       Object.keys(formData).forEach(key => {
         if (formData[key] === undefined || formData[key] === null || formData[key] === '') {
@@ -343,6 +353,49 @@ const ProductForm = () => {
   const removeImage = (index) => {
     const images = watch('images');
     setValue('images', images.filter((_, i) => i !== index));
+  };
+
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingVideo(true);
+    try {
+      const response = await productsAPI.uploadVideo(file);
+      const videoUrl = response.data.url;
+
+      const videos = watch('videos') || [];
+      setValue('videos', [...videos, { type: 'upload', url: videoUrl, title: file.name }]);
+
+      toast.success('Video uploaded successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to upload video');
+      console.error('Video upload error:', error);
+    } finally {
+      setUploadingVideo(false);
+      e.target.value = '';
+    }
+  };
+
+  const addVideoUrl = () => {
+    const url = videoUrlInput.trim();
+    if (!url) return;
+    try {
+      new URL(url);
+    } catch {
+      toast.error('Please enter a valid URL');
+      return;
+    }
+
+    const videos = watch('videos') || [];
+    setValue('videos', [...videos, { type: 'embed', url, title: '' }]);
+    setVideoUrlInput('');
+    toast.success('Video link added');
+  };
+
+  const removeVideo = (index) => {
+    const videos = watch('videos');
+    setValue('videos', videos.filter((_, i) => i !== index));
   };
 
   return (
@@ -678,6 +731,82 @@ const ProductForm = () => {
             </div>
             <p className="text-sm text-gray-500">
               First image will be set as primary. Images will be processed to 1:1 ratio.
+            </p>
+          </div>
+        </Card>
+
+        <Card title="Product Videos">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {watch('videos')?.map((video, index) => {
+                const { thumbnail } = getVideoRenderInfo(video);
+                return (
+                  <div key={index} className="relative aspect-square bg-gray-100 border-2 border-gray-200">
+                    {thumbnail ? (
+                      <img src={thumbnail} alt="Video thumbnail" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                        <IoPlayCircle size={40} className="text-white opacity-80" />
+                      </div>
+                    )}
+                    <span className="absolute top-2 left-2 bg-gray-900/80 text-white text-xs px-2 py-1 flex items-center gap-1">
+                      {video.type === 'upload' ? <IoVideocam size={12} /> : <IoLink size={12} />}
+                      {video.type === 'upload' ? 'Uploaded' : 'Embed'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeVideo(index)}
+                      className="absolute top-2 right-2 p-1 bg-red-600 text-white hover:bg-red-700 transition-colors"
+                    >
+                      <IoTrash size={16} />
+                    </button>
+                  </div>
+                );
+              })}
+
+              {/* Upload Button */}
+              <label className="aspect-square border-2 border-dashed border-gray-300 hover:border-primary transition-colors cursor-pointer flex flex-col items-center justify-center">
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoUpload}
+                  className="hidden"
+                  disabled={uploadingVideo}
+                />
+                {uploadingVideo ? (
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                ) : (
+                  <>
+                    <IoVideocam size={32} className="text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-600">Upload Video</span>
+                  </>
+                )}
+              </label>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  type="text"
+                  placeholder="Paste a YouTube, Vimeo, or direct video URL"
+                  value={videoUrlInput}
+                  onChange={(e) => setVideoUrlInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addVideoUrl();
+                    }
+                  }}
+                  fullWidth
+                />
+              </div>
+              <Button type="button" variant="secondary" onClick={addVideoUrl}>
+                <IoAdd size={18} className="mr-1" /> Add Link
+              </Button>
+            </div>
+
+            <p className="text-sm text-gray-500">
+              Videos appear alongside images in the product gallery slider on the storefront.
             </p>
           </div>
         </Card>

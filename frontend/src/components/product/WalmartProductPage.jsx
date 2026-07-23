@@ -25,6 +25,7 @@ import ServiceProviderAdSlot from '@/components/ads/ServiceProviderAdSlot';
 import TikTokVideoSlot from '@/components/social/TikTokVideoSlot';
 import ServiceRequestWidget from '@/components/services/ServiceRequestWidget';
 import toast from '@/utils/toast';
+import { getVideoRenderInfo } from '@/utils/videoUrl';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -281,6 +282,15 @@ export default function WalmartProductPage({ product, settings }) {
   const saving = originalPrice > price ? originalPrice - price : 0;
   const savingPct = originalPrice > 0 ? Math.round((saving / originalPrice) * 100) : 0;
   const images = product?.images || [];
+  const rawVideos = product?.videos || [];
+  const slides = useMemo(() => {
+    const imageSlides = images.map((src) => ({ type: 'image', src }));
+    if (gal.showVideoThumbnail === false) return imageSlides;
+    const videoSlides = rawVideos
+      .filter((v) => v && v.url)
+      .map((video) => ({ type: 'video', video, ...getVideoRenderInfo(video) }));
+    return [...imageSlides, ...videoSlides];
+  }, [images, rawVideos, gal.showVideoThumbnail]);
   const isInWishlist = wishlistItems.some(i => i._id === product?._id);
 
   // Initialize section collapsed state from settings
@@ -522,8 +532,8 @@ export default function WalmartProductPage({ product, settings }) {
   const isThreeCol = lay.type === '3-col-walmart' && fb.enabled;
   const btnStyle = btn.style || 'neon-glow';
 
-  const handlePrevImage = () => setMainImg(i => (i > 0 ? i - 1 : images.length - 1));
-  const handleNextImage = () => setMainImg(i => (i < images.length - 1 ? i + 1 : 0));
+  const handlePrevImage = () => setMainImg(i => (i > 0 ? i - 1 : slides.length - 1));
+  const handleNextImage = () => setMainImg(i => (i < slides.length - 1 ? i + 1 : 0));
 
   // Free shipping bar — reusable render (used in product info + fulfillment box)
   // Calculation is done entirely in BASE currency (ZAR). cartTotal is already ZAR.
@@ -594,7 +604,22 @@ export default function WalmartProductPage({ product, settings }) {
           <div className={`wp-col-gallery ${lay.stickyGallery !== false ? 'wp-sticky' : ''}`}>
             <div className="wp-card">
               <div className="wp-gallery-main">
-                {images[mainImg] && <img src={imgUrl(images[mainImg])} alt={product?.name} />}
+                {slides[mainImg] && slides[mainImg].type === 'video' ? (
+                  slides[mainImg].kind === 'file' ? (
+                    <video key={slides[mainImg].src} src={imgUrl(slides[mainImg].src)} controls style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
+                  ) : (
+                    <iframe
+                      key={slides[mainImg].src}
+                      src={slides[mainImg].src}
+                      title="Product video"
+                      style={{ width: '100%', height: '100%', border: 0 }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  )
+                ) : (
+                  slides[mainImg] && <img src={imgUrl(slides[mainImg].src)} alt={product?.name} />
+                )}
 
                 {/* Badge overlay */}
                 {gal.showBadgeOverlay && saving > 0 && (
@@ -613,12 +638,12 @@ export default function WalmartProductPage({ product, settings }) {
                 )}
 
                 {/* Image counter */}
-                {gal.showImageCounter && images.length > 1 && (
-                  <div className="wp-img-counter">{mainImg + 1}/{images.length}</div>
+                {gal.showImageCounter && slides.length > 1 && (
+                  <div className="wp-img-counter">{mainImg + 1}/{slides.length}</div>
                 )}
 
                 {/* Navigation Arrows */}
-                {gal.showNavigationArrows !== false && images.length > 1 && (() => {
+                {gal.showNavigationArrows !== false && slides.length > 1 && (() => {
                   const ar = gal.arrows || {};
                   const arrowBg = ar.bgColor || 'rgba(27,94,53,0.85)';
                   const arrowColor = ar.iconColor || '#ffffff';
@@ -656,11 +681,24 @@ export default function WalmartProductPage({ product, settings }) {
               </div>
 
               {/* Thumbnails */}
-              {gal.showThumbnails && images.length > 1 && (
+              {gal.showThumbnails && slides.length > 1 && (
                 <div className="wp-thumbs" style={{ padding: '8px' }}>
-                  {images.map((img, i) => (
-                    <div key={i} className={`wp-thumb ${i === mainImg ? 'active' : ''}`} onClick={() => setMainImg(i)}>
-                      <img src={imgUrl(img)} alt="" />
+                  {slides.map((slide, i) => (
+                    <div key={i} className={`wp-thumb ${i === mainImg ? 'active' : ''}`} onClick={() => setMainImg(i)} style={{ position: 'relative' }}>
+                      {slide.type === 'video' ? (
+                        <>
+                          {slide.thumbnail ? (
+                            <img src={slide.thumbnail} alt="" />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', background: '#000' }} />
+                          )}
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))' }}><circle cx="12" cy="12" r="10" fillOpacity="0.35" /><path d="M10 8l6 4-6 4V8z" /></svg>
+                          </div>
+                        </>
+                      ) : (
+                        <img src={imgUrl(slide.src)} alt="" />
+                      )}
                     </div>
                   ))}
                 </div>

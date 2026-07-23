@@ -94,6 +94,20 @@ const productSchema = new mongoose.Schema({
   featuredImage: {
     type: String
   },
+  videos: [{
+    type: {
+      type: String,
+      enum: ['upload', 'embed'],
+      default: 'upload'
+    },
+    url: {
+      type: String,
+      required: true
+    },
+    title: {
+      type: String
+    }
+  }],
   stock: {
     type: Number,
     default: 0,
