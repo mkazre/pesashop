@@ -26,6 +26,7 @@ import TikTokVideoSlot from '@/components/social/TikTokVideoSlot';
 import ServiceRequestWidget from '@/components/services/ServiceRequestWidget';
 import toast from '@/utils/toast';
 import { getVideoRenderInfo } from '@/utils/videoUrl';
+import { FaYoutube, FaVimeo } from 'react-icons/fa';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -608,14 +609,21 @@ export default function WalmartProductPage({ product, settings }) {
                   slides[mainImg].kind === 'file' ? (
                     <video key={slides[mainImg].src} src={imgUrl(slides[mainImg].src)} controls style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
                   ) : (
-                    <iframe
-                      key={slides[mainImg].src}
-                      src={slides[mainImg].src}
-                      title="Product video"
-                      style={{ width: '100%', height: '100%', border: 0 }}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+                    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#000' }}>
+                      <iframe
+                        key={slides[mainImg].src}
+                        src={slides[mainImg].src}
+                        title="Product video"
+                        style={{ width: '100%', height: '100%', border: 0 }}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen={!slides[mainImg].platform}
+                      />
+                      {slides[mainImg].platform && (
+                        <div style={{ position: 'absolute', bottom: 10, right: 10, width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                          {slides[mainImg].platform === 'youtube' ? <FaYoutube size={16} color="#fff" /> : <FaVimeo size={16} color="#fff" />}
+                        </div>
+                      )}
+                    </div>
                   )
                 ) : (
                   slides[mainImg] && <img src={imgUrl(slides[mainImg].src)} alt={product?.name} />

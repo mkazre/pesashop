@@ -41,7 +41,7 @@ import PulsingArrows from "@/components/PulsingArrows";
 import FreeShippingBar from "@/components/FreeShippingBar";
 import { useCartSuccessOverlay } from "@/components/CartSuccessOverlay";
 import { colors, resolveImageUrl } from "@/theme";
-import { getVideoRenderInfo } from "@/utils/videoUrl";
+import { getVideoRenderInfo, buildYoutubeEmbedHtml, buildVimeoBackgroundUrl } from "@/utils/videoUrl";
 import {
   productsAPI,
   reviewsAPI,
@@ -60,17 +60,73 @@ import {
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
+function ProductVideoBadge({ icon }: { icon: keyof typeof Ionicons.glyphMap }) {
+  return (
+    <View
+      style={{
+        position: "absolute",
+        bottom: 10,
+        right: 10,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: "rgba(0,0,0,0.55)",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Ionicons name={icon} size={16} color="#fff" />
+    </View>
+  );
+}
+
 function ProductVideoFileSlide({ uri }: { uri: string }) {
   const player = useVideoPlayer(uri, (p) => {
-    p.loop = false;
+    p.loop = true;
+    p.muted = true;
+    p.play();
   });
   return (
-    <VideoView
-      player={player}
-      style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH, backgroundColor: "#000" }}
-      nativeControls
-      contentFit="contain"
-    />
+    <View style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH, backgroundColor: "#000" }}>
+      <VideoView player={player} style={{ width: "100%", height: "100%" }} nativeControls={false} contentFit="contain" />
+      <ProductVideoBadge icon="play" />
+    </View>
+  );
+}
+
+function ProductYoutubeSlide({ videoId }: { videoId: string }) {
+  const html = useMemo(() => buildYoutubeEmbedHtml(videoId), [videoId]);
+  return (
+    <View style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH, backgroundColor: "#000" }}>
+      <WebView
+        source={{ html, baseUrl: "https://pesashop.com" }}
+        style={{ flex: 1, backgroundColor: "#000" }}
+        javaScriptEnabled
+        domStorageEnabled
+        mediaPlaybackRequiresUserAction={false}
+        allowsInlineMediaPlayback
+        scrollEnabled={false}
+        originWhitelist={["*"]}
+      />
+      <ProductVideoBadge icon="logo-youtube" />
+    </View>
+  );
+}
+
+function ProductVimeoSlide({ videoId }: { videoId: string }) {
+  const uri = buildVimeoBackgroundUrl(videoId);
+  return (
+    <View style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH, backgroundColor: "#000" }}>
+      <WebView
+        source={{ uri }}
+        style={{ flex: 1, backgroundColor: "#000" }}
+        javaScriptEnabled
+        mediaPlaybackRequiresUserAction={false}
+        allowsInlineMediaPlayback
+        scrollEnabled={false}
+      />
+      <ProductVideoBadge icon="logo-vimeo" />
+    </View>
   );
 }
 
@@ -83,7 +139,9 @@ function ProductVideoEmbedSlide({ uri }: { uri: string }) {
         allowsFullscreenVideo
         javaScriptEnabled
         mediaPlaybackRequiresUserAction={false}
+        allowsInlineMediaPlayback
       />
+      <ProductVideoBadge icon="play" />
     </View>
   );
 }
@@ -320,6 +378,10 @@ export default function ProductDetailScreen() {
               item.type === "video" ? (
                 item.kind === "file" ? (
                   <ProductVideoFileSlide uri={resolveImageUrl(item.src) || ""} />
+                ) : item.kind === "youtube" ? (
+                  <ProductYoutubeSlide videoId={item.videoId} />
+                ) : item.kind === "vimeo" ? (
+                  <ProductVimeoSlide videoId={item.videoId} />
                 ) : (
                   <ProductVideoEmbedSlide uri={item.src} />
                 )

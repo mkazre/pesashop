@@ -1,6 +1,16 @@
 import { useState, useMemo } from 'react';
 import { IoChevronBack, IoChevronForward, IoExpand, IoPlayCircle } from 'react-icons/io5';
+import { FaYoutube, FaVimeo } from 'react-icons/fa';
 import { getVideoRenderInfo } from '@/utils/videoUrl';
+
+function VideoBadge({ platform }) {
+  const Icon = platform === 'youtube' ? FaYoutube : platform === 'vimeo' ? FaVimeo : IoPlayCircle;
+  return (
+    <div className="absolute bottom-4 right-4 w-8 h-8 rounded-full bg-black/55 flex items-center justify-center pointer-events-none">
+      <Icon size={16} className="text-white" />
+    </div>
+  );
+}
 
 export default function ProductGallery({ images = [], videos = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -46,15 +56,18 @@ export default function ProductGallery({ images = [], videos = [] }) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <iframe
-              key={currentSlide.src}
-              src={currentSlide.src}
-              title="Product video"
-              className="w-full h-full"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            <div className="relative w-full h-full bg-black">
+              <iframe
+                key={currentSlide.src}
+                src={currentSlide.src}
+                title="Product video"
+                className="w-full h-full"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen={!currentSlide.platform}
+              />
+              {currentSlide.platform && <VideoBadge platform={currentSlide.platform} />}
+            </div>
           )
         ) : (
           <img
