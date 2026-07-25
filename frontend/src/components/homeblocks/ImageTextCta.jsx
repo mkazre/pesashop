@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import BlockWrapper from './BlockWrapper';
+import { getImageSizeStyle } from '@/utils/imageSizing';
 
 export default function ImageTextCta({ block }) {
   const resolveImg = (url) => {
@@ -22,19 +23,19 @@ export default function ImageTextCta({ block }) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Main image with text overlay */}
         <div className={`${layout.main} col-span-12`}>
-          <div className="relative rounded-xl overflow-hidden min-h-[300px] md:min-h-[400px]">
+          <div className="relative rounded-xl overflow-hidden">
             {block.mainImage ? (
               <img
                 src={resolveImg(block.mainImage)}
                 alt={block.heading || ''}
-                className="absolute inset-0 w-full h-full object-cover"
+                style={getImageSizeStyle(block.mainImageWidth, block.mainImageHeight)}
                 loading="lazy"
               />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-50" />
+              <div className="bg-gradient-to-br from-gray-100 to-gray-50" style={{ minHeight: '300px' }} />
             )}
             <div
-              className={`relative z-10 h-full flex flex-col justify-center p-8 md:p-12 ${
+              className={`absolute inset-0 z-10 flex flex-col justify-center p-8 md:p-12 ${
                 block.textPosition === 'center' ? 'items-center text-center' :
                 block.textPosition === 'left' ? 'items-start text-left' :
                 'items-end text-right'
@@ -89,11 +90,11 @@ export default function ImageTextCta({ block }) {
         {/* Side image */}
         {!isFullWidth && layout.side && block.sideImage && (
           <div className={`${layout.side} col-span-12`}>
-            <div className="rounded-xl overflow-hidden h-full min-h-[200px]">
+            <div className="rounded-xl overflow-hidden">
               <img
                 src={resolveImg(block.sideImage)}
                 alt=""
-                className="w-full h-full object-cover"
+                style={getImageSizeStyle(block.sideImageWidth, block.sideImageHeight)}
                 loading="lazy"
               />
             </div>

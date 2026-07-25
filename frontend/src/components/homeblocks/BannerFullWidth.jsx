@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import BlockWrapper from './BlockWrapper';
+import { getImageSizeStyle } from '@/utils/imageSizing';
 
 // Convert hex color + opacity% to rgba string
 function overlayRgba(color, opacity) {
@@ -24,22 +25,19 @@ export default function BannerFullWidth({ block }) {
 
   return (
     <BlockWrapper block={{ ...block, showSectionTitle: false }}>
-      <div
-        className="relative rounded-xl overflow-hidden"
-        style={{ minHeight: '240px' }}
-      >
+      <div className="relative rounded-xl overflow-hidden">
         {banner.image ? (
           <img
             src={resolveImg(banner.image)}
             alt={banner.heading || ''}
-            className="w-full h-full object-cover absolute inset-0"
+            style={getImageSizeStyle(banner.imageWidth, banner.imageHeight)}
             loading="lazy"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-gray-50" />
+          <div className="bg-gradient-to-r from-gray-100 to-gray-50" style={{ minHeight: '240px' }} />
         )}
         <div className="absolute inset-0" style={{ backgroundColor: banner.overlayOpacity != null ? overlayRgba(banner.overlayColor, banner.overlayOpacity) : (banner.overlayColor || 'transparent') }} />
-        <div className="relative z-10 p-8 md:p-12 flex flex-col justify-center h-full max-w-2xl">
+        <div className="absolute inset-0 z-10 p-8 md:p-12 flex flex-col justify-center max-w-2xl">
           {banner.subtitle && (
             <p className="text-sm font-medium mb-2" style={{ color: banner.textColor || '#333' }}>
               {banner.subtitle}

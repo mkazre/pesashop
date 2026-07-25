@@ -16,6 +16,9 @@ const slideSchema = new mongoose.Schema({
 // ── Banner item schema ─────────────────────────────────────────────
 const bannerItemSchema = new mongoose.Schema({
   image: { type: String, default: '' },
+  // Any valid CSS length (px, %, em, ...). Blank = natural intrinsic size.
+  imageWidth: { type: String, default: '' },
+  imageHeight: { type: String, default: '' },
   heading: { type: String, default: '' },
   subtitle: { type: String, default: '' },
   label: { type: String, default: '' },
@@ -294,7 +297,11 @@ const blockSchema = new mongoose.Schema({
 
   // ── Image + Text CTA Banner ──
   mainImage: { type: String, default: '' },
+  mainImageWidth: { type: String, default: '' },
+  mainImageHeight: { type: String, default: '' },
   sideImage: { type: String, default: '' },
+  sideImageWidth: { type: String, default: '' },
+  sideImageHeight: { type: String, default: '' },
   description: { type: String, default: '' },
   bulletPoints: [{ type: String }],
   buttonLink: { type: String, default: '' },

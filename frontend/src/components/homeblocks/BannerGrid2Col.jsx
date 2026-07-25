@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import BlockWrapper from './BlockWrapper';
+import { getImageSizeStyle } from '@/utils/imageSizing';
 
 // Convert hex color + opacity% to rgba string
 function overlayRgba(color, opacity) {
@@ -23,14 +24,14 @@ export default function BannerGrid2Col({ block }) {
   };
 
   const renderBanner = (banner, className = '') => (
-    <div className={`relative rounded-xl overflow-hidden group cursor-pointer ${className}`} style={{ minHeight: '180px' }}>
+    <div className={`relative rounded-xl overflow-hidden group cursor-pointer ${className}`}>
       {banner.image ? (
-        <img src={resolveImg(banner.image)} alt={banner.heading || ''} className="w-full h-full object-cover absolute inset-0 group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+        <img src={resolveImg(banner.image)} alt={banner.heading || ''} style={getImageSizeStyle(banner.imageWidth, banner.imageHeight)} className="group-hover:scale-105 transition-transform duration-500" loading="lazy" />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-50" />
+        <div className="bg-gradient-to-br from-gray-100 to-gray-50" style={{ minHeight: '180px' }} />
       )}
       <div className="absolute inset-0" style={{ backgroundColor: banner.overlayOpacity != null ? overlayRgba(banner.overlayColor, banner.overlayOpacity) : (banner.overlayColor || 'transparent') }} />
-      <div className="relative z-10 p-6 flex flex-col justify-center h-full">
+      <div className="absolute inset-0 z-10 p-6 flex flex-col justify-center">
         {banner.label && (
           <span className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: banner.textColor || '#333' }}>
             {banner.label}

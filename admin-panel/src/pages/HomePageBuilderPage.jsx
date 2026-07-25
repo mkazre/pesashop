@@ -438,6 +438,39 @@ function ImageUploadField({ value, onChange, label }) {
   );
 }
 
+// ── Image size controls (width/height, any CSS length; blank = natural) ──
+function SizeControls({ width, height, onWidthChange, onHeightChange }) {
+  return (
+    <div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-xs text-gray-500">Image Width</label>
+          <input
+            type="text"
+            className="w-full text-sm px-3 py-2 border rounded"
+            placeholder="Auto (natural size)"
+            value={width || ''}
+            onChange={(e) => onWidthChange(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500">Image Height</label>
+          <input
+            type="text"
+            className="w-full text-sm px-3 py-2 border rounded"
+            placeholder="Auto (natural size)"
+            value={height || ''}
+            onChange={(e) => onHeightChange(e.target.value)}
+          />
+        </div>
+      </div>
+      <p className="text-[11px] text-gray-400 mt-1">
+        e.g. 300px, 50%, 20em. Leave both blank for the image's natural size — set only one to scale proportionally, or set both to fit an exact box (crops to fill).
+      </p>
+    </div>
+  );
+}
+
 // ── Overlay control (color picker + opacity slider + preview) ────────
 function OverlayControl({ color, opacity, onColorChange, onOpacityChange }) {
   const c = color || '#000000';
@@ -533,6 +566,12 @@ function BannerItemEditor({ banner, index, onChange, onRemove, showRemove }) {
         {showRemove && <button onClick={onRemove} className="text-red-500 hover:text-red-700"><IoTrash size={14} /></button>}
       </div>
       <ImageUploadField label="Image" value={banner.image || ''} onChange={(v) => update('image', v)} />
+      <SizeControls
+        width={banner.imageWidth}
+        height={banner.imageHeight}
+        onWidthChange={(v) => update('imageWidth', v)}
+        onHeightChange={(v) => update('imageHeight', v)}
+      />
       <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Heading" value={banner.heading || ''} onChange={(e) => update('heading', e.target.value)} />
       <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Subtitle" value={banner.subtitle || ''} onChange={(e) => update('subtitle', e.target.value)} />
       <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Label / Tag" value={banner.label || ''} onChange={(e) => update('label', e.target.value)} />
@@ -1644,7 +1683,19 @@ function BlockSettingsPanel({ block, onChange }) {
         <div className="space-y-3 pb-4 border-b">
           <h4 className="text-sm font-semibold text-gray-700">CTA Banner</h4>
           <ImageUploadField label="Main Image" value={block.mainImage || ''} onChange={(v) => update('mainImage', v)} />
+          <SizeControls
+            width={block.mainImageWidth}
+            height={block.mainImageHeight}
+            onWidthChange={(v) => update('mainImageWidth', v)}
+            onHeightChange={(v) => update('mainImageHeight', v)}
+          />
           <ImageUploadField label="Side Image (optional)" value={block.sideImage || ''} onChange={(v) => update('sideImage', v)} />
+          <SizeControls
+            width={block.sideImageWidth}
+            height={block.sideImageHeight}
+            onWidthChange={(v) => update('sideImageWidth', v)}
+            onHeightChange={(v) => update('sideImageHeight', v)}
+          />
           <input className="w-full text-sm px-3 py-2 border rounded" placeholder="Heading" value={block.heading || ''} onChange={(e) => update('heading', e.target.value)} />
           <textarea className="w-full text-sm px-3 py-2 border rounded" placeholder="Description" value={block.description || ''} onChange={(e) => update('description', e.target.value)} rows={2} />
           <div>
