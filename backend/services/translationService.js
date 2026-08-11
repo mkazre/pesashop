@@ -4,8 +4,11 @@ const TranslationCache = require('../models/TranslationCache');
 
 const GOOGLE_TRANSLATE_URL = 'https://translation.googleapis.com/language/translate/v2';
 
-// Only these six locales are wired up on the storefront — see frontend/src/i18n.js.
-const SUPPORTED_TARGET_LANGS = ['fr', 'sn', 'bem', 'ny', 'zu', 'nd'];
+// Only these locales are wired up on the storefront — see frontend/src/i18n.js.
+// Northern (Zimbabwean) Ndebele is intentionally excluded: no translation API
+// supports it (Google Cloud Translation only has Southern Ndebele, "nr",
+// a related but distinct language) — it needs a human/community translator.
+const SUPPORTED_TARGET_LANGS = ['fr', 'sn', 'bem', 'ny', 'zu'];
 
 const hashText = (text) => crypto.createHash('sha256').update(text, 'utf8').digest('hex');
 

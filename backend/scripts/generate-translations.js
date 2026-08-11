@@ -20,7 +20,8 @@ const axios = require('axios');
 
 const GOOGLE_TRANSLATE_URL = 'https://translation.googleapis.com/language/translate/v2';
 const LOCALES_DIR = path.join(__dirname, '../../frontend/src/locales');
-const TARGET_LANGS = ['fr', 'sn', 'bem', 'ny', 'zu', 'nd'];
+// Northern (Zimbabwean) Ndebele excluded — no translation API supports it.
+const TARGET_LANGS = ['fr', 'sn', 'bem', 'ny', 'zu'];
 
 function flatten(obj, prefix = '', out = {}) {
   for (const [key, value] of Object.entries(obj)) {

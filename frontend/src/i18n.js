@@ -8,8 +8,13 @@ import sn from './locales/sn/translation.json';
 import bem from './locales/bem/translation.json';
 import ny from './locales/ny/translation.json';
 import zu from './locales/zu/translation.json';
-import nd from './locales/nd/translation.json';
 
+// Zimbabwean/Northern Ndebele is intentionally excluded: no translation API
+// supports it (Google Cloud Translation only has Southern Ndebele, "nr",
+// which is a related but distinct language) — it would need a human/
+// community translator, not machine translation. Re-add here + in
+// backend/services/translationService.js's SUPPORTED_TARGET_LANGS if that
+// becomes available.
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', label: 'English', nativeLabel: 'English' },
   { code: 'fr', label: 'French', nativeLabel: 'Français' },
@@ -17,7 +22,6 @@ export const SUPPORTED_LANGUAGES = [
   { code: 'bem', label: 'Bemba', nativeLabel: 'Ichibemba' },
   { code: 'ny', label: 'Chichewa', nativeLabel: 'Chichewa' },
   { code: 'zu', label: 'Zulu', nativeLabel: 'isiZulu' },
-  { code: 'nd', label: 'Ndebele', nativeLabel: 'isiNdebele' },
 ];
 
 i18n
@@ -31,7 +35,6 @@ i18n
       bem: { translation: bem },
       ny: { translation: ny },
       zu: { translation: zu },
-      nd: { translation: nd },
     },
     fallbackLng: 'en',
     supportedLngs: SUPPORTED_LANGUAGES.map((l) => l.code),
