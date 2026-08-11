@@ -1,95 +1,28 @@
 # Dependencies
 node_modules/
-package-lock.json
+**/node_modules/
 
-# Build outputs
-# Allow frontend dist for deployment
-!frontend/dist/
-# Ignore other build outputs
+# Build output
 dist/
 build/
-*.log
+**/dist/
+**/build/
 
-# Environment variables
+# Environment files (contain live secrets — never commit)
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Backend specific
-backend/uploads/temp/
-backend/config/imageProcessorConfig.json
-
-# Frontend/Admin specific
-admin-panel/dist/
+.env.*.local
+**/.env
+!**/.env.example
 
 # Logs
-logs/
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
 
-# Testing
-coverage/
-.nyc_output/
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
 
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# MongoDB
-data/
-
-# Plugins (large, not part of app)
-plugins/
-
-# CSV exports
-*.csv
-
-# macOS resource forks
-._*
-
-# Windsurf
-.windsurf/
-
-# Template/reference folders (not part of the app)
-nest-nextjs-master/
-database-export/
-
-# Uploads (keep structure, ignore content)
-backend/uploads/products/*
-!backend/uploads/products/.gitkeep
-backend/uploads/watermarks/*
-!backend/uploads/watermarks/.gitkeep
-backend/uploads/temp/*
-!backend/uploads/temp/.gitkeep
-backend/uploads/logo.png
-backend/uploads/shipping/*
-!backend/uploads/shipping/.gitkeep
-backend/uploads/waybills/*
-!backend/uploads/waybills/.gitkeep
-backend/uploads/mobile/*
-!backend/uploads/mobile/.gitkeep
-
-# Migration artifacts
-backend/migration-progress.json
+# Uploads (runtime-generated, not source)
+backend/uploads/

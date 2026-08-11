@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   IoSearch,
   IoPerson,
@@ -17,6 +18,7 @@ import SmartIcon from '@/components/common/SmartIcon';
 import { useQuery } from 'react-query';
 import { menusAPI, categoriesAPI } from '@/services/api';
 import CurrencyPicker from '@/components/common/CurrencyPicker';
+import LanguagePicker from '@/components/common/LanguagePicker';
 import SearchBar from '@/components/common/SearchBar';
 import NotificationBell from '@/components/common/NotificationBell';
 const PageRenderer = React.lazy(() => import('@/components/pagebuilder/PageRenderer'));
@@ -321,6 +323,7 @@ const MobileMenuItem = ({ item, onClose, level = 0 }) => {
 const DefaultHeader = React.lazy(() => import('./DefaultHeader'));
 
 export default function Header() {
+  const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
@@ -368,7 +371,6 @@ export default function Header() {
   const topBarLocation = getSetting(settings, 'topBar.location', '');
   const topBarAnnouncement = getSetting(settings, 'topBar.announcement', '');
   const topBarShowLang = getSetting(settings, 'topBar.showLanguage', false);
-  const topBarLanguages = getSetting(settings, 'topBar.languages', 'English,Afrikaans');
   const topBarShowCurrency = getSetting(settings, 'topBar.showCurrency', false);
   const topBarCurrencies = getSetting(settings, 'topBar.currencies', 'ZAR,USD,EUR');
   const topBarPadding = getSetting(settings, 'topBar.padding', '8px 0');
@@ -516,11 +518,7 @@ export default function Header() {
                 </div>
                 <div className="flex items-center gap-4">
                   {topBarShowLang && (
-                    <select className="bg-transparent border-0 text-inherit text-sm cursor-pointer" style={{ fontSize: topBarFontSize }}>
-                      {(topBarLanguages || 'English,Afrikaans').split(',').map(l => (
-                        <option key={l.trim()} className="text-black">{l.trim()}</option>
-                      ))}
-                    </select>
+                    <LanguagePicker variant="topbar" />
                   )}
                   {topBarShowCurrency && (
                     <CurrencyPicker variant="topbar" />
@@ -570,8 +568,8 @@ export default function Header() {
                         <IoPerson size={20} />
                       </div>
                       <div className="text-left text-sm">
-                        <div className="text-gray-600">Account</div>
-                        <div className="font-medium">{isAuthenticated ? user?.name : 'Login'}</div>
+                        <div className="text-gray-600">{t('nav.account')}</div>
+                        <div className="font-medium">{isAuthenticated ? user?.name : t('nav.login')}</div>
                       </div>
                     </button>
                   )}
@@ -604,8 +602,8 @@ export default function Header() {
                         )}
                       </div>
                       <div className="hidden lg:block text-left text-sm">
-                        <div className="text-gray-600">Cart</div>
-                        <div className="font-medium">{cartItemCount} Items</div>
+                        <div className="text-gray-600">{t('nav.cart')}</div>
+                        <div className="font-medium">{t('nav.itemsCount', { count: cartItemCount })}</div>
                       </div>
                     </button>
                   )}
@@ -689,7 +687,7 @@ export default function Header() {
           }`} style={{ backgroundColor: mobileBg, color: mobileTextColor }}>
             {/* Close button */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <span className="font-semibold text-lg">Menu</span>
+              <span className="font-semibold text-lg">{t('nav.menu')}</span>
               <button onClick={closeMobile} className="p-1 hover:bg-gray-100 rounded">
                 <IoClose size={24} />
               </button>
@@ -711,8 +709,14 @@ export default function Header() {
 
             {/* Currency Switcher (mobile) */}
             <div className="p-4 border-t border-gray-200">
-              <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">Currency</div>
+              <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">{t('nav.currency')}</div>
               <CurrencyPicker variant="header" />
+            </div>
+
+            {/* Language Switcher (mobile) */}
+            <div className="p-4 border-t border-gray-200">
+              <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">{t('nav.language')}</div>
+              <LanguagePicker variant="header" />
             </div>
 
             {/* Auth link */}
@@ -720,7 +724,7 @@ export default function Header() {
               <div className="p-4 border-t border-gray-200">
                 <button onClick={() => { closeMobile(); openAuthModal('login'); }}
                   className="w-full py-2 text-center text-primary font-medium border border-primary rounded">
-                  Login / Register
+                  {t('nav.loginRegister')}
                 </button>
               </div>
             )}

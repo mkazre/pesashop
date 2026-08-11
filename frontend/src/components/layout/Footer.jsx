@@ -13,6 +13,7 @@ import {
 } from 'react-icons/io5';
 import { useState, useMemo } from 'react';
 import { useQuery } from 'react-query';
+import { useTranslation } from 'react-i18next';
 import { menusAPI, footerConfigAPI } from '@/services/api';
 import toast from '@/utils/toast';
 
@@ -407,6 +408,7 @@ const FooterColumn = ({ item, linkColor, linkHoverClass }) => {
 
 // ── Main Footer Component ────────────────────────────────────────────
 export default function Footer() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
 
   // Fetch footer builder config
@@ -568,17 +570,17 @@ export default function Footer() {
       <div className="border-b border-primary-400">
         <div className="container-custom py-12">
           <div className="max-w-2xl mx-auto text-center">
-            <h3 className="text-2xl font-bold mb-2">Subscribe to the newsletter</h3>
+            <h3 className="text-2xl font-bold mb-2">{t('footer.newsletterTitle')}</h3>
             <p className="text-primary-100 mb-6">
-              Stay updated! Subscribe to our mailing list for news, updates, and exclusive offers.
+              {t('footer.newsletterSubtitle')}
             </p>
             <form onSubmit={handleNewsletterSubmit} className="flex gap-2 max-w-md mx-auto">
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder={t('footer.emailPlaceholder')}
                 className="flex-1 px-4 py-3 bg-white text-black focus:outline-none" required />
               <button type="submit"
                 className="px-8 py-3 bg-secondary text-black font-medium hover:bg-secondary-600 transition-colors">
-                Submit
+                {t('common.submit')}
               </button>
             </form>
           </div>
@@ -613,36 +615,36 @@ export default function Footer() {
 
           {/* About Links */}
           <div>
-            <h4 className="font-bold text-lg mb-4">About</h4>
+            <h4 className="font-bold text-lg mb-4">{t('footer.about')}</h4>
             <ul className="space-y-3 text-primary-100">
-              {[{ to: '/about', label: 'About us' }, { to: '/terms', label: 'Terms & Conditions' },
-                { to: '/privacy', label: 'Privacy Policy' }, { to: '/careers', label: 'Careers' },
-                { to: '/blog', label: 'Latest Blog' }, { to: '/contact', label: 'Contact us' }].map(l => (
-                <li key={l.to}><Link to={l.to} className="hover:text-white transition-colors">{l.label}</Link></li>
+              {[{ to: '/about', key: 'aboutUs' }, { to: '/terms', key: 'terms' },
+                { to: '/privacy', key: 'privacy' }, { to: '/careers', key: 'careers' },
+                { to: '/blog', key: 'blog' }, { to: '/contact', key: 'contactUs' }].map(l => (
+                <li key={l.to}><Link to={l.to} className="hover:text-white transition-colors">{t(`footer.links.${l.key}`)}</Link></li>
               ))}
             </ul>
           </div>
 
           {/* My Account Links */}
           <div>
-            <h4 className="font-bold text-lg mb-4">My Account</h4>
+            <h4 className="font-bold text-lg mb-4">{t('footer.myAccount')}</h4>
             <ul className="space-y-3 text-primary-100">
-              {[{ to: '/account', label: 'Your Account' }, { to: '/account/orders', label: 'Return Policy' },
-                { to: '/vendors', label: 'Become a Vendor' }, { to: '/account/wishlist', label: 'Wishlist' },
-                { to: '/affiliate', label: 'Affiliate Program' }, { to: '/faq', label: 'FAQs' }].map(l => (
-                <li key={l.to}><Link to={l.to} className="hover:text-white transition-colors">{l.label}</Link></li>
+              {[{ to: '/account', key: 'yourAccount' }, { to: '/account/orders', key: 'returnPolicy' },
+                { to: '/vendors', key: 'becomeVendor' }, { to: '/account/wishlist', key: 'wishlist' },
+                { to: '/affiliate', key: 'affiliateProgram' }, { to: '/faq', key: 'faqs' }].map(l => (
+                <li key={l.to}><Link to={l.to} className="hover:text-white transition-colors">{t(`footer.links.${l.key}`)}</Link></li>
               ))}
             </ul>
           </div>
 
           {/* Categories Links */}
           <div>
-            <h4 className="font-bold text-lg mb-4">Categories</h4>
+            <h4 className="font-bold text-lg mb-4">{t('footer.categories')}</h4>
             <ul className="space-y-3 text-primary-100">
-              {[{ to: '/shop/healthcare', label: 'Healthcare' }, { to: '/shop/fashion', label: 'Fashion' },
-                { to: '/shop/organic', label: 'Organic' }, { to: '/shop/beauty', label: 'Beauty' },
-                { to: '/shop/grocery', label: 'Grocery' }].map(l => (
-                <li key={l.to}><Link to={l.to} className="hover:text-white transition-colors">{l.label}</Link></li>
+              {[{ to: '/shop/healthcare', key: 'healthcare' }, { to: '/shop/fashion', key: 'fashion' },
+                { to: '/shop/organic', key: 'organic' }, { to: '/shop/beauty', key: 'beauty' },
+                { to: '/shop/grocery', key: 'grocery' }].map(l => (
+                <li key={l.to}><Link to={l.to} className="hover:text-white transition-colors">{t(`footer.links.${l.key}`)}</Link></li>
               ))}
             </ul>
           </div>
@@ -656,21 +658,21 @@ export default function Footer() {
             <div className="flex items-start gap-3">
               <IoLocation size={24} className="text-secondary mt-1" />
               <div>
-                <div className="font-medium mb-1">Address</div>
+                <div className="font-medium mb-1">{t('footer.address')}</div>
                 <div className="text-primary-100">2715 Ash Dr. San Jose, South Dakota 83475</div>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <IoCall size={24} className="text-secondary mt-1" />
               <div>
-                <div className="font-medium mb-1">Call Us</div>
+                <div className="font-medium mb-1">{t('footer.callUs')}</div>
                 <div className="text-primary-100">Call Us: (239) 555-0108</div>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <IoMail size={24} className="text-secondary mt-1" />
               <div>
-                <div className="font-medium mb-1">Email</div>
+                <div className="font-medium mb-1">{t('footer.email')}</div>
                 <div className="text-primary-100">sara.cruz@example.com</div>
               </div>
             </div>
@@ -686,7 +688,7 @@ export default function Footer() {
               {new Date().getFullYear()} Copyright By Themeforest Powered By Createuiux
             </div>
             <div className="flex items-center gap-3">
-              <div className="text-sm text-primary-100 mr-2">We Accept:</div>
+              <div className="text-sm text-primary-100 mr-2">{t('footer.weAccept')}</div>
               {[{ label: 'VISA', color: '#1e40af' }, { label: 'MC', color: '#d97706' }, { label: 'AMEX', color: '#1e3a5f' },
                 { label: 'PayPal', color: '#1e40af' }, { label: 'Pay', color: '#fff', bg: '#000' }].map((p, i) => (
                 <div key={i} className="w-12 h-8 flex items-center justify-center font-bold text-xs rounded"

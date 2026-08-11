@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect, authorize, adminOnly } = require('../middleware/auth');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
+const { translateCategoryFields } = require('../services/translationService');
 
 /**
  * @route   GET /api/categories
@@ -110,9 +111,15 @@ router.get('/slug/:slug', async (req, res, next) => {
     // Attach real product count
     category.productCount = await Product.countDocuments({ categories: category._id, status: { $ne: 'trashed' } });
 
+    // Translate name/description/meta fields for non-English requests.
+    const lang = req.query.lang;
+    const data = lang && lang !== 'en'
+      ? await translateCategoryFields(category, lang)
+      : category;
+
     res.json({
       success: true,
-      data: category
+      data
     });
   } catch (error) {
     next(error);

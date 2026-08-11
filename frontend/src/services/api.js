@@ -16,6 +16,15 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Ask the backend for translated product/category content when the
+    // customer's chosen language isn't English. Read straight from the same
+    // localStorage key i18next-browser-languagedetector persists to (see
+    // src/i18n.js) rather than importing the i18next instance here, so this
+    // module has no dependency cycle risk with i18n.js.
+    const lang = localStorage.getItem('pesashop_language');
+    if (lang && lang !== 'en') {
+      config.params = { ...config.params, lang };
+    }
     return config;
   },
   (error) => Promise.reject(error)

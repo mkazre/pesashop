@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
+import { useTranslation } from 'react-i18next';
 import { productsAPI } from '@/services/api';
 import { useRecentlyViewedStore } from '@/store';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -68,6 +69,7 @@ function ProductPageBadge({ badge }) {
 }
 
 export default function ProductDetailPage() {
+  const { t } = useTranslation();
   const { slug } = useParams();
   const { addProduct } = useRecentlyViewedStore();
   const { trackProductView } = useAnalytics();
@@ -126,8 +128,8 @@ export default function ProductDetailPage() {
   if (error || !product) {
     return (
       <div className="container-custom py-12 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Product not found</h2>
-        <p className="text-gray-600">The product you're looking for doesn't exist.</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('product.productNotFound')}</h2>
+        <p className="text-gray-600">{t('product.productNotFoundBody')}</p>
       </div>
     );
   }
@@ -258,13 +260,13 @@ export default function ProductDetailPage() {
 
         {/* Customers Also Bought */}
         <div className="mt-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Customers Also Bought</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">{t('product.customersAlsoBought')}</h2>
           <CustomersAlsoBought productId={product._id} />
         </div>
 
         {/* Recommended With Your Purchase */}
         <div className="mt-8 mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Recommended With Your Purchase</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">{t('product.recommendedWithPurchase')}</h2>
           <RecommendedWithPurchase productId={product._id} />
         </div>
 

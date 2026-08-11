@@ -1,12 +1,14 @@
 import StarRating from '../common/StarRating';
 import Badge from '../common/Badge';
 import { IoHeart, IoHeartOutline, IoShareSocial } from 'react-icons/io5';
+import { useTranslation } from 'react-i18next';
 import { useWishlistStore, useAuthStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
 import toast from '@/utils/toast';
 
 export default function ProductInfo({ product, selectedVariation = null, quantity = 1 }) {
+  const { t } = useTranslation();
   const { items: wishlistItems, addItem, removeItem } = useWishlistStore();
   const { isAuthenticated } = useAuthStore();
   const { openAuthModal } = useUIStore();
@@ -25,10 +27,10 @@ export default function ProductInfo({ product, selectedVariation = null, quantit
     }
     if (isInWishlist) {
       removeItem(product._id);
-      toast.success('Removed from wishlist');
+      toast.success(t('toast.removedFromWishlist'));
     } else {
       addItem(product);
-      toast.success('Added to wishlist!');
+      toast.success(t('toast.addedToWishlist'));
     }
   };
 
@@ -41,7 +43,7 @@ export default function ProductInfo({ product, selectedVariation = null, quantit
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard!');
+      toast.success(t('toast.linkCopied'));
     }
   };
 
@@ -49,8 +51,8 @@ export default function ProductInfo({ product, selectedVariation = null, quantit
     <div className="space-y-4">
       {/* Badges */}
       <div className="flex items-center gap-2">
-        {product.salePrice && <Badge variant="sale">SALES</Badge>}
-        {product.isNew && <Badge variant="new">NEW ARRIVAL</Badge>}
+        {product.salePrice && <Badge variant="sale">{t('product.sale')}</Badge>}
+        {product.isNew && <Badge variant="new">{t('product.newArrival')}</Badge>}
       </div>
 
       {/* Product Name */}
@@ -67,7 +69,7 @@ export default function ProductInfo({ product, selectedVariation = null, quantit
         />
         {product.reviewCount > 0 && (
           <span className="text-sm text-gray-600">
-            ({product.reviewCount} Reviews)
+            {t('product.reviewsCount', { count: product.reviewCount })}
           </span>
         )}
       </div>
@@ -84,27 +86,27 @@ export default function ProductInfo({ product, selectedVariation = null, quantit
             </div>
             {discount > 0 && (
               <Badge variant="sale" className="text-base">
-                {discount}% OFF
+                {t('product.percentOff', { percent: discount })}
               </Badge>
             )}
           </>
         )}
         {displayPrice.isB2B && (
           <Badge variant="new" className="text-base">
-            B2B Price
+            {t('product.b2bPrice')}
           </Badge>
         )}
       </div>
 
       {/* Stock Status */}
       <div className="flex items-center gap-2">
-        <span className="text-gray-700 font-medium">Availability:</span>
+        <span className="text-gray-700 font-medium">{t('product.availability')}:</span>
         {product.stock > 0 ? (
           <span className="text-green-600 font-medium">
-            In Stock ({product.stock} available)
+            {t('product.inStockCount', { count: product.stock })}
           </span>
         ) : (
-          <span className="text-red-600 font-medium">Out of Stock</span>
+          <span className="text-red-600 font-medium">{t('product.outOfStock')}</span>
         )}
       </div>
 
@@ -119,13 +121,13 @@ export default function ProductInfo({ product, selectedVariation = null, quantit
       <div className="space-y-2 text-sm">
         {product.sku && (
           <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">SKU:</span>
+            <span className="text-gray-700 font-medium">{t('product.sku')}:</span>
             <span className="text-gray-600">{product.sku}</span>
           </div>
         )}
         {product.categories && product.categories.length > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">Categories:</span>
+            <span className="text-gray-700 font-medium">{t('product.categories')}:</span>
             <span className="text-gray-600">
               {product.categories.map(cat => cat.name).join(', ')}
             </span>
@@ -144,14 +146,14 @@ export default function ProductInfo({ product, selectedVariation = null, quantit
           }`}
         >
           {isInWishlist ? <IoHeart size={20} /> : <IoHeartOutline size={20} />}
-          {isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}
+          {isInWishlist ? t('product.inWishlist') : t('product.addToWishlist')}
         </button>
         <button
           onClick={handleShare}
           className="flex items-center gap-2 px-6 py-3 border-2 border-gray-300 hover:border-primary hover:text-primary font-medium transition-colors"
         >
           <IoShareSocial size={20} />
-          Share
+          {t('product.share')}
         </button>
       </div>
     </div>

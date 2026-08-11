@@ -1,15 +1,17 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import StarRating from '../common/StarRating';
 import { useProductDisplay, clampStyle } from '@/hooks/useProductDisplay';
 
 export default function ProductTabs({ product }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('description');
   const { descriptionLines, reviewLines } = useProductDisplay('detail');
 
   const tabs = [
-    { id: 'description', label: 'Description' },
-    { id: 'additional', label: 'Additional Information' },
-    { id: 'reviews', label: `Reviews (${product.reviewCount || 0})` },
+    { id: 'description', label: t('product.description') },
+    { id: 'additional', label: t('product.additionalInformation') },
+    { id: 'reviews', label: `${t('product.reviews')} (${product.reviewCount || 0})` },
   ];
 
   return (
@@ -45,25 +47,25 @@ export default function ProductTabs({ product }) {
               <tbody>
                 {product.weight && (
                   <tr className="border-b border-gray-200">
-                    <td className="py-3 font-medium text-gray-700 w-1/3">Weight</td>
+                    <td className="py-3 font-medium text-gray-700 w-1/3">{t('product.weight')}</td>
                     <td className="py-3 text-gray-600">{product.weight} kg</td>
                   </tr>
                 )}
                 {product.dimensions && (
                   <tr className="border-b border-gray-200">
-                    <td className="py-3 font-medium text-gray-700">Dimensions</td>
+                    <td className="py-3 font-medium text-gray-700">{t('product.dimensions')}</td>
                     <td className="py-3 text-gray-600">{product.dimensions}</td>
                   </tr>
                 )}
                 {product.material && (
                   <tr className="border-b border-gray-200">
-                    <td className="py-3 font-medium text-gray-700">Material</td>
+                    <td className="py-3 font-medium text-gray-700">{t('product.material')}</td>
                     <td className="py-3 text-gray-600">{product.material}</td>
                   </tr>
                 )}
                 {product.brand && (
                   <tr className="border-b border-gray-200">
-                    <td className="py-3 font-medium text-gray-700">Brand</td>
+                    <td className="py-3 font-medium text-gray-700">{t('product.brand')}</td>
                     <td className="py-3 text-gray-600">{product.brand}</td>
                   </tr>
                 )}
@@ -82,7 +84,7 @@ export default function ProductTabs({ product }) {
                 </div>
                 <StarRating rating={product.rating || 0} size="lg" showCount={false} />
                 <div className="text-sm text-gray-600 mt-2">
-                  Based on {product.reviewCount || 0} reviews
+                  {t('product.basedOnReviews', { count: product.reviewCount || 0 })}
                 </div>
               </div>
             </div>
@@ -104,7 +106,7 @@ export default function ProductTabs({ product }) {
                     <p className="text-gray-700 leading-relaxed" style={clampStyle(reviewLines)}>{review.comment}</p>
                     {review.isVerifiedPurchase && (
                       <span className="inline-block mt-2 text-xs text-green-600 font-medium">
-                        ✓ Verified Purchase
+                        ✓ {t('product.verifiedPurchase')}
                       </span>
                     )}
                   </div>
@@ -112,7 +114,7 @@ export default function ProductTabs({ product }) {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                No reviews yet. Be the first to review this product!
+                {t('product.noReviewsYet')}
               </div>
             )}
           </div>

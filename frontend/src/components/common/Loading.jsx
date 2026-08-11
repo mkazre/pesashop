@@ -1,5 +1,9 @@
-export default function Loading({ fullScreen = false, text = 'Loading...' }) {
-  const containerClass = fullScreen 
+import { useTranslation } from 'react-i18next';
+
+export default function Loading({ fullScreen = false, text }) {
+  const { t } = useTranslation();
+  const displayText = text ?? t('common.loading');
+  const containerClass = fullScreen
     ? 'fixed inset-0 flex items-center justify-center bg-white/95 backdrop-blur-sm z-50'
     : 'flex items-center justify-center py-12';
 
@@ -21,7 +25,7 @@ export default function Loading({ fullScreen = false, text = 'Loading...' }) {
             <span className="w-2 h-2 rounded-full bg-primary/60 animate-[pulse_1.2s_ease-in-out_infinite]" style={{ animationDelay: '0.2s' }} />
             <span className="w-2 h-2 rounded-full bg-primary/40 animate-[pulse_1.2s_ease-in-out_infinite]" style={{ animationDelay: '0.4s' }} />
           </div>
-          {text && <p className="text-sm font-medium text-gray-500 tracking-wide">{text}</p>}
+          {displayText && <p className="text-sm font-medium text-gray-500 tracking-wide">{displayText}</p>}
         </div>
       </div>
     </div>

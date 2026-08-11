@@ -8,6 +8,7 @@ const { protect, authorize, adminOnly, optionalAuth } = require('../middleware/a
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const { triggerProductAutoPost, wasJustPublished } = require('../services/autoposterProductAutoPostTrigger');
+const { translateProductFields } = require('../services/translationService');
 
 // Configure multer for image uploads (store in memory for processing)
 const storage = multer.memoryStorage();
@@ -483,10 +484,18 @@ router.get('/:id', optionalAuth, async (req, res) => {
     if (!isAdmin) {
       Product.updateOne({ _id: product._id }, { $inc: { viewCount: 1 } }).catch(() => {});
     }
-    
+
+    // Translate customer-facing free text (description/shortDescription/specs)
+    // when a non-English lang is requested. Name, SKU and price fields are
+    // never touched — see translationService.translateProductFields.
+    const lang = req.query.lang;
+    const data = lang && lang !== 'en'
+      ? await translateProductFields(product.toObject(), lang)
+      : product;
+
     res.json({
       success: true,
-      data: product
+      data
     });
   } catch (error) {
     console.error('Error fetching product:', error);
