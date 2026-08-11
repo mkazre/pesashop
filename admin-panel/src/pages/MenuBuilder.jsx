@@ -704,9 +704,9 @@ const MenuSettingsPanel = ({ menuData, getSettings, setSettings, setMenuData }) 
           <LabeledInput label="Promo / Announcement" value={getSettings('topBar.announcement', '')} onChange={(e) => setSettings('topBar.announcement', e.target.value)} placeholder="Free shipping on orders over $50!" />
           <div className="space-y-1.5">
             <LabeledCheck label="Show Language Selector" checked={getSettings('topBar.showLanguage', false)} onChange={(e) => setSettings('topBar.showLanguage', e.target.checked)} />
-            {getSettings('topBar.showLanguage', false) && (
-              <LabeledInput label="Languages (comma-separated)" value={getSettings('topBar.languages', 'English,Afrikaans')} onChange={(e) => setSettings('topBar.languages', e.target.value)} />
-            )}
+            <p className="text-xs text-gray-400 -mt-1">
+              Note: the language picker in the main header row (next to the currency selector) is always shown — this only controls a second copy in the top bar strip. The available languages themselves are managed under Settings → Translations.
+            </p>
             <LabeledCheck label="Show Currency Selector" checked={getSettings('topBar.showCurrency', false)} onChange={(e) => setSettings('topBar.showCurrency', e.target.checked)} />
             {getSettings('topBar.showCurrency', false) && (
               <LabeledInput label="Currencies (comma-separated)" value={getSettings('topBar.currencies', 'ZAR,USD,EUR')} onChange={(e) => setSettings('topBar.currencies', e.target.value)} />

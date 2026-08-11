@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCartStore, useWishlistStore, useRecentlyViewedStore, useAuthStore, useUIStore, useCurrencyStore } from '@/store';
 import { useB2BPricing } from '@/hooks/useB2BPricing';
 import { useQuery, useQueryClient } from 'react-query';
@@ -229,6 +230,7 @@ const STYLES = `
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function WalmartProductPage({ product, settings }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { addItem, getTotal } = useCartStore();
   const { products: recentlyViewed } = useRecentlyViewedStore();
@@ -717,7 +719,7 @@ export default function WalmartProductPage({ product, settings }) {
             {gal.showShareButton && (
               <div style={{ marginTop: 12, padding: '12px 0' }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: theme.textColor || '#1a1a1a', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  Share this product
+                  {t('product.shareThisProduct')}
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {/* Facebook */}
@@ -944,7 +946,7 @@ export default function WalmartProductPage({ product, settings }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
                 {(pi.showRating || fd.enabled) && <StarRating rating={effectiveRating} count={effectiveReviewCount} size="sm" />}
                 {(pi.showReviewCount || fd.enabled) && effectiveReviewCount > 0 && (
-                  <span style={{ fontSize: 12, color: theme.mutedColor || '#76889a' }}>({effectiveReviewCount} reviews)</span>
+                  <span style={{ fontSize: 12, color: theme.mutedColor || '#76889a' }}>{t('product.reviewsCount', { count: effectiveReviewCount })}</span>
                 )}
                 {(pi.showQtySold || fd.enabled) && effectiveSoldCount > 0 && (
                   <span style={{ fontSize: 12, color: theme.mutedColor || '#76889a' }}>{qtySoldText}</span>
@@ -1029,14 +1031,14 @@ export default function WalmartProductPage({ product, settings }) {
             {pi.showEstimatedDelivery && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, margin: '10px 0', padding: 10, background: theme.bgColor || '#f6f7f8' }}>
                 <span>🚚</span>
-                <span>Get it by <strong>{deliveryDate}</strong></span>
+                <span>{t('product.getItBy')} <strong>{deliveryDate}</strong></span>
               </div>
             )}
 
             {/* Free Shipping Zones */}
             {pi.showFreeShippingZones && pi.freeShippingZones?.length > 0 && (
               <div style={{ fontSize: 12, color: theme.mutedColor || '#76889a', margin: '6px 0', display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                <span style={{ color: '#16a34a', fontWeight: 600 }}>Free shipping to:</span>
+                <span style={{ color: '#16a34a', fontWeight: 600 }}>{t('product.freeShippingTo')}</span>
                 {pi.freeShippingZones.filter(z => z.enabled).map(z => (
                   <span key={z.code} style={{ padding: '1px 6px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: 11 }}>{z.label || z.code}</span>
                 ))}
@@ -1049,11 +1051,11 @@ export default function WalmartProductPage({ product, settings }) {
                 {product?.stock > 0 ? (
                   <>
                     {pi.showStockPulse && <span className="wp-pulse" style={{ background: '#22c55e' }} />}
-                    <span style={{ color: '#16a34a', fontWeight: 600 }}>In Stock</span>
-                    <span style={{ color: theme.mutedColor || '#76889a' }}>({product.stock} available)</span>
+                    <span style={{ color: '#16a34a', fontWeight: 600 }}>{t('product.inStock')}</span>
+                    <span style={{ color: theme.mutedColor || '#76889a' }}>({t('product.available', { count: product.stock })})</span>
                   </>
                 ) : (
-                  <span style={{ color: theme.dangerColor || '#d93025', fontWeight: 600 }}>Out of Stock</span>
+                  <span style={{ color: theme.dangerColor || '#d93025', fontWeight: 600 }}>{t('product.outOfStock')}</span>
                 )}
               </div>
             )}
@@ -1080,12 +1082,12 @@ export default function WalmartProductPage({ product, settings }) {
             {/* SKU / Categories */}
             {(pi.showSKU || pi.showCategories || pi.showTags) && (
               <div style={{ fontSize: 12, color: theme.mutedColor || '#76889a', margin: '12px 0', display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
-                {pi.showSKU && product?.sku && <span>SKU: <strong>{product.sku}</strong></span>}
+                {pi.showSKU && product?.sku && <span>{t('product.sku')}: <strong>{product.sku}</strong></span>}
                 {pi.showCategories && product?.categories?.length > 0 && (
-                  <span>Category: <strong>{product.categories.map(c => c.name).join(', ')}</strong></span>
+                  <span>{t('product.category')}: <strong>{product.categories.map(c => c.name).join(', ')}</strong></span>
                 )}
                 {pi.showTags && product?.tags?.length > 0 && (
-                  <span>Tags: {product.tags.join(', ')}</span>
+                  <span>{t('product.tags')}: {product.tags.join(', ')}</span>
                 )}
               </div>
             )}
@@ -1103,7 +1105,7 @@ export default function WalmartProductPage({ product, settings }) {
                   <div className="wp-section-body">
                     {sec.id === 'about' && (
                       <div style={{ fontSize: 14, lineHeight: 1.7, color: '#374151', whiteSpace: 'pre-line' }}>
-                        {product?.description || 'No description available.'}
+                        {product?.description || t('product.noDescriptionAvailable')}
                       </div>
                     )}
                     {sec.id === 'specifications' && specs.enabled && (
@@ -1128,7 +1130,7 @@ export default function WalmartProductPage({ product, settings }) {
                             </table>
                           )
                         ) : (
-                          <p style={{ fontSize: 13, color: theme.mutedColor || '#76889a', fontStyle: 'italic' }}>No specifications available.</p>
+                          <p style={{ fontSize: 13, color: theme.mutedColor || '#76889a', fontStyle: 'italic' }}>{t('product.noSpecsAvailable')}</p>
                         )}
                       </div>
                     )}
@@ -1169,7 +1171,7 @@ export default function WalmartProductPage({ product, settings }) {
                                   <div>
                                     <span style={{ fontWeight: 600, fontSize: 13 }}>{reviewerName}</span>
                                     {rc.showVerifiedBadge && rev.isVerifiedPurchase && (
-                                      <span style={{ fontSize: 10, color: '#16a34a', marginLeft: 8 }}>✓ Verified Purchase</span>
+                                      <span style={{ fontSize: 10, color: '#16a34a', marginLeft: 8 }}>✓ {t('product.verifiedPurchase')}</span>
                                     )}
                                   </div>
                                   <span style={{ fontSize: 11, color: theme.mutedColor || '#76889a' }}>{new Date(rev.createdAt).toLocaleDateString()}</span>
@@ -1188,7 +1190,7 @@ export default function WalmartProductPage({ product, settings }) {
                                 {/* Admin response */}
                                 {rev.adminResponse?.content && (
                                   <div style={{ marginTop: 10, padding: '8px 12px', background: '#f0fdf4', borderLeft: '3px solid #16a34a', borderRadius: 4 }}>
-                                    <span style={{ fontSize: 11, fontWeight: 600, color: '#16a34a' }}>Store Response</span>
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: '#16a34a' }}>{t('product.storeResponse')}</span>
                                     <p style={{ fontSize: 12, color: '#374151', marginTop: 2 }}>{rev.adminResponse.content}</p>
                                   </div>
                                 )}
@@ -1285,7 +1287,7 @@ export default function WalmartProductPage({ product, settings }) {
                       <div>
                         <div style={{ fontWeight: 600 }}>
                           {opt.label}
-                          {opt.isFree && <span style={{ color: '#16a34a', marginLeft: 6, fontSize: 11 }}>FREE</span>}
+                          {opt.isFree && <span style={{ color: '#16a34a', marginLeft: 6, fontSize: 11 }}>{t('product.free')}</span>}
                         </div>
                         {opt.subtitle && <div style={{ fontSize: 11, color: theme.mutedColor || '#76889a' }}>{opt.subtitle}</div>}
                       </div>
@@ -1314,15 +1316,17 @@ export default function WalmartProductPage({ product, settings }) {
                   style={{ marginBottom: 8 }}
                 >
                   {laybyeSelection
-                    ? (btn.laybyeBuyLabel || '💳 Start Laybye — {deposit} deposit').replace('{deposit}', formatPrice(laybyeSelection.deposit))
-                    : (btn.buyNowLabel || 'Buy Now →')}
+                    ? (btn.laybyeBuyLabel
+                        ? btn.laybyeBuyLabel.replace('{deposit}', formatPrice(laybyeSelection.deposit))
+                        : t('product.startLaybyeDeposit', { deposit: formatPrice(laybyeSelection.deposit) }))
+                    : (btn.buyNowLabel || t('product.buyNowArrow'))}
                 </button>
               )}
 
               {/* Add to Cart Button */}
               {fb.showAddToCart && (
                 <button className="wp-btn-secondary" onClick={handleAddToCart} style={{ color: addedToCart ? '#16a34a' : undefined, borderColor: addedToCart ? '#16a34a' : undefined }}>
-                  {addedToCart ? (btn.addedToCartLabel || '✓ Added to Cart!') : (btn.addToCartLabel || '🛒 Add to Cart')}
+                  {addedToCart ? (btn.addedToCartLabel || t('product.addedToCartCheck')) : (btn.addToCartLabel || t('product.addToCartEmoji'))}
                 </button>
               )}
 
@@ -1402,7 +1406,7 @@ export default function WalmartProductPage({ product, settings }) {
             onClick={handleBuyNow}
             style={{ width: 'auto', padding: '10px 20px', fontSize: 13 }}
           >
-            Buy Now
+            {t('product.buyNow')}
           </button>
         </div>
       )}
@@ -1415,7 +1419,7 @@ export default function WalmartProductPage({ product, settings }) {
         return (
           <div style={{ maxWidth: lay.maxWidth || 1440, margin: '0 auto', padding: '0 24px 24px' }}>
             <div className="wp-card wp-recently-viewed">
-              <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Recently Viewed</div>
+              <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{t('product.recentlyViewed')}</div>
               <div className="wp-rv-grid">
                 {rvItems.map(p => (
                   <div key={p._id} className="wp-rv-item" onClick={() => navigate(`/product/${p.slug || p._id}`)}>
@@ -1448,7 +1452,7 @@ export default function WalmartProductPage({ product, settings }) {
             </p>
             {ce.exitIntent.couponCode && (
               <div>
-                <div style={{ fontSize: 12, color: theme.mutedColor || '#76889a', marginBottom: 4 }}>Use code:</div>
+                <div style={{ fontSize: 12, color: theme.mutedColor || '#76889a', marginBottom: 4 }}>{t('product.useCode')}</div>
                 <div className="wp-exit-coupon">{ce.exitIntent.couponCode}</div>
               </div>
             )}

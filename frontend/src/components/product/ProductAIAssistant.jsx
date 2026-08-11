@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from '@/utils/toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ProductAIAssistant = ({ product }) => {
+  const { t } = useTranslation();
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversation, setConversation] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!question.trim()) {
-      toast.error('Please enter a question');
+      toast.error(t('product.aiAssistant.enterQuestion'));
       return;
     }
 
@@ -35,21 +37,21 @@ const ProductAIAssistant = ({ product }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to get AI response');
+        throw new Error(data.message || t('product.aiAssistant.failedResponse'));
       }
 
       // Add to conversation
       setConversation(prev => [
         ...prev,
         { type: 'user', text: question },
-        { type: 'ai', text: data.data?.answer || data.answer || 'No response received.' }
+        { type: 'ai', text: data.data?.answer || data.answer || t('product.aiAssistant.noResponse') }
       ]);
 
       setQuestion('');
-      toast.success('Answer received!');
+      toast.success(t('product.aiAssistant.answerReceived'));
     } catch (error) {
       console.error('AI Assistant error:', error);
-      toast.error(error.message || 'Failed to get response. Please try again.');
+      toast.error(error.message || t('product.aiAssistant.failedRetry'));
     } finally {
       setIsLoading(false);
     }
@@ -69,7 +71,7 @@ const ProductAIAssistant = ({ product }) => {
         color: 'var(--wp-text, #1a1a1a)',
         marginBottom: 12,
       }}>
-        Ask PESA AI Anything About This Product
+        {t('product.aiAssistant.title')}
       </div>
       
       <p style={{
@@ -78,8 +80,7 @@ const ProductAIAssistant = ({ product }) => {
         marginBottom: 16,
         lineHeight: 1.4,
       }}>
-        Get instant answers about this product from our AI assistant. It can help with specifications, 
-        compatibility, usage tips, and more by researching the latest information online.
+        {t('product.aiAssistant.subtitle')}
       </p>
 
       {/* Conversation History */}
@@ -114,7 +115,7 @@ const ProductAIAssistant = ({ product }) => {
                 opacity: 0.8,
                 textTransform: 'uppercase',
               }}>
-                {msg.type === 'user' ? 'You' : 'PESA AI'}
+                {msg.type === 'user' ? t('product.aiAssistant.you') : t('product.aiAssistant.pesaAi')}
               </div>
               {msg.text}
             </div>
@@ -128,7 +129,7 @@ const ProductAIAssistant = ({ product }) => {
           <textarea
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="e.g., Is this laptop good for gaming? What are the dimensions? Does it come with a warranty?"
+            placeholder={t('product.aiAssistant.placeholder')}
             style={{
               width: '100%',
               minHeight: 80,
@@ -194,7 +195,7 @@ const ProductAIAssistant = ({ product }) => {
               Thinking...
             </span>
           ) : (
-            'Ask PESA AI'
+            t('product.aiAssistant.button')
           )}
         </button>
       </form>
