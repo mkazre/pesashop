@@ -10,6 +10,17 @@ import { IoSave, IoSparkles, IoEye, IoEyeOff, IoAdd, IoTrash, IoMail, IoSend } f
 
 const EMPTY_BANK = { bankName: '', accountName: '', accountNumber: '', branchCode: '', accountType: '', reference: '' };
 
+// Kept in sync with frontend/src/i18n.js SUPPORTED_LANGUAGES minus English
+// (always on) and Northern/Zimbabwean Ndebele (excluded entirely — no
+// translation API supports it, see translationService.js).
+const TRANSLATABLE_LANGUAGES = [
+  { code: 'fr', label: 'French (Français)' },
+  { code: 'sn', label: 'Shona (chiShona)' },
+  { code: 'bem', label: 'Bemba (Ichibemba)' },
+  { code: 'ny', label: 'Chichewa' },
+  { code: 'zu', label: 'Zulu (isiZulu)' },
+];
+
 const SettingsPage = () => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [showSmtpPassword, setShowSmtpPassword] = useState(false);
@@ -26,7 +37,12 @@ const SettingsPage = () => {
   const [rapidApiKeyConfigured, setRapidApiKeyConfigured] = useState(false);
   const [testingTikTok,         setTestingTikTok]         = useState(false);
   const [tiktokTestResult,      setTiktokTestResult]      = useState(null);
-  
+  const [showTranslationApiKey,       setShowTranslationApiKey]       = useState(false);
+  const [translationApiKeyConfigured, setTranslationApiKeyConfigured] = useState(false);
+  const [testingTranslation,          setTestingTranslation]          = useState(false);
+  const [translationTestResult,       setTranslationTestResult]       = useState(null);
+  const [clearingTranslationCache,    setClearingTranslationCache]    = useState(false);
+
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm({
     shouldUnregister: false,
     defaultValues: {
@@ -127,6 +143,10 @@ const SettingsPage = () => {
       socialEngineShowOnHome:          true,
       socialEngineShowOnShop:          true,
       socialEngineShowOnProductDetail: true,
+      // Translations
+      translationApiKey: '',
+      translationMonthlyCharacterBudget: '450000',
+      ...Object.fromEntries(TRANSLATABLE_LANGUAGES.map(l => [`translationLang_${l.code}`, true])),
     }
   });
 
@@ -230,10 +250,18 @@ const SettingsPage = () => {
           socialEngineShowOnHome:          settings.socialEngine?.showOnHome          !== false,
           socialEngineShowOnShop:          settings.socialEngine?.showOnShop          !== false,
           socialEngineShowOnProductDetail: settings.socialEngine?.showOnProductDetail !== false,
+          // Translations
+          translationApiKey: settings.translation?.apiKey === '***configured***' ? '' : (settings.translation?.apiKey || ''),
+          translationMonthlyCharacterBudget: String(settings.translation?.monthlyCharacterBudget ?? 450000),
+          ...Object.fromEntries(TRANSLATABLE_LANGUAGES.map(l => [
+            `translationLang_${l.code}`,
+            settings.translation?.enabledLanguages ? settings.translation.enabledLanguages.includes(l.code) : true,
+          ])),
         });
         setBankDetails(settings.bankDetails || []);
         setBrevoKeyConfigured(settings.brevoApiKey === '***configured***');
         setRapidApiKeyConfigured(settings.socialEngine?.rapidApiKey === '***configured***');
+        setTranslationApiKeyConfigured(settings.translation?.apiKey === '***configured***');
         if (settings.servicePageHero) {
           setServicePageHero({
             imageUrl: settings.servicePageHero.imageUrl || '',
@@ -279,7 +307,7 @@ const SettingsPage = () => {
     // Remove flat dot-notation keys that react-hook-form creates for nested fields
     const cleanData = { ...data };
     Object.keys(cleanData).forEach(key => {
-      if (key.startsWith('productDisplay.') || key.startsWith('layby') || key.startsWith('socialLogin') || key.startsWith('emailNotifications.') || key.startsWith('socialEngine')) {
+      if (key.startsWith('productDisplay.') || key.startsWith('layby') || key.startsWith('socialLogin') || key.startsWith('emailNotifications.') || key.startsWith('socialEngine') || key.startsWith('translation')) {
         delete cleanData[key];
       }
     });
@@ -385,6 +413,12 @@ const SettingsPage = () => {
         showOnShop:          data.socialEngineShowOnShop          !== false,
         showOnProductDetail: data.socialEngineShowOnProductDetail !== false,
       },
+      translation: {
+        provider: 'google',
+        ...(data.translationApiKey ? { apiKey: data.translationApiKey } : {}),
+        enabledLanguages: TRANSLATABLE_LANGUAGES.filter(l => data[`translationLang_${l.code}`]).map(l => l.code),
+        monthlyCharacterBudget: parseInt(data.translationMonthlyCharacterBudget) || 450000,
+      },
     });
   };
 
@@ -401,6 +435,42 @@ const SettingsPage = () => {
       toast.error('TikTok connection test failed');
     } finally {
       setTestingTikTok(false);
+    }
+  };
+
+  const { data: translationStatsData, refetch: refetchTranslationStats } = useQuery(
+    'translation-stats',
+    () => settingsAPI.getTranslationStats(),
+    { staleTime: 30 * 1000 }
+  );
+  const translationStats = translationStatsData?.data?.data;
+
+  const handleTestTranslation = async () => {
+    setTestingTranslation(true);
+    setTranslationTestResult(null);
+    try {
+      const res = await settingsAPI.testTranslation('fr');
+      setTranslationTestResult({ success: true, ...res.data.data });
+      toast.success('Translation API key works');
+    } catch (err) {
+      setTranslationTestResult({ success: false, message: err.response?.data?.message || 'Test failed' });
+      toast.error('Translation API test failed');
+    } finally {
+      setTestingTranslation(false);
+    }
+  };
+
+  const handleClearTranslationCache = async () => {
+    if (!window.confirm('Clear all cached translations? Every product/category description will be re-translated (and re-billed) the next time a customer views it in a non-English language.')) return;
+    setClearingTranslationCache(true);
+    try {
+      const res = await settingsAPI.clearTranslationCache();
+      toast.success(`Cleared ${res.data.data.deletedCount} cached translation(s)`);
+      refetchTranslationStats();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to clear cache');
+    } finally {
+      setClearingTranslationCache(false);
     }
   };
 
@@ -975,6 +1045,122 @@ const SettingsPage = () => {
                     : `✗ ${tiktokTestResult.message}`}
                 </div>
               )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Translations */}
+        <Card title="Translations">
+          <div className="space-y-5">
+            <p className="text-sm text-gray-500">
+              Lets customers browse the storefront (nav, checkout, product page chrome, account section) in their own
+              language, with product descriptions/specs and category text machine-translated on demand and cached.
+              Product <strong>name and price are never translated</strong>. Requires a{' '}
+              <strong>Google Cloud Translation API</strong> key — see{' '}
+              <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" className="text-primary underline">
+                console.cloud.google.com
+              </a>{' '}
+              (enable "Cloud Translation API", create an API key with Application restrictions set to <em>None</em> since
+              this is called server-side). Free tier: 500,000 characters/month.
+            </p>
+
+            <div className="border-t pt-4 space-y-3">
+              <h4 className="text-sm font-semibold text-gray-700">Provider API Key</h4>
+              <div>
+                <label className="block text-sm font-medium mb-1">Google Translate API Key</label>
+                <div className="flex gap-2">
+                  <Input
+                    type={showTranslationApiKey ? 'text' : 'password'}
+                    {...register('translationApiKey')}
+                    placeholder="Enter your Google Cloud Translation API key"
+                    fullWidth
+                  />
+                  <button type="button" onClick={() => setShowTranslationApiKey(v => !v)}
+                    className="px-3 py-2 border border-gray-300 rounded text-sm text-gray-600 hover:bg-gray-50 flex items-center">
+                    {showTranslationApiKey ? <IoEyeOff size={16}/> : <IoEye size={16}/>}
+                  </button>
+                </div>
+                {translationApiKeyConfigured && (
+                  <p className="text-xs text-green-600 mt-1 font-medium">✓ API key is configured — leave blank to keep the existing key</p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Only Google Cloud Translation is supported today — it's the only provider covering all of the
+                  languages below. If you ever switch providers, this same field is where the new key goes; the
+                  "provider" is fixed to Google for now since that's all the backend integrates with.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 flex-wrap">
+                <Button type="button" variant="outline" onClick={handleTestTranslation} disabled={testingTranslation}>
+                  {testingTranslation ? 'Testing…' : 'Test Connection'}
+                </Button>
+                <span className="text-xs text-gray-500">Saves nothing — just translates the word "Add to cart" into French to confirm the key works</span>
+              </div>
+              {translationTestResult && (
+                <div className={`p-3 rounded text-sm ${translationTestResult.success ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                  {translationTestResult.success
+                    ? `✓ "${translationTestResult.sample}" → "${translationTestResult.translated}" (fr)`
+                    : `✗ ${translationTestResult.message}`}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t pt-4 space-y-2">
+              <h4 className="text-sm font-semibold text-gray-700">Enabled Languages</h4>
+              <p className="text-xs text-gray-500 mb-1">
+                Uncheck a language to temporarily hide it from the storefront's language picker (e.g. while you're
+                reviewing machine-translation quality) without touching any code.
+              </p>
+              {TRANSLATABLE_LANGUAGES.map(({ code, label }) => (
+                <label key={code} className="flex items-center gap-2">
+                  <input type="checkbox" className="w-4 h-4" {...register(`translationLang_${code}`)} />
+                  <span className="text-sm">{label}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="border-t pt-4 space-y-3">
+              <h4 className="text-sm font-semibold text-gray-700">Cost Control</h4>
+              <div>
+                <label className="block text-sm font-medium mb-1">Monthly Character Budget (pre-warm cron)</label>
+                <Input type="number" {...register('translationMonthlyCharacterBudget')} min="0" style={{ width: 160 }} />
+                <p className="text-xs text-gray-500 mt-1">
+                  Soft cap the background cache-warming script (<code>prewarm-product-translations.js</code>) respects per
+                  language per run, to stay safely under Google's free tier. Live customer views always translate
+                  on-demand regardless of this budget — it only throttles the optional pre-warm cron.
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t pt-4 space-y-3">
+              <h4 className="text-sm font-semibold text-gray-700">Translation Cache</h4>
+              {translationStats ? (
+                <div className="text-sm text-gray-600 space-y-1">
+                  <div><strong>{translationStats.total}</strong> cached translation{translationStats.total !== 1 ? 's' : ''} total</div>
+                  {translationStats.byLanguage.length > 0 && (
+                    <table className="text-xs mt-2">
+                      <tbody>
+                        {translationStats.byLanguage.map(l => (
+                          <tr key={l.lang}>
+                            <td className="pr-4 py-0.5 font-medium">{l.lang}</td>
+                            <td className="pr-4 py-0.5">{l.cachedEntries} entries</td>
+                            <td className="py-0.5 text-gray-400">~{l.approxSourceChars.toLocaleString()} source chars</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">Loading stats…</p>
+              )}
+              <Button type="button" variant="outline" onClick={handleClearTranslationCache} disabled={clearingTranslationCache}>
+                {clearingTranslationCache ? 'Clearing…' : 'Clear Translation Cache'}
+              </Button>
+              <p className="text-xs text-gray-500">
+                Wipes every cached translation, forcing everything to re-translate (and re-bill) on next view. Use this
+                after switching provider/API key, or to force fresh output for already-cached text.
+              </p>
             </div>
           </div>
         </Card>

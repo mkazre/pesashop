@@ -15,6 +15,7 @@ function maskSensitive(obj) {
   if (data.socialLogin?.google?.clientSecret) data.socialLogin.google.clientSecret = MASK;
   if (data.socialLogin?.facebook?.appSecret) data.socialLogin.facebook.appSecret = MASK;
   if (data.socialEngine?.rapidApiKey) data.socialEngine.rapidApiKey = MASK;
+  if (data.translation?.apiKey) data.translation.apiKey = MASK;
   return data;
 }
 
@@ -74,6 +75,20 @@ router.put('/', protect, authorize('admin'), async (req, res) => {
           }
         });
         delete payload.socialEngine;
+      }
+
+      // Same masked-secret dance for the translation API key
+      if (payload.translation) {
+        const tr = payload.translation;
+        Object.entries(tr).forEach(([k, v]) => {
+          if (k === 'apiKey') {
+            if (v && v !== MASK && v !== '') payload[`translation.${k}`] = v;
+            // else skip — preserve existing key already in DB
+          } else {
+            payload[`translation.${k}`] = v;
+          }
+        });
+        delete payload.translation;
       }
 
       // Use findOneAndUpdate with $set for reliable nested object persistence
@@ -188,6 +203,9 @@ router.get('/public', async (req, res) => {
         logo: settings.logo || '',
         favicon: settings.favicon || '',
         mobileContentVersion: settings.mobileContentVersion || 1,
+        enabledLanguages: settings.translation?.enabledLanguages?.length
+          ? settings.translation.enabledLanguages
+          : ['fr', 'sn', 'bem', 'ny', 'zu'],
       }
     });
   } catch (error) {
@@ -210,6 +228,79 @@ router.post('/refresh-mobile-content', protect, authorize('admin', 'shop_manager
   } catch (error) {
     console.error('refresh-mobile-content error:', error);
     res.status(500).json({ success: false, message: error.message || 'Error refreshing mobile content version' });
+  }
+});
+
+/**
+ * @route   GET /api/settings/translation-stats
+ * @desc    TranslationCache size per language, for the admin Translations panel
+ * @access  Private/Admin
+ */
+router.get('/translation-stats', protect, authorize('admin', 'shop_manager'), async (req, res) => {
+  try {
+    const TranslationCache = require('../models/TranslationCache');
+    const byLanguage = await TranslationCache.aggregate([
+      { $group: { _id: '$targetLang', count: { $sum: 1 }, chars: { $sum: { $strLenCP: '$sourceText' } } } },
+      { $sort: { _id: 1 } },
+    ]);
+    const total = byLanguage.reduce((sum, l) => sum + l.count, 0);
+    res.json({
+      success: true,
+      data: {
+        total,
+        byLanguage: byLanguage.map((l) => ({ lang: l._id, cachedEntries: l.count, approxSourceChars: l.chars })),
+      }
+    });
+  } catch (error) {
+    console.error('translation-stats error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Error fetching translation stats' });
+  }
+});
+
+/**
+ * @route   POST /api/settings/translation-test
+ * @desc    Sanity-check the configured translation API key by translating a
+ *          short sample string, bypassing the cache. Lets an admin verify a
+ *          newly-pasted key actually works before relying on it.
+ * @access  Private/Admin
+ */
+router.post('/translation-test', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { targetLang = 'fr' } = req.body;
+    const axios = require('axios');
+    const settings = await Settings.getSettings();
+    const apiKey = settings.translation?.apiKey || process.env.GOOGLE_TRANSLATE_API_KEY;
+    if (!apiKey) {
+      return res.status(400).json({ success: false, message: 'No API key configured yet' });
+    }
+    const sample = 'Add to cart';
+    const response = await axios.post('https://translation.googleapis.com/language/translate/v2', null, {
+      params: { key: apiKey, q: sample, target: targetLang, source: 'en', format: 'text' },
+    });
+    const translated = response.data?.data?.translations?.[0]?.translatedText;
+    res.json({ success: true, data: { sample, targetLang, translated } });
+  } catch (error) {
+    const message = error.response?.data?.error?.message || error.message || 'Translation test failed';
+    res.status(400).json({ success: false, message });
+  }
+});
+
+/**
+ * @route   DELETE /api/settings/translation-cache
+ * @desc    Wipe the TranslationCache — e.g. after switching provider/API key,
+ *          or to force everything to re-translate with fresh output.
+ * @access  Private/Admin
+ */
+router.delete('/translation-cache', protect, authorize('admin'), async (req, res) => {
+  try {
+    const TranslationCache = require('../models/TranslationCache');
+    const { lang } = req.query;
+    const filter = lang ? { targetLang: lang } : {};
+    const result = await TranslationCache.deleteMany(filter);
+    res.json({ success: true, data: { deletedCount: result.deletedCount } });
+  } catch (error) {
+    console.error('translation-cache clear error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Error clearing translation cache' });
   }
 });
 

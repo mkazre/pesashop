@@ -126,7 +126,37 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  
+
+  // Storefront Translation Settings
+  translation: {
+    provider: {
+      type: String,
+      enum: ['google'],
+      default: 'google'
+    },
+    apiKey: {
+      type: String,
+      default: ''
+    },
+    // Which of the languages the frontend/backend know how to translate
+    // (see frontend/src/i18n.js SUPPORTED_LANGUAGES and
+    // backend/services/translationService.js SUPPORTED_TARGET_LANGS) are
+    // actually offered to customers. Lets an admin temporarily hide a
+    // language (e.g. while quality is being reviewed) without touching code.
+    enabledLanguages: {
+      type: [String],
+      default: ['fr', 'sn', 'bem', 'ny', 'zu']
+    },
+    // Soft monthly character budget for the pre-warm cron
+    // (backend/scripts/prewarm-product-translations.js) to respect, so a
+    // large catalog can't blow through the Google free tier in one run.
+    monthlyCharacterBudget: {
+      type: Number,
+      default: 450000,
+      min: 0
+    }
+  },
+
   // Advanced Settings
   enableGuestCheckout: {
     type: Boolean,

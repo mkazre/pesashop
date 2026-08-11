@@ -445,6 +445,9 @@ export const settingsAPI = {
   testEmail: (to) => api.post('/settings/test-email', { to }),
   verifyEmailConfig: () => api.post('/settings/verify-email-config'),
   refreshMobileContent: () => api.post('/settings/refresh-mobile-content'),
+  getTranslationStats: () => api.get('/settings/translation-stats'),
+  testTranslation: (targetLang) => api.post('/settings/translation-test', { targetLang }),
+  clearTranslationCache: (lang) => api.delete('/settings/translation-cache', { params: lang ? { lang } : {} }),
 };
 
 // Social Engine Admin API

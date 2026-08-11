@@ -1,14 +1,30 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from 'react-query';
 import { IoChevronDown, IoLanguage } from 'react-icons/io5';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
+import { settingsAPI } from '@/services/api';
 
 export default function LanguagePicker({ variant = 'header', className = '' }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const { i18n } = useTranslation();
 
-  const current = SUPPORTED_LANGUAGES.find((l) => l.code === i18n.resolvedLanguage) || SUPPORTED_LANGUAGES[0];
+  // Admin can hide a language from the picker without a code change (Settings
+  // → Translations → Enabled Languages) — English + whatever's in that list.
+  // Falls back to every language the frontend knows how to render if the
+  // setting hasn't loaded yet or isn't configured.
+  const { data: publicSettingsRes } = useQuery(
+    'publicSettingsForLanguagePicker',
+    () => settingsAPI.getPublic(),
+    { staleTime: 10 * 60 * 1000, refetchOnWindowFocus: false }
+  );
+  const enabledCodes = publicSettingsRes?.data?.data?.enabledLanguages;
+  const languages = enabledCodes
+    ? SUPPORTED_LANGUAGES.filter((l) => l.code === 'en' || enabledCodes.includes(l.code))
+    : SUPPORTED_LANGUAGES;
+
+  const current = languages.find((l) => l.code === i18n.resolvedLanguage) || languages[0];
 
   // Close on click outside
   useEffect(() => {
@@ -39,7 +55,7 @@ export default function LanguagePicker({ variant = 'header', className = '' }) {
       {open && (
         <div className="absolute right-0 top-full mt-2 z-[9999] bg-white rounded-xl shadow-2xl border border-gray-100 py-1.5 min-w-[170px] overflow-hidden"
           style={{ animation: 'fadeInUp 0.15s ease-out' }}>
-          {SUPPORTED_LANGUAGES.map((lang) => {
+          {languages.map((lang) => {
             const isActive = current.code === lang.code;
             return (
               <button

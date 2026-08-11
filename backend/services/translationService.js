@@ -1,16 +1,38 @@
 const crypto = require('crypto');
 const axios = require('axios');
 const TranslationCache = require('../models/TranslationCache');
+const Settings = require('../models/Settings');
 
 const GOOGLE_TRANSLATE_URL = 'https://translation.googleapis.com/language/translate/v2';
 
-// Only these locales are wired up on the storefront — see frontend/src/i18n.js.
-// Northern (Zimbabwean) Ndebele is intentionally excluded: no translation API
-// supports it (Google Cloud Translation only has Southern Ndebele, "nr",
-// a related but distinct language) — it needs a human/community translator.
+// The full set of locales this codebase knows how to render — see
+// frontend/src/i18n.js SUPPORTED_LANGUAGES. Northern (Zimbabwean) Ndebele is
+// intentionally excluded: no translation API supports it (Google Cloud
+// Translation only has Southern Ndebele, "nr", a related but distinct
+// language) — it needs a human/community translator, not this pipeline.
+// An admin can further narrow which of these are actually offered to
+// customers via Settings → Translations (Settings.translation.enabledLanguages);
+// that list is intersected with this one everywhere below.
 const SUPPORTED_TARGET_LANGS = ['fr', 'sn', 'bem', 'ny', 'zu'];
 
 const hashText = (text) => crypto.createHash('sha256').update(text, 'utf8').digest('hex');
+
+// Short-lived in-process cache for the Settings document — translating a
+// single product touches translateText() a dozen+ times per request, and we
+// don't want a DB round-trip for every one of them just to read the API key.
+let settingsCache = { value: null, expiresAt: 0 };
+async function getTranslationSettings() {
+  if (Date.now() < settingsCache.expiresAt) return settingsCache.value;
+  const settings = await Settings.getSettings();
+  const value = {
+    apiKey: settings.translation?.apiKey || process.env.GOOGLE_TRANSLATE_API_KEY || '',
+    enabledLanguages: settings.translation?.enabledLanguages?.length
+      ? settings.translation.enabledLanguages.filter((l) => SUPPORTED_TARGET_LANGS.includes(l))
+      : SUPPORTED_TARGET_LANGS,
+  };
+  settingsCache = { value, expiresAt: Date.now() + 60_000 };
+  return value;
+}
 
 /**
  * Translate a single string via Google Cloud Translation, going through the
@@ -22,14 +44,15 @@ const hashText = (text) => crypto.createHash('sha256').update(text, 'utf8').dige
  */
 async function translateText(text, targetLang) {
   if (!text || typeof text !== 'string' || !text.trim()) return text;
-  if (!SUPPORTED_TARGET_LANGS.includes(targetLang)) return text;
+
+  const { apiKey, enabledLanguages } = await getTranslationSettings();
+  if (!enabledLanguages.includes(targetLang)) return text;
 
   const sourceHash = hashText(text);
 
   const cached = await TranslationCache.findOne({ sourceHash, targetLang }).lean();
   if (cached) return cached.translatedText;
 
-  const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
   if (!apiKey) {
     // No key configured yet — degrade gracefully to the source text instead
     // of erroring, so the storefront still works while translation is unfunded.
@@ -75,7 +98,8 @@ async function translateMany(texts, targetLang) {
  * Explicitly leaves name, sku, and all price fields untouched.
  */
 async function translateProductFields(product, targetLang) {
-  if (!SUPPORTED_TARGET_LANGS.includes(targetLang)) return product;
+  const { enabledLanguages } = await getTranslationSettings();
+  if (!enabledLanguages.includes(targetLang)) return product;
 
   const [description, shortDescription] = await Promise.all([
     translateText(product.description, targetLang),
@@ -100,7 +124,8 @@ async function translateProductFields(product, targetLang) {
  * Translates a category's name, description, and meta fields.
  */
 async function translateCategoryFields(category, targetLang) {
-  if (!SUPPORTED_TARGET_LANGS.includes(targetLang)) return category;
+  const { enabledLanguages } = await getTranslationSettings();
+  if (!enabledLanguages.includes(targetLang)) return category;
 
   const [name, description, metaTitle, metaDescription] = await Promise.all([
     translateText(category.name, targetLang),
@@ -114,6 +139,7 @@ async function translateCategoryFields(category, targetLang) {
 
 module.exports = {
   SUPPORTED_TARGET_LANGS,
+  getTranslationSettings,
   translateText,
   translateMany,
   translateProductFields,
