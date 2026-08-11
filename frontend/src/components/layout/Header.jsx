@@ -608,6 +608,9 @@ export default function Header() {
                     </button>
                   )}
 
+                  {/* Language Switcher */}
+                  <LanguagePicker variant="header" className="hidden md:block" />
+
                   {/* Currency Switcher */}
                   <CurrencyPicker variant="header" className="hidden md:block" />
 
