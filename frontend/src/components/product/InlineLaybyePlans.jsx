@@ -3,6 +3,7 @@ import { useQuery } from 'react-query';
 import { laybyPlansAPI } from '@/services/api';
 import { useCurrencyStore, useAuthStore, useUIStore } from '@/store';
 import toast from '@/utils/toast';
+import SmartIcon from '@/components/common/SmartIcon';
 
 export default function InlineLaybyePlans({ product, settings, onLaybyeSelect }) {
   const { formatPrice } = useCurrencyStore();
@@ -100,7 +101,7 @@ export default function InlineLaybyePlans({ product, settings, onLaybyeSelect })
         </div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>{ld.toggleIcon || '💳'}</span>
+            <SmartIcon value={ld.toggleIcon} fallback="💳" size={16} />
             <span>{ld.toggleLabel || 'Pay with Laybye'}</span>
           </div>
           <div style={{ fontSize: 12, color: '#76889a', marginTop: 2 }}>
