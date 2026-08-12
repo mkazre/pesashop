@@ -421,7 +421,7 @@ router.put('/:id/status', protect, authorize('admin', 'shop_manager'), async (re
       // Trigger referral reward if this is the customer's first qualifying order
       try {
         const referralService = require('../services/referralService');
-        referralService.handleQualifyingOrder(order).catch(e => console.error('Referral qualifying order error:', e.message));
+        referralService.awardUplineForPurchase(order).catch(e => console.error('Referral purchase reward error:', e.message));
       } catch (e) { /* non-blocking */ }
     } else if ((req.body.status === 'cancelled' || req.body.status === 'refunded') &&
                oldStatus !== 'cancelled' && oldStatus !== 'refunded') {

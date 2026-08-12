@@ -62,8 +62,8 @@ export const authAPI = {
   resetPassword: (token, password) => api.post('/api/auth/reset-password', { token, password }),
   // Social Login
   getSocialLoginConfig: () => api.get('/api/settings/social-login'),
-  googleLogin: (credential) => api.post('/api/auth/google', { credential }),
-  facebookLogin: (accessToken) => api.post('/api/auth/facebook', { accessToken }),
+  googleLogin: (credential, referralCode) => api.post('/api/auth/google', { credential, referralCode }),
+  facebookLogin: (accessToken, referralCode) => api.post('/api/auth/facebook', { accessToken, referralCode }),
   // Addresses
   getAddresses: () => api.get('/api/auth/addresses'),
   addAddress: (data) => api.post('/api/auth/addresses', data),
@@ -362,6 +362,7 @@ export const referralsAPI = {
   lookup: (code) => api.get(`/api/referrals/code/${code}`),
   getMine: () => api.get('/api/referrals/me'),
   invite: (data) => api.post('/api/referrals/invite', data),
+  getMyLedger: (params) => api.get('/api/referrals/me/ledger', { params }),
 };
 
 // Live Streams

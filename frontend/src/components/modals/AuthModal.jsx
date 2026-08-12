@@ -2,11 +2,21 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { useUIStore, useAuthStore } from '@/store';
 import { useForm } from 'react-hook-form';
-import { authAPI, menusAPI } from '@/services/api';
+import { authAPI, menusAPI, referralsAPI } from '@/services/api';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import toast from '@/utils/toast';
 import pesaLogo from '@/assets/pesashop-logo.png';
+
+// Referral attribution: ReferLandingPage.jsx stores the code here when a
+// visitor lands on /refer/:code. Read once at signup, then clear it so it
+// doesn't attribute an unrelated future signup on the same browser.
+function getStoredReferralCode() {
+  try { return localStorage.getItem('pesa_referral_code') || ''; } catch { return ''; }
+}
+function clearStoredReferralCode() {
+  try { localStorage.removeItem('pesa_referral_code'); } catch { /* ignore */ }
+}
 
 // Load Google Identity Services script
 function loadGoogleScript(clientId) {
@@ -57,7 +67,21 @@ export default function AuthModal() {
   const [socialConfig, setSocialConfig] = useState(null);
   const [socialLoading, setSocialLoading] = useState(false);
   const [logoSrc, setLogoSrc] = useState('');
+  const [referrerInfo, setReferrerInfo] = useState(null);
   const googleInitialized = useRef(false);
+
+  // Show a "referred by" banner when opening in register mode with a stored
+  // referral code (set by ReferLandingPage.jsx).
+  useEffect(() => {
+    if (!authModalOpen || authModalMode !== 'register') { setReferrerInfo(null); return; }
+    const code = getStoredReferralCode();
+    if (!code) return;
+    let cancelled = false;
+    referralsAPI.lookup(code).then(res => {
+      if (!cancelled && res.data?.data?.valid) setReferrerInfo({ code, firstName: res.data.data.firstName });
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [authModalOpen, authModalMode]);
 
   // Fetch social login config and logo when modal opens
   useEffect(() => {
@@ -108,7 +132,9 @@ export default function AuthModal() {
         client_id: socialConfig.google.clientId,
         callback: async (response) => {
           try {
-            const res = await authAPI.googleLogin(response.credential);
+            const referralCode = getStoredReferralCode();
+            const res = await authAPI.googleLogin(response.credential, referralCode);
+            clearStoredReferralCode();
             setAuth(res.data.user, res.data.token);
             toast.success('Logged in with Google!');
             closeAuthModal();
@@ -155,7 +181,9 @@ export default function AuthModal() {
       window.FB.login((response) => {
         if (response.authResponse) {
           const accessToken = response.authResponse.accessToken;
-          authAPI.facebookLogin(accessToken).then(res => {
+          const referralCode = getStoredReferralCode();
+          authAPI.facebookLogin(accessToken, referralCode).then(res => {
+            clearStoredReferralCode();
             setAuth(res.data.user, res.data.token);
             toast.success('Logged in with Facebook!');
             closeAuthModal();
@@ -253,7 +281,9 @@ export default function AuthModal() {
     const onSubmit = async (data) => {
       setIsLoading(true);
       try {
-        const response = await authAPI.register(data);
+        const referralCode = getStoredReferralCode();
+        const response = await authAPI.register(referralCode ? { ...data, referralCode } : data);
+        clearStoredReferralCode();
         setAuth(response.data.user, response.data.token);
         toast.success('Account created successfully!');
         closeAuthModal();
@@ -266,6 +296,12 @@ export default function AuthModal() {
 
     return (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {referrerInfo && (
+          <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2 text-sm text-gray-700">
+            <span>🎁</span>
+            <span>Referred by <strong>{referrerInfo.firstName}</strong> — you'll get welcome PESA Coins after signing up.</span>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="First Name*"

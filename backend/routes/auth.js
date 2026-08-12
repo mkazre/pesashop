@@ -96,7 +96,7 @@ router.get('/me', protect, async (req, res) => {
 // @access  Public
 router.post('/google', async (req, res, next) => {
   try {
-    const { credential } = req.body;
+    const { credential, referralCode } = req.body;
     if (!credential) {
       return res.status(400).json({ success: false, message: 'Google credential is required' });
     }
@@ -151,6 +151,15 @@ router.post('/google', async (req, res, next) => {
       loyaltyService.awardExtraPoints(user._id, 'signup').catch(err => {
         console.error('Error awarding signup bonus:', err);
       });
+
+      // Handle referral attribution if a code was supplied
+      if (referralCode) {
+        const referralService = require('../services/referralService');
+        referralService.handleSignup(user, String(referralCode).toUpperCase(), {
+          ip: req.ip,
+          userAgent: req.headers['user-agent']
+        }).catch(err => console.error('Referral signup error (Google):', err.message));
+      }
     }
 
     sendTokenResponse(user, 200, res);
@@ -168,7 +177,7 @@ router.post('/google', async (req, res, next) => {
 // @access  Public
 router.post('/facebook', async (req, res, next) => {
   try {
-    const { accessToken } = req.body;
+    const { accessToken, referralCode } = req.body;
     if (!accessToken) {
       return res.status(400).json({ success: false, message: 'Facebook access token is required' });
     }
@@ -225,6 +234,15 @@ router.post('/facebook', async (req, res, next) => {
       loyaltyService.awardExtraPoints(user._id, 'signup').catch(err => {
         console.error('Error awarding signup bonus:', err);
       });
+
+      // Handle referral attribution if a code was supplied
+      if (referralCode) {
+        const referralService = require('../services/referralService');
+        referralService.handleSignup(user, String(referralCode).toUpperCase(), {
+          ip: req.ip,
+          userAgent: req.headers['user-agent']
+        }).catch(err => console.error('Referral signup error (Facebook):', err.message));
+      }
     }
 
     sendTokenResponse(user, 200, res);

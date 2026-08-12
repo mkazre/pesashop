@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { referralsAPI } from '../services/api';
+import { useUIStore } from '../store';
 
 const ReferLandingPage = () => {
   const { code } = useParams();
   const navigate = useNavigate();
+  const openAuthModal = useUIStore((s) => s.openAuthModal);
   const [referrer, setReferrer] = useState(null);
   const [error, setError] = useState('');
 
@@ -32,7 +34,7 @@ const ReferLandingPage = () => {
         <h1 className="text-2xl font-bold mb-2">You've been invited!</h1>
         {referrer && <p className="text-gray-600 mb-1">{referrer.firstName} thinks you'll love PesaShop.</p>}
         <p className="text-sm text-gray-500 mb-6">Sign up with code <strong className="text-blue-600">{code?.toUpperCase()}</strong> and get welcome PESA Coins on your first purchase.</p>
-        <button onClick={() => navigate(`/?signup=1&ref=${code}`)} className="w-full py-3 bg-blue-600 text-white rounded font-semibold mb-3">Create my account</button>
+        <button onClick={() => openAuthModal('register')} className="w-full py-3 bg-blue-600 text-white rounded font-semibold mb-3">Create my account</button>
         <button onClick={() => navigate('/')} className="text-sm text-gray-500 hover:underline">Just browse</button>
       </div>
     </div>

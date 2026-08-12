@@ -769,6 +769,9 @@ export const returnsAPI = {
 export const referralsAPI = {
   adminList: (params) => api.get('/referrals/admin/all', { params }),
   adminStats: () => api.get('/referrals/admin/stats'),
+  adminLedger: (params) => api.get('/referrals/admin/ledger', { params }),
+  adminGetSettings: () => api.get('/referrals/admin/settings'),
+  adminUpdateSettings: (data) => api.put('/referrals/admin/settings', data),
   flag: (id, reason) => api.put(`/referrals/admin/${id}/flag`, { reason, status: 'fraud' }),
 };
 

@@ -96,6 +96,14 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
+  // Snapshot of this user's referral ancestry, nearest-first, capped at 10
+  // entries — set once at signup (see referralService.handleSignup). Lets
+  // the MLM reward engine read "who are my up-to-10 ancestors" in O(1)
+  // instead of walking `referredBy` recursively on every signup/order.
+  uplineChain: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   lastLoginDate: Date,
   consecutiveLoginDays: {
     type: Number,

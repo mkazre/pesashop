@@ -95,6 +95,8 @@ module.exports = {
     PROFILE_COMPLETE: 'profile_complete',
     REFERRAL_REGISTRATION: 'referral_registration',
     REFERRAL_PURCHASE: 'referral_purchase',
+    MLM_REFERRAL_SIGNUP: 'mlm_referral_signup',
+    MLM_REFERRAL_PURCHASE: 'mlm_referral_purchase',
     TOP_CUSTOMER: 'top_customer',
     LEVEL_ACHIEVEMENT: 'level_achievement',
     BIRTHDAY_BONUS: 'birthday_bonus',
