@@ -363,6 +363,8 @@ export const referralsAPI = {
   getMine: () => api.get('/api/referrals/me'),
   invite: (data) => api.post('/api/referrals/invite', data),
   getMyLedger: (params) => api.get('/api/referrals/me/ledger', { params }),
+  getMyNetwork: () => api.get('/api/referrals/me/network'),
+  getLevels: () => api.get('/api/referrals/levels'),
 };
 
 // Live Streams

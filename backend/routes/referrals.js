@@ -5,6 +5,7 @@ const Referral = require('../models/Referral');
 const ReferralReward = require('../models/ReferralReward');
 const ReferralSettings = require('../models/ReferralSettings');
 const User = require('../models/User');
+const { LoyaltyPoint } = require('../models/LoyaltyPoint');
 const referralService = require('../services/referralService');
 
 const ADMIN_ROLES = ['admin', 'shop_manager', 'superadmin', 'super_admin'];
@@ -70,6 +71,35 @@ router.get('/me', protect, async (req, res) => {
 
     const totalMlmPoints = byLevel.reduce((sum, r) => sum + r.points, 0);
 
+    // This month vs last month, for a simple trend widget.
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const [thisMonth, lastMonth] = await Promise.all([
+      ReferralReward.aggregate([
+        { $match: { beneficiary: user._id, createdAt: { $gte: startOfThisMonth } } },
+        { $group: { _id: null, points: { $sum: '$pointsAwarded' } } }
+      ]),
+      ReferralReward.aggregate([
+        { $match: { beneficiary: user._id, createdAt: { $gte: startOfLastMonth, $lt: startOfThisMonth } } },
+        { $group: { _id: null, points: { $sum: '$pointsAwarded' } } }
+      ]),
+    ]);
+
+    // Leaderboard rank among everyone who's earned at least one MLM reward.
+    const rankAgg = await ReferralReward.aggregate([
+      { $group: { _id: '$beneficiary', points: { $sum: '$pointsAwarded' } } },
+      { $match: { points: { $gt: totalMlmPoints } } },
+      { $count: 'higherCount' }
+    ]);
+    const rank = (rankAgg[0]?.higherCount || 0) + 1;
+
+    // Downline network size (all levels combined) — cheap count, full
+    // breakdown lives at /me/network.
+    const networkSize = await User.countDocuments({ uplineChain: user._id });
+
+    const spendableBalance = await LoyaltyPoint.getUserBalance(user._id);
+
     const baseUrl = process.env.FRONTEND_URL || 'https://pesashop.com';
     const shareUrl = `${baseUrl}/refer/${code}`;
 
@@ -83,6 +113,11 @@ router.get('/me', protect, async (req, res) => {
         referrals,
         levelBreakdown: Object.values(levelBreakdown).sort((a, b) => a.level - b.level),
         totalMlmPoints,
+        pointsThisMonth: thisMonth[0]?.points || 0,
+        pointsLastMonth: lastMonth[0]?.points || 0,
+        rank,
+        networkSize,
+        spendableBalance,
       }
     });
   } catch (err) {
@@ -110,6 +145,69 @@ router.get('/me/ledger', protect, async (req, res) => {
     ]);
 
     res.json({ success: true, data: rows, pagination: { total, page, pages: Math.ceil(total / limit), limit } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/referrals/me/network — downline members grouped by level (the "tree")
+router.get('/me/network', protect, async (req, res) => {
+  try {
+    const members = await User.find({ uplineChain: req.user.id })
+      .select('firstName lastName createdAt uplineChain isActive')
+      .lean();
+
+    const byLevel = {};
+    for (const m of members) {
+      const idx = m.uplineChain.findIndex((id) => String(id) === String(req.user.id));
+      if (idx === -1) continue;
+      const level = idx + 1;
+      byLevel[level] = byLevel[level] || [];
+      byLevel[level].push({
+        _id: m._id,
+        firstName: m.firstName,
+        lastName: m.lastName,
+        joinedAt: m.createdAt,
+        active: m.isActive !== false,
+      });
+    }
+
+    const levels = Object.keys(byLevel)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .map((level) => ({
+        level,
+        count: byLevel[level].length,
+        members: byLevel[level].sort((a, b) => new Date(b.joinedAt) - new Date(a.joinedAt)),
+      }));
+
+    res.json({ success: true, data: { totalNetworkSize: members.length, levels } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/referrals/levels — active levels' earning potential, for the
+// customer-facing "here's what you can earn" motivational table. Only
+// exposes what a level pays, not internal knobs like caps/vesting/base.
+router.get('/levels', protect, async (req, res) => {
+  try {
+    const settings = await ReferralSettings.getSettings();
+    res.json({
+      success: true,
+      data: {
+        enabled: settings.enabled,
+        levels: (settings.levels || [])
+          .filter((l) => l.active)
+          .sort((a, b) => a.level - b.level)
+          .map((l) => ({
+            level: l.level,
+            signupPoints: l.signupPoints,
+            purchaseRewardType: l.purchaseRewardType,
+            purchaseRewardValue: l.purchaseRewardValue,
+          })),
+      }
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

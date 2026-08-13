@@ -148,13 +148,15 @@ export default function LoyaltyPointsPage() {
       total_spent_bonus: 'Spending Milestone',
       shared_out: 'Shared (Sent)',
       shared_in: 'Shared (Received)',
-      converted: 'Converted to Credit'
+      converted: 'Converted to Credit',
+      mlm_referral_signup: 'Referral Network — Signup',
+      mlm_referral_purchase: 'Referral Network — Purchase',
     };
     return map[type] || type;
   };
 
   const getTypeColor = (type) => {
-    if (['earned', 'signup_bonus', 'daily_login', 'profile_complete', 'referral_registration', 'referral_purchase', 'top_customer', 'level_achievement', 'birthday_bonus', 'review_bonus', 'order_count_bonus', 'cart_total_bonus', 'total_spent_bonus', 'shared_in'].includes(type)) {
+    if (['earned', 'signup_bonus', 'daily_login', 'profile_complete', 'referral_registration', 'referral_purchase', 'top_customer', 'level_achievement', 'birthday_bonus', 'review_bonus', 'order_count_bonus', 'cart_total_bonus', 'total_spent_bonus', 'shared_in', 'mlm_referral_signup', 'mlm_referral_purchase'].includes(type)) {
       return 'text-green-600';
     }
     if (['redeemed', 'expired', 'shared_out', 'converted'].includes(type)) {
