@@ -37,8 +37,8 @@ export function useExpoPush() {
   const router = useRouter();
   const { token } = useAuthStore();
   const registered = useRef(false);
-  const notificationListener = useRef<any>();
-  const responseListener = useRef<any>();
+  const notificationListener = useRef<any>(undefined);
+  const responseListener = useRef<any>(undefined);
 
   useEffect(() => {
     if (!Notifications || Platform.OS === 'web') return;

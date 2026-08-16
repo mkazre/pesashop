@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Toast from "react-native-toast-message";
+import { useTranslation } from "react-i18next";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ProductCard from "@/components/ProductCard";
 import InlineLaybyePlans from "@/components/InlineLaybyePlans";
@@ -150,6 +151,7 @@ export default function ProductDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const scrollRef = useRef<ScrollView>(null);
 
   const [loading, setLoading] = useState(true);
@@ -399,7 +401,7 @@ export default function ProductDetailScreen() {
           )}
           {hasDiscount && (
             <View style={ps.discountBadge}>
-              <Text style={ps.discountText}>-{discountPercent}% OFF</Text>
+              <Text style={ps.discountText}>-{t("product.percentOff", { percent: discountPercent })}</Text>
             </View>
           )}
           {/* Admin-configured badges */}
@@ -443,10 +445,10 @@ export default function ProductDetailScreen() {
           <View style={ps.stockRow}>
             <View style={[ps.stockDot, { backgroundColor: product.stock > 0 ? colors.green500 : colors.red500 }]} />
             <Text style={[ps.stockText, { color: product.stock > 0 ? colors.green600 : colors.red500 }]}>
-              {product.stock > 0 ? `In Stock (${product.stock} available)` : "Out of Stock"}
+              {product.stock > 0 ? t("product.inStockCount", { count: product.stock }) : t("product.outOfStock")}
             </Text>
             {product.sku && (
-              <Text style={ps.skuText}>SKU: <Text style={{ color: colors.gray700 }}>{product.sku}</Text></Text>
+              <Text style={ps.skuText}>{t("product.sku")}: <Text style={{ color: colors.gray700 }}>{product.sku}</Text></Text>
             )}
           </View>
 
@@ -592,11 +594,11 @@ export default function ProductDetailScreen() {
                 </View>
                 <Pressable onPress={handleAddToCart} style={ps.addCartBtn}>
                   <Ionicons name="cart-outline" size={18} color={colors.white} />
-                  <Text style={ps.addCartText}>Add to Cart</Text>
+                  <Text style={ps.addCartText}>{t("product.addToCart")}</Text>
                 </Pressable>
               </View>
               <Pressable onPress={handleBuyNow} style={ps.buyNowBtn}>
-                <Text style={ps.buyNowText}>Buy Now</Text>
+                <Text style={ps.buyNowText}>{t("product.buyNow")}</Text>
                 <PulsingArrows color="#fff" size={18} count={3} />
               </Pressable>
             </>
@@ -651,7 +653,9 @@ export default function ProductDetailScreen() {
               {sortedSections.map((sec: any) => (
                 <View key={sec.id} style={ps.sectionCard}>
                   <Pressable onPress={() => toggleSection(sec.id)} style={ps.sectionHeader}>
-                    <Text style={ps.sectionHeaderText}>{sec.label}</Text>
+                    <Text style={ps.sectionHeaderText}>
+                      {sec.id === "reviews" ? t("product.reviews") : sec.id === "also_bought" ? t("product.customersAlsoBought") : sec.label}
+                    </Text>
                     <Ionicons name={openSections[sec.id] ? "chevron-up" : "chevron-down"} size={18} color={colors.gray500} />
                   </Pressable>
 
@@ -664,7 +668,7 @@ export default function ProductDetailScreen() {
                             style={ps.descText}
                             numberOfLines={descExpanded ? undefined : 4}
                           >
-                            {product.description || "No description available."}
+                            {product.description || t("product.noDescriptionAvailable")}
                           </Text>
                           {product.description && product.description.length > 150 && (
                             <Pressable onPress={() => setDescExpanded(!descExpanded)} style={ps.readMoreBtn}>
@@ -687,7 +691,7 @@ export default function ProductDetailScreen() {
                             ))}
                           </View>
                         ) : (
-                          <Text style={ps.emptyText}>No specifications available.</Text>
+                          <Text style={ps.emptyText}>{t("product.noSpecsAvailable")}</Text>
                         )
                       )}
 

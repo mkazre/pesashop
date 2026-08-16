@@ -21,6 +21,7 @@ import TikTokVideoSlot from "@/components/social/TikTokVideoSlot";
 import ServiceProviderAdSlot from "@/components/ads/ServiceProviderAdSlot";
 import AppDrawer from "@/components/AppDrawer";
 import CurrencyPicker from "@/components/CurrencyPicker";
+import LanguagePicker from "@/components/LanguagePicker";
 import NotificationBell from "@/components/NotificationBell";
 import BottomTabBar from "@/components/BottomTabBar";
 import { colors, resolveImageUrl } from "@/theme";
@@ -101,6 +102,7 @@ export default function HomeScreen() {
             <Image source={LOGO} style={s.headerLogo} contentFit="contain" />
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <LanguagePicker />
             <CurrencyPicker />
             <NotificationBell color={colors.gray700} size={22} />
           </View>

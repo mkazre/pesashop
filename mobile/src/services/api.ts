@@ -1,6 +1,9 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+// expo-file-system's SDK 54 default export is a new Paths/File/Directory API;
+// this file uses the classic cacheDirectory/downloadAsync/readAsStringAsync
+// surface, which now lives under the /legacy subpath.
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { tokenStorage } from '@/utils/tokenStorage';
 
@@ -337,6 +340,10 @@ export const referralsAPI = {
   lookup: (code: string) => api.get(`/api/referrals/code/${code}`),
   getMine: () => api.get('/api/referrals/me'),
   invite: (data: { email: string; channel: string }) => api.post('/api/referrals/invite', data),
+  getMyLedger: (params?: { page?: number; limit?: number; level?: number; eventType?: string }) =>
+    api.get('/api/referrals/me/ledger', { params }),
+  getMyNetwork: () => api.get('/api/referrals/me/network'),
+  getLevels: () => api.get('/api/referrals/levels'),
 };
 
 // ─── Live Shopping API ────────────────────────────────────────────

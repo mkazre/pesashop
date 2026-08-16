@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,9 +14,11 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authAPI } from "@/services/api";
 import { useAuthStore } from "@/store";
 import { colors } from "@/theme";
+import { REFERRAL_CODE_STORAGE_KEY } from "@/utils/referralCode";
 
 const LOGO = require("@/../assets/pesashop-logo.png");
 
@@ -24,7 +26,18 @@ export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const setAuth = useAuthStore((s) => s.setAuth);
-  const { ref: referralCode } = useLocalSearchParams<{ ref?: string }>();
+  const { ref: refParam } = useLocalSearchParams<{ ref?: string }>();
+  const [storedCode, setStoredCode] = useState<string | undefined>(undefined);
+
+  // Falls back to a code stashed by the /refer/[code] landing screen when
+  // this screen wasn't reached directly from it (e.g. "Just browse" first,
+  // then Login/Register from the drawer later).
+  useEffect(() => {
+    if (refParam) return;
+    AsyncStorage.getItem(REFERRAL_CODE_STORAGE_KEY).then((v) => { if (v) setStoredCode(v); }).catch(() => {});
+  }, [refParam]);
+
+  const referralCode = refParam || storedCode;
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -60,6 +73,7 @@ export default function RegisterScreen() {
       });
       const { user, token } = res.data;
       await setAuth(user, token);
+      if (referralCode) AsyncStorage.removeItem(REFERRAL_CODE_STORAGE_KEY).catch(() => {});
       Toast.show({ type: "success", text1: `Welcome, ${user.firstName}!` });
       router.back();
     } catch (err: any) {

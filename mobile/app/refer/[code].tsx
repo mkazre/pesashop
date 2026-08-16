@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { referralsAPI } from "@/services/api";
 import { colors } from "@/theme";
+import { REFERRAL_CODE_STORAGE_KEY } from "@/utils/referralCode";
 
 export default function ReferLandingScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
@@ -17,7 +19,10 @@ export default function ReferLandingScreen() {
   useEffect(() => {
     if (!code) return;
     referralsAPI.lookup(code)
-      .then((res) => setReferrer(res.data?.data || res.data))
+      .then((res) => {
+        setReferrer(res.data?.data || res.data);
+        AsyncStorage.setItem(REFERRAL_CODE_STORAGE_KEY, code).catch(() => {});
+      })
       .catch(() => setError("This referral link is invalid or expired."))
       .finally(() => setLoading(false));
   }, [code]);

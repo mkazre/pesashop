@@ -14,10 +14,12 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
+import { useTranslation } from "react-i18next";
 import BottomTabBar from "@/components/BottomTabBar";
 import { authAPI } from "@/services/api";
 import { useAuthStore } from "@/store";
 import { colors } from "@/theme";
+import { SUPPORTED_LANGUAGES, setLanguage } from "@/i18n";
 import {
   isBiometricSupported,
   isBiometricLockEnabled,
@@ -29,6 +31,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, setAuth } = useAuthStore();
+  const { i18n } = useTranslation();
 
   const [loading, setLoading] = useState(false);
   const [firstName, setFirstName] = useState(user?.firstName || user?.name?.split(" ")[0] || "");
@@ -219,6 +222,27 @@ export default function SettingsScreen() {
           </View>
         )}
 
+        {/* Language Section */}
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Language</Text>
+          {SUPPORTED_LANGUAGES.map((l) => {
+            const active = i18n.language === l.code;
+            return (
+              <Pressable
+                key={l.code}
+                onPress={() => setLanguage(l.code)}
+                style={s.languageRow}
+              >
+                <View>
+                  <Text style={[s.languageNative, active && { color: colors.primary }]}>{l.nativeLabel}</Text>
+                  <Text style={s.languageLabel}>{l.label}</Text>
+                </View>
+                {active && <Ionicons name="checkmark" size={20} color={colors.primary} />}
+              </Pressable>
+            );
+          })}
+        </View>
+
         {/* Quick links */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>More Account Options</Text>
@@ -272,4 +296,7 @@ const s = StyleSheet.create({
   switchRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   switchLabel: { fontSize: 14, fontWeight: "600", color: colors.gray800 },
   switchSubtext: { fontSize: 12, color: colors.gray400, marginTop: 2 },
+  languageRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  languageNative: { fontSize: 14, fontWeight: "600", color: colors.gray800 },
+  languageLabel: { fontSize: 12, color: colors.gray400, marginTop: 1 },
 });

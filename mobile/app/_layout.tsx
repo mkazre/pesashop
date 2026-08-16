@@ -1,3 +1,4 @@
+import "@/i18n";
 import { useEffect, useState, useRef } from "react";
 import { View, Animated, StyleSheet, Dimensions, AppState } from "react-native";
 import { Image } from "expo-image";
@@ -328,6 +329,10 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="refer/[code]"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="+not-found"
           options={{ headerShown: false }}
         />
       </Stack>

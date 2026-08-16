@@ -15,6 +15,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store";
 import { menusAPI } from "@/services/api";
 import { colors, resolveImageUrl } from "@/theme";
@@ -39,6 +40,7 @@ interface AppDrawerProps {
 export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { width: screenWidth } = useWindowDimensions();
   const drawerWidth = Math.min(screenWidth * 0.82, 340);
 
@@ -125,8 +127,8 @@ export default function AppDrawer({ visible, onClose }: AppDrawerProps) {
   };
 
   const staticLinks: { icon: keyof typeof Ionicons.glyphMap; label: string; path: string }[] = [
-    { icon: "home-outline",         label: "Home",        path: "/(tabs)" },
-    { icon: "grid-outline",         label: "Shop",        path: "/(tabs)/shop" },
+    { icon: "home-outline",         label: t("nav.home"), path: "/(tabs)" },
+    { icon: "grid-outline",         label: t("nav.shop"), path: "/(tabs)/shop" },
     { icon: "apps-outline",         label: "Categories",  path: "/categories" },
     { icon: "navigate-outline",     label: "Track Order", path: "/account/track-order" },
   ];

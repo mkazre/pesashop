@@ -1,23 +1,25 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCartStore, useWishlistStore, useCompareStore } from "@/store";
 import { colors } from "@/theme";
 
 const TABS = [
-  { name: "Home",     route: "/",           icon: "home-outline",        activeIcon: "home"          },
-  { name: "Shop",     route: "/shop",        icon: "grid-outline",        activeIcon: "grid"          },
-  { name: "Cart",     route: "/cart",        icon: "cart-outline",        activeIcon: "cart"          },
-  { name: "Wishlist", route: "/(tabs)/wishlist", icon: "heart-outline",   activeIcon: "heart"         },
-  { name: "Compare",  route: "/compare",     icon: "git-compare-outline", activeIcon: "git-compare"   },
-  { name: "Account",  route: "/account",     icon: "person-outline",      activeIcon: "person"        },
+  { name: "Home",     labelKey: "nav.home",     route: "/",           icon: "home-outline",        activeIcon: "home"          },
+  { name: "Shop",     labelKey: "nav.shop",     route: "/shop",        icon: "grid-outline",        activeIcon: "grid"          },
+  { name: "Cart",     labelKey: "nav.cart",     route: "/cart",        icon: "cart-outline",        activeIcon: "cart"          },
+  { name: "Wishlist", labelKey: "nav.wishlist", route: "/(tabs)/wishlist", icon: "heart-outline",   activeIcon: "heart"         },
+  { name: "Compare",  labelKey: null,           route: "/compare",     icon: "git-compare-outline", activeIcon: "git-compare"   },
+  { name: "Account",  labelKey: "nav.account",  route: "/account",     icon: "person-outline",      activeIcon: "person"        },
 ] as const;
 
 export default function BottomTabBar() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const cartCount = useCartStore((s) => s.getItemCount());
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const compareCount = useCompareStore((s) => s.products.length);
@@ -56,7 +58,7 @@ export default function BottomTabBar() {
               )}
             </View>
             <Text style={[s.label, { color: isActive ? colors.primary : "#9ca3af" }]}>
-              {tab.name}
+              {tab.labelKey ? t(tab.labelKey) : tab.name}
             </Text>
           </Pressable>
         );

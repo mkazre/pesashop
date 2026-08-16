@@ -1,4 +1,5 @@
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { colors } from "@/theme";
 
 interface LoadingSpinnerProps {
@@ -7,13 +8,15 @@ interface LoadingSpinnerProps {
 }
 
 export default function LoadingSpinner({
-  message = "Loading...",
+  message,
   fullScreen = false,
 }: LoadingSpinnerProps) {
+  const { t } = useTranslation();
+  const displayMessage = message ?? t("common.loading");
   return (
     <View style={[s.container, fullScreen ? s.fullScreen : s.padded]}>
       <ActivityIndicator size="large" color={colors.primary} />
-      {message && <Text style={s.message}>{message}</Text>}
+      {displayMessage && <Text style={s.message}>{displayMessage}</Text>}
     </View>
   );
 }
