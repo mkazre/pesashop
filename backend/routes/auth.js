@@ -11,6 +11,15 @@ router.post('/register', async (req, res, next) => {
     const { email, password, firstName, lastName, phone, referralCode } = req.body;
     const user = await User.create({ email, password, firstName, lastName, phone });
 
+    // Welcome email to the new customer + admin new-signup notification —
+    // fire-and-forget so a slow/broken mail provider never blocks signup.
+    emailService.sendWelcomeEmail(user).catch(err => {
+      console.error('Error sending welcome email:', err);
+    });
+    emailService.sendAdminNewUser(user).catch(err => {
+      console.error('Error sending admin new user notification:', err);
+    });
+
     // Handle coupon email automation for new users
     const couponEmailService = require('../services/couponEmailService');
     couponEmailService.handleNewUser(user._id).catch(err => {
