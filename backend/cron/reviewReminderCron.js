@@ -62,19 +62,21 @@ const sendReviewReminders = async () => {
       
       // Get products that haven't been reviewed
       const reviewedProductIds = existingReviews.map(r => r.product.toString());
-      const unreviewedProducts = order.items.filter(
-        item => !reviewedProductIds.includes((item.product._id || item.product).toString())
-      );
-      
+      const remindedProductIds = (order.reviewReminderSentProducts || []).map(r => r.product.toString());
+      const unreviewedProducts = order.items.filter(item => {
+        const id = (item.product._id || item.product).toString();
+        return !reviewedProductIds.includes(id) && !remindedProductIds.includes(id);
+      });
+
       if (unreviewedProducts.length === 0) {
         continue;
       }
-      
+
       // Send email for each unreviewed product (or combine into one email)
       for (const item of unreviewedProducts) {
         const product = await Product.findById(item.product._id || item.product);
         if (!product) continue;
-        
+
         // Prepare email data
         const emailData = {
           customerName: order.customer.firstName || 'Customer',
@@ -92,6 +94,8 @@ const sendReviewReminders = async () => {
             emailData
           );
           remindersSent++;
+          order.reviewReminderSentProducts.push({ product: product._id, sentAt: new Date() });
+          await order.save();
         } catch (emailError) {
           console.error(`Failed to send review reminder to ${order.customer.email}:`, emailError);
         }

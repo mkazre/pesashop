@@ -267,10 +267,17 @@ const orderSchema = new mongoose.Schema({
   // IP and User Agent
   customerIp: String,
   userAgent: String,
-  
+
+  // Review reminder tracking — prevents the daily cron from re-sending
+  // a reminder for a product it already nudged the customer about.
+  reviewReminderSentProducts: [{
+    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    sentAt: { type: Date, default: Date.now }
+  }],
+
   // Metadata
   metadata: mongoose.Schema.Types.Mixed
-  
+
 }, {
   timestamps: true
 });
