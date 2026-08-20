@@ -221,17 +221,32 @@ router.post('/invite', protect, async (req, res) => {
     const user = await User.findById(req.user.id);
     const code = await referralService.ensureReferralCode(user);
 
-    const existing = email ? await Referral.findOne({ referrer: req.user.id, refereeEmail: email.toLowerCase() }) : null;
-    if (existing) return res.json({ success: true, data: existing, message: 'Already invited' });
+    // Reuse any existing record for this (referrer, email) pair — the schema
+    // has a unique index on it, so we can't just create a fresh row on retry.
+    // Only block resending once the referee has actually followed through
+    // (or been flagged); a 'sent'/'failed'/'pending' record just means the
+    // last attempt may not have actually reached their inbox, so re-invite.
+    let referral = email ? await Referral.findOne({ referrer: req.user.id, refereeEmail: email.toLowerCase() }) : null;
 
-    const referral = await Referral.create({
-      referrer: req.user.id,
-      refereeEmail: email?.toLowerCase(),
-      refereePhone: phone,
-      referralCode: code,
-      status: email ? 'pending' : 'sent',
-      channel: channel || 'link'
-    });
+    if (referral && ['signed_up', 'qualified', 'rewarded', 'fraud'].includes(referral.status)) {
+      return res.json({ success: true, data: referral, message: 'Already invited' });
+    }
+
+    if (referral) {
+      referral.referralCode = code;
+      referral.channel = channel || referral.channel || 'link';
+      referral.status = email ? 'pending' : 'sent';
+      await referral.save();
+    } else {
+      referral = await Referral.create({
+        referrer: req.user.id,
+        refereeEmail: email?.toLowerCase(),
+        refereePhone: phone,
+        referralCode: code,
+        status: email ? 'pending' : 'sent',
+        channel: channel || 'link'
+      });
+    }
 
     if (email) {
       try {
