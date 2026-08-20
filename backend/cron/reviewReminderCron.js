@@ -9,12 +9,17 @@ const emailService = require('../services/emailService');
 const sendReviewReminders = async () => {
   try {
     const settings = await ReviewSettings.getSettings();
-    
+
     if (!settings.emailReminderEnabled) {
       console.log('Review reminder emails are disabled');
       return;
     }
-    
+
+    if (!(await emailService.isEnabled('reviewReminder'))) {
+      console.log('Review reminder emails are disabled in admin Settings > Email Notifications');
+      return;
+    }
+
     if (!settings.emailTemplate) {
       console.log('No email template configured for review reminders');
       return;
