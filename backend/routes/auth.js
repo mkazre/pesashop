@@ -442,8 +442,8 @@ router.post('/forgot-password', async (req, res, next) => {
     }
 
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      // Don't reveal whether email exists
+    if (!user || !(await emailService.isEnabled('passwordReset'))) {
+      // Don't reveal whether email exists (or whether the notification is disabled)
       return res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
     }
 

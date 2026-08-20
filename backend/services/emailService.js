@@ -821,6 +821,7 @@ class EmailService {
    * Send password reset email
    */
   async sendPasswordReset(user, resetToken) {
+    if (!(await this.isEnabled('passwordReset'))) return;
     if (!user?.email) return;
     const variables = {
       customer_name: user.getFullName?.() || user.firstName || 'Customer',
