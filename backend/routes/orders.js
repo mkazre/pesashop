@@ -144,7 +144,8 @@ router.post('/', protect, async (req, res, next) => {
       giftCardAmount,
       couponCode,
       loyaltyPointsUsed,
-      subtotal: providedSubtotal, 
+      loyaltyDiscount,
+      subtotal: providedSubtotal,
       tax, 
       shipping, 
       total: providedTotal,
@@ -197,7 +198,17 @@ router.post('/', protect, async (req, res, next) => {
     const finalTax = tax || finalSubtotal * 0.15;
     const finalShipping = shipping || 0;
     const giftCardDiscount = giftCardAmount || 0;
-    
+
+    // Validate PESA Coins redemption against the customer's actual balance
+    // before applying any discount for it — never trust a client-supplied
+    // coin count without checking they actually have that many.
+    if (loyaltyPointsUsed > 0) {
+      const balance = await LoyaltyPoint.getUserBalance(req.user._id);
+      if (loyaltyPointsUsed > balance) {
+        return res.status(400).json({ success: false, message: 'Insufficient PESA Coins balance' });
+      }
+    }
+
     // Handle gift card redemption if provided
     let giftCard = null;
     const giftCardsApplied = [];
@@ -250,8 +261,11 @@ router.post('/', protect, async (req, res, next) => {
       }
     }
     
-    // Calculate total discount (gift card + coupon + PESA Coins)
-    const loyaltyPointsDiscount = loyaltyPointsUsed || 0;
+    // Calculate total discount (gift card + coupon + PESA Coins).
+    // loyaltyPointsUsed is a raw coin count, NOT a currency amount — the
+    // Rand value of the redemption is loyaltyDiscount, computed client-side
+    // from the configured coin-to-currency rate.
+    const loyaltyPointsDiscount = loyaltyDiscount || 0;
     const totalDiscount = giftCardDiscount + couponDiscount + loyaltyPointsDiscount;
     const finalTotal = providedTotal || Math.max(0, finalSubtotal + finalTax + finalShipping - totalDiscount);
     
@@ -291,9 +305,21 @@ router.post('/', protect, async (req, res, next) => {
       payments: orderPayments,
       giftCardsApplied,
       couponsApplied,
-      loyaltyPointsUsed: loyaltyPointsUsed || 0
+      loyaltyPointsUsed: loyaltyPointsUsed || 0,
+      loyaltyDiscount: loyaltyPointsDiscount
     });
-    
+
+    // Actually deduct the redeemed coins now that the order exists — the
+    // balance was already validated above, so this should only fail on a
+    // genuine race with another concurrent redemption.
+    if (loyaltyPointsUsed > 0) {
+      try {
+        await LoyaltyPoint.redeemPoints(req.user._id, loyaltyPointsUsed, order._id, `Order #${order.orderNumber}`);
+      } catch (redeemError) {
+        console.error('Failed to redeem PESA Coins for order', order.orderNumber, redeemError);
+      }
+    }
+
     // Create Laybye records for each laybye group
     const createdLaybyes = [];
     if (hasLaybye && laybyeGroups && laybyeGroups.length > 0) {

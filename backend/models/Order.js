@@ -226,6 +226,13 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Rand value of the PESA Coins redemption above — kept separate from
+  // loyaltyPointsUsed (a raw coin count) so displays/emails don't have to
+  // reverse-engineer it out of the combined `discount` field.
+  loyaltyDiscount: {
+    type: Number,
+    default: 0
+  },
   
   // Coupons
   couponsApplied: [{
