@@ -427,16 +427,22 @@ const OrderDetailPage = () => {
                         PESA Coins ({order.loyaltyPointsUsed} coins):
                       </td>
                       <td className="py-3 px-4 text-right text-orange-600">
-                        -R {order.loyaltyPointsUsed?.toFixed(2) || '0.00'}
+                        -R {(order.loyaltyDiscount ?? order.loyaltyPointsUsed)?.toFixed(2) || '0.00'}
                       </td>
                     </tr>
                   )}
-                  {order.discount > 0 && (
-                    <tr>
-                      <td colSpan="4" className="py-3 px-4 text-right text-green-600">Other Discount:</td>
-                      <td className="py-3 px-4 text-right text-green-600">-R {order.discount?.toFixed(2) || '0.00'}</td>
-                    </tr>
-                  )}
+                  {(() => {
+                    const itemized = (order.giftCardsApplied?.reduce((s, gc) => s + (gc.amount || 0), 0) || 0)
+                      + (order.couponsApplied?.reduce((s, cp) => s + (cp.discount || 0), 0) || 0)
+                      + (order.loyaltyDiscount ?? order.loyaltyPointsUsed ?? 0);
+                    const otherDiscount = (order.discount || 0) - itemized;
+                    return otherDiscount > 0.01 && (
+                      <tr>
+                        <td colSpan="4" className="py-3 px-4 text-right text-green-600">Other Discount:</td>
+                        <td className="py-3 px-4 text-right text-green-600">-R {otherDiscount.toFixed(2)}</td>
+                      </tr>
+                    );
+                  })()}
                   <tr className="border-t-2 border-gray-300">
                     <td colSpan="4" className="py-3 px-4 text-right font-bold text-lg">Total:</td>
                     <td className="py-3 px-4 text-right font-bold text-lg">R {order.total?.toFixed(2) || '0.00'}</td>
@@ -722,19 +728,25 @@ const OrderDetailPage = () => {
                     <div className="pt-2 border-t border-gray-200">
                       <div className="flex justify-between text-sm text-orange-600">
                         <span>PESA Coins ({order.loyaltyPointsUsed} coins):</span>
-                        <span className="font-medium">-R {order.loyaltyPointsUsed?.toFixed(2) || '0.00'}</span>
+                        <span className="font-medium">-R {(order.loyaltyDiscount ?? order.loyaltyPointsUsed)?.toFixed(2) || '0.00'}</span>
                       </div>
                     </div>
                   )}
-                  
-                  {order.discount > 0 && (
-                    <div className="pt-2 border-t border-gray-200">
-                      <div className="flex justify-between text-sm text-green-600">
-                        <span>Other Discount:</span>
-                        <span className="font-medium">-R {order.discount?.toFixed(2) || '0.00'}</span>
+
+                  {(() => {
+                    const itemized = (order.giftCardsApplied?.reduce((s, gc) => s + (gc.amount || 0), 0) || 0)
+                      + (order.couponsApplied?.reduce((s, cp) => s + (cp.discount || 0), 0) || 0)
+                      + (order.loyaltyDiscount ?? order.loyaltyPointsUsed ?? 0);
+                    const otherDiscount = (order.discount || 0) - itemized;
+                    return otherDiscount > 0.01 && (
+                      <div className="pt-2 border-t border-gray-200">
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Other Discount:</span>
+                          <span className="font-medium">-R {otherDiscount.toFixed(2)}</span>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                   
                   <div className="pt-2 border-t-2 border-gray-300">
                     <div className="flex justify-between font-bold text-lg">
@@ -774,7 +786,7 @@ const OrderDetailPage = () => {
                          order.paymentMethod === 'bank_transfer' ? 'Bank Transfer' :
                          order.paymentMethod === 'cash' ? 'Cash' :
                          order.paymentMethod}:
-                      </span> R{Math.max(0, order.total - (order.giftCardsApplied?.reduce((sum, gc) => sum + (gc.amount || 0), 0) || 0) - (order.couponsApplied?.reduce((sum, cp) => sum + (cp.discount || 0), 0) || 0) - (order.loyaltyPointsUsed || 0)).toFixed(2)}
+                      </span> R{Math.max(0, order.total - (order.giftCardsApplied?.reduce((sum, gc) => sum + (gc.amount || 0), 0) || 0) - (order.couponsApplied?.reduce((sum, cp) => sum + (cp.discount || 0), 0) || 0) - (order.loyaltyDiscount ?? order.loyaltyPointsUsed ?? 0)).toFixed(2)}
                     </div>
                   )}
                 </div>
