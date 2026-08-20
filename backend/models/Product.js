@@ -207,7 +207,18 @@ const productSchema = new mongoose.Schema({
 });
 
 // Indexes
-productSchema.index({ name: 'text', description: 'text' });
+// Weighted so a name (or brand/sku/tag) match ranks far above an incidental
+// description mention — e.g. searching "iphone" should surface iPhone-named
+// products before an unrelated charger whose description merely says "also
+// works with iPhone". NOTE: MongoDB allows only one text index per
+// collection — replacing this one in production requires an explicit index
+// migration (drop the old one, build this one), it will NOT happen
+// automatically on deploy. See the migration script shipped alongside this
+// change.
+productSchema.index(
+  { name: 'text', brand: 'text', sku: 'text', tags: 'text', description: 'text' },
+  { weights: { name: 10, brand: 6, sku: 6, tags: 4, description: 1 }, name: 'ProductSearchIndex' }
+);
 productSchema.index({ slug: 1 });
 productSchema.index({ sku: 1 });
 productSchema.index({ categories: 1 });

@@ -7,6 +7,7 @@ const sharp = require('sharp');
 const { protect, authorize, adminOnly, optionalAuth } = require('../middleware/auth');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const { searchProductsRanked } = require('../services/productSearch');
 const { triggerProductAutoPost, wasJustPublished } = require('../services/autoposterProductAutoPostTrigger');
 const { translateProductFields } = require('../services/translationService');
 
@@ -166,15 +167,16 @@ router.get('/', optionalAuth, async (req, res) => {
   try {
     const isAdmin = req.user && ['admin', 'shop_manager'].includes(req.user.role);
     let query = {};
-    
-    if (req.query.search) {
-      if (req.query.search.length >= 3) {
-        query.$text = { $search: req.query.search };
-      } else {
-        // Fallback to regex for short queries (1-2 chars)
-        query.name = { $regex: req.query.search, $options: 'i' };
-      }
+
+    const searchTerm = req.query.search ? String(req.query.search).trim() : '';
+    const isTextSearch = searchTerm.length >= 3;
+    if (searchTerm && !isTextSearch) {
+      // Too short for the text index to be useful — plain substring match.
+      query.name = { $regex: searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
     }
+    // 3+ char search terms are handled by searchProductsRanked() below, not
+    // folded into `query` here — it builds its own $text + partial-match
+    // queries so it can rank and paginate across both.
 
     // Fetch a specific list of products by ID (used by the gift-section
     // carousel and any other "manual" picker). Order is preserved client-side.
@@ -195,7 +197,7 @@ router.get('/', optionalAuth, async (req, res) => {
     // so when searching use a simple $ne filter instead of $or.
     if (req.query.status) {
       query.status = req.query.status;
-    } else if (query.$text) {
+    } else if (isTextSearch) {
       query.status = { $ne: 'trash' };
     } else {
       query.$or = [
@@ -274,7 +276,10 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     let sortBy = '-createdAt';
-    if (req.query.sort) {
+    let wantsRelevance = false;
+    if (req.query.sort === 'relevance') {
+      wantsRelevance = true;
+    } else if (req.query.sort) {
       const sortMap = {
         'price-asc': 'regularPrice',
         'price-desc': '-regularPrice',
@@ -313,22 +318,40 @@ router.get('/', optionalAuth, async (req, res) => {
         '-salesCount': '-totalSold',
       };
       sortBy = sortMap[req.query.sort] || sortBy;
+    } else if (isTextSearch) {
+      // Nobody picked a sort explicitly — default a search to relevance
+      // rather than the browse-page default (e.g. newest/price), which is
+      // what was burying exact matches under unrelated results before.
+      wantsRelevance = true;
     }
-    
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    
-    const productQuery = Product.find(query);
-    if (!isAdmin) productQuery.select('-backendPrice');
-    const products = await productQuery
-      .populate('categories', 'name slug')
-      .sort(sortBy)
-      .limit(limit)
-      .skip(skip);
-    
-    const total = await Product.countDocuments(query);
-    
+
+    let products, total;
+    if (isTextSearch) {
+      ({ products, total } = await searchProductsRanked({
+        baseQuery: query,
+        searchTerm,
+        sortBy,
+        wantsRelevance,
+        skip,
+        limit,
+        isAdmin,
+      }));
+    } else {
+      const productQuery = Product.find(query);
+      if (!isAdmin) productQuery.select('-backendPrice');
+      products = await productQuery
+        .populate('categories', 'name slug')
+        .sort(sortBy)
+        .limit(limit)
+        .skip(skip);
+
+      total = await Product.countDocuments(query);
+    }
+
     res.json({
       success: true,
       count: products.length,

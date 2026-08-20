@@ -1,7 +1,8 @@
 import { IoGrid, IoList, IoChevronDown } from 'react-icons/io5';
 
-export function SortDropdown({ value, onChange }) {
+export function SortDropdown({ value, onChange, isSearching = false }) {
   const options = [
+    ...(isSearching ? [{ value: 'relevance', label: 'Relevance' }] : []),
     { value: 'featured', label: 'Featured' },
     { value: 'newest', label: 'Newest First' },
     { value: 'price-low', label: 'Price: Low to High' },

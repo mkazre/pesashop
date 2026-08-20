@@ -39,8 +39,14 @@ export default function ShopPage() {
   const [perPageOverride, setPerPageOverride] = useState(null);
   const [page, setPage] = useState(1);
 
+  const isSearching = !!searchParams.get('search');
+
   const layout = layoutOverride ?? tb.defaultView ?? 'grid';
-  const sortBy = sortOverride ?? tb.defaultSort ?? 'featured';
+  // A search should default to relevance-ranked results, not whatever sort
+  // the archive page normally opens with (e.g. price/newest) — that default
+  // was what buried exact matches under unrelated ones. A user-picked sort
+  // (sortOverride) still wins either way.
+  const sortBy = sortOverride ?? (isSearching ? 'relevance' : tb.defaultSort ?? 'featured');
   const perPage = perPageOverride ?? tb.defaultPerPage ?? 12;
 
   const setLayout = (v) => setLayoutOverride(v);
@@ -285,7 +291,7 @@ export default function ShopPage() {
                       </div>
                     )}
                     {tb.showSortDropdown !== false && (
-                      <SortDropdown value={sortBy} onChange={setSortBy} />
+                      <SortDropdown value={sortBy} onChange={setSortBy} isSearching={isSearching} />
                     )}
                     {tb.showViewToggle !== false && (
                       <ViewToggle value={layout} onChange={setLayout} />

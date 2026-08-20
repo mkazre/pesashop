@@ -23,6 +23,11 @@ export default function SearchBar({ onClose, className = '', inputClassName = ''
   const ref = useRef(null);
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
+  // Bumped on every submit/clear so a debounced search — or one already
+  // in flight — that resolves afterward can tell it's stale and no-op
+  // instead of reopening the dropdown with results for a query that's
+  // no longer in the box (this was the "View all results for ''" bug).
+  const searchIdRef = useRef(0);
   const navigate = useNavigate();
 
   // Close on click outside
@@ -35,6 +40,8 @@ export default function SearchBar({ onClose, className = '', inputClassName = ''
   }, []);
 
   const doSearch = useCallback(async (q) => {
+    const myId = ++searchIdRef.current;
+
     if (!q || q.trim().length < 2) { // Backend $text needs 3+ but categories filter is client-side
       setResults({ products: [], categories: [] });
       setOpen(false);
@@ -44,9 +51,10 @@ export default function SearchBar({ onClose, className = '', inputClassName = ''
     setLoading(true);
     try {
       const [prodRes, catRes] = await Promise.all([
-        productsAPI.getAll({ search: q.trim(), limit: 6 }),
+        productsAPI.getAll({ search: q.trim(), limit: 6, sort: 'relevance' }),
         categoriesAPI.getAll({ search: q.trim() }),
       ]);
+      if (myId !== searchIdRef.current) return; // superseded by a submit/clear/newer search
 
       const products = prodRes?.data?.data || [];
       const allCats = catRes?.data?.data || [];
@@ -58,10 +66,11 @@ export default function SearchBar({ onClose, className = '', inputClassName = ''
       setResults({ products, categories });
       setOpen(products.length > 0 || categories.length > 0);
     } catch (err) {
+      if (myId !== searchIdRef.current) return;
       console.error('Search error:', err);
       setResults({ products: [], categories: [] });
     } finally {
-      setLoading(false);
+      if (myId === searchIdRef.current) setLoading(false);
     }
   }, []);
 
@@ -72,26 +81,34 @@ export default function SearchBar({ onClose, className = '', inputClassName = ''
     debounceRef.current = setTimeout(() => doSearch(val), 300);
   };
 
+  const closeAndInvalidate = () => {
+    clearTimeout(debounceRef.current);
+    searchIdRef.current++; // invalidate any pending debounce or in-flight doSearch
+    setOpen(false);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (query.trim()) {
       navigate(`/shop?search=${encodeURIComponent(query.trim())}`);
+      closeAndInvalidate();
       setQuery('');
-      setOpen(false);
+      setResults({ products: [], categories: [] });
       onClose?.();
     }
   };
 
   const handleResultClick = () => {
+    closeAndInvalidate();
     setQuery('');
-    setOpen(false);
+    setResults({ products: [], categories: [] });
     onClose?.();
   };
 
   const clearSearch = () => {
+    closeAndInvalidate();
     setQuery('');
     setResults({ products: [], categories: [] });
-    setOpen(false);
     inputRef.current?.focus();
   };
 
