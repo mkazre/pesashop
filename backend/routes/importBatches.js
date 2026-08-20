@@ -184,7 +184,7 @@ router.put('/:id/publish', protect, authorize(...ADMIN), async (req, res) => {
       const chunk = batch.createdProductIds.slice(i, i + 500);
       const result = await Product.updateMany(
         { _id: { $in: chunk } },
-        { $set: { status: 'publish' } }
+        { $set: { status: 'active', isActive: true } }
       );
       updated += result.modifiedCount;
     }

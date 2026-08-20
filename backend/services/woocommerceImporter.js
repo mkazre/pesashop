@@ -152,10 +152,19 @@ class WooCommerceImporter extends EventEmitter {
         }
       };
 
+      let metaColumnsWarned = false;
       readable.on('data', (row) => {
         rowNumber++;
         const cleaned = {};
-        for (const key of Object.keys(row)) { if (!key.startsWith('meta:')) cleaned[key] = row[key]; }
+        const droppedMetaKeys = [];
+        for (const key of Object.keys(row)) {
+          if (key.startsWith('meta:')) droppedMetaKeys.push(key);
+          else cleaned[key] = row[key];
+        }
+        if (droppedMetaKeys.length > 0 && !metaColumnsWarned) {
+          metaColumnsWarned = true;
+          console.warn(`[Import] Dropping meta: columns (not mapped to any field): ${droppedMetaKeys.join(', ')}`);
+        }
         currentChunk.push({ rowNumber, data: cleaned });
 
         if (currentChunk.length >= chunkSize) {
@@ -379,12 +388,19 @@ class WooCommerceImporter extends EventEmitter {
       const stream = fs.createReadStream(filePath)
         .pipe(csv());
 
+      let metaColumnsWarned = false;
       stream.on('data', (row) => {
         rowNumber++;
         // Strip meta: columns from WooCommerce exports to save memory
         const cleaned = {};
+        const droppedMetaKeys = [];
         for (const key of Object.keys(row)) {
-          if (!key.startsWith('meta:')) cleaned[key] = row[key];
+          if (key.startsWith('meta:')) droppedMetaKeys.push(key);
+          else cleaned[key] = row[key];
+        }
+        if (droppedMetaKeys.length > 0 && !metaColumnsWarned) {
+          metaColumnsWarned = true;
+          console.warn(`[Import] Dropping meta: columns (not mapped to any field): ${droppedMetaKeys.join(', ')}`);
         }
         rows.push({ rowNumber, data: cleaned });
       });
@@ -748,7 +764,23 @@ class WooCommerceImporter extends EventEmitter {
           const duplicate = checkDuplicateFast(row, 'products', lookupMaps);
           const resolution = duplicateResolution[rowNumber];
 
-          if (duplicate) {
+          if (duplicate && !duplicate._id) {
+            // Matched an in-memory lookupMaps entry added a few lines below for a row
+            // earlier in THIS SAME chunk/file — not an existing DB product. That entry
+            // is still pending insert and has no _id yet, so routing it through the
+            // genuine-duplicate branches below (findById(undefined) / undefined.toString())
+            // throws a TypeError/CastError that the generic catch turns into an opaque
+            // "Cannot read properties of undefined" error. Report it plainly instead.
+            const rowSku = (row.sku || row.SKU || '').toUpperCase();
+            const matchedBy = rowSku && duplicate.sku && duplicate.sku.toUpperCase() === rowSku
+              ? `sku "${rowSku}"`
+              : `slug "${row.post_name || row.slug}"`;
+            results.errors.push({
+              row: rowNumber,
+              error: `Duplicate ${matchedBy} within this file — also used by row ${duplicate.__pendingRow}`,
+              data: this.extractKeyFields(row, 'products')
+            });
+          } else if (duplicate) {
             // If updateExisting mode is on, always update; otherwise use per-row resolution or default to 'update'
             const effectiveResolution = updateExisting ? 'update' : (resolution || 'update');
             if (effectiveResolution === 'ignore') {
@@ -766,6 +798,10 @@ class WooCommerceImporter extends EventEmitter {
                 };
                 if (!newData.featuredImage && existingData.featuredImage) mergedData.featuredImage = existingData.featuredImage;
                 pendingUpdates.push({ rowNumber, filter: { _id: duplicate._id }, update: mergedData, sku: mergedData.sku, id: duplicate._id.toString(), type: 'merge' });
+              } else {
+                // Existing doc vanished between building lookupMaps and now (e.g. deleted
+                // concurrently) — don't drop the row silently.
+                results.errors.push({ row: rowNumber, error: `Duplicate matched product ${duplicate._id} but it no longer exists`, data: this.extractKeyFields(row, 'products') });
               }
             } else if (effectiveResolution === 'update') {
               const productData = await this.mapProductDataFast(row, { stripHtml: options.stripHtml });
@@ -779,7 +815,11 @@ class WooCommerceImporter extends EventEmitter {
             delete productData._rawImageData;
             pendingInserts.push({ rowNumber, productData, rawImageData });
 
-            // Update lookup maps to prevent duplicates within the same import
+            // Update lookup maps to prevent duplicates within the same import.
+            // __pendingRow tags this entry so a later row's collision message can
+            // name which row it collided with; Mongoose (strict:true, the default)
+            // silently strips unknown paths like this before insertMany writes it.
+            productData.__pendingRow = rowNumber;
             if (productData.sku && lookupMaps.bySku) lookupMaps.bySku.set(productData.sku.toUpperCase(), productData);
             if (productData.slug && lookupMaps.bySlug) lookupMaps.bySlug.set(productData.slug, productData);
           }
@@ -791,10 +831,27 @@ class WooCommerceImporter extends EventEmitter {
       // Flush inserts for this chunk
       if (pendingInserts.length > 0) {
         try {
-          const docs = await Product.insertMany(
+          // rawResult:true is required here — without it, insertMany({ordered:false})
+          // silently drops any doc that fails Mongoose schema validation (e.g. a blank
+          // required field) with no error and no trace in the result. rawResult exposes
+          // result.mongoose.validationErrors (each tagged with .index into the input
+          // array) and result.mongoose.results (per-index: the inserted doc, or the
+          // validation error), so dropped rows can be reported instead of vanishing.
+          const insertResult = await Product.insertMany(
             pendingInserts.map(p => p.productData),
-            { ordered: false }
+            { ordered: false, rawResult: true }
           );
+          const validationErrors = insertResult.mongoose?.validationErrors || [];
+          const perIndexResults = insertResult.mongoose?.results || [];
+
+          for (const ve of validationErrors) {
+            const pi = pendingInserts[ve.index];
+            const message = ve.errors
+              ? Object.values(ve.errors).map(e => e.message).join('; ')
+              : ve.message;
+            results.errors.push({ row: pi.rowNumber, error: message, data: this.extractKeyFields(pi.productData, 'products') });
+          }
+
           // Build a SKU→{doc,pi} map so we match by identity, not by positional index.
           // insertMany with ordered:false may internally reorder operations; relying on
           // docs[j] === pendingInserts[j] causes images from product A to be saved on product B.
@@ -804,16 +861,27 @@ class WooCommerceImporter extends EventEmitter {
             if (pi.productData.sku)  skuToInsert.set(pi.productData.sku.toUpperCase(), pi);
             if (pi.productData.slug) slugToInsert.set(pi.productData.slug, pi);
           }
-          for (const doc of docs) {
+
+          let matchedCount = 0;
+          for (const doc of perIndexResults) {
+            if (!doc || doc.errors || doc.name === 'ValidationError') continue; // already recorded above
             const key = doc.sku ? doc.sku.toUpperCase() : null;
             const pi = (key && skuToInsert.get(key)) || (doc.slug && slugToInsert.get(doc.slug));
             const docId = doc._id?.toString() || 'unknown';
+            matchedCount++;
             if (pi) {
               results.created.push({ row: pi.rowNumber, sku: pi.productData.sku, id: docId });
               this._queueImageProcessing(imageQueue, imageStats, processImages, pi, doc);
             } else {
               results.created.push({ row: 0, sku: doc.sku, id: docId });
             }
+          }
+
+          // Belt-and-suspenders: anything not accounted for by a created row or a
+          // validation error is unexplained — surface it instead of losing it silently.
+          const unaccountedFor = pendingInserts.length - matchedCount - validationErrors.length;
+          if (unaccountedFor > 0) {
+            console.error(`[Import] ${unaccountedFor} row(s) in this chunk were neither inserted nor reported as validation errors — investigate.`);
           }
         } catch (bulkError) {
           // insertMany({ordered:false}) throws BulkWriteError but still inserts non-conflicting docs.
