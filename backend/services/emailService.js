@@ -524,6 +524,7 @@ class EmailService {
         <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Customer</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${customerName} (${customerEmail})</td></tr>
         <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Payment</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${order.paymentMethod || 'N/A'} — ${order.paymentStatus || 'pending'}</td></tr>
         ${isNonZAR ? `<tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Currency</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${order.currency} (rate: ${order.exchangeRate})</td></tr>` : ''}
+        ${order.loyaltyPointsUsed > 0 ? `<tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">PESA Coins Used</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${order.loyaltyPointsUsed} pts (${fmtZAR(order.loyaltyDiscount)})</td></tr>` : ''}
         <tr><td style="font-size:14px;font-weight:600;border-bottom:1px solid #e9e9e9;">Delivery</td><td style="text-align:right;border-bottom:1px solid #e9e9e9;font-size:14px;">${order.deliveryMethod === 'pickup' ? 'Store Pickup' : 'Delivery'}</td></tr>
         <tr><td style="font-size:14px;font-weight:600;">Ship To</td><td style="text-align:right;font-size:14px;">${shippingAddr}</td></tr>
       </table>
