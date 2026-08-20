@@ -33,6 +33,7 @@ const emailTemplateSchema = new mongoose.Schema({
       // Accounts
       'new_account',
       'new_customer',
+      'admin_new_account',
       'password_reset',
       // Laybye lifecycle
       'laybye_application_received',
@@ -54,6 +55,8 @@ const emailTemplateSchema = new mongoose.Schema({
       'coupon_birthday',
       // Reviews
       'review_reminder',
+      // Referrals
+      'referral_invite',
       // Payments
       'payment_confirmation',
       // Other

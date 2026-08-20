@@ -79,6 +79,7 @@ const settingsSchema = new mongoose.Schema({
     laybyeExpiryReminder: { type: Boolean, default: true },
     // Accounts
     newAccount: { type: Boolean, default: true },
+    adminNewAccount: { type: Boolean, default: true },
     passwordReset: { type: Boolean, default: true },
     // Loyalty & Coupons
     loyaltyPointsEarned: { type: Boolean, default: true },
@@ -90,6 +91,8 @@ const settingsSchema = new mongoose.Schema({
     couponBirthday: { type: Boolean, default: true },
     // Reviews
     reviewReminder: { type: Boolean, default: true },
+    // Referrals
+    referralInvite: { type: Boolean, default: true },
     // Admin notifications
     adminNewOrder: { type: Boolean, default: true },
     adminLowStock: { type: Boolean, default: true },

@@ -748,6 +748,40 @@ class EmailService {
   }
 
   /**
+   * Notify the store admin that a new customer has registered
+   */
+  async sendAdminNewUser(user) {
+    if (!(await this.isEnabled('adminNewAccount'))) return;
+    const Settings = require('../models/Settings');
+    const settings = await Settings.getSettings();
+    const adminEmail = settings.storeEmail;
+    if (!adminEmail) return;
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://pesashop.com';
+    const adminUrl = process.env.ADMIN_URL || `${frontendUrl.replace('www.', 'admin.')}`;
+    const name = user.getFullName?.() || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'New customer';
+
+    try {
+      const template = await EmailTemplate.getDefaultByType('admin_new_account');
+      if (template) {
+        return await this.sendTemplatedEmail(adminEmail, 'admin_new_account', {
+          customer_name: name,
+          customer_email: user.email,
+          customer_phone: user.phone || 'N/A',
+          signup_date: new Date().toLocaleDateString('en-ZA'),
+          admin_url: `${adminUrl}/customers`,
+        });
+      }
+    } catch (e) { /* fall through to plain email */ }
+
+    return await this.sendEmail({
+      to: adminEmail,
+      subject: `New customer signup — ${name}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><h2>New Customer Signup</h2><p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${user.email}</p><p><strong>Phone:</strong> ${user.phone || 'N/A'}</p><p><strong>Date:</strong> ${new Date().toLocaleString('en-ZA')}</p></div>`,
+    });
+  }
+
+  /**
    * Send password reset email
    */
   async sendPasswordReset(user, resetToken) {
@@ -793,9 +827,38 @@ class EmailService {
   }
 
   /**
+   * Send a referral invite email to the person being invited.
+   * Tries the 'referral_invite' template first, falls back to a plain email
+   * so an invite is never silently dropped just because the template is missing.
+   */
+  async sendReferralInvite(referral, referrer) {
+    if (!(await this.isEnabled('referralInvite'))) return { success: false, skipped: true };
+    const to = referral.refereeEmail;
+    if (!to) throw new Error('Referral has no email to send to');
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://pesashop.com';
+    const referralLink = `${frontendUrl}/refer/${referral.referralCode}`;
+    const referrerName = referrer?.getFullName?.() || referrer?.firstName || 'A friend';
+
+    try {
+      return await this.sendTemplatedEmail(to, 'referral_invite', {
+        referrer_name: referrerName,
+        referral_link: referralLink,
+      });
+    } catch (templateError) {
+      return await this.sendEmail({
+        to,
+        subject: `${referrerName} invited you to PesaShop!`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><h2>You're Invited!</h2><p><strong>${referrerName}</strong> thinks you'd love shopping at PesaShop and wants to share the savings.</p><p>Join using their link: <a href="${referralLink}">${referralLink}</a></p><p>You can also find us on the PesaShop app.</p></div>`,
+      });
+    }
+  }
+
+  /**
    * Send gift card email
    */
   async sendGiftCard(giftCard) {
+    if (!(await this.isEnabled('giftCardIssued'))) return { success: false, skipped: true };
     const variables = {
       recipient_name: giftCard.recipientName,
       sender_name: giftCard.senderName,

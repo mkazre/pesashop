@@ -83,6 +83,7 @@ const SettingsPage = () => {
       'emailNotifications.laybyeOverdueReminder': true,
       'emailNotifications.laybyeExpiryReminder': true,
       'emailNotifications.newAccount': true,
+      'emailNotifications.adminNewAccount': true,
       'emailNotifications.passwordReset': true,
       'emailNotifications.loyaltyPointsEarned': true,
       'emailNotifications.loyaltyPointsRedeemed': true,
@@ -92,6 +93,7 @@ const SettingsPage = () => {
       'emailNotifications.couponSpendingMilestone': true,
       'emailNotifications.couponBirthday': true,
       'emailNotifications.reviewReminder': true,
+      'emailNotifications.referralInvite': true,
       'emailNotifications.adminNewOrder': true,
       'emailNotifications.adminLowStock': true,
       'emailNotifications.adminNewLaybyeApplication': true,
@@ -195,6 +197,7 @@ const SettingsPage = () => {
           'emailNotifications.laybyeOverdueReminder': n.laybyeOverdueReminder !== false,
           'emailNotifications.laybyeExpiryReminder': n.laybyeExpiryReminder !== false,
           'emailNotifications.newAccount': n.newAccount !== false,
+          'emailNotifications.adminNewAccount': n.adminNewAccount !== false,
           'emailNotifications.passwordReset': n.passwordReset !== false,
           'emailNotifications.loyaltyPointsEarned': n.loyaltyPointsEarned !== false,
           'emailNotifications.loyaltyPointsRedeemed': n.loyaltyPointsRedeemed !== false,
@@ -204,6 +207,7 @@ const SettingsPage = () => {
           'emailNotifications.couponSpendingMilestone': n.couponSpendingMilestone !== false,
           'emailNotifications.couponBirthday': n.couponBirthday !== false,
           'emailNotifications.reviewReminder': n.reviewReminder !== false,
+          'emailNotifications.referralInvite': n.referralInvite !== false,
           'emailNotifications.adminNewOrder': n.adminNewOrder !== false,
           'emailNotifications.adminLowStock': n.adminLowStock !== false,
           'emailNotifications.adminNewLaybyeApplication': n.adminNewLaybyeApplication !== false,
@@ -344,6 +348,7 @@ const SettingsPage = () => {
         laybyeOverdueReminder: data['emailNotifications.laybyeOverdueReminder'] !== false,
         laybyeExpiryReminder: data['emailNotifications.laybyeExpiryReminder'] !== false,
         newAccount: data['emailNotifications.newAccount'] !== false,
+        adminNewAccount: data['emailNotifications.adminNewAccount'] !== false,
         passwordReset: data['emailNotifications.passwordReset'] !== false,
         loyaltyPointsEarned: data['emailNotifications.loyaltyPointsEarned'] !== false,
         loyaltyPointsRedeemed: data['emailNotifications.loyaltyPointsRedeemed'] !== false,
@@ -353,6 +358,7 @@ const SettingsPage = () => {
         couponSpendingMilestone: data['emailNotifications.couponSpendingMilestone'] !== false,
         couponBirthday: data['emailNotifications.couponBirthday'] !== false,
         reviewReminder: data['emailNotifications.reviewReminder'] !== false,
+        referralInvite: data['emailNotifications.referralInvite'] !== false,
         adminNewOrder: data['emailNotifications.adminNewOrder'] !== false,
         adminLowStock: data['emailNotifications.adminLowStock'] !== false,
         adminNewLaybyeApplication: data['emailNotifications.adminNewLaybyeApplication'] !== false,
@@ -749,6 +755,7 @@ const SettingsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
                   ['emailNotifications.newAccount', 'Welcome Email', 'Sent to new customers on registration'],
+                  ['emailNotifications.adminNewAccount', 'Admin — New Customer Signup', 'Notify admin when a new customer registers'],
                   ['emailNotifications.passwordReset', 'Password Reset', 'Sent when password reset is requested'],
                 ].map(([key, label, desc]) => (
                   <label key={key} className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
@@ -792,6 +799,7 @@ const SettingsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
                   ['emailNotifications.reviewReminder', 'Review Reminder', 'Prompt customers to review purchases'],
+                  ['emailNotifications.referralInvite', 'Referral Invite', 'Sent to a friend when a customer sends a referral invite'],
                   ['emailNotifications.adminNewOrder', 'Admin — New Order', 'Notify admin of new orders'],
                   ['emailNotifications.adminLowStock', 'Admin — Low Stock', 'Notify admin of low stock items'],
                   ['emailNotifications.adminNewLaybyeApplication', 'Admin — New Laybye Application', 'Notify admin of new laybye applications'],

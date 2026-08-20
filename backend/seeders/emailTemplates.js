@@ -582,6 +582,32 @@ ${SPACER}
 `);
 
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 17. REFERRAL INVITE
+// ═══════════════════════════════════════════════════════════════════════════════
+const referralInviteHtml = wrap(`
+${hero('🎉', "You're Invited!", '<strong style="color:#fff;">{{referrer_name}}</strong> thinks you\'d love shopping at {{storeName}} and wants to share the savings.')}
+${body(`
+  <h2 style="${H2}">Hi there 👋</h2>
+  <p style="${P}">Your friend <strong style="color:#1a1a1a;">{{referrer_name}}</strong> has invited you to join {{storeName}}. Sign up using their link below and you'll both earn PESA Coins once you complete your first purchase.</p>
+`)}
+${section(`
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border:2px dashed #e8a000;border-radius:10px;background:linear-gradient(135deg,#fffdf5 0%,#fff8e1 100%);margin-top:16px;">
+    <tr><td style="padding:24px 32px;text-align:center;">
+      <p style="font-family:'Public Sans',Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#b07b00;margin:0 0 10px;">🎁 &nbsp;Your invite link</p>
+      <p style="font-family:'Public Sans',Arial,sans-serif;font-size:14px;font-weight:700;color:#1a5c2e;margin:0;word-break:break-all;">{{referral_link}}</p>
+    </td></tr>
+  </table>
+`)}
+${cta('{{referral_link}}', 'Join {{storeName}}', '#e8a000', '#1a1a1a')}
+${body(`
+  <p style="${P}">You can also shop on the go — download the {{storeName}} app and sign up there with the same link.</p>
+`)}
+${CONTACTS}
+${SPACER}
+`);
+
+
 // ─── Template definitions ─────────────────────────────────────────────────────
 const defaultTemplates = [
   {
@@ -946,6 +972,26 @@ const defaultTemplates = [
     ],
     fromName: 'PesaShop',
     previewText: 'Leave a review for your recent purchase',
+  },
+  {
+    name: 'Referral Invite',
+    subject: '{{referrer_name}} invited you to {{storeName}}!',
+    slug: 'referral-invite',
+    type: 'referral_invite',
+    isDefault: true,
+    htmlContent: referralInviteHtml,
+    textContent: '{{referrer_name}} invited you to {{storeName}}!\n\nJoin using their link: {{referral_link}}',
+    variables: [
+      { name: 'referrer_name', description: 'Name of the referring customer', example: 'Jane Doe' },
+      { name: 'referral_link', description: 'Referral signup link',           example: 'https://pesashop.com/refer/JANE123' },
+      { name: 'storeName',     description: 'Store name',                    example: 'PesaShop' },
+      { name: 'supportEmail',  description: 'Support email',                 example: 'hello@pesashop.com' },
+      { name: 'frontendUrl',   description: 'Store URL',                     example: 'https://pesashop.com' },
+      { name: 'logoUrl',       description: 'Logo URL',                      example: 'https://pesashop.com/logo.png' },
+      { name: 'year',          description: 'Current year',                  example: '2026' },
+    ],
+    fromName: 'PesaShop',
+    previewText: "You've been invited to PesaShop!",
   },
 ];
 

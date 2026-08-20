@@ -9,7 +9,7 @@ const referralSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ['sent', 'signed_up', 'qualified', 'rewarded', 'fraud'],
+    enum: ['pending', 'sent', 'failed', 'signed_up', 'qualified', 'rewarded', 'fraud'],
     default: 'sent',
     index: true
   },

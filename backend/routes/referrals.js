@@ -7,6 +7,7 @@ const ReferralSettings = require('../models/ReferralSettings');
 const User = require('../models/User');
 const { LoyaltyPoint } = require('../models/LoyaltyPoint');
 const referralService = require('../services/referralService');
+const emailService = require('../services/emailService');
 
 const ADMIN_ROLES = ['admin', 'shop_manager', 'superadmin', 'super_admin'];
 
@@ -228,9 +229,21 @@ router.post('/invite', protect, async (req, res) => {
       refereeEmail: email?.toLowerCase(),
       refereePhone: phone,
       referralCode: code,
-      status: 'sent',
+      status: email ? 'pending' : 'sent',
       channel: channel || 'link'
     });
+
+    if (email) {
+      try {
+        await emailService.sendReferralInvite(referral, user);
+        referral.status = 'sent';
+        await referral.save();
+      } catch (emailErr) {
+        console.error('Failed to send referral invite email:', emailErr);
+        referral.status = 'failed';
+        await referral.save();
+      }
+    }
 
     res.json({ success: true, data: referral });
   } catch (err) {

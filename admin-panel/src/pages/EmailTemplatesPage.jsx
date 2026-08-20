@@ -18,6 +18,7 @@ const TEMPLATE_TYPES = [
   { value: 'order_refunded', label: 'Order Refunded' },
   { value: 'order_note', label: 'Order Note' },
   { value: 'new_account', label: 'New Account / Welcome' },
+  { value: 'admin_new_account', label: 'Admin — New Customer Signup' },
   { value: 'password_reset', label: 'Password Reset' },
   { value: 'laybye_application_received', label: 'Laybye Application Received' },
   { value: 'laybye_application_approved', label: 'Laybye Application Approved' },
@@ -36,6 +37,7 @@ const TEMPLATE_TYPES = [
   { value: 'coupon_spending_milestone', label: 'Coupon - Spending Milestone' },
   { value: 'coupon_birthday', label: 'Coupon - Birthday' },
   { value: 'review_reminder', label: 'Review Reminder' },
+  { value: 'referral_invite', label: 'Referral — Invite Email' },
   { value: 'promotional', label: 'Promotional' },
   // Service Providers
   { value: 'service_provider_application_received', label: 'SP — Application Received' },
