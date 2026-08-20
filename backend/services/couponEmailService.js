@@ -427,7 +427,7 @@ class CouponEmailService {
         
         // Check if already sent
         if (settings.automations.daysSinceLastPurchase.sendOnce) {
-          if (settings.wasCouponSent(userId, 'daysSinceLastPurchase')) {
+          if (settings.wasCouponSent(user._id, 'daysSinceLastPurchase')) {
             continue;
           }
         }
