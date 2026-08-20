@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const { GiftCard } = require('../models/Coupon');
+const emailService = require('../services/emailService');
 
 // ==================== PUBLIC / CUSTOMER ENDPOINTS ====================
 
@@ -262,11 +263,20 @@ router.post('/', protect, authorize('admin', 'shop_manager'), async (req, res, n
     };
     
     const giftCard = await GiftCard.create(giftCardData);
-    
-    res.status(201).json({ 
-      success: true, 
-      data: giftCard, 
-      message: 'Gift card created successfully' 
+
+    // Admin-issued cards are active immediately (no payment step) — send now.
+    if (giftCard.isActive && giftCard.paymentStatus !== 'pending_payment' && giftCard.recipientEmail) {
+      try {
+        await emailService.sendGiftCard(giftCard);
+      } catch (emailErr) {
+        console.error('Failed to send gift card email:', emailErr);
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      data: giftCard,
+      message: 'Gift card created successfully'
     });
   } catch (error) {
     if (error.code === 11000) {
@@ -348,7 +358,13 @@ router.put('/:id/confirm-payment', protect, authorize('admin', 'shop_manager'), 
     giftCard.paymentConfirmedBy = req.user._id;
     await giftCard.save();
 
-    // TODO: Send email notification to recipient that gift card is now active
+    if (giftCard.recipientEmail) {
+      try {
+        await emailService.sendGiftCard(giftCard);
+      } catch (emailErr) {
+        console.error('Failed to send gift card email:', emailErr);
+      }
+    }
 
     res.json({
       success: true,
