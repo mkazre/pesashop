@@ -228,40 +228,69 @@ class EmailService {
    * Send plain email
    */
   async sendEmail({ to, subject, html, text, attachments = [], cc = null, bcc = null }) {
+    const provider = this._brevoConfig ? 'brevo' : 'smtp';
     try {
       await this.ensureInitialized();
 
+      let result;
       // Use Brevo HTTP API if configured
       if (this._brevoConfig) {
-        return await this._sendViaBrevo({ to, subject, html, text, cc, bcc });
+        result = await this._sendViaBrevo({ to, subject, html, text, cc, bcc });
+      } else {
+        if (!this.transporter) {
+          throw new Error('Email transporter not configured. Set SMTP settings in admin Settings or .env');
+        }
+
+        const mailOptions = {
+          from: this.from,
+          to,
+          subject,
+          html,
+          text: text || this.stripHtml(html),
+          attachments
+        };
+
+        if (cc) mailOptions.cc = cc;
+        if (bcc) mailOptions.bcc = bcc;
+
+        const info = await this.transporter.sendMail(mailOptions);
+
+        result = {
+          success: true,
+          messageId: info.messageId,
+          response: info.response
+        };
       }
 
-      if (!this.transporter) {
-        throw new Error('Email transporter not configured. Set SMTP settings in admin Settings or .env');
-      }
-
-      const mailOptions = {
-        from: this.from,
-        to,
-        subject,
-        html,
-        text: text || this.stripHtml(html),
-        attachments
-      };
-
-      if (cc) mailOptions.cc = cc;
-      if (bcc) mailOptions.bcc = bcc;
-
-      const info = await this.transporter.sendMail(mailOptions);
-
-      return {
-        success: true,
-        messageId: info.messageId,
-        response: info.response
-      };
+      console.log(`[EmailService] Sent OK via ${provider} — to=${to} subject="${subject}" messageId=${result.messageId}`);
+      this._logSend({ provider, to, subject, success: true, messageId: result.messageId, response: result.response });
+      return result;
     } catch (error) {
-      console.error('Email send error:', error.response?.data || error.message);
+      const errDetail = error.response?.data || error.message;
+      console.error(`[EmailService] Send FAILED via ${provider} — to=${to} subject="${subject}":`, errDetail);
+      this._logSend({ provider, to, subject, success: false, error: typeof errDetail === 'string' ? errDetail : JSON.stringify(errDetail) });
       throw error;
+    }
+  }
+
+  /**
+   * Persist a send outcome to the EmailLog collection. Best-effort — never
+   * lets logging failures mask (or replace) the real send error.
+   */
+  _logSend({ provider, to, subject, success, messageId, error, response }) {
+    try {
+      const EmailLog = require('../models/EmailLog');
+      EmailLog.create({
+        provider,
+        to: Array.isArray(to) ? to.join(', ') : to,
+        subject,
+        success,
+        messageId,
+        error,
+        response,
+      }).catch(e => console.error('[EmailService] Failed to persist EmailLog:', e.message));
+    } catch (e) {
+      console.error('[EmailService] EmailLog logging error:', e.message);
     }
   }
 
