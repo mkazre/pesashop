@@ -66,16 +66,32 @@ class CouponEmailService {
    */
   async sendCouponEmail(userId, couponId, templateType) {
     try {
+      // Respect the master Settings.emailNotifications toggles (admin
+      // Settings > Email Notifications), same as every other notification.
+      const NOTIF_KEY_BY_TEMPLATE = {
+        firstPurchase: 'couponFirstPurchase',
+        newUser: 'couponNewUser',
+        spendingMilestone: 'couponSpendingMilestone',
+        orderCount: 'couponSpendingMilestone',
+        productPurchase: 'couponSpendingMilestone',
+        daysSinceLastPurchase: 'couponSpendingMilestone',
+        birthday: 'couponBirthday',
+      };
+      const notifKey = NOTIF_KEY_BY_TEMPLATE[templateType];
+      if (notifKey && !(await emailService.isEnabled(notifKey))) {
+        return false;
+      }
+
       const user = await User.findById(userId);
       if (!user || !user.email) {
         throw new Error('User not found or no email');
       }
-      
+
       const coupon = await Coupon.findById(couponId);
       if (!coupon) {
         throw new Error('Coupon not found');
       }
-      
+
       const settings = await CouponEmailSettings.getSettings();
       let templateId;
       
