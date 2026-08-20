@@ -398,6 +398,21 @@ router.put('/:id/approve', protect, authorize('admin', 'shop_manager'), async (r
       } catch (e) { console.error('Fallback approval email also failed:', e); }
     }
 
+    // Notify admin/staff that the application was actioned
+    try {
+      const settings = await Settings.getSettings();
+      const adminEmail = settings.layby?.applicationEmail || settings.storeEmail;
+      if (adminEmail) {
+        await emailService.sendEmail({
+          to: adminEmail,
+          subject: `Layby Application Approved — ${application.firstName} ${application.lastName}`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><h2 style="color:#28a745;">Layby Application Approved</h2><p><strong>Applicant:</strong> ${application.firstName} ${application.lastName} (${application.email})</p><p><strong>Product:</strong> ${application.productName} — R ${application.productPrice.toFixed(2)}</p><p><strong>Reviewed by:</strong> ${req.user.firstName || req.user.email}</p></div>`,
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to send admin approval notice:', emailError);
+    }
+
     res.json({ success: true, data: application, message: 'Application approved' });
   } catch (error) {
     console.error('Approve application error:', error);
@@ -441,6 +456,21 @@ router.put('/:id/reject', protect, authorize('admin', 'shop_manager'), async (re
           html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><h2 style="color:#dc3545;">Application Update</h2><p>Dear ${application.firstName},</p><p>Unfortunately, we are unable to approve your application for <strong>${application.productName}</strong> at this time.</p>${application.rejectionReason ? `<p><strong>Reason:</strong> ${application.rejectionReason}</p>` : ''}<p>If you have questions, please contact us.</p></div>`
         });
       } catch (e) { console.error('Fallback rejection email also failed:', e); }
+    }
+
+    // Notify admin/staff that the application was actioned
+    try {
+      const settings = await Settings.getSettings();
+      const adminEmail = settings.layby?.applicationEmail || settings.storeEmail;
+      if (adminEmail) {
+        await emailService.sendEmail({
+          to: adminEmail,
+          subject: `Layby Application Rejected — ${application.firstName} ${application.lastName}`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><h2 style="color:#dc3545;">Layby Application Rejected</h2><p><strong>Applicant:</strong> ${application.firstName} ${application.lastName} (${application.email})</p><p><strong>Product:</strong> ${application.productName} — R ${application.productPrice.toFixed(2)}</p>${application.rejectionReason ? `<p><strong>Reason:</strong> ${application.rejectionReason}</p>` : ''}<p><strong>Reviewed by:</strong> ${req.user.firstName || req.user.email}</p></div>`,
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to send admin rejection notice:', emailError);
     }
 
     res.json({ success: true, data: application, message: 'Application rejected' });
