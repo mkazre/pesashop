@@ -59,6 +59,8 @@ const emailTemplateSchema = new mongoose.Schema({
       'referral_invite',
       // Payments
       'payment_confirmation',
+      // Admin inventory
+      'admin_low_stock',
       // Other
       'promotional',
       'custom'

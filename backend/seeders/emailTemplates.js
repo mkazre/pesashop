@@ -622,7 +622,25 @@ ${SPACER}
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 19. REFERRAL INVITE
+// 19. ADMIN — LOW STOCK
+// ═══════════════════════════════════════════════════════════════════════════════
+const adminLowStockHtml = wrap(`
+${hero('⚠️', 'Low Stock Alert', '<strong style="color:#fff;">{{product_name}}</strong> has dropped to {{current_stock}} units — at or below its threshold of {{low_stock_threshold}}.')}
+${metaStrip(
+  { label: 'Product',   value: '{{product_name}}' },
+  { label: 'SKU',       value: '{{product_sku}}' },
+  { label: 'Stock Left', value: '{{current_stock}}', color: '#dc2626' }
+)}
+${body(`
+  <p style="${P}">Restock soon to avoid running out. Click below to update inventory in the admin panel.</p>
+`)}
+${cta('{{admin_url}}', 'View Product in Admin', '#e8a000', '#1a1a1a')}
+${SPACER}
+`);
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 20. REFERRAL INVITE
 // ═══════════════════════════════════════════════════════════════════════════════
 const referralInviteHtml = wrap(`
 ${hero('🎉', "You're Invited!", '<strong style="color:#fff;">{{referrer_name}}</strong> thinks you\'d love shopping at {{storeName}} and wants to share the savings.')}
@@ -1055,6 +1073,27 @@ const defaultTemplates = [
     ],
     fromName: 'PesaShop',
     previewText: 'You redeemed PESA Coins',
+  },
+  {
+    name: 'Admin — Low Stock Alert',
+    subject: '⚠️ Low Stock — {{product_name}}',
+    slug: 'admin-low-stock',
+    type: 'admin_low_stock',
+    isDefault: true,
+    htmlContent: adminLowStockHtml,
+    textContent: 'Low Stock Alert\n\n{{product_name}} (SKU: {{product_sku}}) has {{current_stock}} units left (threshold: {{low_stock_threshold}}).\n\n{{admin_url}}',
+    variables: [
+      { name: 'product_name',        description: 'Product name',         example: 'Blue Widget' },
+      { name: 'product_sku',         description: 'Product SKU',          example: 'PS-042' },
+      { name: 'current_stock',       description: 'Current stock level',  example: '3' },
+      { name: 'low_stock_threshold', description: 'Configured threshold', example: '5' },
+      { name: 'admin_url',           description: 'Link to product in admin', example: 'https://admin.pesashop.com/products/abc123' },
+      { name: 'storeName',           description: 'Store name',           example: 'PesaShop' },
+      { name: 'frontendUrl',         description: 'Store URL',            example: 'https://pesashop.com' },
+      { name: 'year',                description: 'Current year',         example: '2026' },
+    ],
+    fromName: 'PesaShop',
+    previewText: 'A product has dropped to low stock',
   },
   {
     name: 'Referral Invite',

@@ -117,6 +117,13 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 5
   },
+  // Set when the admin low-stock alert has been sent for the current dip —
+  // cleared once stock is restocked back above the threshold, so admin
+  // doesn't get spammed on every subsequent unit sold.
+  lowStockAlertSentAt: {
+    type: Date,
+    default: null
+  },
   outOfStock: {
     type: Boolean,
     default: false
@@ -217,7 +224,23 @@ productSchema.methods.getPriceForCustomerGroup = function(customerGroup, quantit
 productSchema.methods.updateStock = async function(quantity) {
   this.stock = Math.max(0, (this.stock || 0) - quantity);
   await this.save();
+
+  const threshold = this.lowStockThreshold || 5;
+  if (this.stock > 0 && this.stock <= threshold && !this.lowStockAlertSentAt) {
+    this.lowStockAlertSentAt = new Date();
+    await this.save();
+    const emailService = require('../services/emailService');
+    emailService.sendAdminLowStock(this).catch(err => console.error('Error sending low stock alert:', err));
+  }
 };
+
+// Restocking above the threshold re-arms the low-stock alert for next time
+productSchema.pre('save', function(next) {
+  if (this.isModified('stock') && this.stock > (this.lowStockThreshold || 5) && this.lowStockAlertSentAt) {
+    this.lowStockAlertSentAt = null;
+  }
+  next();
+});
 
 // Generate slug before saving
 productSchema.pre('save', async function(next) {

@@ -550,6 +550,42 @@ class EmailService {
   }
 
   /**
+   * Notify the store admin that a product has dropped to/below its low
+   * stock threshold. Not gated on ensureInitialized quirks — same lookup
+   * pattern as sendAdminNewOrder/sendAdminAlert.
+   */
+  async sendAdminLowStock(product) {
+    if (!(await this.isEnabled('adminLowStock'))) return;
+    const Settings = require('../models/Settings');
+    const settings = await Settings.getSettings();
+    const adminEmail = settings.storeEmail;
+    if (!adminEmail) return;
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://pesashop.com';
+    const adminUrl = process.env.ADMIN_URL || `${frontendUrl.replace('www.', 'admin.')}`;
+    const variables = {
+      product_name: product.name,
+      product_sku: product.sku || 'N/A',
+      current_stock: product.stock,
+      low_stock_threshold: product.lowStockThreshold || 5,
+      admin_url: `${adminUrl}/products/${product._id}`,
+    };
+
+    try {
+      const template = await EmailTemplate.getDefaultByType('admin_low_stock');
+      if (template) {
+        return await this.sendTemplatedEmail(adminEmail, 'admin_low_stock', variables);
+      }
+    } catch (e) { /* fall through to plain email */ }
+
+    return await this.sendEmail({
+      to: adminEmail,
+      subject: `⚠️ Low Stock — ${product.name}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><h2 style="color:#e8a000;">Low Stock Alert</h2><p><strong>${product.name}</strong> (SKU: ${product.sku || 'N/A'}) has dropped to <strong>${product.stock}</strong> units, at or below its threshold of ${product.lowStockThreshold || 5}.</p><p><a href="${adminUrl}/products/${product._id}">View product in admin</a></p></div>`,
+    });
+  }
+
+  /**
    * Send laybye created notification (when order with laybye is placed)
    */
   async sendLaybyeCreated(laybye) {
