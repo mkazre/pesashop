@@ -17,6 +17,13 @@ const importBatchSchema = new mongoose.Schema({
     merged:  { type: Number, default: 0 },
     skipped: { type: Number, default: 0 },
     errors:  { type: Number, default: 0 },
+    // Per-row error detail ({row, error, data}), capped to the first 200 —
+    // `errors` above stays the authoritative count of ALL errors, this is
+    // just a sample for display/debugging.
+    errorDetails: {
+      type: [{ row: Number, error: String, data: mongoose.Schema.Types.Mixed }],
+      default: [],
+    },
   },
 
   // Product IDs created in this batch (for rollback)

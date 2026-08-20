@@ -1087,6 +1087,7 @@ class WooCommerceImporter extends EventEmitter {
                 merged:  results.merged?.length || 0,
                 skipped: results.skipped?.length || 0,
                 errors:  results.errors?.length || 0,
+                errorDetails: results.errors?.slice(0, 200) || [],
               },
               createdProductIds: type === 'products' ? createdIds : [],
               categories: categoryNames,

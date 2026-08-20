@@ -343,6 +343,31 @@ export default function ImportBatchesPage() {
                       </div>
                     )}
 
+                    {batch.results?.errors > 0 && (
+                      <div className="mb-3">
+                        <p className="text-xs font-semibold text-gray-500 mb-2">
+                          Row errors {batch.results.errorDetails?.length > 0 && `(showing ${batch.results.errorDetails.length} of ${batch.results.errors})`}
+                        </p>
+                        {batch.results.errorDetails?.length > 0 ? (
+                          <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+                            {batch.results.errorDetails.map((e, i) => (
+                              <div key={i} className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+                                <p><strong>Row {e.row}:</strong> {e.error}</p>
+                                {e.data && (
+                                  <details className="mt-1">
+                                    <summary className="cursor-pointer text-red-500 hover:text-red-600">Row data</summary>
+                                    <pre className="mt-1 whitespace-pre-wrap break-all text-[11px] text-gray-600">{JSON.stringify(e.data, null, 2)}</pre>
+                                  </details>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400">No error details recorded.</p>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between flex-wrap gap-3">
                       <div className="text-xs text-gray-500">
                         {canAct
