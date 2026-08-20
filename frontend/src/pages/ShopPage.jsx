@@ -39,7 +39,8 @@ export default function ShopPage() {
   const [perPageOverride, setPerPageOverride] = useState(null);
   const [page, setPage] = useState(1);
 
-  const isSearching = !!searchParams.get('search');
+  const searchTerm = searchParams.get('search') || '';
+  const isSearching = !!searchTerm;
 
   const layout = layoutOverride ?? tb.defaultView ?? 'grid';
   // A search should default to relevance-ranked results, not whatever sort
@@ -52,6 +53,19 @@ export default function ShopPage() {
   const setLayout = (v) => setLayoutOverride(v);
   const setSortBy = (v) => setSortOverride(v);
   const setPerPage = (v) => setPerPageOverride(v);
+
+  // A manually-picked sort (e.g. from browsing a category by price) must not
+  // silently carry over onto a brand-new search — the page component isn't
+  // remounted for a query-string-only navigation (same /shop route), so
+  // sortOverride would otherwise still be set from whatever was picked
+  // before and hijack the new search's relevance ranking.
+  const prevSearchTermRef = useRef(searchTerm);
+  useEffect(() => {
+    if (prevSearchTermRef.current !== searchTerm) {
+      prevSearchTermRef.current = searchTerm;
+      setSortOverride(null);
+    }
+  }, [searchTerm]);
 
   // Accumulated products for load-more / infinite-scroll
   const [accumulated, setAccumulated] = useState([]);
@@ -82,8 +96,8 @@ export default function ShopPage() {
     sort: sortBy,
     ...filters,
     ...(categorySlug ? { categories: [currentCategory?._id].filter(Boolean) } : {}),
-    search: searchParams.get('search') || undefined,
-  }), [page, perPage, sortBy, filters, categorySlug, currentCategory, searchParams]);
+    search: searchTerm || undefined,
+  }), [page, perPage, sortBy, filters, categorySlug, currentCategory, searchTerm]);
 
   // Don't fetch products until the category is resolved (if on a category page)
   const categoryReady = !categorySlug || !!currentCategory;
@@ -150,7 +164,6 @@ export default function ShopPage() {
   }, [paginationType, hasMore, isFetching, page]);
 
   const activeFiltersCount = Object.values(filters).flat().filter(Boolean).length;
-  const searchTerm = searchParams.get('search');
   const isShopPage = !categorySlug && !searchTerm;
   const isSearchPage = !!searchTerm;
 
