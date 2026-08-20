@@ -133,7 +133,7 @@ router.post('/apply', protect, uploadIdDoc.single('idDocument'), async (req, res
 
     // Send notification email to admin
     const applicationEmail = settings.layby?.applicationEmail || 'hello@pesashop.com';
-    try {
+    if (await emailService.isEnabled('adminNewLaybyeApplication')) try {
       await emailService.sendEmail({
         to: applicationEmail,
         subject: `New Layby Application - ${firstName} ${lastName} - ${product.name}`,
@@ -193,7 +193,7 @@ router.post('/apply', protect, uploadIdDoc.single('idDocument'), async (req, res
     }
 
     // Send confirmation email to the customer
-    try {
+    if (await emailService.isEnabled('laybyeApplicationReceived')) try {
       const installmentDetails = application.numberOfPayments > 0
         ? `${application.numberOfPayments}× R ${(application.installmentAmount || 0).toFixed(2)} (${application.frequency})`
         : 'To be confirmed';
@@ -373,7 +373,7 @@ router.put('/:id/approve', protect, authorize('admin', 'shop_manager'), async (r
     await application.save();
 
     // Send approval email to applicant (try templated first, fallback to direct)
-    try {
+    if (await emailService.isEnabled('laybyeApplicationApproved')) try {
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       await emailService.sendTemplatedEmail(application.email, 'laybye_application_approved', {
         customer_name: application.firstName,
@@ -440,7 +440,7 @@ router.put('/:id/reject', protect, authorize('admin', 'shop_manager'), async (re
     await application.save();
 
     // Send rejection email to applicant (try templated first, fallback to direct)
-    try {
+    if (await emailService.isEnabled('laybyeApplicationRejected')) try {
       await emailService.sendTemplatedEmail(application.email, 'laybye_application_rejected', {
         customer_name: application.firstName,
         product_name: application.productName,
