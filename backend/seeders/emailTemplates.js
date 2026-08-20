@@ -583,7 +583,46 @@ ${SPACER}
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 17. REFERRAL INVITE
+// 17. LOYALTY POINTS EARNED
+// ═══════════════════════════════════════════════════════════════════════════════
+const loyaltyEarnedHtml = wrap(`
+${hero('🪙', "You've Earned PESA Coins!", 'Nice one, <strong style="color:#fff;">{{customer_name}}</strong> — you just earned <strong style="color:#fff;">{{points_earned}} PESA Coins</strong>.')}
+${metaStrip(
+  { label: 'Coins Earned',   value: '+{{points_earned}}', color: '#1a5c2e' },
+  { label: 'New Balance',    value: '{{balance_after}}' }
+)}
+${body(`
+  <h2 style="${H2}">Hi {{customer_name}},</h2>
+  <p style="${P}">You've earned <strong style="color:#1a1a1a;">{{points_earned}} PESA Coins</strong> — {{reason}}. Your new balance is <strong style="color:#1a1a1a;">{{balance_after}} PESA Coins</strong>.</p>
+  <p style="${P}">Redeem your coins for discounts on your next order at {{storeName}}.</p>
+`)}
+${cta('{{account_url}}', 'View My PESA Coins', '#e8a000', '#1a1a1a')}
+${CONTACTS}
+${SPACER}
+`);
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 18. LOYALTY POINTS REDEEMED
+// ═══════════════════════════════════════════════════════════════════════════════
+const loyaltyRedeemedHtml = wrap(`
+${hero('💳', 'PESA Coins Redeemed', 'Hi <strong style="color:#fff;">{{customer_name}}</strong>, you just redeemed <strong style="color:#fff;">{{points_redeemed}} PESA Coins</strong>.')}
+${metaStrip(
+  { label: 'Coins Redeemed', value: '-{{points_redeemed}}', color: '#dc2626' },
+  { label: 'New Balance',    value: '{{balance_after}}' }
+)}
+${body(`
+  <h2 style="${H2}">Hi {{customer_name}},</h2>
+  <p style="${P}">You've redeemed <strong style="color:#1a1a1a;">{{points_redeemed}} PESA Coins</strong> — {{reason}}. Your remaining balance is <strong style="color:#1a1a1a;">{{balance_after}} PESA Coins</strong>.</p>
+`)}
+${cta('{{account_url}}', 'View My PESA Coins')}
+${CONTACTS}
+${SPACER}
+`);
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 19. REFERRAL INVITE
 // ═══════════════════════════════════════════════════════════════════════════════
 const referralInviteHtml = wrap(`
 ${hero('🎉', "You're Invited!", '<strong style="color:#fff;">{{referrer_name}}</strong> thinks you\'d love shopping at {{storeName}} and wants to share the savings.')}
@@ -972,6 +1011,50 @@ const defaultTemplates = [
     ],
     fromName: 'PesaShop',
     previewText: 'Leave a review for your recent purchase',
+  },
+  {
+    name: 'Loyalty Points Earned',
+    subject: "You've earned {{points_earned}} PESA Coins!",
+    slug: 'loyalty-points-earned',
+    type: 'loyalty_points_earned',
+    isDefault: true,
+    htmlContent: loyaltyEarnedHtml,
+    textContent: "You've earned {{points_earned}} PESA Coins!\n\nHi {{customer_name}},\n\n{{reason}}. New balance: {{balance_after}} PESA Coins.",
+    variables: [
+      { name: 'customer_name', description: 'Customer name',        example: 'Jane Doe' },
+      { name: 'points_earned', description: 'Points earned',        example: '50' },
+      { name: 'reason',        description: 'Reason points earned', example: 'Order #ORD-10045' },
+      { name: 'balance_after', description: 'New points balance',   example: '350' },
+      { name: 'account_url',   description: 'Loyalty account URL',  example: 'https://pesashop.com/account/loyalty' },
+      { name: 'storeName',     description: 'Store name',           example: 'PesaShop' },
+      { name: 'supportEmail',  description: 'Support email',        example: 'hello@pesashop.com' },
+      { name: 'frontendUrl',   description: 'Store URL',            example: 'https://pesashop.com' },
+      { name: 'year',          description: 'Current year',         example: '2026' },
+    ],
+    fromName: 'PesaShop',
+    previewText: "You've earned PESA Coins!",
+  },
+  {
+    name: 'Loyalty Points Redeemed',
+    subject: 'PESA Coins Redeemed — {{points_redeemed}} coins used',
+    slug: 'loyalty-points-redeemed',
+    type: 'loyalty_points_redeemed',
+    isDefault: true,
+    htmlContent: loyaltyRedeemedHtml,
+    textContent: 'PESA Coins Redeemed\n\nHi {{customer_name}},\n\nYou redeemed {{points_redeemed}} PESA Coins — {{reason}}. Remaining balance: {{balance_after}}.',
+    variables: [
+      { name: 'customer_name',   description: 'Customer name',        example: 'Jane Doe' },
+      { name: 'points_redeemed', description: 'Points redeemed',      example: '100' },
+      { name: 'reason',          description: 'Reason for redemption', example: 'Order #ORD-10045' },
+      { name: 'balance_after',   description: 'Remaining balance',    example: '250' },
+      { name: 'account_url',     description: 'Loyalty account URL',  example: 'https://pesashop.com/account/loyalty' },
+      { name: 'storeName',       description: 'Store name',           example: 'PesaShop' },
+      { name: 'supportEmail',    description: 'Support email',        example: 'hello@pesashop.com' },
+      { name: 'frontendUrl',     description: 'Store URL',            example: 'https://pesashop.com' },
+      { name: 'year',            description: 'Current year',         example: '2026' },
+    ],
+    fromName: 'PesaShop',
+    previewText: 'You redeemed PESA Coins',
   },
   {
     name: 'Referral Invite',

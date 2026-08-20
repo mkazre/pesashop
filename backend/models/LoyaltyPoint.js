@@ -349,10 +349,21 @@ loyaltyPointSchema.statics.addPoints = async function(userId, points, type, reas
   });
   
   // Update user's PESA Coins balance
-  await User.findByIdAndUpdate(userId, {
+  const user = await User.findByIdAndUpdate(userId, {
     $inc: { loyaltyPoints: points }
-  });
-  
+  }, { new: true });
+
+  // Notify the customer they earned points — fire-and-forget, must never
+  // let a mail failure roll back or delay the points transaction itself.
+  if (points > 0 && user) {
+    const emailService = require('../services/emailService');
+    emailService.sendLoyaltyPointsEarned(user, {
+      points,
+      reason,
+      balanceAfter: transaction.balanceAfter,
+    }).catch(err => console.error('Error sending loyalty points earned email:', err));
+  }
+
   return transaction;
 };
 
@@ -375,10 +386,20 @@ loyaltyPointSchema.statics.redeemPoints = async function(userId, points, orderId
   });
   
   // Update user's PESA Coins balance
-  await User.findByIdAndUpdate(userId, {
+  const user = await User.findByIdAndUpdate(userId, {
     $inc: { loyaltyPoints: -points }
-  });
-  
+  }, { new: true });
+
+  if (user) {
+    const emailService = require('../services/emailService');
+    emailService.sendLoyaltyPointsRedeemed(user, {
+      points,
+      reason,
+      balanceAfter: transaction.balanceAfter,
+      orderId,
+    }).catch(err => console.error('Error sending loyalty points redeemed email:', err));
+  }
+
   return transaction;
 };
 

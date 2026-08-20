@@ -827,6 +827,36 @@ class EmailService {
   }
 
   /**
+   * Notify a customer they earned PESA Coins (loyalty points)
+   */
+  async sendLoyaltyPointsEarned(user, { points, reason, balanceAfter }) {
+    if (!(await this.isEnabled('loyaltyPointsEarned'))) return;
+    if (!user?.email) return;
+    return await this.sendTemplatedEmail(user.email, 'loyalty_points_earned', {
+      customer_name: user.getFullName?.() || user.firstName || 'Customer',
+      points_earned: points,
+      reason: reason || 'Purchase reward',
+      balance_after: balanceAfter,
+      account_url: `${process.env.FRONTEND_URL}/account/loyalty`,
+    });
+  }
+
+  /**
+   * Notify a customer they redeemed PESA Coins (loyalty points)
+   */
+  async sendLoyaltyPointsRedeemed(user, { points, reason, balanceAfter }) {
+    if (!(await this.isEnabled('loyaltyPointsRedeemed'))) return;
+    if (!user?.email) return;
+    return await this.sendTemplatedEmail(user.email, 'loyalty_points_redeemed', {
+      customer_name: user.getFullName?.() || user.firstName || 'Customer',
+      points_redeemed: points,
+      reason: reason || 'Order redemption',
+      balance_after: balanceAfter,
+      account_url: `${process.env.FRONTEND_URL}/account/loyalty`,
+    });
+  }
+
+  /**
    * Send a referral invite email to the person being invited.
    * Tries the 'referral_invite' template first, falls back to a plain email
    * so an invite is never silently dropped just because the template is missing.

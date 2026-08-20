@@ -31,6 +31,7 @@ const TEMPLATE_TYPES = [
   { value: 'laybye_expiry_reminder', label: 'Laybye Expiry Reminder' },
   { value: 'loyalty_points_earned', label: 'Loyalty Points Earned' },
   { value: 'loyalty_points_redeemed', label: 'Loyalty Points Redeemed' },
+  { value: 'admin_low_stock', label: 'Admin — Low Stock' },
   { value: 'gift_card_issued', label: 'Gift Card Issued' },
   { value: 'coupon_first_purchase', label: 'Coupon - First Purchase' },
   { value: 'coupon_new_user', label: 'Coupon - New User' },
