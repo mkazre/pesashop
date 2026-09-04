@@ -4,12 +4,36 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const fsSync = require('fs');
+const axios = require('axios');
 const { protect, authorize } = require('../middleware/auth');
 const imageProcessor = require('../services/imageProcessor');
 const Product = require('../models/Product');
 const { uploadToCloudinary } = require('../config/cloudinary');
 
-const useCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+const useCloud = !!(
+  process.env.STORAGE_PROVIDER === 'bunny' ||
+  (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET)
+);
+
+// Resolve an imageUrl (local /uploads path, bare filename, or remote http(s) URL)
+// to a local filesystem path that sharp can read. Remote URLs are downloaded to
+// a temp file (isTemp: true) so the caller knows to clean it up afterwards.
+async function resolveImageSourcePath(imageUrl) {
+  if (/^https?:\/\//i.test(imageUrl)) {
+    const tempDir = path.join(__dirname, '../uploads/temp');
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+    const extMatch = imageUrl.split('?')[0].match(/\.([a-zA-Z0-9]+)$/);
+    const ext = extMatch ? extMatch[1] : 'jpg';
+    const tempPath = path.join(tempDir, `src-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`);
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 60000 });
+    await fs.promises.writeFile(tempPath, response.data);
+    return { path: tempPath, isTemp: true };
+  }
+  const imagePath = imageUrl.startsWith('/uploads/')
+    ? path.join(__dirname, '..', imageUrl)
+    : path.join(__dirname, '../uploads/products', imageUrl);
+  return { path: imagePath, isTemp: false };
+}
 
 // Configure multer for memory storage (for processing)
 const memoryStorage = multer.memoryStorage();
@@ -208,15 +232,15 @@ router.post('/process', protect, authorize('admin'), upload.single('image'), asy
 
     let imageUrl = `/uploads/products/${filename}`;
 
-    // Upload to Cloudinary if configured
-    if (useCloudinary) {
+    // Upload to cloud storage (Bunny or Cloudinary) if configured
+    if (useCloud) {
       try {
         const cloudResult = await uploadToCloudinary(outputPath, { folder: 'products' });
         imageUrl = cloudResult.url;
         // Clean up local processed file
         if (fs.existsSync(outputPath)) await fs.promises.unlink(outputPath);
       } catch (cloudErr) {
-        console.error('Cloudinary upload failed, keeping local file:', cloudErr.message);
+        console.error('Cloud upload failed, keeping local file:', cloudErr.message);
       }
     }
 
@@ -303,12 +327,12 @@ router.post('/upload', protect, authorize('admin', 'shop_manager'), upload.singl
 
     let imageUrl = `/uploads/general/${filename}`;
 
-    if (useCloudinary) {
+    if (useCloud) {
       try {
         const cloudResult = await uploadToCloudinary(req.file.buffer, { folder: 'general' });
         imageUrl = cloudResult.url;
       } catch (cloudErr) {
-        console.error('Cloudinary upload failed, saving locally:', cloudErr.message);
+        console.error('Cloud upload failed, saving locally:', cloudErr.message);
         await fs.promises.writeFile(outputPath, req.file.buffer);
       }
     } else {
@@ -358,18 +382,18 @@ router.post('/process-product-image', protect, authorize('admin'), async (req, r
       });
     }
 
-    // Get full path to the image
-    let imagePath;
-    if (imageUrl.startsWith('http')) {
-      // External URL - would need to download first
+    // Resolve the source image to a local path (downloading it first if it's a remote/cloud URL)
+    let imagePath, isTempSource;
+    try {
+      const resolved = await resolveImageSourcePath(imageUrl);
+      imagePath = resolved.path;
+      isTempSource = resolved.isTemp;
+    } catch (downloadErr) {
       return res.status(400).json({
         success: false,
-        message: 'External URLs not supported. Please use local image paths.'
+        message: 'Failed to fetch source image',
+        error: downloadErr.message
       });
-    } else if (imageUrl.startsWith('/uploads/')) {
-      imagePath = path.join(__dirname, '..', imageUrl);
-    } else {
-      imagePath = path.join(__dirname, '../uploads/products', imageUrl);
     }
 
     if (!fsSync.existsSync(imagePath)) {
@@ -397,7 +421,24 @@ router.post('/process-product-image', protect, authorize('admin'), async (req, r
     const outputPath = path.join(__dirname, '../uploads/products', filename);
 
     const result = await imageProcessor.processProductImage(imagePath, outputPath, options);
-    const newImageUrl = `/uploads/products/${filename}`;
+
+    // Clean up temp downloaded source file (if the original was a remote/cloud URL)
+    if (isTempSource && fsSync.existsSync(imagePath)) {
+      await fs.promises.unlink(imagePath).catch(() => {});
+    }
+
+    let newImageUrl = `/uploads/products/${filename}`;
+
+    // Upload to cloud storage (Bunny or Cloudinary) if configured
+    if (useCloud) {
+      try {
+        const cloudResult = await uploadToCloudinary(outputPath, { folder: 'products' });
+        newImageUrl = cloudResult.url;
+        if (fsSync.existsSync(outputPath)) await fs.promises.unlink(outputPath);
+      } catch (cloudErr) {
+        console.error('Cloud upload failed for process-product-image, keeping local file:', cloudErr.message);
+      }
+    }
 
     // Update product
     if (imageType === 'featured') {
@@ -649,19 +690,27 @@ router.post('/regenerate', protect, authorize('admin'), async (req, res) => {
           : imagesToProcess;
 
         for (const imageData of filteredImages) {
+          let isTempSource = false;
+          let imagePath;
           try {
-            let imagePath;
-            if (imageData.url.startsWith('/uploads/')) {
-              imagePath = path.join(__dirname, '..', imageData.url);
-            } else {
-              imagePath = path.join(__dirname, '../uploads/products', imageData.url);
+            try {
+              const resolved = await resolveImageSourcePath(imageData.url);
+              imagePath = resolved.path;
+              isTempSource = resolved.isTemp;
+            } catch (downloadErr) {
+              results.skipped.push({
+                productId,
+                imageUrl: imageData.url,
+                reason: `Failed to fetch source image: ${downloadErr.message}`
+              });
+              continue;
             }
 
             if (!fsSync.existsSync(imagePath)) {
-              results.skipped.push({ 
-                productId, 
-                imageUrl: imageData.url, 
-                reason: 'Image file not found' 
+              results.skipped.push({
+                productId,
+                imageUrl: imageData.url,
+                reason: 'Image file not found'
               });
               continue;
             }
@@ -672,7 +721,23 @@ router.post('/regenerate', protect, authorize('admin'), async (req, res) => {
             const outputPath = path.join(__dirname, '../uploads/products', filename);
 
             await imageProcessor.processProductImage(imagePath, outputPath, options);
-            const newImageUrl = `/uploads/products/${filename}`;
+
+            if (isTempSource && fsSync.existsSync(imagePath)) {
+              await fs.promises.unlink(imagePath).catch(() => {});
+            }
+
+            let newImageUrl = `/uploads/products/${filename}`;
+
+            // Upload to cloud storage (Bunny or Cloudinary) if configured
+            if (useCloud) {
+              try {
+                const cloudResult = await uploadToCloudinary(outputPath, { folder: 'products' });
+                newImageUrl = cloudResult.url;
+                if (fsSync.existsSync(outputPath)) await fs.promises.unlink(outputPath);
+              } catch (cloudErr) {
+                console.error('Cloud upload failed during regenerate, keeping local file:', cloudErr.message);
+              }
+            }
 
             // Update product
             if (imageData.type === 'featured') {

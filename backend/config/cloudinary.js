@@ -46,6 +46,10 @@ async function _bunnyUpload(source, options = {}) {
   if (Buffer.isBuffer(source)) {
     buf = source;
     if (sharp) { try { const m = await sharp(buf).metadata(); if (m.format) ext = m.format === 'jpeg' ? 'jpg' : m.format; } catch {} }
+  } else if (/^https?:\/\//i.test(source)) {
+    const resp = await axios.get(source, { responseType: 'arraybuffer', timeout: 120000, maxContentLength: Infinity, maxBodyLength: Infinity });
+    buf = Buffer.from(resp.data);
+    const m = String(source).split('?')[0].match(/\.([a-z0-9]+)$/i); if (m) ext = m[1].toLowerCase();
   } else {
     buf = fs.readFileSync(source);
     const m = String(source).match(/\.([a-z0-9]+)$/i); if (m) ext = m[1].toLowerCase();
