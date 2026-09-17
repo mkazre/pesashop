@@ -219,7 +219,15 @@ const userSchema = new mongoose.Schema({
   dynamicGroupIds: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'CustomerGroup'
-  }]
+  }],
+
+  // ── Onboarding ─────────────────────────────────────────────────────
+  onboarding: {
+    accountTourVersion: { type: Number, default: 0 },
+    accountTourDismissedAt: Date,
+    welcomePromptSeen: { type: Boolean, default: false },
+    welcomePromptSeenAt: Date
+  }
 }, {
   timestamps: true
 });

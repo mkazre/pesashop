@@ -69,6 +69,7 @@ export const authAPI = {
   register: (userData: any) => api.post('/api/auth/register', userData),
   getMe: () => api.get('/api/auth/me'),
   updateProfile: (data: any) => api.put('/api/auth/update', data),
+  updateOnboarding: (data: any) => api.patch('/api/auth/me/onboarding', data),
   forgotPassword: (email: string) =>
     api.post('/api/auth/forgot-password', { email }),
   resetPassword: (token: string, password: string) =>
@@ -113,6 +114,7 @@ export const ordersAPI = {
 export const userAPI = {
   getProfile: () => api.get('/api/auth/me'),
   updateProfile: (data: any) => api.put('/api/auth/update', data),
+  updateOnboarding: (data: any) => api.patch('/api/auth/me/onboarding', data),
   getAddresses: () => api.get('/api/auth/addresses'),
   addAddress: (address: any) => api.post('/api/auth/addresses', address),
   getWishlist: () => api.get('/api/auth/wishlist'),

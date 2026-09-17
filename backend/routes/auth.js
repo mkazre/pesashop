@@ -100,6 +100,30 @@ router.get('/me', protect, async (req, res) => {
   res.json({ success: true, data: req.user });
 });
 
+// @route   PATCH /api/auth/me/onboarding
+// @desc    Persist onboarding progress (welcome prompt, account tour) so it syncs across devices
+router.patch('/me/onboarding', protect, async (req, res, next) => {
+  try {
+    const allowedFields = ['accountTourVersion', 'accountTourDismissedAt', 'welcomePromptSeen', 'welcomePromptSeenAt'];
+    const updates = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: Object.fromEntries(Object.entries(updates).map(([k, v]) => [`onboarding.${k}`, v])) },
+      { new: true, runValidators: true }
+    );
+
+    res.json({ success: true, data: user });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // @route   POST /api/auth/google
 // @desc    Login/Register with Google ID token
 // @access  Public

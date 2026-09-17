@@ -58,6 +58,7 @@ export const authAPI = {
   register: (userData) => api.post('/api/auth/register', userData),
   getMe: () => api.get('/api/auth/me'),
   updateProfile: (data) => api.put('/api/auth/update', data),
+  updateOnboarding: (data) => api.patch('/api/auth/me/onboarding', data),
   forgotPassword: (email) => api.post('/api/auth/forgot-password', { email }),
   resetPassword: (token, password) => api.post('/api/auth/reset-password', { token, password }),
   // Social Login
@@ -114,6 +115,7 @@ export const ordersAPI = {
 export const userAPI = {
   getProfile: () => api.get('/api/auth/me'),
   updateProfile: (data) => api.put('/api/auth/update', data),
+  updateOnboarding: (data) => api.patch('/api/auth/me/onboarding', data),
   getAddresses: () => api.get('/api/auth/addresses'),
   addAddress: (address) => api.post('/api/auth/addresses', address),
   getWishlist: () => api.get('/api/auth/wishlist'),
