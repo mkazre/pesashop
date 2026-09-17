@@ -195,6 +195,64 @@
       "ctaSignIn": "Ngena / Bhalisa",
       "ctaMaybeLater": "Mhlawumbe kamuva",
       "dismiss": "Vala"
+    },
+    "tour": {
+      "dashboard": {
+        "title": "Ideshibhodi",
+        "body": "Ukubuka konke kwe-akhawunti yakho — ama-oda amasha, izixhumanisi ezisheshayo, nesifinyezo."
+      },
+      "loyaltyPoints": {
+        "title": "Izinhlamvu zemali ze-PESA",
+        "body": "Bheka futhi usebenzise ama-Pesa Coins akho lapha."
+      },
+      "referrals": {
+        "title": "Izinkomba",
+        "body": "Mema abangani bese uthola imiklomelo ngamunye ombiko ophumelelayo."
+      },
+      "laybyes": {
+        "title": "Ama-Laybye",
+        "body": "Bheka futhi uphathe izinhlelo zakho zokukhokha ze-Laybye."
+      },
+      "orders": {
+        "title": "Ama-oda",
+        "body": "Bheka umlando wama-oda akho futhi ulandelele ukulethwa ngesikhathi sangempela."
+      },
+      "coupons": {
+        "title": "Amakhuphoni Ami",
+        "body": "Wonke amakhuphoni okhona kuwe, alungele ukusetshenziswa uma ukhokha."
+      },
+      "giftCards": {
+        "title": "Amakhadi Ami Ezipho",
+        "body": "Phatha amakhadi ezipho owathengile noma owawathola."
+      },
+      "addresses": {
+        "title": "Amakheli",
+        "body": "Gcina amakheli okulethwa ukuze ukukhokha kube ngokushesha."
+      },
+      "recurringOrders": {
+        "title": "Ama-oda Aphindaphindayo",
+        "body": "Setha futhi uphathe ama-oda aphindaphindayo ngokuzenzakalela."
+      },
+      "returns": {
+        "title": "Ukubuyiselwa",
+        "body": "Qala futhi ulandelele ukubuyiselwa kwezinto owazi-odile."
+      },
+      "invoices": {
+        "title": "Ama-invoyisi",
+        "body": "Dawuniloda ama-invoyisi ama-oda akho adlule."
+      },
+      "settings": {
+        "title": "Amasethingi we-akhawunti",
+        "body": "Buyekeza iphrofayela yakho, iphasiwedi, nolimi olukhethayo."
+      },
+      "nav": {
+        "back": "Emuva",
+        "next": "Okulandelayo",
+        "finish": "Kwenziwe",
+        "close": "Vala",
+        "dontShowAgain": "Ungabonisi futhi",
+        "rerun": "Thatha uhambo"
+      }
     }
   }
 }

@@ -27,6 +27,12 @@ interface User {
   hobbies?: string[];
   marketingOptIn?: boolean;
   demographicsConsentGiven?: boolean;
+  onboarding?: {
+    accountTourVersion?: number;
+    accountTourDismissedAt?: string;
+    welcomePromptSeen?: boolean;
+    welcomePromptSeenAt?: string;
+  };
 }
 
 interface AuthState {
@@ -456,4 +462,17 @@ export const useCompareStore = create<CompareState>()((set, get) => ({
     set({ products: get().products.filter((p) => p._id !== id) }),
   isInCompare: (id) => get().products.some((p) => p._id === id),
   clearAll: () => set({ products: [] }),
+}));
+
+// ─── Account Tour Store ──────────────────────────────────────────
+// A small trigger bus so any screen (the account tab's "?" button, the
+// Pesa Assistant menu) can (re)start the account tour without prop-drilling.
+interface TourState {
+  runToken: number;
+  startAccountTour: () => void;
+}
+
+export const useTourStore = create<TourState>()((set) => ({
+  runToken: 0,
+  startAccountTour: () => set((s) => ({ runToken: s.runToken + 1 })),
 }));

@@ -22,6 +22,8 @@ import { syncContentVersion } from "@/utils/contentVersion";
 import NotificationToast from "@/components/NotificationToast";
 import ChatWidget from "@/components/ChatWidget";
 import WelcomePrompt from "@/components/WelcomePrompt";
+import { TourGuideProvider } from "rn-tourguide";
+import TourTooltip from "@/components/account/TourTooltip";
 import { CartSuccessOverlay } from "@/components/CartSuccessOverlay";
 import { CheckoutSuccessOverlay } from "@/components/CheckoutSuccessOverlay";
 
@@ -180,6 +182,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <TourGuideProvider tooltipComponent={TourTooltip} androidStatusBarVisible>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -346,6 +349,7 @@ export default function RootLayout() {
       <CartSuccessOverlay />
       <CheckoutSuccessOverlay />
       <Toast />
+      </TourGuideProvider>
     </QueryClientProvider>
   );
 }

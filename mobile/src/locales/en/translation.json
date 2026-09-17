@@ -195,6 +195,64 @@
       "ctaSignIn": "Sign in / Sign up",
       "ctaMaybeLater": "Maybe later",
       "dismiss": "Dismiss"
+    },
+    "tour": {
+      "dashboard": {
+        "title": "Dashboard",
+        "body": "Your account at a glance — recent orders, quick links and account summary."
+      },
+      "loyaltyPoints": {
+        "title": "PESA Coins",
+        "body": "Track and redeem your Pesa Coins loyalty rewards here."
+      },
+      "referrals": {
+        "title": "Referrals",
+        "body": "Invite friends and earn rewards for every successful referral."
+      },
+      "laybyes": {
+        "title": "Laybyes",
+        "body": "View and manage your laybye payment plans."
+      },
+      "orders": {
+        "title": "Orders",
+        "body": "See your order history and track deliveries in real time."
+      },
+      "coupons": {
+        "title": "My Coupons",
+        "body": "All the coupons available to you, ready to use at checkout."
+      },
+      "giftCards": {
+        "title": "My Gift Cards",
+        "body": "Manage gift cards you've bought or received."
+      },
+      "addresses": {
+        "title": "Addresses",
+        "body": "Save delivery addresses for faster checkout."
+      },
+      "recurringOrders": {
+        "title": "Recurring Orders",
+        "body": "Set up and manage orders that repeat automatically."
+      },
+      "returns": {
+        "title": "Returns",
+        "body": "Start and track returns for items you've ordered."
+      },
+      "invoices": {
+        "title": "Invoices",
+        "body": "Download invoices for your past orders."
+      },
+      "settings": {
+        "title": "Account Settings",
+        "body": "Update your profile, password and preferred language."
+      },
+      "nav": {
+        "back": "Back",
+        "next": "Next",
+        "finish": "Done",
+        "close": "Close",
+        "dontShowAgain": "Don't show again",
+        "rerun": "Take the tour"
+      }
     }
   }
 }

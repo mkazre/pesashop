@@ -195,6 +195,64 @@
       "ctaSignIn": "Pinda / Nyoresa",
       "ctaMaybeLater": "Pamwe gare gare",
       "dismiss": "Vhara"
+    },
+    "tour": {
+      "dashboard": {
+        "title": "Dashboard",
+        "body": "Mavonero eakaunti yako yose — maodha achangobva kuitwa, zvinongedzo nezvimwe."
+      },
+      "loyaltyPoints": {
+        "title": "Mari dzePESA",
+        "body": "Tarisa uye ushandise Pesa Coins dzako pano."
+      },
+      "referrals": {
+        "title": "Zvinotumirwa",
+        "body": "Koka shamwari uye uwane mubairo pane rimwe nerimwe kukoka rinobudirira."
+      },
+      "laybyes": {
+        "title": "MaLaybye",
+        "body": "Ona uye fambisa zvirongwa zvako zvekubhadhara zveLaybye."
+      },
+      "orders": {
+        "title": "Maodha",
+        "body": "Ona nhoroondo yemaodha ako uye tevera kuendeswa kwenguva chaiyo."
+      },
+      "coupons": {
+        "title": "Makuponi Angu",
+        "body": "Makuponi ese anowanika kwauri, akagadzirira kushandiswa pakubhadhara."
+      },
+      "giftCards": {
+        "title": "Makadhi Angu Ezvipo",
+        "body": "Fambisa makadhi ezvipo awakatenga kana kugamuchira."
+      },
+      "addresses": {
+        "title": "Kero",
+        "body": "Chengetedza kero dzekuendesa kuti kubhadhara kuve nyore uye kukurumidza."
+      },
+      "recurringOrders": {
+        "title": "Mirairo Inoramba Ichidzokororwa",
+        "body": "Gadzira uye fambisa maodha anodzokorora ega ega."
+      },
+      "returns": {
+        "title": "Kudzoka",
+        "body": "Tanga uye tevera kudzoswa kwezvinhu zvawakaodha."
+      },
+      "invoices": {
+        "title": "Mainvoice",
+        "body": "Dhawunirodha mainvoice emaodha ako akapfuura."
+      },
+      "settings": {
+        "title": "Zvirongwa zveAkaunti",
+        "body": "Gadzirisa purofairi yako, password uye mutauro waunosarudza."
+      },
+      "nav": {
+        "back": "Dzokera",
+        "next": "Enderera",
+        "finish": "Pedza",
+        "close": "Vhara",
+        "dontShowAgain": "Usaratidza zvakare",
+        "rerun": "Tora rwendo"
+      }
     }
   }
 }
