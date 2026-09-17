@@ -3,6 +3,7 @@ import { useTourGuideController } from "rn-tourguide";
 import { useAuthStore, useTourStore } from "@/store";
 import { authAPI } from "@/services/api";
 import { CURRENT_ACCOUNT_TOUR_VERSION } from "@/constants/onboarding";
+import { scrollToTourZone } from "@/utils/accountTourTargets";
 
 // Renders nothing — just owns the auto-run-once and re-run-trigger logic for
 // the account tour, mirroring web's AccountTour. Must live inside a screen
@@ -38,7 +39,13 @@ export default function AccountTourController() {
       }
 
       if (version < CURRENT_ACCOUNT_TOUR_VERSION) {
-        setTimeout(() => start(1), 600);
+        setTimeout(async () => {
+          // Scroll back to the top first — if the menu was already scrolled
+          // down, step 1's target would otherwise be off-screen and the
+          // spotlight would appear to "miss".
+          await scrollToTourZone(1);
+          start(1);
+        }, 600);
       }
     })();
     // Runs once when the tour becomes startable — intentionally ignores changing deps.
@@ -50,7 +57,10 @@ export default function AccountTourController() {
   useEffect(() => {
     if (runToken !== prevRunTokenRef.current) {
       prevRunTokenRef.current = runToken;
-      start(1);
+      (async () => {
+        await scrollToTourZone(1);
+        start(1);
+      })();
     }
   }, [runToken, start]);
 

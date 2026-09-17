@@ -1,5 +1,4 @@
-import { useRef } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet, findNodeHandle } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,7 +8,7 @@ import { TourGuideZone } from "rn-tourguide";
 import { useAuthStore, useCurrencyStore, useTourStore } from "@/store";
 import BottomTabBar from "@/components/BottomTabBar";
 import AccountTourController from "@/components/account/AccountTourController";
-import { tourScrollRef, tourRowOffsets } from "@/utils/accountTourTargets";
+import { tourScrollRef, tourRowRefs } from "@/utils/accountTourTargets";
 import { colors } from "@/theme";
 
 const LOGO = require("@/../assets/pesashop-logo.png");
@@ -25,7 +24,6 @@ export default function AccountScreen() {
   const currencies = useCurrencyStore((s) => s.currencies);
   const selectedCurrency = useCurrencyStore((s) => s.selectedCurrency);
   const setSelectedCurrency = useCurrencyStore((s) => s.setSelectedCurrency);
-  const rowRefs = useRef<Record<string, any>>({});
 
   if (!isAuthenticated) {
     return (
@@ -86,25 +84,7 @@ export default function AccountScreen() {
   };
 
   const registerRowRef = (tourId: string | undefined, el: any) => {
-    if (tourId) rowRefs.current[tourId] = el;
-  };
-
-  const measureRow = (tourId: string | undefined) => {
-    if (!tourId) return;
-    const el = rowRefs.current[tourId];
-    const sv = tourScrollRef.current;
-    if (el?.measureLayout && sv) {
-      const scrollHandle = findNodeHandle(sv);
-      if (scrollHandle) {
-        el.measureLayout(
-          scrollHandle,
-          (_x: number, y: number) => {
-            tourRowOffsets[tourId] = y;
-          },
-          () => {}
-        );
-      }
-    }
+    if (tourId) tourRowRefs[tourId] = el;
   };
 
   return (
@@ -154,7 +134,6 @@ export default function AccountScreen() {
                 key={item.label}
                 onPress={item.onPress}
                 ref={(el) => registerRowRef(item.tourId, el)}
-                onLayout={() => measureRow(item.tourId)}
                 style={[as.menuItem, index < menuItems.length - 1 && as.menuItemBorder]}
               >
                 <View style={as.menuIcon}>

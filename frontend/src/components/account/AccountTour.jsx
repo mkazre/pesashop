@@ -56,8 +56,17 @@ export default function AccountTour() {
   const { controls, Tour } = useJoyride({
     steps,
     continuous: true,
-    scrollToFirstStep: true,
     onEvent: (data) => {
+      if (data.type === EVENTS.STEP_BEFORE) {
+        // Scroll the target into view ourselves, using the browser's native
+        // scrollIntoView (which correctly accounts for position:sticky)
+        // instead of Joyride's own scroll heuristic (skipScroll below),
+        // which got confused by the sticky sidebar and scrolled to the
+        // wrong place.
+        const target =
+          typeof data.step.target === 'string' ? document.querySelector(data.step.target) : data.step.target;
+        target?.scrollIntoView({ block: 'center', behavior: 'auto' });
+      }
       if (data.type === EVENTS.TOUR_END) {
         finishTour(data.status === STATUS.FINISHED);
       }
@@ -72,7 +81,10 @@ export default function AccountTour() {
         }}
       />
     ),
-    options: { primaryColor: '#0e604a', zIndex: 10000, skipBeacon: true },
+    // skipScroll: we drive scrolling ourselves in onEvent (STEP_BEFORE) via
+    // scrollIntoView — Joyride's own scroll heuristic doesn't account for
+    // position:sticky and scrolls the sidebar to the wrong place.
+    options: { primaryColor: '#0e604a', zIndex: 10000, skipBeacon: true, skipScroll: true },
   });
 
   // Auto-run once per version. Re-fetches the user record so a dismissal
