@@ -195,6 +195,64 @@
       "ctaSignIn": "Lowani / Lembetsani",
       "ctaMaybeLater": "Mwina pambuyo pake",
       "dismiss": "Tsekani"
+    },
+    "tour": {
+      "dashboard": {
+        "title": "Dashboard",
+        "body": "Chidziwitso chonse cha akaunti yanu — maoda aposachedwa, maulalo achangu, ndi chidule."
+      },
+      "loyaltyPoints": {
+        "title": "Ndalama za PESA",
+        "body": "Onani ndi kugwiritsa ntchito Pesa Coins zanu pano."
+      },
+      "referrals": {
+        "title": "Mauthenga Othandizira",
+        "body": "Itanani abwenzi ndipo mupeze mphotho pa aliyense amene mwamuitanira bwino."
+      },
+      "laybyes": {
+        "title": "Ma Laybye",
+        "body": "Onani ndi kusamalira mapulani anu olipirira a Laybye."
+      },
+      "orders": {
+        "title": "Maoda",
+        "body": "Onani mbiri ya maoda anu ndi kutsatira kutumiza nthawi yeniyeni."
+      },
+      "coupons": {
+        "title": "Makuponi Anga",
+        "body": "Makuponi onse omwe muli nawo, okonzeka kugwiritsidwa ntchito polipira."
+      },
+      "giftCards": {
+        "title": "Makhadi Anga Amphatso",
+        "body": "Sungani makhadi a mphatso omwe munagula kapena kulandira."
+      },
+      "addresses": {
+        "title": "Maadiresi",
+        "body": "Sungani maadiresi otumizira kuti kulipira kukhale kofulumira."
+      },
+      "recurringOrders": {
+        "title": "Maoda Obwerezabwereza",
+        "body": "Konzani ndi kusamalira maoda obwerezabwereza okha."
+      },
+      "returns": {
+        "title": "Kubweza",
+        "body": "Yambani ndi kutsatira kubweza zinthu zomwe munaodha."
+      },
+      "invoices": {
+        "title": "Ma invoice",
+        "body": "Tsitsani ma invoice a maoda anu akale."
+      },
+      "settings": {
+        "title": "Makonda a akaunti",
+        "body": "Sinthani mbiri yanu, mawu achinsinsi, ndi chilankhulo chomwe mumakonda."
+      },
+      "nav": {
+        "back": "Bwerera",
+        "next": "Pitirizani",
+        "finish": "Maliza",
+        "close": "Tsekani",
+        "dontShowAgain": "Musaonetsenso",
+        "rerun": "Yendani ulendo"
+      }
     }
   }
 }

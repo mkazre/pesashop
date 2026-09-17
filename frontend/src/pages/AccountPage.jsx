@@ -1,18 +1,21 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
+import { useTranslation } from 'react-i18next';
+import { HelpCircle } from 'lucide-react';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
-import { useAuthStore, useCartStore, useWishlistStore } from '@/store';
+import { useAuthStore, useCartStore, useWishlistStore, useTourStore } from '@/store';
 import { demographicsAPI } from '@/services/api';
 import ProfileCompletionPopup from '@/components/account/ProfileCompletionPopup';
+import AccountTour from '@/components/account/AccountTour';
 
 const NAV_ITEMS = [
-  { path: '/account', label: 'Dashboard', icon: (
+  { path: '/account', label: 'Dashboard', tourId: 'dashboard', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
   ), end: true },
-  { path: '/account/orders', label: 'Orders', icon: (
+  { path: '/account/orders', label: 'Orders', tourId: 'orders', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
   )},
-  { path: '/account/laybyes', label: 'Laybyes', icon: (
+  { path: '/account/laybyes', label: 'Laybyes', tourId: 'laybyes', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
   )},
   { path: '/account/payments', label: 'Payments', icon: (
@@ -21,22 +24,22 @@ const NAV_ITEMS = [
   { path: '/account/transactions', label: 'Transactions', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
   )},
-  { path: '/account/loyalty-points', label: 'PESA Coins', icon: (
+  { path: '/account/loyalty-points', label: 'PESA Coins', tourId: 'loyaltyPoints', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
   )},
-  { path: '/account/coupons', label: 'My Coupons', icon: (
+  { path: '/account/coupons', label: 'My Coupons', tourId: 'coupons', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
   )},
-  { path: '/account/gift-cards', label: 'Gift Cards', icon: (
+  { path: '/account/gift-cards', label: 'Gift Cards', tourId: 'giftCards', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8V21"/><path d="M3 12h18"/><path d="M12 8c-2-3-6-3-6 0s4 3 6 0"/><path d="M12 8c2-3 6-3 6 0s-4 3-6 0"/></svg>
   )},
   { path: '/account/wishlist', label: 'Wishlist', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
   )},
-  { path: '/account/addresses', label: 'Addresses', icon: (
+  { path: '/account/addresses', label: 'Addresses', tourId: 'addresses', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
   )},
-  { path: '/account/recurring-orders', label: 'Recurring Orders', icon: (
+  { path: '/account/recurring-orders', label: 'Recurring Orders', tourId: 'recurringOrders', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
   )},
   { path: '/account/my-offers', label: 'My Offers', icon: (
@@ -45,16 +48,16 @@ const NAV_ITEMS = [
   { path: '/account/service-requests', label: 'My Service Requests', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
   )},
-  { path: '/account/returns', label: 'Returns', icon: (
+  { path: '/account/returns', label: 'Returns', tourId: 'returns', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
   )},
-  { path: '/account/invoices', label: 'Invoices', icon: (
+  { path: '/account/invoices', label: 'Invoices', tourId: 'invoices', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>
   )},
-  { path: '/account/referrals', label: 'Invite & Earn', icon: (
+  { path: '/account/referrals', label: 'Invite & Earn', tourId: 'referrals', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11l-3-3m0 0l-3 3m3-3v8"/></svg>
   )},
-  { path: '/account/settings', label: 'Account Settings', badge: 'profile', icon: (
+  { path: '/account/settings', label: 'Account Settings', badge: 'profile', tourId: 'settings', icon: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
   )},
   { path: '/service-providers/portal', label: 'Service Provider Portal', icon: (
@@ -63,9 +66,11 @@ const NAV_ITEMS = [
 ];
 
 export default function AccountPage() {
+  const { t } = useTranslation();
   const { user, clearAuth, isAuthenticated } = useAuthStore();
   const { clearCart } = useCartStore();
   const { clearWishlist } = useWishlistStore();
+  const startAccountTour = useTourStore((s) => s.startAccountTour);
   const navigate = useNavigate();
 
   // Profile completion — drives notification badge on Account Settings link
@@ -88,8 +93,18 @@ export default function AccountPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <ProfileCompletionPopup />
+      <AccountTour />
       <div className="container-custom py-6">
-        <Breadcrumbs items={[{ label: 'My Account' }]} />
+        <div className="flex items-center justify-between">
+          <Breadcrumbs items={[{ label: 'My Account' }]} />
+          <button
+            onClick={startAccountTour}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          >
+            <HelpCircle size={16} />
+            {t('onboarding.tour.nav.rerun')}
+          </button>
+        </div>
 
         <div className="grid lg:grid-cols-[280px_1fr] gap-6 mt-6">
           {/* Sidebar */}
@@ -123,6 +138,7 @@ export default function AccountPage() {
                     key={item.path}
                     to={item.path}
                     end={item.end}
+                    data-tour={item.tourId ? `nav-${item.tourId}` : undefined}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                         isActive

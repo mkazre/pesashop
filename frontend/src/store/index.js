@@ -325,3 +325,11 @@ export const useRecentlyViewedStore = create(
     { name: 'recently-viewed' }
   )
 );
+
+// Account Tour Store — a small trigger bus so any component (the account nav's
+// "?" button, the Pesa Assistant menu) can (re)start the account tour without
+// prop-drilling into AccountPage.
+export const useTourStore = create((set) => ({
+  runToken: 0,
+  startAccountTour: () => set((s) => ({ runToken: s.runToken + 1 })),
+}));

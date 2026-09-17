@@ -195,6 +195,64 @@
       "ctaSignIn": "Se connecter / S'inscrire",
       "ctaMaybeLater": "Plus tard",
       "dismiss": "Fermer"
+    },
+    "tour": {
+      "dashboard": {
+        "title": "Tableau de bord",
+        "body": "Vue d'ensemble de votre compte — commandes récentes, liens rapides et résumé."
+      },
+      "loyaltyPoints": {
+        "title": "Pièces PESA",
+        "body": "Suivez et échangez vos points de fidélité Pesa Coins ici."
+      },
+      "referrals": {
+        "title": "Orientations",
+        "body": "Invitez vos amis et gagnez des récompenses pour chaque parrainage réussi."
+      },
+      "laybyes": {
+        "title": "aires de stationnement",
+        "body": "Consultez et gérez vos plans de paiement laybye."
+      },
+      "orders": {
+        "title": "Ordres",
+        "body": "Consultez l'historique de vos commandes et suivez les livraisons en temps réel."
+      },
+      "coupons": {
+        "title": "Mes coupons",
+        "body": "Tous les coupons disponibles pour vous, prêts à l'emploi au paiement."
+      },
+      "giftCards": {
+        "title": "Mes cartes-cadeaux",
+        "body": "Gérez les cartes-cadeaux que vous avez achetées ou reçues."
+      },
+      "addresses": {
+        "title": "Adresses",
+        "body": "Enregistrez vos adresses de livraison pour un paiement plus rapide."
+      },
+      "recurringOrders": {
+        "title": "Commandes récurrentes",
+        "body": "Configurez et gérez les commandes qui se répètent automatiquement."
+      },
+      "returns": {
+        "title": "Retours",
+        "body": "Démarrez et suivez les retours de vos articles commandés."
+      },
+      "invoices": {
+        "title": "Factures",
+        "body": "Téléchargez les factures de vos commandes passées."
+      },
+      "settings": {
+        "title": "Paramètres du compte",
+        "body": "Modifiez votre profil, votre mot de passe et votre langue préférée."
+      },
+      "nav": {
+        "back": "Retour",
+        "next": "Suivant",
+        "finish": "Terminé",
+        "close": "Fermer",
+        "dontShowAgain": "Ne plus afficher",
+        "rerun": "Faire la visite"
+      }
     }
   }
 }

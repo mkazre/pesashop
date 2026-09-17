@@ -195,6 +195,64 @@
       "ctaSignIn": "Ngilamo / Lembekesheni",
       "ctaMaybeLater": "Nomba line line",
       "dismiss": "Cimfya"
+    },
+    "tour": {
+      "dashboard": {
+        "title": "Dashibodi",
+        "body": "Ukumona konse ukwa akaunti yenu — ama oda ayapya, ama linki, na cimfulunganya conse."
+      },
+      "loyaltyPoints": {
+        "title": "Amapepala ya PESA",
+        "body": "Moneni no kubomfya Pesa Coins yenu pano."
+      },
+      "referrals": {
+        "title": "Ukutuma",
+        "body": "Iteni ifibusa no kupokelela ubupe pa cila umo uwaisa bwino."
+      },
+      "laybyes": {
+        "title": "Ukulala",
+        "body": "Moneni no kwendesha ifipangano fyenu ifya kulipila laybye."
+      },
+      "orders": {
+        "title": "Amaoda",
+        "body": "Moneni ilyashi lya ma oda yenu no kukonka ukutwala mu nshita yene."
+      },
+      "coupons": {
+        "title": "Amakuponi yandi",
+        "body": "Amakuponi yonse ayaba nayo, ayapekanishiwa ukubomfya pa kulipila."
+      },
+      "giftCards": {
+        "title": "Amakaadi yandi aya Bupe",
+        "body": "Endesheni amakaadi ya bupe uyo mwashita nangu mwapokelela."
+      },
+      "addresses": {
+        "title": "Amakeyala",
+        "body": "Bikeni amakeyala yakutwala pakuti ukulipila kucite bwangu."
+      },
+      "recurringOrders": {
+        "title": "Ama oda ayabwekeshiwapo",
+        "body": "Panganyeni no kwendesha ama oda ayabwekeshiwapo lyeka lyeka."
+      },
+      "returns": {
+        "title": "Ukubwesha",
+        "body": "Tampeni no kukonka ukubwesha kwa fintu fyo mwaodela."
+      },
+      "invoices": {
+        "title": "Ama invoyisi",
+        "body": "Panshileni ama invoyisi ya ma oda yenu ayapita."
+      },
+      "settings": {
+        "title": "Ukupekanya kwa akaunti",
+        "body": "Alwilweni ipurofaili yenu, ama password, no lulimi ulo mwafwaya."
+      },
+      "nav": {
+        "back": "Bwelela ku numa",
+        "next": "Kabiye",
+        "finish": "Pwisha",
+        "close": "Cimfya",
+        "dontShowAgain": "Mwilangilila kabili",
+        "rerun": "Tampeni ulwendo"
+      }
     }
   }
 }
