@@ -254,5 +254,37 @@
         "rerun": "Thatha uhambo"
       }
     }
+  },
+  "chat": {
+    "menu": {
+      "tour": "Thatha uhambo",
+      "faq": "Usizo olusheshayo",
+      "liveChat": "Xoxa nathi"
+    },
+    "faq": {
+      "title": "Usizo olusheshayo",
+      "items": {
+        "tracking": {
+          "q": "Ngingalilandelela kanjani i-oda lami?",
+          "a": "Iya ku-Akhawunti Yami → Ama-oda, noma usebenzise i-Track Order ngenombolo ye-oda nemeyili yakho."
+        },
+        "returns": {
+          "q": "Yiluphi uhlelo lwakho lokubuyisela?",
+          "a": "Izinto eziningi zingabuyiselwa ngaphakathi kwezinsuku ezingama-30. Qala ukubuyisela kusuka ku-Akhawunti Yami → Ukubuyiselwa."
+        },
+        "loyalty": {
+          "q": "Ama-Pesa Coins asebenza kanjani?",
+          "a": "Thola ama-Pesa Coins kukho konke ukuthenga bese uwasebenzisa uma ukhokha — bheka ibhalansi yakho ngaphansi kwe-Akhawunti Yami → Izinhlamvu zemali ze-PESA."
+        },
+        "support": {
+          "q": "Ngingakhuluma kanjani nomuntu?",
+          "a": "Khetha u-\"Xoxa nathi\" kusuka kule menyu ukuze ukhulume ngokuqondile neqembu lethu lokusekela."
+        },
+        "referrals": {
+          "q": "Izinkomba zisebenza kanjani?",
+          "a": "Yabelana ngesixhumanisi sakho kusuka ku-Akhawunti Yami → Izinkomba bese uthola imiklomelo lapho abangani bakho bethenga okokuqala."
+        }
+      }
+    }
   }
 }

@@ -254,5 +254,37 @@
         "rerun": "Tampeni ulwendo"
       }
     }
+  },
+  "chat": {
+    "menu": {
+      "tour": "Tampeni ulwendo",
+      "faq": "Ubwafwilisho bwakwangufyanya",
+      "liveChat": "Landeni naswe"
+    },
+    "faq": {
+      "title": "Ubwafwilisho bwakwangufyanya",
+      "items": {
+        "tracking": {
+          "q": "Bushe nkonka shani oda yandi?",
+          "a": "Yeni ku Akaunti Yandi → Amaoda, nangu mubomfye Track Order pamo ne nambala ya oda ne email yenu."
+        },
+        "returns": {
+          "q": "Bushe imipango ya kubwesha finshi cinshi?",
+          "a": "Ifintu ifingi kuti fyabwekeshiwa mu nshiku 30. Tampeni ukubwesha ukufuma ku Akaunti Yandi → Ukubwesha."
+        },
+        "loyalty": {
+          "q": "Bushe Pesa Coins shibomba shani?",
+          "a": "Sangeni Pesa Coins pa cila mushindo mwashita kabili mubomfye pa kulipila — moneni indalama shenu pe samba lya Akaunti Yandi → Amapepala ya PESA."
+        },
+        "support": {
+          "q": "Bushe nalanda shani no muntu?",
+          "a": "Saleni \"Landeni naswe\" ukufuma muli menu iyi pakuti mulande na bakutubombela mu bwafwilisho."
+        },
+        "referrals": {
+          "q": "Bushe ukwita no kusanga kubomba shani?",
+          "a": "Abaneni link yenu ukufuma ku Akaunti Yandi → Ukutuma no kusanga ifyapokelela ilyo ifibusa fyenu fyashita kabalilapo."
+        }
+      }
+    }
   }
 }

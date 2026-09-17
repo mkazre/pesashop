@@ -18,13 +18,24 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { io, Socket } from "socket.io-client";
+import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
+import { MotiView } from "moti";
 import { chatAPI } from "@/services/api";
 import { colors, resolveImageUrl } from "@/theme";
+import { useAuthStore, useTourStore } from "@/store";
+import FAQPanel from "./FAQPanel";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function ChatWidget() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const startAccountTour = useTourStore((s) => s.startAccountTour);
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<"chat" | "faq">("chat");
   const [visitorId, setVisitorId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -158,6 +169,29 @@ export default function ChatWidget() {
     }
   };
 
+  const closeChat = () => {
+    setOpen(false);
+    setActivePanel("chat");
+  };
+
+  const handleMenuTour = () => {
+    setMenuOpen(false);
+    router.push("/(tabs)/account" as any);
+    if (isAuthenticated) startAccountTour();
+  };
+
+  const handleMenuFaq = () => {
+    setMenuOpen(false);
+    setActivePanel("faq");
+    openChat();
+  };
+
+  const handleMenuLiveChat = () => {
+    setMenuOpen(false);
+    setActivePanel("chat");
+    openChat();
+  };
+
   const sendMessage = () => {
     if (!input.trim() || !conversationId || !socketRef.current) return;
     socketRef.current.emit("message:send", { content: input.trim(), type: "text" });
@@ -218,7 +252,7 @@ export default function ChatWidget() {
         {...panResponder.panHandlers}
       >
         <Pressable
-          onPress={() => { if (!isDragging.current) openChat(); }}
+          onPress={() => { if (!isDragging.current) setMenuOpen(true); }}
           style={{ width: "100%", height: "100%", alignItems: "center", justifyContent: "center" }}
         >
           {customIconUrl
@@ -231,6 +265,31 @@ export default function ChatWidget() {
           )}
         </Pressable>
       </Animated.View>
+
+      {/* Launcher menu */}
+      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={cs.menuBackdrop} onPress={() => setMenuOpen(false)}>
+          <MotiView
+            from={{ opacity: 0, translateY: 12, scale: 0.95 }}
+            animate={{ opacity: 1, translateY: 0, scale: 1 }}
+            transition={{ type: "timing", duration: 150 }}
+            style={cs.menuCard}
+          >
+            <Pressable onPress={handleMenuTour} style={cs.menuItem}>
+              <Ionicons name="compass-outline" size={18} color={primaryColor} />
+              <Text style={cs.menuItemText}>{t("chat.menu.tour")}</Text>
+            </Pressable>
+            <Pressable onPress={handleMenuFaq} style={cs.menuItem}>
+              <Ionicons name="help-circle-outline" size={18} color={primaryColor} />
+              <Text style={cs.menuItemText}>{t("chat.menu.faq")}</Text>
+            </Pressable>
+            <Pressable onPress={handleMenuLiveChat} style={cs.menuItem}>
+              <Ionicons name="chatbubble-outline" size={18} color={primaryColor} />
+              <Text style={cs.menuItemText}>{t("chat.menu.liveChat")}</Text>
+            </Pressable>
+          </MotiView>
+        </Pressable>
+      </Modal>
 
       {/* Chat modal */}
       <Modal visible={open} animationType="slide" transparent presentationStyle="overFullScreen">
@@ -248,13 +307,14 @@ export default function ChatWidget() {
                   <Text style={cs.headerSub}>{widgetSubtitle}</Text>
                 </View>
               </View>
-              <Pressable onPress={() => setOpen(false)} style={cs.closeBtn}>
+              <Pressable onPress={closeChat} style={cs.closeBtn}>
                 <Ionicons name="close" size={22} color="#fff" />
               </Pressable>
             </View>
 
-            {/* Pre-chat form */}
-            {showPreChat ? (
+            {activePanel === "faq" ? (
+              <FAQPanel />
+            ) : showPreChat ? (
               <View style={cs.preChatBody}>
                 <Text style={cs.preChatTitle}>Before we start...</Text>
                 <Text style={cs.fieldLabel}>Name</Text>
@@ -345,6 +405,24 @@ const cs = StyleSheet.create({
   fab: { position: "absolute", width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8, zIndex: 999 },
   badge: { position: "absolute", top: -4, right: -4, backgroundColor: "#ef4444", borderRadius: 10, minWidth: 20, height: 20, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
   badgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
+
+  menuBackdrop: { flex: 1 },
+  menuCard: {
+    position: "absolute",
+    right: 16,
+    bottom: 56 + 90 + 12,
+    width: 220,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 10,
+  },
+  menuItem: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
+  menuItemText: { fontSize: 14, fontWeight: "500", color: colors.gray800 },
 
   overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.4)" },
   sheet: { backgroundColor: colors.white, height: "75%", borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: "hidden" },

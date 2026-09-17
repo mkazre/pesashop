@@ -254,5 +254,37 @@
         "rerun": "Faire la visite"
       }
     }
+  },
+  "chat": {
+    "menu": {
+      "tour": "Faire une visite",
+      "faq": "Aide rapide",
+      "liveChat": "Discuter avec nous"
+    },
+    "faq": {
+      "title": "Aide rapide",
+      "items": {
+        "tracking": {
+          "q": "Comment suivre ma commande ?",
+          "a": "Allez dans Mon compte → Commandes, ou utilisez Suivre la commande avec votre numéro de commande et votre e-mail."
+        },
+        "returns": {
+          "q": "Quelle est votre politique de retour ?",
+          "a": "La plupart des articles peuvent être retournés sous 30 jours. Démarrez un retour depuis Mon compte → Retours."
+        },
+        "loyalty": {
+          "q": "Comment fonctionnent les Pesa Coins ?",
+          "a": "Gagnez des Pesa Coins à chaque achat et échangez-les au paiement — consultez votre solde dans Mon compte → Pièces PESA."
+        },
+        "support": {
+          "q": "Comment parler à quelqu'un ?",
+          "a": "Choisissez « Discuter avec nous » dans ce menu pour parler directement à notre équipe."
+        },
+        "referrals": {
+          "q": "Comment fonctionne le parrainage ?",
+          "a": "Partagez votre lien depuis Mon compte → Orientations et gagnez des récompenses quand vos amis passent leur première commande."
+        }
+      }
+    }
   }
 }

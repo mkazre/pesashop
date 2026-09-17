@@ -254,5 +254,37 @@
         "rerun": "Take the tour"
       }
     }
+  },
+  "chat": {
+    "menu": {
+      "tour": "Take a tour",
+      "faq": "Quick help",
+      "liveChat": "Chat with us"
+    },
+    "faq": {
+      "title": "Quick help",
+      "items": {
+        "tracking": {
+          "q": "How do I track my order?",
+          "a": "Go to My Account → Orders, or use Track Order with your order number and email."
+        },
+        "returns": {
+          "q": "What's your return policy?",
+          "a": "Most items can be returned within 30 days. Start a return from My Account → Returns."
+        },
+        "loyalty": {
+          "q": "How do Pesa Coins work?",
+          "a": "Earn Pesa Coins on every purchase and redeem them at checkout — check your balance under My Account → PESA Coins."
+        },
+        "support": {
+          "q": "How do I reach a human?",
+          "a": "Choose \"Chat with us\" from this menu to talk to our support team directly."
+        },
+        "referrals": {
+          "q": "How does Refer & Earn work?",
+          "a": "Share your link from My Account → Invite & Earn and earn rewards when friends make their first purchase."
+        }
+      }
+    }
   }
 }

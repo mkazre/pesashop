@@ -1,14 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { io } from 'socket.io-client';
-import { MessageCircle, X, Send, Paperclip, ChevronDown, User, Bot } from 'lucide-react';
+import { MessageCircle, X, Send, ChevronDown, Compass, HelpCircle, MessageSquare } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import { useAuthStore, useTourStore } from '@/store';
+import FAQPanel from './FAQPanel';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ChatWidget = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { isAuthenticated } = useAuthStore();
+  const startAccountTour = useTourStore((s) => s.startAccountTour);
   const [isOpen, setIsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState('chat'); // 'chat' | 'faq'
   const [isMinimized, setIsMinimized] = useState(false);
   const [visitorId, setVisitorId] = useState(null);
   const [conversationId, setConversationId] = useState(null);
@@ -242,7 +252,35 @@ const ChatWidget = () => {
       if (!conversationId && !showPreChat) {
         handleStartChat();
       }
+    } else {
+      setActivePanel('chat');
     }
+  };
+
+  const handleFabClick = (e) => {
+    // Only trigger if not dragging
+    const dx = Math.abs(dragRef.current.startX - (e.clientX || 0));
+    const dy = Math.abs(dragRef.current.startY - (e.clientY || 0));
+    if (dx > 5 || dy > 5) return;
+    setMenuOpen((prev) => !prev);
+  };
+
+  const handleMenuTour = () => {
+    setMenuOpen(false);
+    navigate('/account');
+    if (isAuthenticated) startAccountTour();
+  };
+
+  const handleMenuFaq = () => {
+    setMenuOpen(false);
+    setActivePanel('faq');
+    setIsOpen(true);
+  };
+
+  const handleMenuLiveChat = () => {
+    setMenuOpen(false);
+    setActivePanel('chat');
+    toggleChat();
   };
 
   const handlePreChatSubmit = (e) => {
@@ -358,8 +396,9 @@ const ChatWidget = () => {
 
           {!isMinimized && (
             <>
-              {/* Pre-chat Form */}
-              {showPreChat ? (
+              {activePanel === 'faq' ? (
+                <FAQPanel />
+              ) : showPreChat ? (
                 <div className="p-4 flex-1 overflow-y-auto">
                   <h4 className="font-medium mb-4">Before we start...</h4>
                   <form onSubmit={handlePreChatSubmit} className="space-y-4">
@@ -485,16 +524,45 @@ const ChatWidget = () => {
         </div>
       )}
 
+      {/* Launcher Menu */}
+      <AnimatePresence>
+        {menuOpen && !isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute bottom-full right-0 mb-3 w-56 rounded-2xl border border-gray-200 bg-white p-2 shadow-2xl"
+          >
+            <button
+              onClick={handleMenuTour}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
+            >
+              <Compass size={18} style={{ color: primaryColor }} />
+              {t('chat.menu.tour')}
+            </button>
+            <button
+              onClick={handleMenuFaq}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
+            >
+              <HelpCircle size={18} style={{ color: primaryColor }} />
+              {t('chat.menu.faq')}
+            </button>
+            <button
+              onClick={handleMenuLiveChat}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
+            >
+              <MessageSquare size={18} style={{ color: primaryColor }} />
+              {t('chat.menu.liveChat')}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Widget Button */}
       {!isOpen && (
         <button
-          onClick={(e) => {
-            // Only trigger click if not dragging
-            const dx = Math.abs(dragRef.current.startX - (e.clientX || 0));
-            const dy = Math.abs(dragRef.current.startY - (e.clientY || 0));
-            if (dx > 5 || dy > 5) return;
-            toggleChat();
-          }}
+          onClick={handleFabClick}
           onMouseDown={handleDragStart}
           onTouchStart={handleDragStart}
           className="relative rounded-full shadow-lg text-white flex items-center justify-center cursor-grab active:cursor-grabbing"

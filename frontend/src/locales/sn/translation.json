@@ -254,5 +254,37 @@
         "rerun": "Tora rwendo"
       }
     }
+  },
+  "chat": {
+    "menu": {
+      "tour": "Tora rwendo",
+      "faq": "Rubatsiro rwekukurumidza",
+      "liveChat": "Taura nesu"
+    },
+    "faq": {
+      "title": "Rubatsiro rwekukurumidza",
+      "items": {
+        "tracking": {
+          "q": "Ndinotevera sei odha yangu?",
+          "a": "Enda ku Akaunti Yangu → Maodha, kana kuti shandisa Track Order uine nhamba yeodha neemail yako."
+        },
+        "returns": {
+          "q": "Mutemo wekudzosa zvinhu ndoweiko?",
+          "a": "Zvinhu zvakawanda zvinogona kudzoswa mukati memazuva makumi matatu. Tanga kudzosa kubva ku Akaunti Yangu → Kudzoka."
+        },
+        "loyalty": {
+          "q": "Pesa Coins dzinoshanda sei?",
+          "a": "Wana Pesa Coins pane rimwe nerimwe kutenga uye udzishandise pakubhadhara — tarisa mari yako pasi pe Akaunti Yangu → Mari dzePESA."
+        },
+        "support": {
+          "q": "Ndinotaura sei nemunhu?",
+          "a": "Sarudza \"Taura nesu\" kubva pamenu iyi kuti utaure zvakananga nevanotibatsira."
+        },
+        "referrals": {
+          "q": "Kukoka nekuwana kunoshanda sei?",
+          "a": "Goverana rink yako kubva ku Akaunti Yangu → Zvinotumirwa uye uwane mubairo kana shamwari dzako dzatenga kekutanga."
+        }
+      }
+    }
   }
 }

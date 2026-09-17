@@ -254,5 +254,37 @@
         "rerun": "Yendani ulendo"
       }
     }
+  },
+  "chat": {
+    "menu": {
+      "tour": "Yendani ulendo",
+      "faq": "Thandizo mwachangu",
+      "liveChat": "Lankhulani nafe"
+    },
+    "faq": {
+      "title": "Thandizo mwachangu",
+      "items": {
+        "tracking": {
+          "q": "Kodi nditsatira bwanji oda yanga?",
+          "a": "Pitani ku Akaunti Yanga → Maoda, kapena gwiritsani ntchito Track Order ndi nambala ya oda ndi imelo yanu."
+        },
+        "returns": {
+          "q": "Kodi mfundo yanu ya kubweza ndi yotani?",
+          "a": "Zinthu zambiri zingabwezedwe m'masiku 30. Yambani kubweza kuchokera ku Akaunti Yanga → Kubweza."
+        },
+        "loyalty": {
+          "q": "Kodi Pesa Coins zimagwira ntchito bwanji?",
+          "a": "Pezani Pesa Coins pa kugula kulikonse ndipo muzigwiritse ntchito polipira — onani ndalama zanu pansi pa Akaunti Yanga → Ndalama za PESA."
+        },
+        "support": {
+          "q": "Kodi ndingalankhule bwanji ndi munthu?",
+          "a": "Sankhani \"Lankhulani nafe\" pa menyu iyi kuti mulankhule mwachindunji ndi gulu lathu lothandiza."
+        },
+        "referrals": {
+          "q": "Kodi Mauthenga Othandizira amagwira ntchito bwanji?",
+          "a": "Gawanani ulalo wanu kuchokera ku Akaunti Yanga → Mauthenga Othandizira ndipo mupeze mphotho pamene abwenzi anu agula koyamba."
+        }
+      }
+    }
   }
 }
