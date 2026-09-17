@@ -25,6 +25,7 @@ import { chatAPI } from "@/services/api";
 import { colors, resolveImageUrl } from "@/theme";
 import { useAuthStore, useTourStore } from "@/store";
 import FAQPanel from "./FAQPanel";
+import AskPesaBot from "./AskPesaBot";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -35,7 +36,7 @@ export default function ChatWidget() {
   const startAccountTour = useTourStore((s) => s.startAccountTour);
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activePanel, setActivePanel] = useState<"chat" | "faq">("chat");
+  const [activePanel, setActivePanel] = useState<"chat" | "faq" | "bot">("chat");
   const [visitorId, setVisitorId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -192,6 +193,12 @@ export default function ChatWidget() {
     openChat();
   };
 
+  const handleMenuAskBot = () => {
+    setMenuOpen(false);
+    setActivePanel("bot");
+    setOpen(true);
+  };
+
   const sendMessage = () => {
     if (!input.trim() || !conversationId || !socketRef.current) return;
     socketRef.current.emit("message:send", { content: input.trim(), type: "text" });
@@ -287,6 +294,10 @@ export default function ChatWidget() {
               <Ionicons name="chatbubble-outline" size={18} color={primaryColor} />
               <Text style={cs.menuItemText}>{t("chat.menu.liveChat")}</Text>
             </Pressable>
+            <Pressable onPress={handleMenuAskBot} style={cs.menuItem}>
+              <Ionicons name="sparkles-outline" size={18} color={primaryColor} />
+              <Text style={cs.menuItemText}>{t("chat.menu.askBot")}</Text>
+            </Pressable>
           </MotiView>
         </Pressable>
       </Modal>
@@ -314,6 +325,8 @@ export default function ChatWidget() {
 
             {activePanel === "faq" ? (
               <FAQPanel />
+            ) : activePanel === "bot" ? (
+              <AskPesaBot primaryColor={primaryColor} />
             ) : showPreChat ? (
               <View style={cs.preChatBody}>
                 <Text style={cs.preChatTitle}>Before we start...</Text>

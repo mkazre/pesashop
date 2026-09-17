@@ -259,7 +259,8 @@
     "menu": {
       "tour": "Thatha uhambo",
       "faq": "Usizo olusheshayo",
-      "liveChat": "Xoxa nathi"
+      "liveChat": "Xoxa nathi",
+      "askBot": "Buza u-Pesa Bot"
     },
     "faq": {
       "title": "Usizo olusheshayo",
@@ -285,6 +286,13 @@
           "a": "Yabelana ngesixhumanisi sakho kusuka ku-Akhawunti Yami → Izinkomba bese uthola imiklomelo lapho abangani bakho bethenga okokuqala."
         }
       }
+    },
+    "askBot": {
+      "title": "Ngibuze noma yini mayelana nama-oda akho, i-akhawunti, noma i-Pesa Shop!",
+      "placeholder": "Bhala umbuzo wakho...",
+      "sendButton": "Thumela",
+      "thinking": "Ngiyacabanga...",
+      "errorGeneric": "Uxolo, angikwazanga ukuthola impendulo okwamanje. Zama futhi noma usebenzise i-Live Chat."
     }
   }
 }

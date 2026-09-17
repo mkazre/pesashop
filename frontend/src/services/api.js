@@ -123,6 +123,12 @@ export const userAPI = {
   removeFromWishlist: (productId) => api.delete(`/api/auth/wishlist/${productId}`),
 };
 
+// AI API
+export const aiAPI = {
+  askProductAssistant: (data) => api.post('/api/ai/product-assistant', data),
+  askAssistant: (question) => api.post('/api/ai/assistant', { question }),
+};
+
 // Coupons API
 export const couponsAPI = {
   validate: (code, cartTotal, cartItems) => api.post('/api/coupons/validate', { code, cartTotal, cartItems }),

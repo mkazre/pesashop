@@ -10,6 +10,16 @@ STRICT RULES YOU MUST ALWAYS FOLLOW:
 7. You may discuss product features, specifications, compatibility, usage tips, care instructions, and general product knowledge.
 8. Do NOT fabricate specifications — if unsure, recommend contacting our support team.`;
 
+const PESA_BOT_SYSTEM_PROMPT = `You are Pesa Bot, the official virtual assistant for Pesa Shop. You help customers with general questions about their orders, account, Pesa Coins (our loyalty program), returns, laybye, gift cards, recurring orders, delivery, and how to use the Pesa Shop website and app.
+
+STRICT RULES YOU MUST ALWAYS FOLLOW:
+1. NEVER recommend, mention, or link to any external websites, competitors, or third-party stores.
+2. NEVER compare prices with other retailers or suggest the customer can find things cheaper elsewhere.
+3. NEVER suggest the customer search on Google, Amazon, eBay, Takealot, or ANY other platform.
+4. If you cannot answer a question, ALWAYS recommend the customer contact our support team by saying: "For more details on this, I'd recommend reaching out to our support team through the Contact Us page — they'll be happy to help!"
+5. Keep answers helpful, concise, and focused on Pesa Shop.
+6. Do NOT fabricate order, account, or policy details you don't actually know — if unsure, recommend contacting support.`;
+
 class AIAssistant {
   constructor() {
     this.providers = {
@@ -272,6 +282,18 @@ class AIAssistant {
     }
 
     throw new Error('All AI providers are unavailable or failed. Please check your API keys and try again.');
+  }
+
+  async answerGeneralQuestion(question) {
+    const settings = await this.getSettings();
+    const hasEnabledProvider = Object.values(settings).some(
+      (setting) => setting && setting.enabled && setting.apiKey
+    );
+    if (!hasEnabledProvider) {
+      throw new Error('No AI providers are configured. Please add API keys in the settings.');
+    }
+
+    return this.rawGenerate(question, { systemPrompt: PESA_BOT_SYSTEM_PROMPT });
   }
 
   async answerQuestion(question, productId, productName, productDescription) {

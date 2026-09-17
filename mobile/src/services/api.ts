@@ -307,6 +307,7 @@ export const aiAPI = {
     productName: string;
     productDescription?: string;
   }) => api.post('/api/ai/product-assistant', data),
+  askAssistant: (question: string) => api.post('/api/ai/assistant', { question }),
 };
 
 // ─── Store Credit / Transactions API ────────────────────────────

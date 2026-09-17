@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { io } from 'socket.io-client';
-import { MessageCircle, X, Send, ChevronDown, Compass, HelpCircle, MessageSquare } from 'lucide-react';
+import { MessageCircle, X, Send, ChevronDown, Compass, HelpCircle, MessageSquare, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { useAuthStore, useTourStore } from '@/store';
 import FAQPanel from './FAQPanel';
+import AskPesaBot from './AskPesaBot';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -18,7 +19,7 @@ const ChatWidget = () => {
   const startAccountTour = useTourStore((s) => s.startAccountTour);
   const [isOpen, setIsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activePanel, setActivePanel] = useState('chat'); // 'chat' | 'faq'
+  const [activePanel, setActivePanel] = useState('chat'); // 'chat' | 'faq' | 'bot'
   const [isMinimized, setIsMinimized] = useState(false);
   const [visitorId, setVisitorId] = useState(null);
   const [conversationId, setConversationId] = useState(null);
@@ -283,6 +284,12 @@ const ChatWidget = () => {
     toggleChat();
   };
 
+  const handleMenuAskBot = () => {
+    setMenuOpen(false);
+    setActivePanel('bot');
+    setIsOpen(true);
+  };
+
   const handlePreChatSubmit = (e) => {
     e.preventDefault();
     handleStartChat();
@@ -398,6 +405,8 @@ const ChatWidget = () => {
             <>
               {activePanel === 'faq' ? (
                 <FAQPanel />
+              ) : activePanel === 'bot' ? (
+                <AskPesaBot primaryColor={primaryColor} />
               ) : showPreChat ? (
                 <div className="p-4 flex-1 overflow-y-auto">
                   <h4 className="font-medium mb-4">Before we start...</h4>
@@ -554,6 +563,13 @@ const ChatWidget = () => {
             >
               <MessageSquare size={18} style={{ color: primaryColor }} />
               {t('chat.menu.liveChat')}
+            </button>
+            <button
+              onClick={handleMenuAskBot}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
+            >
+              <Sparkles size={18} style={{ color: primaryColor }} />
+              {t('chat.menu.askBot')}
             </button>
           </motion.div>
         )}

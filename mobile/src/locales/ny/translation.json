@@ -259,7 +259,8 @@
     "menu": {
       "tour": "Yendani ulendo",
       "faq": "Thandizo mwachangu",
-      "liveChat": "Lankhulani nafe"
+      "liveChat": "Lankhulani nafe",
+      "askBot": "Funsani Pesa Bot"
     },
     "faq": {
       "title": "Thandizo mwachangu",
@@ -285,6 +286,13 @@
           "a": "Gawanani ulalo wanu kuchokera ku Akaunti Yanga → Mauthenga Othandizira ndipo mupeze mphotho pamene abwenzi anu agula koyamba."
         }
       }
+    },
+    "askBot": {
+      "title": "Ndifunseni chilichonse pa maoda anu, akaunti, kapena Pesa Shop!",
+      "placeholder": "Lembani funso lanu...",
+      "sendButton": "Tumizani",
+      "thinking": "Ndikuganiza...",
+      "errorGeneric": "Pepani, sindinathe kupeza yankho pakadali pano. Yesaninso kapena gwiritsani ntchito Live Chat."
     }
   }
 }

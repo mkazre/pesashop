@@ -58,6 +58,46 @@ router.post('/product-assistant', async (req, res) => {
   }
 });
 
+// Pesa Bot — general-purpose assistant (not product-scoped), used by the
+// Pesa Assistant chat menu's "Ask Pesa Bot" entry on web + mobile.
+router.post('/assistant', async (req, res) => {
+  try {
+    const { question } = req.body;
+
+    if (!question || !question.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Question is required'
+      });
+    }
+
+    if (question.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Question is too long (max 1000 characters)'
+      });
+    }
+
+    const response = await aiAssistant.answerGeneralQuestion(question);
+
+    res.json({
+      success: true,
+      data: {
+        answer: response.answer,
+        provider: response.provider,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Pesa Bot error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to process your request. Please try again later.'
+    });
+  }
+});
+
 // Get AI settings status (for admin panel)
 router.get('/settings-status', async (req, res) => {
   try {

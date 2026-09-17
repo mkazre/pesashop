@@ -259,7 +259,8 @@
     "menu": {
       "tour": "Take a tour",
       "faq": "Quick help",
-      "liveChat": "Chat with us"
+      "liveChat": "Chat with us",
+      "askBot": "Ask Pesa Bot"
     },
     "faq": {
       "title": "Quick help",
@@ -285,6 +286,13 @@
           "a": "Share your link from My Account → Invite & Earn and earn rewards when friends make their first purchase."
         }
       }
+    },
+    "askBot": {
+      "title": "Ask me anything about your orders, account, or Pesa Shop!",
+      "placeholder": "Type your question...",
+      "sendButton": "Send",
+      "thinking": "Thinking...",
+      "errorGeneric": "Sorry, I couldn't get an answer right now. Please try again or use Live Chat."
     }
   }
 }

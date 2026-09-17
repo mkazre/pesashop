@@ -259,7 +259,8 @@
     "menu": {
       "tour": "Faire une visite",
       "faq": "Aide rapide",
-      "liveChat": "Discuter avec nous"
+      "liveChat": "Discuter avec nous",
+      "askBot": "Demander à Pesa Bot"
     },
     "faq": {
       "title": "Aide rapide",
@@ -285,6 +286,13 @@
           "a": "Partagez votre lien depuis Mon compte → Orientations et gagnez des récompenses quand vos amis passent leur première commande."
         }
       }
+    },
+    "askBot": {
+      "title": "Posez-moi une question sur vos commandes, votre compte, ou Pesa Shop !",
+      "placeholder": "Écrivez votre question...",
+      "sendButton": "Envoyer",
+      "thinking": "Réflexion...",
+      "errorGeneric": "Désolé, je n'ai pas pu obtenir de réponse pour le moment. Réessayez ou utilisez le chat en direct."
     }
   }
 }

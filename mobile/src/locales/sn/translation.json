@@ -259,7 +259,8 @@
     "menu": {
       "tour": "Tora rwendo",
       "faq": "Rubatsiro rwekukurumidza",
-      "liveChat": "Taura nesu"
+      "liveChat": "Taura nesu",
+      "askBot": "Bvunza Pesa Bot"
     },
     "faq": {
       "title": "Rubatsiro rwekukurumidza",
@@ -285,6 +286,13 @@
           "a": "Goverana rink yako kubva ku Akaunti Yangu → Zvinotumirwa uye uwane mubairo kana shamwari dzako dzatenga kekutanga."
         }
       }
+    },
+    "askBot": {
+      "title": "Ndibvunze chero chinhu pamusoro pemaodha ako, akaunti, kana Pesa Shop!",
+      "placeholder": "Nyora mubvunzo wako...",
+      "sendButton": "Tumira",
+      "thinking": "Ndiri kufunga...",
+      "errorGeneric": "Tine urombo, handina kukwanisa kuwana mhinduro izvozvi. Edza zvakare kana ushandise Live Chat."
     }
   }
 }

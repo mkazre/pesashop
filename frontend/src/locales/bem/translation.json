@@ -259,7 +259,8 @@
     "menu": {
       "tour": "Tampeni ulwendo",
       "faq": "Ubwafwilisho bwakwangufyanya",
-      "liveChat": "Landeni naswe"
+      "liveChat": "Landeni naswe",
+      "askBot": "Ipusheni Pesa Bot"
     },
     "faq": {
       "title": "Ubwafwilisho bwakwangufyanya",
@@ -285,6 +286,13 @@
           "a": "Abaneni link yenu ukufuma ku Akaunti Yandi → Ukutuma no kusanga ifyapokelela ilyo ifibusa fyenu fyashita kabalilapo."
         }
       }
+    },
+    "askBot": {
+      "title": "Mumbuzeni ico cili conse pa ma oda yenu, akaunti, nangu Pesa Shop!",
+      "placeholder": "Lembeni icipusho cenu...",
+      "sendButton": "Tumeni",
+      "thinking": "Ndeetontonkanya...",
+      "errorGeneric": "Twalapapa, tatwakwene kusanga ifyasuko nomba line. Esheniko na kabili nangu mubomfye Live Chat."
     }
   }
 }
