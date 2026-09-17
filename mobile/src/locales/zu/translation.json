@@ -187,5 +187,14 @@
     "addedToWishlist": "Kungezwe ohlwini lwezifiso!",
     "removedFromWishlist": "Kususiwe ohlwini lwezifiso",
     "linkCopied": "Isixhumanisi sikopishwe ebhodini lokunamathisela!"
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Siyakwamukela ku-Pesashop!",
+      "body": "Cwaninga njengesivakashi, noma ungene ukuze ulandelele ama-oda akho, uzuze ama-Pesa Coins nokunye.",
+      "ctaSignIn": "Ngena / Bhalisa",
+      "ctaMaybeLater": "Mhlawumbe kamuva",
+      "dismiss": "Vala"
+    }
   }
 }

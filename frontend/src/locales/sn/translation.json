@@ -187,5 +187,14 @@
     "addedToWishlist": "Yakawedzerwa pane zvaunoda!",
     "removedFromWishlist": "Yabviswa pane zvaunoda",
     "linkCopied": "Chinongedzo chakakopwa ku clipboard!"
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Tinokugamuchira ku Pesashop!",
+      "body": "Cherechedza semuenzi, kana kuti pinda kuti utevere maodha ako, uwane Pesa Coins uye zvimwe.",
+      "ctaSignIn": "Pinda / Nyoresa",
+      "ctaMaybeLater": "Pamwe gare gare",
+      "dismiss": "Vhara"
+    }
   }
 }

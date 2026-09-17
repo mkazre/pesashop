@@ -187,5 +187,14 @@
     "addedToWishlist": "Ajouté à ma liste de souhaits !",
     "removedFromWishlist": "Retiré de la liste de souhaits",
     "linkCopied": "Lien copié dans le presse-papiers !"
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Bienvenue chez Pesashop !",
+      "body": "Parcourez librement en tant qu'invité, ou connectez-vous pour suivre vos commandes, gagner des Pesa Coins et plus encore.",
+      "ctaSignIn": "Se connecter / S'inscrire",
+      "ctaMaybeLater": "Plus tard",
+      "dismiss": "Fermer"
+    }
   }
 }

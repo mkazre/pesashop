@@ -187,5 +187,14 @@
     "addedToWishlist": "Zawonjezeredwa pamndandanda wazofuna!",
     "removedFromWishlist": "Yachotsedwa pamndandanda wazofuna",
     "linkCopied": "Ulalo wakopedwa ku clipboard!"
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Takulandirani ku Pesashop!",
+      "body": "Yendetsani ngati mlendo, kapena lowani pa akaunti kuti mutsatire maodala anu, mupeze Pesa Coins ndi zina.",
+      "ctaSignIn": "Lowani / Lembetsani",
+      "ctaMaybeLater": "Mwina pambuyo pake",
+      "dismiss": "Tsekani"
+    }
   }
 }

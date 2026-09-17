@@ -187,5 +187,14 @@
     "addedToWishlist": "Icalundwako ku butantiko bwafyo mulefwaya!",
     "removedFromWishlist": "Cafumishiwapo pa mulongo wa fifwaikwa",
     "linkCopied": "Ukusuntinkanya kwakopwa ku cipampa!"
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Mwaiseni ku Pesashop!",
+      "body": "Endeni nga balendo, nelyo ngilenimo pakuti mulondolole ama oda yenu no kusanga Pesa Coins na fimbi.",
+      "ctaSignIn": "Ngilamo / Lembekesheni",
+      "ctaMaybeLater": "Nomba line line",
+      "dismiss": "Cimfya"
+    }
   }
 }

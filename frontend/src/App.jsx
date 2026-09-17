@@ -42,6 +42,7 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import ChatAdmin from './pages/chat/ChatAdmin';
 import ChatWidget from './components/chat/ChatWidget';
 import PopupRenderer from './components/common/PopupRenderer';
+import WelcomePrompt from './components/common/WelcomePrompt';
 
 // Kiosk
 import KioskLayout from './pages/kiosk/KioskLayout';
@@ -194,6 +195,9 @@ function App() {
 
       {/* Popup Renderer — disabled on kiosk routes (kiosk has its own screensaver) */}
       {!isKioskRoute && <PopupRenderer isApp={false} />}
+
+      {/* Soft welcome prompt for logged-out guests */}
+      {!isKioskRoute && <WelcomePrompt />}
 
       {/* Global Modals */}
       {quickViewProduct && <QuickViewModal />}

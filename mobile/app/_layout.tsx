@@ -21,6 +21,7 @@ import { isBiometricLockEnabled } from "@/utils/biometricLock";
 import { syncContentVersion } from "@/utils/contentVersion";
 import NotificationToast from "@/components/NotificationToast";
 import ChatWidget from "@/components/ChatWidget";
+import WelcomePrompt from "@/components/WelcomePrompt";
 import { CartSuccessOverlay } from "@/components/CartSuccessOverlay";
 import { CheckoutSuccessOverlay } from "@/components/CheckoutSuccessOverlay";
 
@@ -340,6 +341,7 @@ export default function RootLayout() {
       <CheckoutDrawer />
       <NotificationToast />
       <ChatWidget />
+      <WelcomePrompt />
       <PopupRenderer />
       <CartSuccessOverlay />
       <CheckoutSuccessOverlay />
