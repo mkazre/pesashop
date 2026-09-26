@@ -48,7 +48,10 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        // --font-body/--font-heading are set at runtime by useTypography()
+        // from the admin Typography settings (global + per-page overrides).
+        sans: ['var(--font-body)', 'Inter', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-heading)', 'var(--font-body)', 'Inter', 'sans-serif'],
       },
       borderRadius: {
         'none': '0px',

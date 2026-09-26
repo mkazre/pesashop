@@ -8,6 +8,7 @@ import { useCurrencyStore } from '@/store';
 import { loyaltyAPI, settingsAPI } from '@/services/api';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useWebPush } from '@/hooks/useWebPush';
+import { useTypography } from '@/hooks/useTypography';
 import NotificationToast from '@/components/common/NotificationToast';
 import ScrollToTop from '@/components/common/ScrollToTop';
 import CartSuccessOverlay from '@/components/common/CartSuccessOverlay';
@@ -16,6 +17,7 @@ export default function Layout() {
   const { setCurrencies } = useCurrencyStore();
   useAnalytics(); // Auto-tracks page views on route changes
   useWebPush(); // Register web push subscription
+  useTypography(); // Loads storefront fonts + applies per-page overrides on route change
 
   useEffect(() => {
     loyaltyAPI.getCurrencies()

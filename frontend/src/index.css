@@ -2,18 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Overridden at runtime by useTypography() from the admin Typography
+     settings. Defaults here matter: an unset custom property referenced via
+     var() with no fallback makes the whole font-family value invalid, not
+     just that one token — so these must exist before JS ever runs. */
+  --font-body: 'Inter';
+  --font-heading: 'Inter';
+}
+
 @layer base {
   * {
     @apply border-0;
     border-radius: 0px !important;
   }
-  
+
   body {
     @apply font-sans antialiased text-black bg-white;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold;
+    @apply font-bold font-heading;
   }
 }
 
