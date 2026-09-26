@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Animated,
   Dimensions,
+  FlatList,
   Image,
   Linking,
   Modal,
@@ -13,9 +14,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
+import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuthStore, useCartStore } from "@/store";
 import { colors, resolveImageUrl } from "@/theme";
+import { resolveMenuLink } from "@/utils/resolveLink";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000";
@@ -131,6 +135,204 @@ const CountdownBlock = ({ content }: any) => {
   );
 };
 
+// ─── SLIDER BLOCK (own component so useState/useEffect are at top level) ────
+
+const parsePx = (v: any, fallback: number): number => {
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    const n = parseFloat(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return fallback;
+};
+
+const SLIDER_VARIANT_STYLES: Record<string, { backgroundColor: string; color: string; borderColor?: string; borderWidth?: number }> = {
+  primary: { backgroundColor: colors.primary, color: "#fff" },
+  secondary: { backgroundColor: "#f3f4f6", color: "#1f2937" },
+  outline: { backgroundColor: "transparent", color: "#fff", borderColor: "#fff", borderWidth: 2 },
+  ghost: { backgroundColor: "transparent", color: "#fff" },
+  danger: { backgroundColor: "#ef4444", color: "#fff" },
+};
+
+const SliderSlide = ({ slide, onLinkPress }: any) => {
+  const overlay = slide.overlay || {};
+  const align = slide.align || {};
+  const justifyMap: Record<string, "flex-start" | "center" | "flex-end"> = { left: "flex-start", center: "center", right: "flex-end" };
+  const alignMap: Record<string, "flex-start" | "center" | "flex-end"> = { top: "flex-start", middle: "center", bottom: "flex-end" };
+  const justify = justifyMap[align.h || "center"] || "center";
+  const alignItems = alignMap[align.v || "middle"] || "center";
+  const textAlign = align.h === "left" ? "left" : align.h === "right" ? "right" : "center";
+
+  const Wrapper: any = slide.link ? TouchableOpacity : View;
+  const wrapperProps = slide.link ? { onPress: () => onLinkPress(slide.link) } : {};
+
+  return (
+    <Wrapper {...wrapperProps} style={ss.slide}>
+      {slide.image ? (
+        <ExpoImage
+          source={{ uri: resolveImageUrl(slide.image) }}
+          style={StyleSheet.absoluteFill}
+          contentFit={slide.imageFit === "contain" ? "contain" : "cover"}
+        />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, ss.slideFallback]} />
+      )}
+      {overlay.enabled ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: overlay.color || "#000000", opacity: overlay.opacity ?? 0.25 }]} />
+      ) : null}
+      <View style={[ss.slideContent, { justifyContent: alignItems, alignItems: justify }]}>
+        {slide.heading ? (
+          <Text style={[ss.slideHeading, { color: slide.headingColor || "#ffffff", textAlign }]}>{slide.heading}</Text>
+        ) : null}
+        {slide.text ? (
+          <Text style={[ss.slideText, { color: slide.textColor || "#ffffff", textAlign }]}>{slide.text}</Text>
+        ) : null}
+        {slide.buttons?.length ? (
+          <View style={[ss.slideButtons, { justifyContent: justify }]}>
+            {slide.buttons.map((btn: any) => {
+              const v = SLIDER_VARIANT_STYLES[btn.variant] || SLIDER_VARIANT_STYLES.primary;
+              return (
+                <TouchableOpacity
+                  key={btn.id}
+                  style={[ss.slideBtn, { backgroundColor: v.backgroundColor, borderColor: v.borderColor, borderWidth: v.borderWidth || 0 }]}
+                  onPress={() => onLinkPress(btn.link)}
+                >
+                  <Text style={[ss.slideBtnText, { color: v.color }]}>{btn.text || "Button"}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : null}
+      </View>
+    </Wrapper>
+  );
+};
+
+const SliderBlock = ({ content = {}, styles: s = {}, onConversion }: any) => {
+  const router = useRouter();
+  const slides: any[] = content.slides?.length ? content.slides : [];
+  const settings = content.settings || {};
+  const count = slides.length;
+  const loop = settings.loop !== false;
+  const transition = settings.transition === "fade" ? "fade" : "slide";
+
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [index, setIndex] = useState(0);
+  const indexRef = useRef(0);
+  const flatListRef = useRef<FlatList<any>>(null);
+  const fadeValues = useMemo(
+    () => slides.map((_s, i) => new Animated.Value(i === 0 ? 1 : 0)),
+    [count]
+  );
+
+  useEffect(() => { indexRef.current = index; }, [index]);
+
+  const handleLinkPress = useCallback((link?: string) => {
+    if (!link) return;
+    onConversion?.();
+    if (/^https?:\/\//i.test(link)) {
+      Linking.openURL(link).catch(() => {});
+      return;
+    }
+    const dest = resolveMenuLink({ link });
+    if (dest) router.push(dest as any);
+  }, [onConversion, router]);
+
+  const goTo = useCallback((rawIndex: number, instant = false) => {
+    if (count === 0) return;
+    let next = rawIndex;
+    let wrapped = false;
+    if (next < 0) { next = loop ? count - 1 : 0; wrapped = loop; }
+    else if (next >= count) { next = loop ? 0 : count - 1; wrapped = loop; }
+    const prev = indexRef.current;
+    if (next === prev) return;
+    indexRef.current = next;
+    setIndex(next);
+    if (transition === "fade") {
+      Animated.parallel([
+        Animated.timing(fadeValues[prev], { toValue: 0, duration: 380, useNativeDriver: true }),
+        Animated.timing(fadeValues[next], { toValue: 1, duration: 380, useNativeDriver: true }),
+      ]).start();
+    } else if (containerWidth > 0) {
+      flatListRef.current?.scrollToOffset({ offset: next * containerWidth, animated: !wrapped && !instant });
+    }
+  }, [count, loop, transition, containerWidth, fadeValues]);
+
+  // Autoplay
+  useEffect(() => {
+    if (!settings.autoplay || count <= 1) return;
+    const id = setInterval(() => goTo(indexRef.current + 1), settings.interval || 4000);
+    return () => clearInterval(id);
+  }, [settings.autoplay, settings.interval, count, goTo]);
+
+  const handleMomentumEnd = (e: any) => {
+    if (containerWidth <= 0 || transition === "fade") return;
+    const i = Math.round(e.nativeEvent.contentOffset.x / containerWidth);
+    const clamped = Math.max(0, Math.min(count - 1, i));
+    indexRef.current = clamped;
+    setIndex(clamped);
+  };
+
+  if (count === 0) return null;
+
+  const height = parsePx(s.height ?? settings.height, 320);
+  const borderRadius = parsePx(s.borderRadius, 10);
+  const marginBottom = parsePx(s.marginBottom, 16);
+
+  return (
+    <View
+      style={[ss.wrap, { height, borderRadius, marginBottom }]}
+      onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+    >
+      {containerWidth > 0 && transition === "fade" && slides.map((slide, i) => (
+        <Animated.View
+          key={slide.id || i}
+          pointerEvents={i === index ? "auto" : "none"}
+          style={[StyleSheet.absoluteFill, { opacity: fadeValues[i] }]}
+        >
+          <SliderSlide slide={slide} onLinkPress={handleLinkPress} />
+        </Animated.View>
+      ))}
+
+      {containerWidth > 0 && transition === "slide" && (
+        <FlatList
+          ref={flatListRef}
+          data={slides}
+          keyExtractor={(item: any, i: number) => item.id || String(i)}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleMomentumEnd}
+          renderItem={({ item }) => (
+            <View style={{ width: containerWidth, height }}>
+              <SliderSlide slide={item} onLinkPress={handleLinkPress} />
+            </View>
+          )}
+        />
+      )}
+
+      {settings.showArrows && count > 1 ? (
+        <>
+          <TouchableOpacity style={[ss.arrow, ss.arrowLeft]} onPress={() => goTo(index - 1)}>
+            <Text style={ss.arrowText}>‹</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[ss.arrow, ss.arrowRight]} onPress={() => goTo(index + 1)}>
+            <Text style={ss.arrowText}>›</Text>
+          </TouchableOpacity>
+        </>
+      ) : null}
+
+      {settings.showDots && count > 1 ? (
+        <View style={ss.dots}>
+          {slides.map((_slide, i) => (
+            <TouchableOpacity key={i} onPress={() => goTo(i)} style={[ss.dot, i === index && ss.dotActive]} />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+};
+
 const BlockRenderer = ({ block, onConversion, onClose }: any) => {
   const { type, content = {}, styles: s = {} } = block;
 
@@ -207,6 +409,9 @@ const BlockRenderer = ({ block, onConversion, onClose }: any) => {
           <Text style={[bs.iconTextBody, { color: s.color || colors.gray700 }]}>{content.text || ""}</Text>
         </View>
       );
+
+    case "slider":
+      return <SliderBlock content={content} styles={s} onConversion={onConversion} />;
 
     default:
       return null;
@@ -390,6 +595,25 @@ const bs = StyleSheet.create({
   countdownNum: { fontSize: 22, fontWeight: "800", color: "#fff" },
   countdownSub: { fontSize: 9, color: colors.gray400, fontWeight: "600", letterSpacing: 1 },
   countdownColon: { fontSize: 22, fontWeight: "800", color: colors.gray900, marginBottom: 14 },
+});
+
+const ss = StyleSheet.create({
+  wrap: { width: "100%", overflow: "hidden", backgroundColor: colors.gray200, position: "relative" },
+  slide: { flex: 1, position: "relative", overflow: "hidden" },
+  slideFallback: { backgroundColor: colors.gray800 },
+  slideContent: { flex: 1, padding: 20, gap: 8 },
+  slideHeading: { fontSize: 20, fontWeight: "800", textShadowColor: "rgba(0,0,0,0.3)", textShadowRadius: 3, textShadowOffset: { width: 0, height: 1 } },
+  slideText: { fontSize: 13, lineHeight: 18, textShadowColor: "rgba(0,0,0,0.3)", textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 } },
+  slideButtons: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
+  slideBtn: { paddingVertical: 9, paddingHorizontal: 18, borderRadius: 8 },
+  slideBtnText: { fontWeight: "700", fontSize: 13 },
+  arrow: { position: "absolute", top: "50%", marginTop: -16, width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(0,0,0,0.35)", alignItems: "center", justifyContent: "center", zIndex: 3 },
+  arrowLeft: { left: 8 },
+  arrowRight: { right: 8 },
+  arrowText: { color: "#fff", fontSize: 18, lineHeight: 18, fontWeight: "700" },
+  dots: { position: "absolute", bottom: 10, left: 0, right: 0, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, zIndex: 3 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.5)" },
+  dotActive: { width: 18, backgroundColor: "#fff" },
 });
 
 const ps = StyleSheet.create({
