@@ -46,6 +46,7 @@ import LaybyTransactionsPage from './pages/LaybyTransactionsPage';
 import BadgeManagerPage from './pages/BadgeManagerPage';
 import ProductPageSettingsPage from './pages/ProductPageSettingsPage';
 import ProductArchiveSettingsPage from './pages/ProductArchiveSettingsPage';
+import TypographyPage from './pages/TypographyPage';
 import EmailTemplatesPage from './pages/EmailTemplatesPage';
 import NotificationsPage from './pages/NotificationsPage';
 import HomePageBuilderPage from './pages/HomePageBuilderPage';
@@ -175,6 +176,7 @@ function App() {
             <Route path="badges" element={<BadgeManagerPage />} />
             <Route path="product-page-settings" element={<ProductPageSettingsPage />} />
             <Route path="product-archive-settings" element={<ProductArchiveSettingsPage />} />
+            <Route path="typography" element={<TypographyPage />} />
             <Route path="home-page-builder" element={<HomePageBuilderPage />} />
             <Route path="footer-builder" element={<FooterBuilderPage />} />
             <Route path="mobile-app/splash" element={<MobileAppSplashPage />} />

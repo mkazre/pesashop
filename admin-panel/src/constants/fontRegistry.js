@@ -91,3 +91,24 @@ export function toCssFontFamily(name) {
   if (!name) return '';
   return /\s/.test(name) ? `"${name}"` : name;
 }
+
+/**
+ * Resolve the effective { body, heading } font names for a page, given the
+ * typography settings object ({ global: { body, heading }, pages: { ... } })
+ * and a page key ('home' | 'shop' | 'product' | 'account' | 'custom' | null).
+ * An empty body/heading at any level means "inherit" — a page with no body
+ * override falls back to the global body; a page (or global) with no
+ * heading override uses that same level's resolved body font. Shared so the
+ * admin preview and the live storefront resolve fonts identically.
+ */
+export function resolveTypography(typography, pageKey) {
+  const global = typography?.global || {};
+  const globalBody = global.body || 'Inter';
+  const globalHeading = global.heading || globalBody;
+
+  const page = pageKey ? typography?.pages?.[pageKey] : null;
+  const body = page?.body || globalBody;
+  const heading = page?.heading || page?.body || globalHeading;
+
+  return { body, heading };
+}
