@@ -4,7 +4,7 @@ const blockSchema = new mongoose.Schema({
   id: { type: String, required: true },
   type: {
     type: String,
-    enum: ['heading', 'text', 'image', 'button', 'input', 'coupon', 'countdown', 'divider', 'spacer', 'video', 'icon_text', 'html'],
+    enum: ['heading', 'text', 'image', 'button', 'input', 'coupon', 'countdown', 'divider', 'spacer', 'video', 'icon_text', 'html', 'slider'],
     required: true
   },
   content: { type: mongoose.Schema.Types.Mixed, default: {} },

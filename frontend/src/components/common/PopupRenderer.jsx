@@ -336,8 +336,152 @@ const BlockRenderer = ({ block, onConversion }) => {
         </div>
       );
 
+    case 'slider':
+      return <SliderBlock content={content} styles={styles} onConversion={onConversion} />;
+
     default: return null;
   }
+};
+
+// ─── SLIDER BLOCK (own component so useState/useEffect are at top level) ────
+
+const sliderButtonVariantStyle = (variant) => ({
+  primary: { backgroundColor: '#6366f1', color: '#fff', border: 'none' },
+  secondary: { backgroundColor: '#f3f4f6', color: '#1f2937', border: 'none' },
+  outline: { backgroundColor: 'transparent', color: '#fff', border: '2px solid #fff' },
+  ghost: { backgroundColor: 'transparent', color: '#fff', border: 'none', textDecoration: 'underline' },
+  danger: { backgroundColor: '#ef4444', color: '#fff', border: 'none' },
+}[variant] || { backgroundColor: '#6366f1', color: '#fff', border: 'none' });
+
+const SliderSlide = ({ slide, style, onConversion }) => {
+  const overlay = slide.overlay || {};
+  const align = slide.align || {};
+  const justify = { left: 'flex-start', center: 'center', right: 'flex-end' }[align.h || 'center'];
+  const alignItems = { top: 'flex-start', middle: 'center', bottom: 'flex-end' }[align.v || 'middle'];
+  const textAlign = align.h === 'left' ? 'left' : align.h === 'right' ? 'right' : 'center';
+
+  const handleSlideClick = () => {
+    if (!slide.link) return;
+    onConversion && onConversion();
+    window.location.href = slide.link;
+  };
+
+  const handleButtonClick = (e, btn) => {
+    e.stopPropagation();
+    onConversion && onConversion();
+    if (btn.link) window.location.href = btn.link;
+  };
+
+  return (
+    <div
+      onClick={slide.link ? handleSlideClick : undefined}
+      style={{
+        width: '100%', height: '100%', position: 'relative',
+        backgroundImage: slide.image ? `url(${slide.image})` : 'none',
+        backgroundSize: slide.imageFit || 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: slide.image ? '#1f2937' : '#e5e7eb',
+        cursor: slide.link ? 'pointer' : 'default',
+        ...style,
+      }}
+    >
+      {overlay.enabled && (
+        <div style={{ position: 'absolute', inset: 0, backgroundColor: overlay.color || '#000000', opacity: overlay.opacity ?? 0.25 }} />
+      )}
+      <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: alignItems, alignItems: justify, textAlign, padding: '24px', boxSizing: 'border-box', gap: '10px' }}>
+        {slide.heading && <h3 style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: slide.headingColor || '#ffffff', textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{slide.heading}</h3>}
+        {slide.text && <p style={{ margin: 0, fontSize: '14px', color: slide.textColor || '#ffffff', maxWidth: '80%', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>{slide.text}</p>}
+        {slide.buttons?.length > 0 && (
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: justify }}>
+            {slide.buttons.map(btn => (
+              <button key={btn.id} type="button" onClick={(e) => handleButtonClick(e, btn)} style={{ ...sliderButtonVariantStyle(btn.variant), padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                {btn.text || 'Button'}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const sliderArrowStyle = (side, disabled) => ({
+  position: 'absolute', top: '50%', [side]: '10px', transform: 'translateY(-50%)',
+  width: '32px', height: '32px', borderRadius: '50%', border: 'none',
+  background: 'rgba(0,0,0,0.35)', color: '#fff', fontSize: '18px', lineHeight: 1,
+  cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.4 : 1,
+  display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3,
+});
+
+const SliderBlock = ({ content = {}, styles = {}, onConversion }) => {
+  const slides = content.slides?.length ? content.slides : [];
+  const settings = content.settings || {};
+  const count = slides.length;
+  const [index, setIndex] = useState(0);
+  const [hovering, setHovering] = useState(false);
+
+  useEffect(() => { if (index >= count) setIndex(0); }, [count, index]);
+
+  useEffect(() => {
+    if (!settings.autoplay || count <= 1) return;
+    if (settings.pauseOnHover && hovering) return;
+    const id = setInterval(() => {
+      setIndex(i => {
+        const next = i + 1;
+        if (next >= count) return settings.loop !== false ? 0 : i;
+        return next;
+      });
+    }, settings.interval || 4000);
+    return () => clearInterval(id);
+  }, [settings.autoplay, settings.interval, settings.loop, settings.pauseOnHover, hovering, count]);
+
+  if (count === 0) return null;
+
+  const height = styles.height || settings.height || '320px';
+  const transition = settings.transition || 'slide';
+  const canGoPrev = settings.loop !== false || index > 0;
+  const canGoNext = settings.loop !== false || index < count - 1;
+  const goTo = (i) => setIndex(count === 0 ? 0 : ((i % count) + count) % count);
+
+  return (
+    <div
+      style={{ ...styles, position: 'relative', width: '100%', height, overflow: 'hidden', borderRadius: styles.borderRadius || '10px', marginBottom: styles.marginBottom ?? '16px' }}
+      onMouseEnter={() => settings.pauseOnHover && setHovering(true)}
+      onMouseLeave={() => settings.pauseOnHover && setHovering(false)}
+    >
+      {transition === 'fade' ? (
+        slides.map((slide, i) => (
+          <SliderSlide key={slide.id || i} slide={slide} onConversion={onConversion} style={{ position: 'absolute', inset: 0, opacity: i === index ? 1 : 0, transition: 'opacity 500ms ease', pointerEvents: i === index ? 'auto' : 'none' }} />
+        ))
+      ) : (
+        <div style={{ display: 'flex', width: '100%', height: '100%', transform: `translateX(-${index * 100}%)`, transition: 'transform 500ms ease' }}>
+          {slides.map((slide, i) => (
+            <div key={slide.id || i} style={{ flex: '0 0 100%', width: '100%', height: '100%' }}>
+              <SliderSlide slide={slide} onConversion={onConversion} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {settings.showArrows && count > 1 && (
+        <>
+          <button type="button" disabled={!canGoPrev} onClick={(e) => { e.stopPropagation(); canGoPrev && goTo(index - 1); }} style={sliderArrowStyle('left', !canGoPrev)}>‹</button>
+          <button type="button" disabled={!canGoNext} onClick={(e) => { e.stopPropagation(); canGoNext && goTo(index + 1); }} style={sliderArrowStyle('right', !canGoNext)}>›</button>
+        </>
+      )}
+
+      {settings.showDots && count > 1 && (
+        <div style={{ position: 'absolute', bottom: '12px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '6px', zIndex: 3 }}>
+          {slides.map((_, i) => (
+            <button key={i} type="button" onClick={(e) => { e.stopPropagation(); goTo(i); }} style={{ width: i === index ? '20px' : '8px', height: '8px', borderRadius: '4px', border: 'none', background: i === index ? '#fff' : 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: 0, transition: 'all 0.2s' }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 // createElement helper for JSX dynamic tags

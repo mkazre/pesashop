@@ -12,7 +12,7 @@ import {
   IoText, IoImage, IoLink, IoCodeSlash, IoApps, IoMenu, IoStar,
   IoArrowUp, IoArrowDown, IoExpand, IoGiftOutline, IoTimeOutline,
   IoRemove, IoPlayCircle, IoHappy, IoMegaphone, IoAnalyticsOutline,
-  IoMegaphoneOutline
+  IoMegaphoneOutline, IoAlbumsOutline
 } from 'react-icons/io5';
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
@@ -53,6 +53,7 @@ const BLOCK_TYPES = [
   { type: 'video', label: 'Video', icon: IoPlayCircle, color: '#f97316' },
   { type: 'html', label: 'Custom HTML', icon: IoCodeSlash, color: '#14b8a6' },
   { type: 'icon_text', label: 'Icon + Text', icon: IoHappy, color: '#a855f7' },
+  { type: 'slider', label: 'Slider', icon: IoAlbumsOutline, color: '#0ea5e9' },
 ];
 
 const ANIMATIONS = ['fade', 'slide_up', 'slide_down', 'slide_left', 'slide_right', 'zoom_in', 'bounce', 'flip_x', 'rotate_in', 'elastic'];
@@ -164,11 +165,45 @@ const DEFAULT_BLOCK_STYLES = {
   video: { width: '100%', borderRadius: '8px', marginBottom: '16px' },
   html: { marginBottom: '16px' },
   icon_text: { textAlign: 'center', marginBottom: '16px' },
+  slider: { borderRadius: '10px', marginBottom: '16px' },
 };
 
 // ─── UTILITIES ────────────────────────────────────────────────────────────────
 
 const genId = () => Math.random().toString(36).slice(2, 10);
+
+const makeSliderButton = () => ({ id: genId(), text: 'Shop Now', link: '/', variant: 'primary' });
+
+const makeSlide = () => ({
+  id: genId(), image: '', imageFit: 'cover',
+  link: '',
+  overlay: { enabled: true, color: '#000000', opacity: 0.25 },
+  align: { h: 'center', v: 'middle' },
+  heading: '', headingColor: '#ffffff',
+  text: '', textColor: '#ffffff',
+  buttons: [makeSliderButton()],
+});
+
+const makeDefaultSliderContent = () => ({
+  slides: [makeSlide()],
+  settings: { autoplay: true, interval: 4000, loop: true, showArrows: true, showDots: true, transition: 'slide', pauseOnHover: true, height: '320px' },
+});
+
+const SLIDER_BUTTON_VARIANTS = [
+  { value: 'primary', label: 'Primary' },
+  { value: 'secondary', label: 'Secondary' },
+  { value: 'outline', label: 'Outline' },
+  { value: 'ghost', label: 'Ghost' },
+  { value: 'danger', label: 'Danger' },
+];
+
+const sliderButtonVariantStyle = (variant) => ({
+  primary: { backgroundColor: '#6366f1', color: '#fff', border: 'none' },
+  secondary: { backgroundColor: '#f3f4f6', color: '#1f2937', border: 'none' },
+  outline: { backgroundColor: 'transparent', color: '#fff', border: '2px solid #fff' },
+  ghost: { backgroundColor: 'transparent', color: '#fff', border: 'none', textDecoration: 'underline' },
+  danger: { backgroundColor: '#ef4444', color: '#fff', border: 'none' },
+}[variant] || { backgroundColor: '#6366f1', color: '#fff', border: 'none' });
 
 const getPopupBg = (design) => {
   if (design.backgroundType === 'gradient') return design.backgroundGradient;
@@ -180,6 +215,133 @@ const getPopupBgStyle = (design) => {
   if (design.backgroundType === 'gradient') return { background: design.backgroundGradient };
   if (design.backgroundType === 'image' && design.backgroundImage) return { backgroundImage: `url(${design.backgroundImage})`, backgroundSize: design.backgroundSize || 'cover', backgroundPosition: design.backgroundPosition || 'center' };
   return { backgroundColor: design.backgroundColor };
+};
+
+// ─── SLIDER BLOCK (own component so useState/useEffect are at top level) ────
+
+const SliderSlide = ({ slide, style, isPreview }) => {
+  const overlay = slide.overlay || {};
+  const align = slide.align || {};
+  const justify = { left: 'flex-start', center: 'center', right: 'flex-end' }[align.h || 'center'];
+  const alignItems = { top: 'flex-start', middle: 'center', bottom: 'flex-end' }[align.v || 'middle'];
+  const textAlign = align.h === 'left' ? 'left' : align.h === 'right' ? 'right' : 'center';
+
+  return (
+    <div
+      style={{
+        width: '100%', height: '100%', position: 'relative',
+        backgroundImage: slide.image ? `url(${slide.image})` : 'none',
+        backgroundSize: slide.imageFit || 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: slide.image ? '#1f2937' : '#e5e7eb',
+        cursor: slide.link && !isPreview ? 'pointer' : 'default',
+        ...style,
+      }}
+    >
+      {!slide.image && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '13px' }}>📷 No image set</div>
+      )}
+      {overlay.enabled && (
+        <div style={{ position: 'absolute', inset: 0, backgroundColor: overlay.color || '#000000', opacity: overlay.opacity ?? 0.25 }} />
+      )}
+      <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: alignItems, alignItems: justify, textAlign, padding: '24px', boxSizing: 'border-box', gap: '10px' }}>
+        {slide.heading && <h3 style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: slide.headingColor || '#ffffff', textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{slide.heading}</h3>}
+        {slide.text && <p style={{ margin: 0, fontSize: '14px', color: slide.textColor || '#ffffff', maxWidth: '80%', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>{slide.text}</p>}
+        {slide.buttons?.length > 0 && (
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: justify }}>
+            {slide.buttons.map(btn => (
+              <button key={btn.id} type="button" style={{ ...sliderButtonVariantStyle(btn.variant), padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+                {btn.text || 'Button'}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const sliderArrowStyle = (side, disabled) => ({
+  position: 'absolute', top: '50%', [side]: '10px', transform: 'translateY(-50%)',
+  width: '32px', height: '32px', borderRadius: '50%', border: 'none',
+  background: 'rgba(0,0,0,0.35)', color: '#fff', fontSize: '18px', lineHeight: 1,
+  cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.4 : 1,
+  display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3,
+});
+
+const SliderBlock = ({ content = {}, styles = {}, isPreview }) => {
+  const slides = content.slides?.length ? content.slides : [];
+  const settings = content.settings || {};
+  const count = slides.length;
+  const [index, setIndex] = useState(0);
+  const [hovering, setHovering] = useState(false);
+
+  useEffect(() => { if (index >= count) setIndex(0); }, [count, index]);
+
+  useEffect(() => {
+    if (!settings.autoplay || count <= 1) return;
+    if (settings.pauseOnHover && hovering) return;
+    const id = setInterval(() => {
+      setIndex(i => {
+        const next = i + 1;
+        if (next >= count) return settings.loop !== false ? 0 : i;
+        return next;
+      });
+    }, settings.interval || 4000);
+    return () => clearInterval(id);
+  }, [settings.autoplay, settings.interval, settings.loop, settings.pauseOnHover, hovering, count]);
+
+  if (count === 0) {
+    return (
+      <div style={{ ...styles, height: settings.height || '320px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: styles.borderRadius || '10px', color: '#9ca3af', fontSize: '13px', border: '2px dashed #e5e7eb' }}>
+        🎞️ No slides yet
+      </div>
+    );
+  }
+
+  const height = styles.height || settings.height || '320px';
+  const transition = settings.transition || 'slide';
+  const canGoPrev = settings.loop !== false || index > 0;
+  const canGoNext = settings.loop !== false || index < count - 1;
+  const goTo = (i) => setIndex(count === 0 ? 0 : ((i % count) + count) % count);
+
+  return (
+    <div
+      style={{ ...styles, position: 'relative', width: '100%', height, overflow: 'hidden', borderRadius: styles.borderRadius || '10px' }}
+      onMouseEnter={() => settings.pauseOnHover && setHovering(true)}
+      onMouseLeave={() => settings.pauseOnHover && setHovering(false)}
+    >
+      {transition === 'fade' ? (
+        slides.map((slide, i) => (
+          <SliderSlide key={slide.id || i} slide={slide} isPreview={isPreview} style={{ position: 'absolute', inset: 0, opacity: i === index ? 1 : 0, transition: 'opacity 500ms ease', pointerEvents: i === index ? 'auto' : 'none' }} />
+        ))
+      ) : (
+        <div style={{ display: 'flex', width: '100%', height: '100%', transform: `translateX(-${index * 100}%)`, transition: 'transform 500ms ease' }}>
+          {slides.map((slide, i) => (
+            <div key={slide.id || i} style={{ flex: '0 0 100%', width: '100%', height: '100%' }}>
+              <SliderSlide slide={slide} isPreview={isPreview} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {settings.showArrows && count > 1 && (
+        <>
+          <button type="button" disabled={!canGoPrev} onClick={(e) => { e.stopPropagation(); canGoPrev && goTo(index - 1); }} style={sliderArrowStyle('left', !canGoPrev)}>‹</button>
+          <button type="button" disabled={!canGoNext} onClick={(e) => { e.stopPropagation(); canGoNext && goTo(index + 1); }} style={sliderArrowStyle('right', !canGoNext)}>›</button>
+        </>
+      )}
+
+      {settings.showDots && count > 1 && (
+        <div style={{ position: 'absolute', bottom: '12px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '6px', zIndex: 3 }}>
+          {slides.map((_, i) => (
+            <button key={i} type="button" onClick={(e) => { e.stopPropagation(); goTo(i); }} style={{ width: i === index ? '20px' : '8px', height: '8px', borderRadius: '4px', border: 'none', background: i === index ? '#fff' : 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: 0, transition: 'all 0.2s' }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 // ─── BLOCK RENDERER (shared by preview + frontend) ───────────────────────────
@@ -295,6 +457,9 @@ const BlockRenderer = ({ block, isPreview }) => {
         </div>
       );
 
+    case 'slider':
+      return <SliderBlock content={content} styles={base} isPreview={isPreview} />;
+
     default:
       return <div style={{ padding: '8px', color: '#aaa', fontSize: '12px', textAlign: 'center' }}>[{type}]</div>;
   }
@@ -381,6 +546,193 @@ const PopupPreview = ({ popup, device, onBlockClick, selectedBlockId }) => {
   );
 };
 
+// ─── SLIDER CONTENT EDITOR (slides manager, own component for local UI state) ─
+
+const SliderContentEditor = ({ content, update }) => {
+  const slides = content.slides?.length ? content.slides : [];
+  const settings = content.settings || {};
+  const [openSlideId, setOpenSlideId] = useState(slides[0]?.id || null);
+
+  const updateSettings = (key, val) => update('settings', { ...settings, [key]: val });
+  const setSlides = (next) => update('slides', next);
+  const updateSlide = (id, patch) => setSlides(slides.map(s => s.id === id ? { ...s, ...patch } : s));
+  const updateSlideNested = (id, key, patch) => setSlides(slides.map(s => s.id === id ? { ...s, [key]: { ...s[key], ...patch } } : s));
+
+  const addSlide = () => {
+    const s = makeSlide();
+    setSlides([...slides, s]);
+    setOpenSlideId(s.id);
+  };
+  const deleteSlide = (id) => {
+    setSlides(slides.filter(s => s.id !== id));
+    if (openSlideId === id) setOpenSlideId(null);
+  };
+  const moveSlide = (id, dir) => {
+    const arr = [...slides];
+    const idx = arr.findIndex(s => s.id === id);
+    if (dir === 'up' && idx > 0) { [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]]; }
+    else if (dir === 'down' && idx < arr.length - 1) { [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]; }
+    setSlides(arr);
+  };
+
+  const addButton = (slideId) => {
+    const slide = slides.find(s => s.id === slideId);
+    updateSlide(slideId, { buttons: [...(slide.buttons || []), makeSliderButton()] });
+  };
+  const updateButton = (slideId, btnId, patch) => {
+    const slide = slides.find(s => s.id === slideId);
+    updateSlide(slideId, { buttons: (slide.buttons || []).map(b => b.id === btnId ? { ...b, ...patch } : b) });
+  };
+  const deleteButton = (slideId, btnId) => {
+    const slide = slides.find(s => s.id === slideId);
+    updateSlide(slideId, { buttons: (slide.buttons || []).filter(b => b.id !== btnId) });
+  };
+
+  const labelStyle = { fontSize: '11px', fontWeight: '600', color: '#6b7280', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' };
+  const inputStyle = { width: '100%', padding: '7px 10px', border: '1.5px solid #e5e7eb', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box' };
+  const smallInputStyle = { ...inputStyle, padding: '6px 8px', fontSize: '12px' };
+  const swatchStyle = { width: 32, height: 32, border: '1.5px solid #e5e7eb', borderRadius: '6px', cursor: 'pointer', padding: 2, flexShrink: 0 };
+
+  return (
+    <>
+      {/* Slider settings */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+        {[['Autoplay', 'autoplay', !!settings.autoplay], ['Loop', 'loop', settings.loop !== false], ['Arrows', 'showArrows', settings.showArrows !== false], ['Dots', 'showDots', settings.showDots !== false], ['Pause on Hover', 'pauseOnHover', !!settings.pauseOnHover]].map(([label, key, checked]) => (
+          <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px' }}>
+            <input type="checkbox" checked={checked} onChange={e => updateSettings(key, e.target.checked)} />{label}
+          </label>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+        <div>
+          <label style={labelStyle}>Interval (ms)</label>
+          <input type="number" value={settings.interval ?? 4000} onChange={e => updateSettings('interval', Number(e.target.value))} style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Height</label>
+          <input value={settings.height || ''} onChange={e => updateSettings('height', e.target.value)} placeholder="320px" style={inputStyle} />
+        </div>
+      </div>
+      <div style={{ marginBottom: '4px' }}>
+        <label style={labelStyle}>Transition</label>
+        <select value={settings.transition || 'slide'} onChange={e => updateSettings('transition', e.target.value)} style={inputStyle}>
+          <option value="slide">Slide</option>
+          <option value="fade">Fade</option>
+        </select>
+      </div>
+
+      {/* Slides manager */}
+      <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Slides ({slides.length})</span>
+          <button onClick={addSlide} type="button" style={{ display: 'flex', alignItems: 'center', gap: '4px', border: 'none', background: '#eef2ff', color: '#6366f1', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+            <IoAdd size={12} /> Add Slide
+          </button>
+        </div>
+
+        {slides.map((slide, idx) => {
+          const isOpen = openSlideId === slide.id;
+          return (
+            <div key={slide.id} style={{ border: '1.5px solid #e5e7eb', borderRadius: '8px', marginBottom: '6px', overflow: 'hidden' }}>
+              <div onClick={() => setOpenSlideId(isOpen ? null : slide.id)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', background: isOpen ? '#ede9fe' : '#f8fafc', cursor: 'pointer' }}>
+                <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: '#374151' }}>Slide {idx + 1}{slide.heading ? ` — ${slide.heading}` : ''}</span>
+                <div style={{ display: 'flex', gap: '2px' }} onClick={e => e.stopPropagation()}>
+                  <button onClick={() => moveSlide(slide.id, 'up')} disabled={idx === 0} style={{ border: 'none', background: 'none', cursor: idx === 0 ? 'not-allowed' : 'pointer', color: '#9ca3af', padding: '2px 4px', fontSize: '12px', opacity: idx === 0 ? 0.3 : 1 }}>↑</button>
+                  <button onClick={() => moveSlide(slide.id, 'down')} disabled={idx === slides.length - 1} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#9ca3af', padding: '2px 4px', fontSize: '12px', opacity: idx === slides.length - 1 ? 0.3 : 1 }}>↓</button>
+                  <button onClick={() => deleteSlide(slide.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px 4px', fontSize: '12px' }}>×</button>
+                </div>
+              </div>
+
+              {isOpen && (
+                <div style={{ padding: '10px', background: '#fff' }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    <label style={labelStyle}>Image URL</label>
+                    <input value={slide.image || ''} onChange={e => updateSlide(slide.id, { image: e.target.value })} placeholder="https://..." style={inputStyle} />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+                    <div>
+                      <label style={labelStyle}>Image Fit</label>
+                      <select value={slide.imageFit || 'cover'} onChange={e => updateSlide(slide.id, { imageFit: e.target.value })} style={inputStyle}>
+                        <option value="cover">Cover</option>
+                        <option value="contain">Contain</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Slide Link (optional)</label>
+                      <input value={slide.link || ''} onChange={e => updateSlide(slide.id, { link: e.target.value })} placeholder="/shop" style={inputStyle} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <input type="checkbox" checked={!!slide.overlay?.enabled} onChange={e => updateSlideNested(slide.id, 'overlay', { enabled: e.target.checked })} />
+                    <label style={{ fontSize: '13px' }}>Dark Overlay</label>
+                  </div>
+                  {slide.overlay?.enabled && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                      <input type="color" value={slide.overlay?.color || '#000000'} onChange={e => updateSlideNested(slide.id, 'overlay', { color: e.target.value })} style={swatchStyle} />
+                      <input type="range" min="0" max="1" step="0.05" value={slide.overlay?.opacity ?? 0.25} onChange={e => updateSlideNested(slide.id, 'overlay', { opacity: Number(e.target.value) })} style={{ flex: 1 }} />
+                      <span style={{ fontSize: '11px', color: '#9ca3af', minWidth: '28px' }}>{slide.overlay?.opacity ?? 0.25}</span>
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={labelStyle}>Content Position</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <select value={slide.align?.h || 'center'} onChange={e => updateSlideNested(slide.id, 'align', { h: e.target.value })} style={inputStyle}>
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                      </select>
+                      <select value={slide.align?.v || 'middle'} onChange={e => updateSlideNested(slide.id, 'align', { v: e.target.value })} style={inputStyle}>
+                        <option value="top">Top</option>
+                        <option value="middle">Middle</option>
+                        <option value="bottom">Bottom</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', alignItems: 'end', marginBottom: '8px' }}>
+                    <div>
+                      <label style={labelStyle}>Heading</label>
+                      <input value={slide.heading || ''} onChange={e => updateSlide(slide.id, { heading: e.target.value })} placeholder="Big Sale" style={inputStyle} />
+                    </div>
+                    <input type="color" value={slide.headingColor || '#ffffff'} onChange={e => updateSlide(slide.id, { headingColor: e.target.value })} style={swatchStyle} />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', alignItems: 'end', marginBottom: '10px' }}>
+                    <div>
+                      <label style={labelStyle}>Text</label>
+                      <input value={slide.text || ''} onChange={e => updateSlide(slide.id, { text: e.target.value })} placeholder="Up to 50% off" style={inputStyle} />
+                    </div>
+                    <input type="color" value={slide.textColor || '#ffffff'} onChange={e => updateSlide(slide.id, { textColor: e.target.value })} style={swatchStyle} />
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Buttons</span>
+                      <button onClick={() => addButton(slide.id)} type="button" style={{ border: 'none', background: 'none', color: '#6366f1', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>+ Add</button>
+                    </div>
+                    {(slide.buttons || []).map(btn => (
+                      <div key={btn.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '6px', marginBottom: '6px', alignItems: 'center' }}>
+                        <input value={btn.text || ''} onChange={e => updateButton(slide.id, btn.id, { text: e.target.value })} placeholder="Text" style={smallInputStyle} />
+                        <input value={btn.link || ''} onChange={e => updateButton(slide.id, btn.id, { link: e.target.value })} placeholder="Link" style={smallInputStyle} />
+                        <select value={btn.variant || 'primary'} onChange={e => updateButton(slide.id, btn.id, { variant: e.target.value })} style={smallInputStyle}>
+                          {SLIDER_BUTTON_VARIANTS.map(v => <option key={v.value} value={v.value}>{v.label}</option>)}
+                        </select>
+                        <button onClick={() => deleteButton(slide.id, btn.id)} type="button" style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+};
+
 // ─── BLOCK EDITOR PANEL ───────────────────────────────────────────────────────
 
 const BlockEditor = ({ block, onChange, onClose }) => {
@@ -460,6 +812,7 @@ const BlockEditor = ({ block, onChange, onClose }) => {
         {type === 'video' && <>{inp('Video Embed URL', 'url', 'https://www.youtube.com/embed/...')}<div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '4px' }}>{[['Autoplay', 'autoplay'], ['Muted', 'muted'], ['Loop', 'loop']].map(([l, k]) => <label key={k} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px' }}><input type="checkbox" checked={!!content[k]} onChange={e => update(k, e.target.checked)} />{l}</label>)}</div></>}
         {type === 'html' && <div style={{ marginBottom: '10px' }}><label style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>HTML Code</label><textarea value={content.code || ''} onChange={e => update('code', e.target.value)} rows={5} style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e5e7eb', borderRadius: '7px', fontSize: '12px', boxSizing: 'border-box', fontFamily: 'monospace', resize: 'vertical' }} /></div>}
         {type === 'icon_text' && <>{iconInp('Icon', 'icon')}{inp('Heading', 'heading', 'Special Offer')}{inp('Text', 'text', 'Limited time deal')}</>}
+        {type === 'slider' && <SliderContentEditor content={content} update={update} />}
       </div>
 
       {/* Style section */}
@@ -475,6 +828,7 @@ const BlockEditor = ({ block, onChange, onClose }) => {
           {(type === 'divider' || type === 'spacer') && <>{styleInp('Margin Top', 'marginTop', '16px')}{styleInp('Margin Bottom', 'marginBottom', '16px')}</>}
           {type === 'icon_text' && <>{colorInp('Heading Color', 'headingColor')}{colorInp('Text Color', 'textColor')}{styleSel('Align', 'textAlign', [{ value: 'left', label: 'Left' }, { value: 'center', label: 'Center' }, { value: 'right', label: 'Right' }])}{styleInp('Margin Bottom', 'marginBottom', '16px')}</>}
           {type === 'input' && <>{styleInp('Border Radius', 'borderRadius', '8px')}{styleInp('Font Size', 'fontSize', '14px')}{styleInp('Margin Bottom', 'marginBottom', '12px')}</>}
+          {type === 'slider' && <>{styleInp('Border Radius', 'borderRadius', '10px')}{styleInp('Margin Bottom', 'marginBottom', '16px')}</>}
         </div>
       </div>
     </div>
@@ -560,7 +914,8 @@ export default function PopupBuilderPage() {
   const setBlocks = (blocks) => updatePopup(`layouts.${getLayoutKey()}.blocks`, blocks);
 
   const addBlock = (type) => {
-    const block = { id: genId(), type, content: { ...DEFAULT_BLOCK_CONTENT[type] }, styles: { ...DEFAULT_BLOCK_STYLES[type] } };
+    const content = type === 'slider' ? makeDefaultSliderContent() : { ...DEFAULT_BLOCK_CONTENT[type] };
+    const block = { id: genId(), type, content, styles: { ...DEFAULT_BLOCK_STYLES[type] } };
     setBlocks([...getBlocks(), block]);
     setSelectedBlockId(block.id);
     setAddingBlockType(null);
