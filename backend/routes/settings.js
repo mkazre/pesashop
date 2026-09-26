@@ -206,6 +206,16 @@ router.get('/public', async (req, res) => {
         enabledLanguages: settings.translation?.enabledLanguages?.length
           ? settings.translation.enabledLanguages
           : ['fr', 'sn', 'bem', 'ny', 'zu'],
+        typography: settings.typography || {
+          global: { body: 'Inter', heading: '' },
+          pages: {
+            home: { body: '', heading: '' },
+            shop: { body: '', heading: '' },
+            product: { body: '', heading: '' },
+            account: { body: '', heading: '' },
+            custom: { body: '', heading: '' },
+          },
+        },
       }
     });
   } catch (error) {

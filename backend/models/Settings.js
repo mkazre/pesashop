@@ -302,6 +302,25 @@ const settingsSchema = new mongoose.Schema({
     killSwitchEnabled: { type: Boolean, default: false }
   },
 
+  // Typography — global + per-page font overrides for the storefront.
+  // An empty `body`/`heading` string means "inherit": a page inherits the
+  // global font, and `heading: ''` at any level means "same as that level's
+  // body font". See frontend/src/constants/fontRegistry.js (and its
+  // admin-panel twin) for the curated list of selectable fonts.
+  typography: {
+    global: {
+      body: { type: String, default: 'Inter' },
+      heading: { type: String, default: '' },
+    },
+    pages: {
+      home:    { body: { type: String, default: '' }, heading: { type: String, default: '' } },
+      shop:    { body: { type: String, default: '' }, heading: { type: String, default: '' } },
+      product: { body: { type: String, default: '' }, heading: { type: String, default: '' } },
+      account: { body: { type: String, default: '' }, heading: { type: String, default: '' } },
+      custom:  { body: { type: String, default: '' }, heading: { type: String, default: '' } },
+    },
+  },
+
   // Bumped by the admin "Refresh Mobile App Content" action. The app reads
   // this on launch/resume and, if it differs from what it saw last time,
   // clears its in-memory content caches (drawer menu, etc.) and refetches —
