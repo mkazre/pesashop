@@ -34,6 +34,13 @@ const referralSettingsSchema = new mongoose.Schema({
   // Skip fraud-flagged referrals when walking the upline chain for rewards.
   excludeFraudFlagged: { type: Boolean, default: true },
 
+  // Shared-IP signups (referee signs up from the referrer's last login IP)
+  // are always recorded in Referral.fraudFlags for admin review. Only when
+  // this is on do they also hard-block the referral (status 'fraud', no
+  // rewards). Off by default: households, offices and mobile carrier NAT
+  // share IPs legitimately. Same-email / self-referral are always blocked.
+  blockSameIpReferrals: { type: Boolean, default: false },
+
   // If an upline ancestor is banned/inactive/fraud-flagged, skip past them
   // to the next valid ancestor rather than losing that level's reward.
   compressInactiveUplines: { type: Boolean, default: true },

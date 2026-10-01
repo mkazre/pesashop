@@ -229,12 +229,19 @@ async function handleSignup(newUser, referralCode, meta = {}) {
   if (!referrer) return null;
   if (String(referrer._id) === String(newUser._id)) return null;
 
+  // Hard flags block the referral outright (status 'fraud', no rewards).
+  // Soft flags are recorded for admin review but the referral proceeds,
+  // unless the admin has opted to hard-block that signal in settings.
+  const settings = await ReferralSettings.getSettings();
   const fraudFlags = [];
+  let hardBlocked = false;
   if (newUser.email && referrer.email && newUser.email.toLowerCase() === referrer.email.toLowerCase()) {
     fraudFlags.push('same_email');
+    hardBlocked = true;
   }
   if (meta.ip && referrer.lastLoginIp && meta.ip === referrer.lastLoginIp) {
     fraudFlags.push('same_ip');
+    if (settings.blockSameIpReferrals) hardBlocked = true;
   }
 
   const referral = await Referral.findOneAndUpdate(
@@ -245,7 +252,7 @@ async function handleSignup(newUser, referralCode, meta = {}) {
       refereeEmail: newUser.email,
       refereePhone: newUser.phone,
       referralCode,
-      status: fraudFlags.length > 0 ? 'fraud' : 'signed_up',
+      status: hardBlocked ? 'fraud' : 'signed_up',
       signedUpAt: new Date(),
       signupIp: meta.ip,
       signupUserAgent: meta.userAgent,
@@ -254,6 +261,13 @@ async function handleSignup(newUser, referralCode, meta = {}) {
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
+
+  // Hard-blocked referrals get no upline: without one, neither signup nor
+  // future purchase rewards can flow to the referrer.
+  if (hardBlocked) {
+    console.warn(`Referral hard-blocked (${fraudFlags.join(', ')}): user ${newUser._id}, referrer ${referrer._id}`);
+    return referral;
+  }
 
   // Atomic $set rather than newUser.save(): the other signup side-effects
   // (loyalty bonus, coupon automation) touch this same user doc

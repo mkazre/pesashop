@@ -374,12 +374,13 @@ router.get('/admin/settings', protect, authorize(...ADMIN_ROLES), async (req, re
 router.put('/admin/settings', protect, authorize(...ADMIN_ROLES), async (req, res) => {
   try {
     const settings = await ReferralSettings.getSettings();
-    const { enabled, maxLevels, levels, purchaseRewardBase, excludeFraudFlagged, compressInactiveUplines } = req.body;
+    const { enabled, maxLevels, levels, purchaseRewardBase, excludeFraudFlagged, compressInactiveUplines, blockSameIpReferrals } = req.body;
 
     if (enabled !== undefined) settings.enabled = enabled;
     if (purchaseRewardBase !== undefined) settings.purchaseRewardBase = purchaseRewardBase;
     if (excludeFraudFlagged !== undefined) settings.excludeFraudFlagged = excludeFraudFlagged;
     if (compressInactiveUplines !== undefined) settings.compressInactiveUplines = compressInactiveUplines;
+    if (blockSameIpReferrals !== undefined) settings.blockSameIpReferrals = !!blockSameIpReferrals;
 
     if (maxLevels !== undefined) {
       settings.maxLevels = Math.max(1, Math.min(10, parseInt(maxLevels) || 1));
