@@ -255,9 +255,20 @@ async function handleSignup(newUser, referralCode, meta = {}) {
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
+  // Atomic $set rather than newUser.save(): the other signup side-effects
+  // (loyalty bonus, coupon automation) touch this same user doc
+  // concurrently, and a full-document save can lose or clobber the
+  // attribution fields.
+  const chain = [referrer._id, ...(referrer.uplineChain || [])].slice(0, ReferralSettings.MAX_LEVELS_CEILING);
+  try {
+    await User.updateOne({ _id: newUser._id }, { $set: { referredBy: referrer._id, uplineChain: chain } });
+    console.log(`Referral attribution saved: user ${newUser._id} referredBy ${referrer._id} (chain depth ${chain.length})`);
+  } catch (e) {
+    console.error(`Referral attribution FAILED for user ${newUser._id} (referrer ${referrer._id}):`, e.message);
+    throw e;
+  }
   newUser.referredBy = referrer._id;
-  newUser.uplineChain = [referrer._id, ...(referrer.uplineChain || [])].slice(0, ReferralSettings.MAX_LEVELS_CEILING);
-  await newUser.save({ validateBeforeSave: false });
+  newUser.uplineChain = chain;
 
   if (referral.status === 'signed_up') {
     // Immediate-referee welcome bonus (distinct from the upline MLM rewards
