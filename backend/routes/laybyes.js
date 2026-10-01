@@ -10,6 +10,20 @@ const { LAYBYE_STATUS } = require('../config/constants');
 const LaybyTransaction = require('../models/LaybyTransaction');
 const emailService = require('../services/emailService');
 
+// A fully paid laybye means its order is now paid: flip the order and
+// attribute the purchase to the referral upline (idempotent per order).
+async function markLaybyeOrderPaid(orderId) {
+  const order = await Order.findByIdAndUpdate(orderId, {
+    paymentStatus: 'completed',
+    status: 'processing'
+  }, { new: true });
+  if (order) {
+    const referralService = require('../services/referralService');
+    referralService.awardUplineForPurchase(order).catch(e => console.error('Referral purchase reward error (laybye):', e.message));
+  }
+  return order;
+}
+
 // ─── CUSTOMER: Get my laybyes (MUST be before /:id routes) ───
 router.get('/my-laybyes', protect, async (req, res, next) => {
   try {
@@ -107,10 +121,7 @@ router.post('/my-laybyes/:id/pay', protect, async (req, res, next) => {
         laybye.completedDate = new Date();
         laybye.remainingAmount = 0;
         if (laybye.order) {
-          await Order.findByIdAndUpdate(laybye.order, {
-            paymentStatus: 'completed',
-            status: 'processing'
-          });
+          await markLaybyeOrderPaid(laybye.order);
         }
       } else {
         laybye.calculateNextPaymentDate();
@@ -432,10 +443,7 @@ router.post('/:id/payments', protect, authorize('admin', 'shop_manager'), async 
       
       // Update order if exists
       if (laybye.order) {
-        await Order.findByIdAndUpdate(laybye.order, {
-          paymentStatus: 'completed',
-          status: 'processing'
-        });
+        await markLaybyeOrderPaid(laybye.order);
       }
     } else {
       // Calculate next payment date
@@ -525,10 +533,7 @@ router.put('/:id/payments/:paymentId', protect, authorize('admin', 'shop_manager
         laybye.completedDate = new Date();
         laybye.remainingAmount = 0;
         if (laybye.order) {
-          await Order.findByIdAndUpdate(laybye.order, {
-            paymentStatus: 'completed',
-            status: 'processing'
-          });
+          await markLaybyeOrderPaid(laybye.order);
         }
       } else {
         laybye.calculateNextPaymentDate();

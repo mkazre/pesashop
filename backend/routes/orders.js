@@ -570,6 +570,11 @@ router.put('/:id/payment', protect, authorize('admin', 'shop_manager'), async (r
       } catch (e) {
         console.error('Loyalty points assignment error:', e);
       }
+      // Attribute the purchase to the upline as soon as it's paid. Safe to
+      // also fire on the later "completed" status change — ReferralReward's
+      // unique (order, beneficiary, level) index makes it idempotent.
+      const referralService = require('../services/referralService');
+      referralService.awardUplineForPurchase(order).catch(e => console.error('Referral purchase reward error (payment):', e.message));
     }
     
     // Send email notification for payment confirmation
