@@ -20,6 +20,21 @@ router.post('/register', async (req, res, next) => {
       console.error('Error sending admin new user notification:', err);
     });
 
+    // Referral attribution runs FIRST and is awaited, so referredBy/uplineChain
+    // are persisted before any other signup side-effect touches the user doc.
+    // A referral failure must never block signup itself.
+    if (referralCode) {
+      const referralService = require('../services/referralService');
+      try {
+        await referralService.handleSignup(user, String(referralCode).toUpperCase(), {
+          ip: req.ip,
+          userAgent: req.headers['user-agent']
+        });
+      } catch (err) {
+        console.error('Referral signup error:', err);
+      }
+    }
+
     // Handle coupon email automation for new users
     const couponEmailService = require('../services/couponEmailService');
     couponEmailService.handleNewUser(user._id).catch(err => {
@@ -31,15 +46,6 @@ router.post('/register', async (req, res, next) => {
     loyaltyService.awardExtraPoints(user._id, 'signup').catch(err => {
       console.error('Error awarding signup bonus:', err);
     });
-
-    // Handle referral attribution if a code was supplied
-    if (referralCode) {
-      const referralService = require('../services/referralService');
-      referralService.handleSignup(user, String(referralCode).toUpperCase(), {
-        ip: req.ip,
-        userAgent: req.headers['user-agent']
-      }).catch(err => console.error('Referral signup error:', err));
-    }
 
     sendTokenResponse(user, 201, res);
   } catch (error) {
@@ -180,19 +186,24 @@ router.post('/google', async (req, res, next) => {
 
     // Award signup bonus for new social login users
     if (isNewUser) {
+      // Referral attribution first (awaited) so it can't race the other
+      // signup side-effects on the user doc; failures never block login.
+      if (referralCode) {
+        const referralService = require('../services/referralService');
+        try {
+          await referralService.handleSignup(user, String(referralCode).toUpperCase(), {
+            ip: req.ip,
+            userAgent: req.headers['user-agent']
+          });
+        } catch (err) {
+          console.error('Referral signup error (Google):', err.message);
+        }
+      }
+
       const loyaltyService = require('../services/loyaltyService');
       loyaltyService.awardExtraPoints(user._id, 'signup').catch(err => {
         console.error('Error awarding signup bonus:', err);
       });
-
-      // Handle referral attribution if a code was supplied
-      if (referralCode) {
-        const referralService = require('../services/referralService');
-        referralService.handleSignup(user, String(referralCode).toUpperCase(), {
-          ip: req.ip,
-          userAgent: req.headers['user-agent']
-        }).catch(err => console.error('Referral signup error (Google):', err.message));
-      }
     }
 
     sendTokenResponse(user, 200, res);
@@ -263,19 +274,24 @@ router.post('/facebook', async (req, res, next) => {
 
     // Award signup bonus for new social login users
     if (isNewUser) {
+      // Referral attribution first (awaited) so it can't race the other
+      // signup side-effects on the user doc; failures never block login.
+      if (referralCode) {
+        const referralService = require('../services/referralService');
+        try {
+          await referralService.handleSignup(user, String(referralCode).toUpperCase(), {
+            ip: req.ip,
+            userAgent: req.headers['user-agent']
+          });
+        } catch (err) {
+          console.error('Referral signup error (Facebook):', err.message);
+        }
+      }
+
       const loyaltyService = require('../services/loyaltyService');
       loyaltyService.awardExtraPoints(user._id, 'signup').catch(err => {
         console.error('Error awarding signup bonus:', err);
       });
-
-      // Handle referral attribution if a code was supplied
-      if (referralCode) {
-        const referralService = require('../services/referralService');
-        referralService.handleSignup(user, String(referralCode).toUpperCase(), {
-          ip: req.ip,
-          userAgent: req.headers['user-agent']
-        }).catch(err => console.error('Referral signup error (Facebook):', err.message));
-      }
     }
 
     sendTokenResponse(user, 200, res);

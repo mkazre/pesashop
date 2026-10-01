@@ -341,9 +341,9 @@ class LoyaltyService {
           ? await LoyaltyLevel.findById(user.currentLoyaltyLevel)
           : null;
         
-        // Update user level
-        user.currentLoyaltyLevel = newLevel._id;
-        await user.save();
+        // Update user level — atomic $set so this can't clobber fields
+        // written concurrently by other services (e.g. referral attribution).
+        await User.updateOne({ _id: user._id }, { $set: { currentLoyaltyLevel: newLevel._id } });
         
         // Award bonus points if configured
         const settings = await LoyaltySetting.findOne();
