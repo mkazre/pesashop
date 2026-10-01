@@ -36,13 +36,6 @@ router.get('/me', protect, async (req, res) => {
       .populate('referee', 'firstName lastName email createdAt')
       .sort({ createdAt: -1 });
 
-    const summary = {
-      sent: referrals.length,
-      signedUp: referrals.filter(r => ['signed_up', 'qualified', 'rewarded'].includes(r.status)).length,
-      qualified: referrals.filter(r => ['qualified', 'rewarded'].includes(r.status)).length,
-      pointsEarned: referrals.reduce((sum, r) => sum + (r.referrerBonusPoints || 0), 0)
-    };
-
     // MLM per-level breakdown from the reward ledger (this reflects ALL
     // levels this user benefits from, not just their direct referrals).
     const byLevel = await ReferralReward.aggregate([
@@ -71,6 +64,19 @@ router.get('/me', protect, async (req, res) => {
     }
 
     const totalMlmPoints = byLevel.reduce((sum, r) => sum + r.points, 0);
+
+    // "Made a purchase" = distinct downline members whose orders have
+    // rewarded this user, read from the ledger (the source of truth for
+    // what was actually awarded) rather than Referral.status, which lags.
+    const purchasers = await ReferralReward.distinct('sourceUser', { beneficiary: user._id, eventType: 'purchase' });
+
+    const summary = {
+      sent: referrals.length,
+      signedUp: referrals.filter(r => ['signed_up', 'qualified', 'rewarded'].includes(r.status)).length,
+      qualified: purchasers.length,
+      pointsEarned: totalMlmPoints,
+      levelsActive: Object.keys(levelBreakdown).length,
+    };
 
     // This month vs last month, for a simple trend widget.
     const now = new Date();

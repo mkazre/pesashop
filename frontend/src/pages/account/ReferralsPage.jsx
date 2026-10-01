@@ -108,7 +108,7 @@ const ReferralsPage = () => {
         <Stat label="Invites sent" value={r.summary.sent} />
         <Stat label="Signed up" value={r.summary.signedUp} />
         <Stat label="Made a purchase" value={r.summary.qualified} />
-        <Stat label="Reward levels active" value={r.levelBreakdown.length} />
+        <Stat label="Reward levels active" value={r.summary.levelsActive ?? r.levelBreakdown.length} />
       </div>
 
       <EarningPotential redemptionRate={redemptionRate} cash={cash} />

@@ -153,7 +153,7 @@ export default function ReferralsScreen() {
           <Stat label="Invites sent" value={data.summary?.sent ?? 0} />
           <Stat label="Signed up" value={data.summary?.signedUp ?? 0} />
           <Stat label="Made a purchase" value={data.summary?.qualified ?? 0} />
-          <Stat label="Levels active" value={(data.levelBreakdown || []).length} />
+          <Stat label="Levels active" value={data.summary?.levelsActive ?? (data.levelBreakdown || []).length} />
         </View>
 
         <EarningPotential redemptionRate={redemptionRate} cash={cash} />
